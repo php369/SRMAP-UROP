@@ -1,0 +1,1 @@
+module.exports = require('@srm-portal/config/prettier');

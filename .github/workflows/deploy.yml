@@ -1,0 +1,254 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Run CI checks first
+  ci-checks:
+    name: CI Checks
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  # Deploy Frontend to Vercel
+  deploy-frontend:
+    name: Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    needs: ci-checks
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Build Web App
+        run: pnpm --filter @srm-portal/web build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+          VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
+          
+      - name: Deploy to Vercel
+        id: deploy
+        uses: vercel/action@v1
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: apps/web
+          vercel-args: ${{ github.event.inputs.environment == 'production' && '--prod' || '' }}
+          
+      - name: Comment deployment URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Frontend deployed to: ${{ steps.deploy.outputs.url }}`
+            })
+
+  # Deploy Backend to Render
+  deploy-backend:
+    name: Deploy Backend to Render
+    runs-on: ubuntu-latest
+    needs: ci-checks
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Build API
+        run: pnpm --filter @srm-portal/api build
+        
+      - name: Run pre-deployment checks
+        run: pnpm --filter @srm-portal/api deploy
+        env:
+          NODE_ENV: ${{ github.event.inputs.environment || 'production' }}
+          
+      - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true
+          
+      - name: Run database migrations
+        if: github.event.inputs.environment == 'production' || github.ref == 'refs/heads/main'
+        run: |
+          echo "Running database migrations..."
+          # This would typically connect to your production database
+          # and run migrations. For security, this should be done
+          # through Render's environment or a separate secure process.
+          echo "Migrations should be run manually or through Render's environment"
+
+  # Post-deployment smoke tests
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm install -g @lhci/cli
+        
+      - name: Wait for deployments to be ready
+        run: sleep 30
+        
+      - name: Test API health endpoint
+        run: |
+          API_URL="${{ secrets.VITE_API_URL || 'https://srm-portal-api.onrender.com' }}"
+          echo "Testing API health at: $API_URL/health"
+          
+          # Test health endpoint
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health")
+          if [ "$response" != "200" ]; then
+            echo "❌ API health check failed with status: $response"
+            exit 1
+          else
+            echo "✅ API health check passed"
+          fi
+          
+          # Test API status endpoint
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/v1/status")
+          if [ "$response" != "200" ]; then
+            echo "❌ API status check failed with status: $response"
+            exit 1
+          else
+            echo "✅ API status check passed"
+          fi
+        
+      - name: Test Frontend accessibility
+        run: |
+          FRONTEND_URL="${{ needs.deploy-frontend.outputs.url || 'https://srm-portal-web.vercel.app' }}"
+          echo "Testing frontend at: $FRONTEND_URL"
+          
+          # Test if frontend is accessible
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
+          if [ "$response" != "200" ]; then
+            echo "❌ Frontend accessibility check failed with status: $response"
+            exit 1
+          else
+            echo "✅ Frontend accessibility check passed"
+          fi
+        
+      - name: Run Lighthouse CI (if enabled)
+        if: github.event.inputs.environment == 'production' || github.ref == 'refs/heads/main'
+        run: |
+          FRONTEND_URL="${{ needs.deploy-frontend.outputs.url || 'https://srm-portal-web.vercel.app' }}"
+          echo "Running Lighthouse audit on: $FRONTEND_URL"
+          
+          # Create temporary Lighthouse config
+          cat > lighthouserc.json << EOF
+          {
+            "ci": {
+              "collect": {
+                "url": ["$FRONTEND_URL"],
+                "numberOfRuns": 1
+              },
+              "assert": {
+                "assertions": {
+                  "categories:performance": ["warn", {"minScore": 0.8}],
+                  "categories:accessibility": ["error", {"minScore": 0.9}],
+                  "categories:best-practices": ["warn", {"minScore": 0.8}],
+                  "categories:seo": ["warn", {"minScore": 0.8}]
+                }
+              }
+            }
+          }
+          EOF
+          
+          lhci autorun || echo "Lighthouse audit completed with warnings"
+        continue-on-error: true
+
+  # Notify deployment status
+  notify-deployment:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, smoke-tests]
+    if: always()
+    
+    steps:
+      - name: Determine deployment status
+        id: status
+        run: |
+          if [[ "${{ needs.deploy-frontend.result }}" == "success" && "${{ needs.deploy-backend.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=🎉 Deployment completed successfully!" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.deploy-frontend.result }}" == "success" || "${{ needs.deploy-backend.result }}" == "success" ]]; then
+            echo "status=partial" >> $GITHUB_OUTPUT
+            echo "message=⚠️ Partial deployment completed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "message=❌ Deployment failed" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Services" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** ${{ needs.deploy-frontend.result == 'success' && '✅ Deployed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** ${{ needs.deploy-backend.result == 'success' && '✅ Deployed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smoke Tests:** ${{ needs.smoke-tests.result == 'success' && '✅ Passed' || needs.smoke-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY

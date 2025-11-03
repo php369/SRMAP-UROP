@@ -1,0 +1,160 @@
+import { Express, Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from '../config/swagger';
+import { logger } from '../utils/logger';
+
+// Import route modules
+import authRoutes from './auth';
+import assessmentRoutes from './assessments';
+import submissionRoutes from './submissions';
+import gradeRoutes from './grades';
+import adminRoutes from './admin';
+import presenceRoutes from './presence';
+import performanceRoutes from './performance';
+import healthRoutes from './health';
+import { createDebugRoutes } from '../middleware/developmentLogger';
+// import userRoutes from './users';
+
+export function setupRoutes(app: Express): void {
+  // API version prefix
+  const API_PREFIX = '/api/v1';
+
+  // Health check (already defined in main server file)
+  
+  // Authentication routes
+  app.use(`${API_PREFIX}/auth`, authRoutes);
+  
+  // Assessment routes
+  app.use(`${API_PREFIX}/assessments`, assessmentRoutes);
+  
+  // Submission routes
+  app.use(`${API_PREFIX}/submissions`, submissionRoutes);
+  
+  // Grade routes
+  app.use(`${API_PREFIX}`, gradeRoutes);
+  
+  // Admin routes
+  app.use(`${API_PREFIX}/admin`, adminRoutes);
+  
+  // Presence routes
+  app.use(`${API_PREFIX}/presence`, presenceRoutes);
+  
+  // Performance routes
+  app.use(`${API_PREFIX}/performance`, performanceRoutes);
+  
+  // Health routes
+  app.use('/health', healthRoutes);
+  
+  // Development debug routes (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    app.use(`${API_PREFIX}/debug`, createDebugRoutes());
+  }
+  
+  // User routes
+  // app.use(`${API_PREFIX}/users`, userRoutes);
+
+  /**
+   * @swagger
+   * /api/v1/status:
+   *   get:
+   *     summary: API status and endpoint information
+   *     description: Returns the current API status and available endpoints
+   *     tags: [System]
+   *     responses:
+   *       200:
+   *         description: API status information
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: 'SRM Project Portal API is running'
+   *                 version:
+   *                   type: string
+   *                   example: '1.0.0'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *                   example: '2024-01-01T12:00:00.000Z'
+   *                 endpoints:
+   *                   type: object
+   *                   properties:
+   *                     health:
+   *                       type: string
+   *                       example: '/health'
+   *                     docs:
+   *                       type: string
+   *                       example: '/docs'
+   *                     auth:
+   *                       type: string
+   *                       example: '/api/v1/auth'
+   *                     assessments:
+   *                       type: string
+   *                       example: '/api/v1/assessments'
+   *                     submissions:
+   *                       type: string
+   *                       example: '/api/v1/submissions'
+   *                     users:
+   *                       type: string
+   *                       example: '/api/v1/users'
+   *                     admin:
+   *                       type: string
+   *                       example: '/api/v1/admin'
+   */
+  // API status endpoint
+  app.get(`${API_PREFIX}/status`, (_req: Request, res: Response) => {
+    res.json({
+      message: 'SRM Project Portal API is running',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      endpoints: {
+        health: '/health',
+        docs: '/docs',
+        auth: `${API_PREFIX}/auth`,
+        assessments: `${API_PREFIX}/assessments`,
+        submissions: `${API_PREFIX}/submissions`,
+        users: `${API_PREFIX}/users`,
+        admin: `${API_PREFIX}/admin`,
+        performance: `${API_PREFIX}/performance`,
+        debug: process.env.NODE_ENV === 'development' ? `${API_PREFIX}/debug` : undefined,
+      }
+    });
+  });
+
+  // API documentation with Swagger UI
+  app.use('/docs', swaggerUi.serve);
+  app.get('/docs', swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'SRM Project Portal API Documentation',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'none',
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+    },
+  }));
+
+  // OpenAPI JSON endpoint
+  app.get('/docs/openapi.json', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  // 404 handler for API routes
+  app.use(`${API_PREFIX}/*`, (req: Request, res: Response) => {
+    res.status(404).json({
+      error: {
+        code: 'ROUTE_NOT_FOUND',
+        message: `Route ${req.method} ${req.path} not found`,
+        timestamp: new Date().toISOString()
+      }
+    });
+  });
+
+  logger.info('✅ Routes configured successfully');
+}

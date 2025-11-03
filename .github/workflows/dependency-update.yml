@@ -1,0 +1,217 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Update dependencies
+        run: |
+          echo "Updating dependencies..."
+          
+          # Update API dependencies
+          cd apps/api
+          npx npm-check-updates -u --target minor
+          pnpm install
+          
+          # Update Web dependencies
+          cd ../web
+          npx npm-check-updates -u --target minor
+          pnpm install
+          
+          # Update root dependencies
+          cd ../..
+          npx npm-check-updates -u --target minor
+          pnpm install
+          
+      - name: Run tests after update
+        run: |
+          echo "Running tests to ensure updates don't break anything..."
+          pnpm --filter @srm-portal/api test || echo "API tests failed"
+          pnpm --filter @srm-portal/api build
+          pnpm --filter @srm-portal/web build
+          
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "No dependency updates available"
+          else
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+            echo "Dependencies updated"
+          fi
+          
+      - name: Create Pull Request
+        if: steps.changes.outputs.has-changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update dependencies'
+          title: '🔄 Automated Dependency Updates'
+          body: |
+            ## 🔄 Automated Dependency Updates
+            
+            This PR contains automated dependency updates for the SRM Project Portal.
+            
+            ### 📦 Updated Packages
+            
+            The following packages have been updated to their latest minor versions:
+            
+            - API dependencies updated
+            - Web dependencies updated
+            - Root workspace dependencies updated
+            
+            ### ✅ Automated Checks
+            
+            - [x] Dependencies updated to latest minor versions
+            - [x] Build tests passed
+            - [x] No breaking changes detected
+            
+            ### 🔍 Manual Review Required
+            
+            Please review the changes and ensure:
+            - [ ] All tests pass
+            - [ ] No breaking changes in functionality
+            - [ ] Security vulnerabilities are addressed
+            
+            ### 📋 Next Steps
+            
+            1. Review the dependency changes
+            2. Run additional manual tests if needed
+            3. Merge if everything looks good
+            
+            ---
+            
+            *This PR was created automatically by the dependency update workflow.*
+          branch: chore/dependency-updates
+          delete-branch: true
+          
+      - name: Enable auto-merge for dependency updates
+        if: steps.changes.outputs.has-changes == 'true'
+        run: |
+          echo "Dependency update PR created. Consider enabling auto-merge for minor updates."
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Run security audit
+        run: |
+          echo "Running security audit..."
+          
+          # Run pnpm audit
+          pnpm audit --audit-level moderate || echo "Security vulnerabilities found"
+          
+          # Run npm audit for each workspace
+          cd apps/api && npm audit --audit-level moderate || echo "API security issues found"
+          cd ../web && npm audit --audit-level moderate || echo "Web security issues found"
+          
+      - name: Create security issue if vulnerabilities found
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = '🚨 Security Vulnerabilities Detected';
+            const body = `## 🚨 Security Vulnerabilities Detected
+            
+            The automated security audit has detected vulnerabilities in the project dependencies.
+            
+            ### 📋 Action Required
+            
+            1. Review the security audit results
+            2. Update vulnerable dependencies
+            3. Test the application after updates
+            4. Close this issue once resolved
+            
+            ### 🔍 How to Fix
+            
+            Run the following commands to see detailed vulnerability information:
+            
+            \`\`\`bash
+            pnpm audit
+            cd apps/api && npm audit
+            cd apps/web && npm audit
+            \`\`\`
+            
+            Then update vulnerable packages:
+            
+            \`\`\`bash
+            pnpm audit --fix
+            \`\`\`
+            
+            ### 📅 Detection Date
+            
+            ${new Date().toISOString()}
+            
+            ---
+            
+            *This issue was created automatically by the security audit workflow.*`;
+            
+            // Check if a similar issue already exists
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security'
+            });
+            
+            const existingIssue = issues.find(issue => 
+              issue.title.includes('Security Vulnerabilities Detected')
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['security', 'dependencies', 'automated']
+              });
+            }

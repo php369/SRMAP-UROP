@@ -1,0 +1,32 @@
+{
+  "name": "srm-project-portal",
+  "version": "1.0.0",
+  "description": "SRM University-AP Project Management Portal",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "build": "pnpm run --recursive build",
+    "test": "pnpm run --recursive test",
+    "lint": "pnpm run --recursive lint",
+    "type-check": "pnpm run --recursive type-check",
+    "clean": "pnpm run --recursive clean",
+    "seed": "pnpm --filter api seed",
+    "security:audit": "node scripts/security-audit.js",
+    "security:validate": "node scripts/security-validation.js",
+    "security:check": "pnpm security:audit && pnpm security:validate"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "prettier": "^3.1.0",
+    "eslint": "^8.55.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
