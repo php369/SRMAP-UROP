@@ -6,7 +6,7 @@ export interface JwtPayload {
   userId: string;
   email: string;
   name: string;
-  role: 'student' | 'faculty' | 'admin';
+  role: 'student' | 'faculty' | 'coordinator' | 'admin';
   iat?: number;
   exp?: number;
 }

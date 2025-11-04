@@ -11,7 +11,7 @@ declare global {
         id: string;
         email: string;
         name: string;
-        role: 'student' | 'faculty' | 'admin';
+        role: 'student' | 'faculty' | 'coordinator' | 'admin';
       };
     }
   }
@@ -108,7 +108,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
  * Authorization middleware factory
  * Creates middleware that checks if user has required role(s)
  */
-export const authorize = (...allowedRoles: Array<'student' | 'faculty' | 'admin'>) => {
+export const authorize = (...allowedRoles: Array<'student' | 'faculty' | 'coordinator' | 'admin'>) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -300,6 +300,21 @@ function getUserPermissions(role: string): string[] {
       'grades:update',
       'grades:read',
     ],
+    coordinator: [
+      'assessments:create',
+      'assessments:read',
+      'assessments:update',
+      'assessments:delete',
+      'submissions:read',
+      'grades:create',
+      'grades:update',
+      'grades:read',
+      'grades:publish',
+      'projects:approve',
+      'projects:reject',
+      'windows:manage',
+      'evaluations:publish',
+    ],
     admin: [
       'users:read',
       'users:update',
@@ -310,6 +325,8 @@ function getUserPermissions(role: string): string[] {
       'grades:read',
       'reports:read',
       'system:manage',
+      'eligibility:import',
+      'faculty:manage',
     ],
   };
 

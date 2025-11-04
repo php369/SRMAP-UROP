@@ -10,8 +10,6 @@ export interface IUser extends Document {
   profile: {
     department?: string;
     year?: number;
-    skills?: string[];
-    bio?: string;
   };
   preferences: {
     theme: 'light' | 'dark';
@@ -62,14 +60,6 @@ const UserSchema = new Schema<IUser>({
       type: Number,
       min: 1,
       max: 4
-    },
-    skills: [{
-      type: String,
-      trim: true
-    }],
-    bio: {
-      type: String,
-      maxlength: 500
     }
   },
   preferences: {
