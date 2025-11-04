@@ -17,14 +17,14 @@ const DashboardSkeleton = () => (
     <div className="h-8 bg-gray-200 rounded-md animate-pulse"></div>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
+        <div key={i} className="bg-surface p-6 rounded-lg shadow-sm border">
           <div className="h-4 bg-gray-200 rounded animate-pulse mb-4"></div>
           <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
         </div>
       ))}
     </div>
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <div className="bg-surface p-6 rounded-lg shadow-sm border">
       <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
       <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
     </div>
@@ -39,7 +39,7 @@ const AssessmentsSkeleton = () => (
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-white p-6 rounded-lg shadow-sm border">
+        <div key={i} className="bg-surface p-6 rounded-lg shadow-sm border">
           <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse mb-4 w-3/4"></div>
@@ -55,7 +55,7 @@ const AssessmentsSkeleton = () => (
 
 const ProfileSkeleton = () => (
   <div className="space-y-6 p-6">
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <div className="bg-surface p-6 rounded-lg shadow-sm border">
       <div className="flex items-center space-x-6 mb-6">
         <div className="w-24 h-24 bg-gray-200 rounded-full animate-pulse"></div>
         <div className="space-y-2">

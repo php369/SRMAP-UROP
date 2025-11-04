@@ -1,0 +1,267 @@
+/* Dashboard Theme Integration */
+/* This file ensures consistent theme application across all dashboard components */
+
+/* Base dashboard container styling */
+.dashboard-container {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: var(--theme-transition);
+  min-height: 100vh;
+}
+
+/* Dashboard page headers */
+.dashboard-header {
+  color: var(--color-text-primary);
+}
+
+.dashboard-subheader {
+  color: var(--color-text-secondary);
+}
+
+/* Dashboard cards and surfaces */
+.dashboard-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: var(--theme-transition);
+}
+
+.dashboard-card:hover {
+  background-color: var(--color-hover);
+}
+
+/* Dashboard navigation and buttons */
+.dashboard-nav-item {
+  color: var(--color-text-secondary);
+  transition: var(--theme-transition);
+}
+
+.dashboard-nav-item:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-hover);
+}
+
+.dashboard-nav-item.active {
+  color: var(--color-accent);
+  background-color: var(--color-hover);
+  border-color: var(--color-accent);
+}
+
+/* Dashboard form elements */
+.dashboard-input {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: var(--theme-transition);
+}
+
+.dashboard-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+
+.dashboard-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.dashboard-select {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: var(--theme-transition);
+}
+
+.dashboard-textarea {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: var(--theme-transition);
+  resize: vertical;
+}
+
+/* Dashboard buttons */
+.dashboard-button-primary {
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-accent);
+  transition: var(--theme-transition);
+}
+
+.dashboard-button-primary:hover {
+  background-color: var(--color-highlight);
+  border-color: var(--color-highlight);
+}
+
+.dashboard-button-secondary {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition: var(--theme-transition);
+}
+
+.dashboard-button-secondary:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-hover);
+  border-color: var(--color-accent);
+}
+
+/* Dashboard status indicators */
+.dashboard-status-success {
+  color: var(--color-success);
+}
+
+.dashboard-status-warning {
+  color: var(--color-warning);
+}
+
+.dashboard-status-error {
+  color: var(--color-error);
+}
+
+.dashboard-status-info {
+  color: var(--color-info);
+}
+
+/* Dashboard borders and dividers */
+.dashboard-border {
+  border-color: var(--color-border);
+}
+
+.dashboard-divider {
+  border-top: 1px solid var(--color-border);
+}
+
+/* Dashboard interactive states */
+.dashboard-interactive:hover {
+  background-color: var(--color-hover);
+}
+
+.dashboard-interactive:active {
+  background-color: var(--color-active);
+}
+
+.dashboard-interactive:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Dashboard text utilities */
+.dashboard-text-primary {
+  color: var(--color-text-primary);
+}
+
+.dashboard-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.dashboard-text-accent {
+  color: var(--color-accent);
+}
+
+/* Dashboard background utilities */
+.dashboard-bg-primary {
+  background-color: var(--color-bg);
+}
+
+.dashboard-bg-surface {
+  background-color: var(--color-surface);
+}
+
+.dashboard-bg-hover {
+  background-color: var(--color-hover);
+}
+
+/* Dashboard glass morphism effects */
+.dashboard-glass {
+  background-color: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Dashboard animations and transitions */
+.dashboard-transition {
+  transition: var(--theme-transition);
+}
+
+/* Enhanced theme transitions for smooth color changes */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+.theme-transition * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Sidebar specific theme styling */
+.sidebar-title-dark {
+  color: #ceb57d !important;
+}
+
+/* Prevent flash during theme changes */
+html:not(.theme-loaded) {
+  visibility: hidden;
+}
+
+html.theme-loaded {
+  visibility: visible;
+}
+
+/* Dashboard responsive utilities */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Dashboard dark mode specific adjustments */
+[data-theme="dark"] .dashboard-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .dashboard-card {
+  box-shadow: 0 2px 8px rgba(73, 70, 35, 0.1);
+}
+
+/* Dashboard accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-transition,
+  .dashboard-card,
+  .dashboard-nav-item,
+  .dashboard-input,
+  .dashboard-button-primary,
+  .dashboard-button-secondary,
+  .theme-transition,
+  .theme-transition * {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .dashboard-card {
+    border-width: 2px;
+  }
+  
+  .dashboard-input:focus {
+    border-width: 2px;
+  }
+}
+
+/* Dashboard print styles */
+@media print {
+  .dashboard-container {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  .dashboard-card {
+    background-color: white !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+}

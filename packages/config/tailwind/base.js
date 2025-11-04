@@ -50,12 +50,16 @@ module.exports = {
         background: 'var(--color-background)',
         surface: 'var(--color-surface)',
         text: 'var(--color-text)',
-        textSecondary: 'var(--color-textSecondary)',
         border: 'var(--color-border)',
+        // Theme tokens
+        bg: 'var(--bg)',
+        textPrimary: 'var(--textPrimary)',
+        textSecondary: 'var(--textSecondary)',
         success: 'var(--color-success)',
         warning: 'var(--color-warning)',
         error: 'var(--color-error)',
         info: 'var(--color-info)',
+        straw: '#d4b57d',
         glass: {
           light: 'rgba(255, 255, 255, 0.7)',
           dark: 'rgba(30, 41, 59, 0.7)',

@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { config } from './config/environment';
+import { config, validateOAuthConfig } from './config/environment';
 import { connectDatabase } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
@@ -19,6 +19,9 @@ import './models';
 
 async function startServer() {
   try {
+    // Validate OAuth configuration
+    validateOAuthConfig();
+    
     // Connect to database
     await connectDatabase();
     
@@ -120,6 +123,20 @@ async function startServer() {
         environment: config.NODE_ENV,
       });
     });
+    
+    // OAuth debug endpoint (development only)
+    if (config.NODE_ENV === 'development') {
+      app.get('/debug/oauth', (_req: Request, res: Response) => {
+        res.status(200).json({
+          clientId: config.GOOGLE_CLIENT_ID.substring(0, 20) + '...',
+          redirectUri: config.GOOGLE_REDIRECT_URI,
+          frontendUrl: config.FRONTEND_URL,
+          expectedRedirectUri: `${config.FRONTEND_URL}/auth/callback`,
+          isRedirectUriMatch: config.GOOGLE_REDIRECT_URI === `${config.FRONTEND_URL}/auth/callback`,
+          environment: config.NODE_ENV,
+        });
+      });
+    }
     
     // Setup routes
     setupRoutes(app);

@@ -111,7 +111,7 @@ export function SubmitAssignmentPage() {
           <p className="text-textSecondary mb-4">The assessment you're trying to submit to doesn't exist.</p>
           <button
             onClick={() => navigate('/assessments')}
-            className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Assessments
           </button>

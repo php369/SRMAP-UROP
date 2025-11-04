@@ -14,6 +14,7 @@ import {
   extractTokenFromHeader,
   verifyAccessToken 
 } from '../services/jwtService';
+import { checkUserAuthorization } from '../services/authService';
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
@@ -178,44 +179,90 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
+    // Check user authorization (eligibility/faculty roster/admin)
+    const authResult = await checkUserAuthorization(googleUser.email);
+    
+    if (!authResult.isAuthorized) {
+      logger.warn(`Authorization failed for email: ${googleUser.email}`);
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: authResult.error?.code || 'AUTHORIZATION_FAILED',
+          message: authResult.error?.message || 'User not authorized to access the portal',
+          guidance: authResult.error?.guidance,
+          details: {
+            email: googleUser.email,
+          },
+        },
+      });
+    }
+
     // Find or create user in database
-    let user = await User.findOne({ googleId: googleUser.googleId }) as IUser | null;
+    let user = await User.findOne({ 
+      $or: [
+        { googleId: googleUser.googleId },
+        { email: googleUser.email }
+      ]
+    }) as IUser | null;
     
     if (!user) {
-      // Create new user
+      // Create new user with determined role
       user = new User({
         googleId: googleUser.googleId,
         name: googleUser.name,
         email: googleUser.email,
         avatarUrl: googleUser.avatarUrl,
-        role: 'student', // Default role, can be changed by admin
-        profile: {},
+        role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
+        profile: {
+          department: authResult.facultyInfo?.dept,
+        },
         preferences: {
           theme: 'light',
           notifications: true,
         },
       });
 
-      await user.save();
-      logger.info(`New user created: ${user.email}`);
+      try {
+        await user.save();
+        logger.info(`New user created: ${user.email} with role: ${authResult.role}`);
+      } catch (error: any) {
+        if (error.code === 11000) {
+          // Handle duplicate key error - user might have been created by another request
+          user = await User.findOne({ email: googleUser.email }) as IUser;
+          if (!user) {
+            throw error; // Re-throw if we still can't find the user
+          }
+          logger.info(`User already exists, using existing record: ${user.email}`);
+        } else {
+          throw error;
+        }
+      }
     } else {
-      // Update existing user info
+      // Update existing user info and role
       user.name = googleUser.name;
       user.avatarUrl = googleUser.avatarUrl;
+      user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
+      user.googleId = googleUser.googleId; // Update Google ID if it was missing
+      
+      // Update profile with faculty info if available
+      if (authResult.facultyInfo) {
+        user.profile.department = authResult.facultyInfo.dept;
+      }
+      
       await user.save();
-      logger.info(`Existing user updated: ${user.email}`);
+      logger.info(`Existing user updated: ${user.email} with role: ${authResult.role}`);
     }
 
-    // Generate JWT tokens
+    // Generate JWT tokens with actual role (including coordinator distinction)
     const jwtTokens = generateTokenPair({
       userId: user._id.toString(),
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: authResult.role as any, // Use the actual role from authorization
     });
 
     // Log successful authentication
-    logger.info(`User authenticated successfully: ${user.email}`);
+    logger.info(`User authenticated successfully: ${user.email} (${authResult.role})`);
 
     res.json({
       success: true,
@@ -227,10 +274,20 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: authResult.role, // Return the actual role including coordinator
           avatarUrl: user.avatarUrl,
           profile: user.profile,
           preferences: user.preferences,
+          eligibility: authResult.eligibility ? {
+            type: authResult.eligibility.type,
+            year: authResult.eligibility.year,
+            semester: authResult.eligibility.semester,
+            termKind: authResult.eligibility.termKind,
+          } : undefined,
+          facultyInfo: authResult.facultyInfo ? {
+            department: authResult.facultyInfo.dept,
+            isCoordinator: authResult.facultyInfo.isCoordinator,
+          } : undefined,
         },
       },
     });
@@ -240,6 +297,30 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
     
     // Handle specific error types
     if (error instanceof Error) {
+      if (error.message.includes('OAuth configuration mismatch')) {
+        return res.status(500).json({
+          success: false,
+          error: {
+            code: 'OAUTH_CONFIG_MISMATCH',
+            message: 'OAuth configuration error',
+            details: error.message,
+            guidance: 'Please contact the administrator to fix the OAuth configuration.',
+          },
+        });
+      }
+      
+      if (error.message.includes('Authorization code is malformed') || error.message.includes('Authorization code is invalid')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_AUTH_CODE',
+            message: 'Invalid authorization code',
+            details: error.message,
+            guidance: 'Please try logging in again with a fresh authorization.',
+          },
+        });
+      }
+      
       if (error.message.includes('Token verification failed')) {
         return res.status(401).json({
           success: false,
@@ -259,6 +340,18 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
+      
+      if (error.message.includes('OAuth client configuration error')) {
+        return res.status(500).json({
+          success: false,
+          error: {
+            code: 'OAUTH_CLIENT_ERROR',
+            message: 'OAuth client configuration error',
+            details: error.message,
+            guidance: 'Please contact the administrator to fix the OAuth client settings.',
+          },
+        });
+      }
     }
 
     res.status(500).json({
@@ -266,6 +359,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
       error: {
         code: 'AUTHENTICATION_FAILED',
         message: 'Authentication failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
     });
   }
@@ -342,6 +436,20 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
+    // Re-check authorization to get current role and eligibility info
+    const authResult = await checkUserAuthorization(user.email);
+    
+    if (!authResult.isAuthorized) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'ACCESS_REVOKED',
+          message: 'User access has been revoked',
+          guidance: authResult.error?.guidance,
+        },
+      });
+    }
+
     res.json({
       success: true,
       data: {
@@ -349,12 +457,22 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: authResult.role, // Use current role from authorization check
           avatarUrl: user.avatarUrl,
           profile: user.profile,
           preferences: user.preferences,
+          eligibility: authResult.eligibility ? {
+            type: authResult.eligibility.type,
+            year: authResult.eligibility.year,
+            semester: authResult.eligibility.semester,
+            termKind: authResult.eligibility.termKind,
+          } : undefined,
+          facultyInfo: authResult.facultyInfo ? {
+            department: authResult.facultyInfo.dept,
+            isCoordinator: authResult.facultyInfo.isCoordinator,
+          } : undefined,
         },
-        permissions: getUserPermissions(user.role),
+        permissions: getUserPermissions(authResult.role),
       },
     });
 
@@ -612,6 +730,21 @@ function getUserPermissions(role: string): string[] {
       'grades:update',
       'grades:read',
     ],
+    coordinator: [
+      'assessments:create',
+      'assessments:read',
+      'assessments:update',
+      'assessments:delete',
+      'submissions:read',
+      'grades:create',
+      'grades:update',
+      'grades:read',
+      'grades:publish',
+      'projects:approve',
+      'projects:reject',
+      'windows:manage',
+      'evaluations:publish',
+    ],
     admin: [
       'users:read',
       'users:update',
@@ -622,6 +755,8 @@ function getUserPermissions(role: string): string[] {
       'grades:read',
       'reports:read',
       'system:manage',
+      'eligibility:import',
+      'faculty:manage',
     ],
   };
 

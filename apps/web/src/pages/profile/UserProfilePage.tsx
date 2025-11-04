@@ -85,7 +85,7 @@ const mockAchievements: Achievement[] = [
   },
 ];
 
-export function UserProfilePage() {
+function UserProfilePage() {
   const { } = useParams<{ userId: string }>();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'interests' | 'education' | 'achievements'>('overview');
@@ -430,6 +430,6 @@ export function UserProfilePage() {
     </div>
   );
 }
-ex
-port { UserProfilePage };
+
+export { UserProfilePage };
 export default UserProfilePage;

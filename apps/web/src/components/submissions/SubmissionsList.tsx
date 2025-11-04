@@ -259,7 +259,7 @@ export function SubmissionsList({
                 className={cn(
                   'px-3 py-1 rounded-lg text-sm transition-all duration-200',
                   filters.status.includes(status.value)
-                    ? `${status.color} text-white`
+                    ? `${status.color} text-textPrimary`
                     : 'bg-surface border border-border text-textSecondary hover:text-text'
                 )}
               >
@@ -281,7 +281,7 @@ export function SubmissionsList({
                   className={cn(
                     'px-3 py-1 rounded-lg text-sm transition-all duration-200',
                     filters.course.includes(course)
-                      ? 'bg-secondary text-white'
+                      ? 'bg-secondary text-textPrimary'
                       : 'bg-surface border border-border text-textSecondary hover:text-text'
                   )}
                 >

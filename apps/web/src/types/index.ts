@@ -229,6 +229,41 @@ export interface ApiResponse<T = any> {
   };
 }
 
+// Theme types
+export type ThemeMode = 'light' | 'dark';
+
+export interface ColorScheme {
+  bg: string;
+  surface: string;
+  textPrimary: string;
+  textSecondary: string;
+  accent: string;
+  highlight: string;
+  border: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+  hover: string;
+  active: string;
+  focus: string;
+  glass: string;
+  glassBorder: string;
+}
+
+export interface ThemeConfig {
+  mode: ThemeMode;
+  colors: ColorScheme;
+}
+
+export interface ThemeContextType {
+  theme: ThemeConfig;
+  mode: ThemeMode;
+  toggleTheme: () => void;
+  setTheme: (mode: ThemeMode) => void;
+  isLoading: boolean;
+}
+
 // Auth types
 export interface AuthState {
   user: User | null;
@@ -352,6 +387,22 @@ export interface GradingData {
 
 // Project Management types
 export interface Project {
+  _id: string;
+  title: string;
+  brief: string;
+  description?: string;
+  type: 'IDP' | 'UROP' | 'CAPSTONE';
+  department: string;
+  prerequisites?: string;
+  facultyId: string;
+  facultyName: string;
+  capacity?: number;
+  status: 'draft' | 'pending' | 'published' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectLegacy {
   id: string;
   title: string;
   description: string;

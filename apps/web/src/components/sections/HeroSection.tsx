@@ -22,9 +22,9 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
             <PerspectiveCamera makeDefault position={[0, 0, 8]} />
             
             {/* Lighting */}
-            <ambientLight intensity={0.4} />
-            <pointLight position={[10, 10, 10]} intensity={1} />
-            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#14b8a6" />
+            <ambientLight intensity={0.6} />
+            <pointLight position={[10, 10, 10]} intensity={0.8} />
+            <pointLight position={[-10, -10, -10]} intensity={0.3} color="#918a41" />
             
             {/* 3D Elements */}
             <ParticleBackground count={1500} />
@@ -36,13 +36,13 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
               position={[-2, -2.5, 0]}
               text="Get Started"
               onClick={onGetStarted}
-              color="#6366f1"
+              color="#c89643"
             />
             <MagneticButton
               position={[2, -2.5, 0]}
               text="Learn More"
               onClick={onLearnMore}
-              color="#14b8a6"
+              color="#918a41"
             />
             
             {/* Environment */}
@@ -76,23 +76,23 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight"
+              className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-tight text-accent"
             >
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                SRM Research
+              <span>
+                SRM-AP Project
               </span>
               <br />
-              <span className="text-white">Portal</span>
+              <span>Management Portal</span>
             </motion.h1>
             
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
+              className="text-xl sm:text-2xl text-textSecondary max-w-3xl mx-auto leading-relaxed"
             >
-              Empowering research excellence through innovative collaboration, 
-              seamless project management, and cutting-edge assessment tools.
+              Streamline your academic projects with comprehensive management tools, 
+              seamless collaboration, and integrated assessment workflows.
             </motion.p>
           </div>
 
@@ -137,11 +137,11 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1 + index * 0.1 }}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
+                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300 text-center"
               >
-                <div className="text-primary mb-4">{feature.icon}</div>
-                <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-gray-400 text-sm">{feature.description}</p>
+                <div className="text-accent mb-4 flex justify-center">{feature.icon}</div>
+                <h3 className="text-lg font-semibold mb-2 text-textPrimary dark:text-straw">{feature.title}</h3>
+                <p className="text-textSecondary text-sm">{feature.description}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -162,7 +162,7 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
             </GlowButton>
             <button
               onClick={onLearnMore}
-              className="w-full sm:w-auto px-8 py-3 text-white border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-300"
+              className="w-full sm:w-auto px-8 py-3 text-textPrimary border border-border rounded-lg hover:bg-surface/10 transition-all duration-300"
             >
               Learn More
             </button>

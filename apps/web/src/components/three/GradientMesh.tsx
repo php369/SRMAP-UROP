@@ -12,8 +12,8 @@ interface GradientMeshProps {
 export function GradientMesh({ 
   position = [0, 0, -5], 
   scale = 1,
-  color1 = '#6366f1',
-  color2 = '#14b8a6'
+  color1 = '#c89643',
+  color2 = '#918a41'
 }: GradientMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -51,13 +51,13 @@ export function GradientMesh({
         void main() {
           vec2 uv = vUv;
           
-          float noise = sin(uv.x * 10.0 + time) * cos(uv.y * 10.0 + time) * 0.1;
-          float gradient = uv.y + noise;
+          // Simple gradient without noise for cleaner look
+          float gradient = uv.y;
           
           vec3 color = mix(color1, color2, gradient);
           
-          float alpha = 1.0 - length(uv - 0.5) * 1.5;
-          alpha = clamp(alpha, 0.0, 0.8);
+          // Reduced alpha for subtle background effect
+          float alpha = 0.3;
           
           gl_FragColor = vec4(color, alpha);
         }

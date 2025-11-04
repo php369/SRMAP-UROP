@@ -1,0 +1,60 @@
+/* Theme System for SRM Project Portal */
+/* This file provides legacy token mappings and theme utilities */
+
+@import './color-palette.css';
+
+:root {
+  /* Legacy token mappings for backward compatibility */
+  /* These ensure existing components continue to work */
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --textPrimary: var(--color-text-primary);
+  --textSecondary: var(--color-text-secondary);
+  --border: var(--color-border);
+  --accent: var(--color-accent);
+  
+  /* Theme transition properties */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Legacy theme class mappings */
+[data-theme="dark"], .dark {
+  /* Legacy token mappings for dark mode */
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --textPrimary: var(--color-text-primary);
+  --textSecondary: var(--color-text-secondary);
+  --border: var(--color-border);
+  --accent: var(--color-accent);
+}
+
+/* Theme utility classes */
+.theme-transition {
+  transition: var(--theme-transition);
+}
+
+/* Surface elevation classes using the color palette */
+.surface-elevated {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(73, 70, 35, 0.1);
+}
+
+[data-theme="dark"] .surface-elevated,
+.dark .surface-elevated {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Interactive state utilities */
+.interactive-hover:hover {
+  background-color: var(--color-hover);
+}
+
+.interactive-active:active {
+  background-color: var(--color-active);
+}
+
+.interactive-focus:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

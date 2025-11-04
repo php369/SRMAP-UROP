@@ -23,9 +23,9 @@ export const GlowButton = forwardRef<HTMLButtonElement, GlowButtonProps>(
     const baseClasses = 'relative inline-flex items-center justify-center font-medium rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
     
     const variantClasses = {
-      primary: 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 focus:ring-primary-500 shadow-lg hover:shadow-xl',
-      secondary: 'bg-gradient-to-r from-secondary-500 to-secondary-600 text-white hover:from-secondary-600 hover:to-secondary-700 focus:ring-secondary-500 shadow-lg hover:shadow-xl',
-      accent: 'bg-gradient-to-r from-accent-500 to-accent-600 text-white hover:from-accent-600 hover:to-accent-700 focus:ring-accent-500 shadow-lg hover:shadow-xl',
+      primary: 'bg-gradient-to-r from-primary-500 to-primary-600 text-textPrimary hover:from-primary-600 hover:to-primary-700 focus:ring-primary-500 shadow-lg hover:shadow-xl',
+      secondary: 'bg-gradient-to-r from-secondary-500 to-secondary-600 text-textPrimary hover:from-secondary-600 hover:to-secondary-700 focus:ring-secondary-500 shadow-lg hover:shadow-xl',
+      accent: 'bg-gradient-to-r from-accent-500 to-accent-600 text-textPrimary hover:from-accent-600 hover:to-accent-700 focus:ring-accent-500 shadow-lg hover:shadow-xl',
       ghost: 'bg-white/10 backdrop-blur-md border border-white/20 text-text hover:bg-white/20 focus:ring-primary-500',
     };
 

@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 
 // Import route modules
 import authRoutes from './auth';
+import projectRoutes from './projects';
 import assessmentRoutes from './assessments';
 import submissionRoutes from './submissions';
 import gradeRoutes from './grades';
@@ -23,6 +24,9 @@ export function setupRoutes(app: Express): void {
   
   // Authentication routes
   app.use(`${API_PREFIX}/auth`, authRoutes);
+  
+  // Project routes
+  app.use(`${API_PREFIX}/projects`, projectRoutes);
   
   // Assessment routes
   app.use(`${API_PREFIX}/assessments`, assessmentRoutes);
@@ -113,6 +117,7 @@ export function setupRoutes(app: Express): void {
         health: '/health',
         docs: '/docs',
         auth: `${API_PREFIX}/auth`,
+        projects: `${API_PREFIX}/projects`,
         assessments: `${API_PREFIX}/assessments`,
         submissions: `${API_PREFIX}/submissions`,
         users: `${API_PREFIX}/users`,

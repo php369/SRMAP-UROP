@@ -177,7 +177,7 @@ export function ProjectGanttChart({
                 className={cn(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize',
                   viewMode === mode
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-textPrimary'
                     : 'text-textSecondary hover:text-text'
                 )}
               >

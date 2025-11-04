@@ -11,6 +11,8 @@ import { Cohort, ICohort } from '../models/Cohort';
 import { Assessment, IAssessment } from '../models/Assessment';
 import { Submission, ISubmission } from '../models/Submission';
 import { Grade, IGrade } from '../models/Grade';
+import { Eligibility, IEligibility } from '../models/Eligibility';
+import { Project, IProject } from '../models/Project';
 
 /**
  * Comprehensive seed data script for SRM Project Portal
@@ -28,6 +30,8 @@ interface SeedData {
   assessments: IAssessment[];
   submissions: ISubmission[];
   grades: IGrade[];
+  eligibilities: IEligibility[];
+  projects: IProject[];
 }
 
 const seedData: Partial<SeedData> = {};
@@ -53,6 +57,8 @@ async function clearExistingData(): Promise<void> {
       Course.deleteMany({}),
       Cohort.deleteMany({}),
       User.deleteMany({}),
+      Eligibility.deleteMany({}),
+      Project.deleteMany({}),
     ]);
     
     logger.info('✅ Existing data cleared');
@@ -74,7 +80,6 @@ async function createUsers(): Promise<void> {
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     profile: {
       department: 'Administration',
-      bio: 'System Administrator for SRM Project Portal',
     },
     preferences: {
       theme: 'dark',
@@ -89,16 +94,12 @@ async function createUsers(): Promise<void> {
       name: 'Dr. Priya Sharma',
       email: 'priya.sharma@srmap.edu.in',
       department: 'Computer Science',
-      bio: 'Associate Professor specializing in Web Development and Software Engineering',
-      skills: ['JavaScript', 'React', 'Node.js', 'Database Design'],
     },
     {
       googleId: 'faculty_456789123',
       name: 'Prof. Rajesh Gupta',
       email: 'rajesh.gupta@srmap.edu.in',
       department: 'Information Technology',
-      bio: 'Professor of Information Technology with expertise in System Design',
-      skills: ['System Architecture', 'Cloud Computing', 'DevOps', 'Microservices'],
     },
   ];
 
@@ -111,8 +112,6 @@ async function createUsers(): Promise<void> {
       avatarUrl: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face`,
       profile: {
         department: f.department,
-        bio: f.bio,
-        skills: f.skills,
       },
       preferences: {
         theme: 'light',
@@ -124,13 +123,19 @@ async function createUsers(): Promise<void> {
   // Create Student Users
   const studentData = [
     {
+      googleId: 'student_poojan_patel',
+      name: 'Poojan Patel',
+      email: 'poojan_patel@srmap.edu.in',
+      department: 'Computer Science',
+      year: 4,
+    },
+    {
       googleId: 'student_111111111',
       name: 'Arjun Patel',
       email: 'arjun.patel@srmap.edu.in',
       department: 'Computer Science',
       year: 3,
-      skills: ['Python', 'React', 'Machine Learning'],
-      bio: 'Third-year CS student passionate about AI and web development',
+
     },
     {
       googleId: 'student_222222222',
@@ -138,8 +143,7 @@ async function createUsers(): Promise<void> {
       email: 'sneha.reddy@srmap.edu.in',
       department: 'Computer Science',
       year: 3,
-      skills: ['Java', 'Spring Boot', 'Angular'],
-      bio: 'CS student interested in full-stack development and cloud technologies',
+
     },
     {
       googleId: 'student_333333333',
@@ -147,8 +151,7 @@ async function createUsers(): Promise<void> {
       email: 'vikram.singh@srmap.edu.in',
       department: 'Information Technology',
       year: 2,
-      skills: ['JavaScript', 'Vue.js', 'MongoDB'],
-      bio: 'IT student exploring modern web technologies and databases',
+
     },
     {
       googleId: 'student_444444444',
@@ -156,7 +159,7 @@ async function createUsers(): Promise<void> {
       email: 'ananya.iyer@srmap.edu.in',
       department: 'Computer Science',
       year: 4,
-      skills: ['React Native', 'Flutter', 'Firebase'],
+
       bio: 'Final year CS student specializing in mobile app development',
     },
   ];
@@ -171,8 +174,6 @@ async function createUsers(): Promise<void> {
       profile: {
         department: s.department,
         year: s.year,
-        skills: s.skills,
-        bio: s.bio,
       },
       preferences: {
         theme: index % 2 === 0 ? 'light' : 'dark',
@@ -465,6 +466,197 @@ async function createSubmissions(): Promise<void> {
   logger.info(`✅ Created ${submissions.length} submissions`);
 }
 
+async function createProjects(): Promise<void> {
+  logger.info('🚀 Creating sample projects...');
+
+  const projectData = [
+    {
+      title: 'AI-Powered Student Performance Analytics',
+      brief: 'Develop a machine learning system to analyze and predict student performance patterns using academic data.',
+      description: 'This project involves creating a comprehensive analytics platform that uses machine learning algorithms to analyze student performance data, identify at-risk students, and provide personalized recommendations for improvement. The system will integrate with existing academic databases and provide real-time insights to faculty and administrators.',
+      type: 'UROP',
+      department: 'Computer Science',
+      prerequisites: 'Python, Machine Learning basics, Data Analysis',
+      facultyId: seedData.users!.faculty[0]._id,
+      facultyName: 'Dr. Priya Sharma',
+      capacity: 3,
+      status: 'published',
+    },
+    {
+      title: 'Smart Campus IoT Infrastructure',
+      brief: 'Design and implement an IoT-based smart campus system for energy management and security monitoring.',
+      description: 'Create an Internet of Things (IoT) infrastructure for the campus that monitors energy consumption, manages lighting and HVAC systems, and provides security monitoring through connected sensors. The project includes hardware setup, data collection, and a web-based dashboard for real-time monitoring and control.',
+      type: 'CAPSTONE',
+      department: 'Information Technology',
+      prerequisites: 'IoT fundamentals, Embedded systems, Web development',
+      facultyId: seedData.users!.faculty[1]._id,
+      facultyName: 'Prof. Rajesh Gupta',
+      capacity: 4,
+      status: 'published',
+    },
+    {
+      title: 'Blockchain-Based Academic Credential Verification',
+      brief: 'Develop a blockchain system for secure and tamper-proof academic credential verification.',
+      description: 'Build a decentralized application (DApp) using blockchain technology to create, store, and verify academic credentials. The system will ensure the authenticity and integrity of academic certificates, transcripts, and other educational documents. Students and employers can verify credentials instantly without relying on traditional verification processes.',
+      type: 'IDP',
+      department: 'Computer Science',
+      prerequisites: 'Blockchain basics, Solidity, Web3.js, JavaScript',
+      facultyId: seedData.users!.faculty[0]._id,
+      facultyName: 'Dr. Priya Sharma',
+      capacity: 2,
+      status: 'published',
+    },
+    {
+      title: 'Augmented Reality Campus Navigation App',
+      brief: 'Create an AR mobile application to help students and visitors navigate the campus using augmented reality.',
+      description: 'Develop a mobile application that uses augmented reality to provide interactive campus navigation. Users can point their phone camera at buildings or locations to get real-time information, directions, and points of interest. The app will include features like event notifications, facility information, and emergency procedures.',
+      type: 'IDP',
+      department: 'Computer Science',
+      prerequisites: 'Mobile app development, AR frameworks (ARCore/ARKit), 3D modeling',
+      facultyId: seedData.users!.faculty[0]._id,
+      facultyName: 'Dr. Priya Sharma',
+      capacity: 3,
+      status: 'published',
+    },
+    {
+      title: 'Sustainable Energy Management System',
+      brief: 'Design a comprehensive energy management system for optimizing renewable energy usage in campus buildings.',
+      description: 'Develop an intelligent energy management system that optimizes the use of solar panels, wind turbines, and other renewable energy sources on campus. The system will predict energy consumption patterns, manage energy storage, and automatically switch between renewable and grid power to minimize costs and environmental impact.',
+      type: 'CAPSTONE',
+      department: 'Information Technology',
+      prerequisites: 'System design, Database management, Energy systems knowledge',
+      facultyId: seedData.users!.faculty[1]._id,
+      facultyName: 'Prof. Rajesh Gupta',
+      capacity: 4,
+      status: 'published',
+    },
+    {
+      title: 'Natural Language Processing for Academic Research',
+      brief: 'Build an NLP system to analyze and categorize academic research papers and publications.',
+      description: 'Create a natural language processing system that can automatically analyze academic research papers, extract key topics, identify research trends, and suggest relevant papers to researchers. The system will use advanced NLP techniques including sentiment analysis, topic modeling, and semantic similarity to provide intelligent research assistance.',
+      type: 'UROP',
+      department: 'Computer Science',
+      prerequisites: 'Python, NLP libraries (NLTK, spaCy), Machine Learning',
+      facultyId: seedData.users!.faculty[0]._id,
+      facultyName: 'Dr. Priya Sharma',
+      capacity: 2,
+      status: 'published',
+    },
+    {
+      title: 'Cloud-Native Microservices Architecture',
+      brief: 'Design and implement a scalable microservices architecture for university management systems.',
+      description: 'Develop a cloud-native microservices architecture that can handle various university management functions including student information systems, course management, and administrative processes. The project focuses on containerization, service mesh, API gateways, and automated deployment pipelines.',
+      type: 'IDP',
+      department: 'Information Technology',
+      prerequisites: 'Docker, Kubernetes, Cloud platforms (AWS/Azure), API design',
+      facultyId: seedData.users!.faculty[1]._id,
+      facultyName: 'Prof. Rajesh Gupta',
+      capacity: 3,
+      status: 'published',
+    },
+    {
+      title: 'Cybersecurity Threat Detection System',
+      brief: 'Develop an AI-based cybersecurity system for detecting and preventing network threats in real-time.',
+      description: 'Create an intelligent cybersecurity system that uses machine learning algorithms to detect unusual network behavior, identify potential threats, and automatically respond to security incidents. The system will monitor network traffic, analyze patterns, and provide real-time alerts to security administrators.',
+      type: 'CAPSTONE',
+      department: 'Information Technology',
+      prerequisites: 'Network security, Machine Learning, Python, Network protocols',
+      facultyId: seedData.users!.faculty[1]._id,
+      facultyName: 'Prof. Rajesh Gupta',
+      capacity: 3,
+      status: 'published',
+    },
+  ];
+
+  const projects = await Promise.all(
+    projectData.map(p => new Project(p).save())
+  );
+
+  seedData.projects = projects;
+  logger.info(`✅ Created ${projects.length} sample projects`);
+}
+
+async function createEligibilities(): Promise<void> {
+  logger.info('🎯 Creating eligibility entries...');
+
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1; // 0-based, so add 1
+  
+  // Determine current term (odd: Jan-May, even: Aug-Dec)
+  const isOddTerm = currentMonth >= 1 && currentMonth <= 5;
+  const termKind = isOddTerm ? 'odd' : 'even';
+  
+  // Set validity period (6 months from now)
+  const validFrom = new Date();
+  const validTo = new Date();
+  validTo.setMonth(validTo.getMonth() + 6);
+
+  const eligibilityData = [
+    // Poojan Patel - 4th year, 7th semester (odd term) - UROP only
+    {
+      studentEmail: 'poojan_patel@srmap.edu.in',
+      regNo: 'AP21110010001',
+      year: 4,
+      semester: 7, // 7th semester (odd term)
+      termKind: 'odd',
+      type: 'UROP',
+      validFrom,
+      validTo,
+    },
+    // Arjun Patel - 3rd year - IDP only
+    {
+      studentEmail: 'arjun.patel@srmap.edu.in',
+      regNo: 'AP21110010002',
+      year: 3,
+      semester: isOddTerm ? 4 : 7,
+      termKind,
+      type: 'IDP',
+      validFrom,
+      validTo,
+    },
+    // Sneha Reddy - 3rd year - IDP only
+    {
+      studentEmail: 'sneha.reddy@srmap.edu.in',
+      regNo: 'AP21110010003',
+      year: 3,
+      semester: isOddTerm ? 4 : 7,
+      termKind,
+      type: 'IDP',
+      validFrom,
+      validTo,
+    },
+    // Vikram Singh - 2nd year - IDP only
+    {
+      studentEmail: 'vikram.singh@srmap.edu.in',
+      regNo: 'AP22110010004',
+      year: 2,
+      semester: isOddTerm ? 3 : 4,
+      termKind,
+      type: 'IDP',
+      validFrom,
+      validTo,
+    },
+    // Ananya Iyer - 4th year, 8th semester (even term) - CAPSTONE only
+    {
+      studentEmail: 'ananya.iyer@srmap.edu.in',
+      regNo: 'AP20110010005',
+      year: 4,
+      semester: 8, // 8th semester (even term)
+      termKind: 'even',
+      type: 'CAPSTONE',
+      validFrom,
+      validTo,
+    },
+  ];
+
+  const eligibilities = await Promise.all(
+    eligibilityData.map(e => new Eligibility(e).save())
+  );
+
+  seedData.eligibilities = eligibilities;
+  logger.info(`✅ Created ${eligibilities.length} eligibility entries`);
+}
+
 async function createGrades(): Promise<void> {
   logger.info('📊 Creating grades...');
 
@@ -606,6 +798,8 @@ async function displaySeedSummary(): Promise<void> {
     assessments: seedData.assessments!.length,
     submissions: seedData.submissions!.length,
     grades: seedData.grades!.length,
+    eligibilities: seedData.eligibilities!.length,
+    projects: seedData.projects!.length,
   };
 
   console.log('\n📊 Summary:');
@@ -615,11 +809,13 @@ async function displaySeedSummary(): Promise<void> {
   console.log(`📝 Assessments: ${summary.assessments}`);
   console.log(`📤 Submissions: ${summary.submissions}`);
   console.log(`📊 Grades: ${summary.grades}`);
+  console.log(`🎯 Eligibilities: ${summary.eligibilities}`);
+  console.log(`🚀 Projects: ${summary.projects}`);
 
   console.log('\n🔑 Demo Login Credentials:');
   console.log('Admin: admin@srmap.edu.in');
   console.log('Faculty: priya.sharma@srmap.edu.in, rajesh.gupta@srmap.edu.in');
-  console.log('Students: arjun.patel@srmap.edu.in, sneha.reddy@srmap.edu.in, vikram.singh@srmap.edu.in, ananya.iyer@srmap.edu.in');
+  console.log('Students: poojan_patel@srmap.edu.in, arjun.patel@srmap.edu.in, sneha.reddy@srmap.edu.in, vikram.singh@srmap.edu.in, ananya.iyer@srmap.edu.in');
 
   console.log('\n📋 Available Data:');
   console.log('• Published assessments with Meet links');
@@ -627,6 +823,8 @@ async function displaySeedSummary(): Promise<void> {
   console.log('• Graded submissions with detailed rubrics');
   console.log('• Cohort and course relationships');
   console.log('• User profiles with skills and bio information');
+  console.log('• Student eligibility entries for IDP, UROP, and CAPSTONE projects');
+  console.log('• Sample published projects across different departments and types');
 }
 
 async function main(): Promise<void> {
@@ -643,6 +841,8 @@ async function main(): Promise<void> {
     await createAssessments();
     await createSubmissions();
     await createGrades();
+    await createEligibilities();
+    await createProjects();
     
     await displaySeedSummary();
     

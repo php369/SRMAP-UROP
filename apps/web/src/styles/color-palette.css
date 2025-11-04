@@ -1,0 +1,163 @@
+/* Earth-Toned Color Palette for SRM Project Portal */
+/* This file defines the core color palette using CSS custom properties */
+
+:root {
+  /* Base Earth-Toned Color Palette */
+  /* These colors form the foundation of the design system */
+  --tussock: #c89643;
+  --satin-linen: #e5e4d3;
+  --woodland: #4a4724;
+  --green-smoke: #aaa46c;
+  --flax-smoke: #817f63;
+  --coral-reef: #c8c3a3;
+  --sycamore: #918a41;
+  --straw: #d4b57d;
+  
+  /* Semantic Color Mappings - Light Mode */
+  /* These variables provide semantic meaning and can be overridden for themes */
+  --color-bg: var(--satin-linen);
+  --color-surface: var(--coral-reef);
+  --color-text-primary: var(--woodland);
+  --color-text-secondary: var(--flax-smoke);
+  --color-accent: var(--tussock);
+  --color-highlight: var(--sycamore);
+  --color-border: var(--green-smoke);
+  
+  /* Extended semantic colors for UI components */
+  --color-success: var(--sycamore);
+  --color-warning: var(--tussock);
+  --color-error: #d4704a; /* Complementary warm red-orange */
+  --color-info: var(--flax-smoke);
+  
+  /* Interactive state colors */
+  --color-hover: rgba(200, 150, 67, 0.1); /* Tussock with opacity */
+  --color-active: rgba(200, 150, 67, 0.2);
+  --color-focus: var(--tussock);
+  
+  /* Glass morphism effects */
+  --color-glass: rgba(200, 195, 163, 0.7); /* Coral-reef with transparency */
+  --color-glass-border: rgba(170, 164, 108, 0.3); /* Green-smoke with transparency */
+}
+
+/* Dark Mode Color Overrides */
+[data-theme="dark"] {
+  /* Dark mode background and surface colors */
+  --color-bg: #1f1e17; /* Dark variant of satin-linen */
+  --color-surface: #2b2a22; /* Dark variant of coral-reef */
+  
+  /* Dark mode text colors - using light shades */
+  --color-text-primary: var(--straw); /* Light straw for primary text */
+  --color-text-secondary: var(--coral-reef); /* Coral-reef for secondary text */
+  
+  /* Dark mode accent and interactive colors */
+  --color-accent: var(--straw); /* Straw for accent */
+  --color-highlight: var(--tussock); /* Tussock for highlights */
+  --color-border: #3e3c2f; /* Dark border color */
+  
+  /* Dark mode semantic colors */
+  --color-success: var(--tussock);
+  --color-warning: var(--straw);
+  --color-error: #d4704a;
+  --color-info: var(--coral-reef);
+  
+  /* Dark mode interactive states */
+  --color-hover: rgba(212, 181, 125, 0.1);
+  --color-active: rgba(212, 181, 125, 0.2);
+  --color-focus: var(--straw);
+  
+  /* Dark mode glass effects */
+  --color-glass: rgba(43, 42, 34, 0.7);
+  --color-glass-border: rgba(62, 60, 47, 0.3);
+}
+
+/* Tailwind CSS dark mode class support */
+.dark {
+  /* Mirror the data-theme="dark" values for Tailwind compatibility */
+  --color-bg: #1f1e17;
+  --color-surface: #2b2a22;
+  --color-text-primary: #d4b57d; /* Straw */
+  --color-text-secondary: #c8c3a3; /* Coral-reef */
+  --color-accent: #c89643; /* Tussock for light mode, but we want accent to be Tussock */
+  --color-highlight: #c89643; /* Tussock */
+  --color-border: #3e3c2f;
+  --color-success: #c89643; /* Tussock */
+  --color-warning: #d4b57d; /* Straw */
+  --color-error: #d4704a;
+  --color-info: #c8c3a3; /* Coral-reef */
+  --color-hover: rgba(212, 181, 125, 0.1);
+  --color-active: rgba(212, 181, 125, 0.2);
+  --color-focus: #d4b57d; /* Straw */
+  --color-glass: rgba(43, 42, 34, 0.7);
+  --color-glass-border: rgba(62, 60, 47, 0.3);
+}
+
+/* Utility class for straw color in dark mode */
+.text-straw {
+  color: #d4b57d;
+}
+
+/* Browser Compatibility Fallbacks */
+/* These provide fallback values for browsers that don't support CSS custom properties */
+
+/* Fallback for older browsers - Light mode */
+@supports not (color: var(--color-bg)) {
+  :root {
+    background-color: #e6e5d4; /* satin-linen fallback */
+    color: #494623; /* lisbon-brown fallback */
+  }
+  
+  .surface {
+    background-color: #cbc6a4; /* chino fallback */
+  }
+  
+  .accent {
+    color: #ca9a4a; /* tussock fallback */
+  }
+  
+  .border {
+    border-color: #afa76f; /* green-smoke fallback */
+  }
+}
+
+/* Fallback for older browsers - Dark mode */
+@supports not (color: var(--color-bg)) {
+  .dark {
+    background-color: #1f1e17; /* dark background fallback */
+    color: #e3dec3; /* light text fallback */
+  }
+  
+  .dark .surface {
+    background-color: #2b2a22; /* dark surface fallback */
+  }
+  
+  .dark .accent {
+    color: #d4b76c; /* light accent fallback */
+  }
+  
+  .dark .border {
+    border-color: #3e3c2f; /* dark border fallback */
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-text-primary: #000000;
+    --color-bg: #ffffff;
+    --color-border: #000000;
+  }
+  
+  [data-theme="dark"], .dark {
+    --color-text-primary: #ffffff;
+    --color-bg: #000000;
+    --color-border: #ffffff;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* Remove transitions for users who prefer reduced motion */
+    --transition-duration: 0s;
+  }
+}

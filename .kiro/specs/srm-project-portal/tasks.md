@@ -1,335 +1,236 @@
 # Implementation Plan
 
-- [x] 1. Bootstrap monorepo structure and shared configurations
-  - Create monorepo with apps/web, apps/api, packages/ui, packages/config directories
-  - Set up pnpm workspaces with shared TypeScript, ESLint, and Prettier configurations
-  - Configure Tailwind CSS with custom design tokens for glassmorphism theme
-  - _Requirements: 13.1, 13.2_
+- [x] 1. Phase 0 - Cleanup & Theme
+  - [x] 1.1 Add theme tokens to apps/web/src/styles/theme.css and map in Tailwind
+    - Create CSS custom properties for --bg, --surface, --textPrimary, --textSecondary, --border, --accent
+    - Map theme tokens to Tailwind colors in theme.extend.colors
+    - Create :root and .dark class variants for light/dark themes
+    - _Requirements: 12.1, 12.2, 12.3_
 
-- [x] 2. Set up backend foundation and core middleware
-  - [x] 2.1 Initialize Express.js server with TypeScript configuration
-    - Create Express app with TypeScript setup and development scripts
-    - Configure environment variable management with validation
-    - Set up basic routing structure and health check endpoint
-    - _Requirements: 13.1, 14.5_
+  - [x] 1.2 Replace all hardcoded text-white/black usages with tokenized classes
+    - Search and replace text-white with text-textPrimary
+    - Search and replace text-black with text-textPrimary
+    - Update bg-white/bg-black to use theme tokens
+    - _Requirements: 12.4, 12.5_
 
-  - [x] 2.2 Implement security middleware and CORS configuration
-    - Configure Helmet.js for security headers and CSP policies
-    - Set up CORS with frontend origin validation
-    - Implement rate limiting middleware using express-rate-limit
-    - _Requirements: 13.2, 13.3_
+  - [x] 1.3 Keep floating glass sidebar and inject SRM logos
+    - Maintain existing glass sidebar design
+    - Add SRM logo files to apps/web/public/branding/ directory
+    - Update sidebar to display SRM branding
+    - _Requirements: 12.5_
 
-  - [x] 2.3 Set up MongoDB connection and Mongoose schemas
-    - Configure MongoDB Atlas connection with Mongoose ODM
-    - Create User, Assessment, Submission, Grade, and TokenStore schemas
-    - Implement database connection pooling and error handling
-    - _Requirements: 1.3, 2.1_
+- [x] 2. Phase 1 - Models & Indexes
+  - [x] 2.1 Implement Mongoose models for Project, Eligibility, FacultyRoster
+    - Create Project model with title, brief, description, type, department, facultyId, facultyName, capacity, status fields
+    - Create Eligibility model with studentEmail, regNo, year, semester, termKind, type, validFrom, validTo fields
+    - Create FacultyRoster model with email, name, dept, isCoordinator, active fields
+    - _Requirements: 1.1, 1.2, 2.1, 11.1, 11.2_
 
-- [x] 3. Implement Google OAuth authentication system
-  - [x] 3.1 Create Google OAuth integration with domain restriction
-    - Set up Google OAuth 2.0 client configuration
-    - Implement /auth/google endpoint with ID token verification
-    - Add @srmap.edu.in domain validation and 403 error handling
-    - _Requirements: 1.1, 1.2, 1.3_
+  - [x] 2.2 Implement Mongoose models for Group, Application, Window, Evaluation
+    - Create Group model with code, type, memberIds, projectId, facultyId, meetUrl, calendarEventId, status fields
+    - Create Application model with groupId, choices, state, decidedBy, decidedAt, notes fields
+    - Create Window model with kind, type, start, end, enforced fields
+    - Create Evaluation model with groupId, projectId, facultyId, internal/external scores, totals, isPublished fields
+    - _Requirements: 3.1, 3.2, 4.1, 7.1, 7.2, 9.1_
 
-  - [x] 3.2 Implement JWT session management
-    - Create JWT token generation and validation middleware
-    - Set up secure session storage with refresh token rotation
-    - Implement /auth/me and /auth/refresh endpoints
-    - _Requirements: 1.4, 2.3_
+  - [x] 2.3 Add database indexes for performance optimization
+    - Add compound index on Eligibility: { studentEmail:1, type:1, termKind:1, year:1, semester:1 }
+    - Add unique index on FacultyRoster: { email:1 }
+    - Add compound index on Project: { status:1, type:1, department:1 }
+    - Add unique index on Group: { code:1 }
+    - Add compound index on Evaluation: { groupId:1, projectId:1 }
+    - _Requirements: 1.1, 2.1, 3.1, 7.1_
 
-  - [x] 3.3 Create RBAC middleware for route protection
-    - Implement role-based access control middleware
-    - Create route guards for Student, Faculty, and Admin roles
-    - Add unauthorized access logging and error responses
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [x] 2.4 Implement evaluation converters and totals calculation
+    - Create conversion logic: A1 (0-20→0-10), A2 (0-30→0-15), A3 (0-50→0-25), External (0-100→0-50)
+    - Implement automatic totals calculation on score updates
+    - Add validation for score ranges and conversion accuracy
+    - _Requirements: 7.2, 7.3, 7.4_
 
-- [x] 4. Implement Google Calendar and Meet integration
-  - [x] 4.1 Set up Google Calendar API client with OAuth tokens
-    - Configure Google Calendar API client with proper scopes
-    - Implement OAuth 3-legged flow for faculty Google account access
-    - Create token storage and refresh mechanism per faculty
-    - _Requirements: 3.2, 3.3, 3.4_
+- [x] 3. Phase 2 - Auth & Guards
+  - [x] 3.1 Update /auth/google to enforce Eligibility/FacultyRoster/Admin rules
+    - Verify Google ID token and extract user information
+    - Check student eligibility in Eligibility collection for active term
+    - Verify faculty presence in FacultyRoster with active status
+    - Return 403 with clear guidance for unauthorized users (IDP year-2, UROP sem-7, CAPSTONE sem-8)
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-  - [x] 4.2 Create assessment with automatic Meet link generation
-    - Implement POST /assessments endpoint with calendar event creation
-    - Generate Google Meet links using conferenceData.createRequest
-    - Store meetUrl and calendarEventId in assessment records
-    - Handle calendar API errors and rollback on failures
-    - _Requirements: 3.1, 3.5, 4.2_
+  - [x] 3.2 Add role guards and Window enforcement middleware
+    - Create RBAC middleware for Student, Faculty, Coordinator, Admin roles
+    - Implement Window enforcement middleware for time-based access control
+    - Add route protection based on user roles and active windows
+    - Create error responses for unauthorized access and inactive windows
+    - _Requirements: 1.1, 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [x] 5. Build assessment management system
-  - [x] 5.1 Create assessment CRUD operations
-    - Implement GET /assessments with filtering by scope and cohort
-    - Create PATCH /assessments/:id for faculty to edit assessments
-    - Implement DELETE /assessments/:id with calendar event cleanup
-    - _Requirements: 4.1, 4.3, 4.4_
+- [x] 4. Phase 3 - Public Pages
+  - [x] 4.1 Build landing page (/) with SRM branding
+    - Create public landing page with SRM logo and one-liner description
+    - Add "Browse Projects" and "Sign in" navigation buttons
+    - Implement responsive design with theme token integration
+    - _Requirements: 2.1, 12.1, 12.5_
 
-  - [x] 5.2 Implement assessment visibility and access control
-    - Create cohort-based assessment filtering for students
-    - Implement course enrollment validation for assessment access
+  - [x] 4.2 Build public projects page (/projects) with filtering
+    - Display published projects with title, brief, type, department, facultyName
+    - Generate department filter chips dynamically from project data
+    - Implement filtering by department and type without authentication
+    - Add responsive grid layout for project cards
+    - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-    - Add assessment status management (draft, published, closed)
+- [x] 5. Phase 4 - Faculty Projects & Approvals
+  - [x] 5.1 Implement faculty project CRUD operations
+    - Create project creation form with title, brief, description, department, prerequisites, type, capacity fields
+    - Implement project editing functionality for faculty-owned projects
+    - Add draft/save functionality before submission for approval
+    - _Requirements: 4.1, 4.3_
 
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [x] 5.2 Add project submit-for-approval workflow
+    - Create submit-for-approval endpoint for faculty projects
+    - Change project status from draft to pending approval
+    - Notify coordinators of pending project approvals
+    - _Requirements: 4.1, 4.3_
 
-- [x] 6. Implement file upload and submission system
-  - [x] 6.1 Set up Cloudinary integration for file storage
-    - Configure Cloudinary client with signed upload URLs
-    - Implement file type and size validation middleware
-    - Create secure file access with expiring URLs
-    - _Requirements: 6.1, 6.2, 6.4_
+  - [x] 5.3 Implement coordinator approve/reject functionality
+    - Create coordinator interface for project approvals
+    - Add approve/reject actions that change status to published/archived
+    - Implement bulk approval functionality for multiple projects
+    - _Requirements: 4.1, 4.3_
 
-  - [x] 6.2 Create submission endpoints and validation
-    - Implement POST /assessments/:id/submissions with file upload
-    - Add due date validation and late submission rejection
-    - Store submission metadata and file information in MongoDB
-    - _Requirements: 6.3, 6.5_
+- [ ] 6. Phase 5 - Groups & Applications
+  - [ ] 6.1 Implement group code generator and management
+    - Create 6-character code generator using A-Z + 2-9 (exclude O/0 I/1 S/5)
+    - Implement group creation with unique code generation
+    - Add group join functionality with code validation
+    - Create reset-code and delete-group functionality for forming status
+    - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-  - [x] 6.3 Build submission viewing and management
-    - Create GET /submissions/:id for detailed submission view
-    - Implement GET /me/submissions for student submission history
-    - Add submission status tracking and updates
-    - _Requirements: 8.1, 8.2, 8.4, 8.5_
+  - [ ] 6.2 Build group application system with project choices
+    - Implement application creation with up to 3 project choices
+    - Lock group membership when application is submitted
+    - Validate project eligibility based on student type and group type
+    - _Requirements: 4.1, 4.2, 3.4_
 
-- [x] 7. Implement grading and feedback system
-  - [x] 7.1 Create grading endpoints for faculty
-    - Implement POST /submissions/:id/grade with score and rubric
-    - Add detailed comments and feedback storage
-    - Create timestamped grading history tracking
-    - _Requirements: 7.1, 7.2, 7.3_
+  - [ ] 6.3 Create application decision workflow
+    - Implement faculty/coordinator approve/reject functionality
+    - On approval: set group projectId/facultyId, reject other applications
+    - Add decision tracking with timestamp and decision maker
+    - Create notification system for application status changes
+    - _Requirements: 4.2, 4.3, 4.4, 4.5_
 
-  - [x] 7.2 Implement grade visibility and access control
-    - Ensure grades are visible only to respective students
-    - Create grade update functionality with revision history
-    - Add faculty grade management interface endpoints
-    - _Requirements: 7.4, 7.5, 8.3_
+- [ ] 7. Phase 6 - Meet Integration
+  - [ ] 7.1 Implement Google Calendar event creation on approval
+    - Create Calendar API integration with OAuth 2.0 authentication
+    - Generate Calendar events with conferenceData for Meet links
+    - Include group members and assigned faculty as attendees
+    - Store meetUrl and calendarEventId in group record
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [x] 8. Build admin management system
-  - [x] 8.1 Create user and role management endpoints
-    - Implement GET /admin/users for user listing and search
-    - Create PATCH /admin/users/:id for role modifications
-    - Add cohort and course management functionality
-    - _Requirements: 9.1, 9.2_
+  - [ ] 7.2 Add external evaluator assignment and calendar updates
+    - Implement external faculty assignment to groups
+    - Update existing calendar events to add external evaluator as attendee
+    - Handle calendar API errors gracefully with fallback options
+    - _Requirements: 5.1, 5.5_
 
-  - [x] 8.2 Implement reporting and analytics system
-    - Create GET /admin/reports with submission and grading analytics
-    - Calculate grading latency metrics and activity reports
-    - Implement CSV export functionality for report data
-    - _Requirements: 9.3, 9.4, 9.5_
+- [ ] 8. Phase 7 - Submissions & Assessments
+  - [ ] 8.1 Build submission system with file upload
+    - Create submission form with GitHub URL (required), report PDF (≤50MB), presentation URL/file (≤50MB)
+    - Implement file validation and size limits
+    - Add optional comments field for submissions
+    - Maintain single "submitted" state per group
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [x] 9. Set up real-time features with Socket.IO
-  - [x] 9.1 Implement WebSocket server for presence tracking
-    - Configure Socket.IO server with authentication middleware
-    - Create presence tracking system with user online status
-    - Implement room-based presence for different pages/contexts
-    - _Requirements: 12.2_
+  - [ ] 8.2 Implement student assessments view with grade masking
+    - Create assessments page showing A1/A2/A3 + External components
+    - Mask all scores until coordinator publishes evaluations
+    - Show component scores, conversions, and totals after publication
+    - Add Meet button for accessing group video calls
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [x] 9.2 Add real-time collaboration indicators
-    - Create presence dots showing active users on assessments
-    - Implement real-time submission notifications for faculty
-    - Add live grading updates for students
-    - _Requirements: 12.2_
+- [ ] 9. Phase 8 - Evaluations & Publish
+  - [ ] 9.1 Create faculty evaluation endpoints for internal assessments
+    - Implement A1/A2/A3 conduct score entry endpoints for faculty
+    - Add automatic score conversion and totals calculation
+    - Validate score ranges and prevent invalid entries
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 10. Create frontend application shell and routing
-  - [x] 10.1 Set up React application with Vite and TypeScript
-    - Initialize React app with Vite build system
-    - Configure TypeScript with strict mode and path mapping
-    - Set up React Router with lazy loading and code splitting
-    - _Requirements: 10.1, 13.1_
+  - [ ] 9.2 Implement external evaluation system
+    - Create external evaluator endpoints for final conduct scores
+    - Add external evaluation form with 0-100 point scale
+    - Implement automatic conversion to 50-point maximum
+    - _Requirements: 7.1, 7.2, 7.4, 7.5_
 
-  - [x] 10.2 Implement theme provider and design system
-    - Create theme provider with light/dark mode support
-    - Implement Tailwind CSS custom design tokens
-    - Build glassmorphism base components (GlassCard, GlowButton)
-    - _Requirements: 10.1, 10.2_
-
-  - [x] 10.3 Create authentication context and route guards
-    - Implement React context for authentication state
-    - Create protected route components with role-based access
-    - Add authentication persistence and token refresh logic
-    - _Requirements: 1.3, 2.1_
-
-- [ ] 11. Build core UI components and layout system
-  - [x] 11.1 Create floating glass sidebar navigation
-    - Implement responsive sidebar with glassmorphism design
-    - Add smooth animations and hover effects
-    - Create navigation items with role-based visibility
-    - _Requirements: 11.1, 11.4_
-
-  - [x] 11.2 Implement top navigation bar with command palette
-    - Create top navigation with breadcrumbs and user menu
-    - Implement command palette (Cmd/Ctrl+K) with search functionality
-    - Add theme toggle and user profile dropdown
-    - _Requirements: 11.2, 11.3_
-
-  - [x] 11.3 Build responsive layout components
-    - Create BentoGrid layout for dashboard cards
-    - Implement MasonryGrid for project listings
-    - Add mobile-responsive navigation with swipe gestures
-    - _Requirements: 10.4, 11.5_
-
-- [ ] 12. Implement dashboard with animated visualizations
-  - [x] 12.1 Create dashboard page with Bento grid layout
-    - Build statistics cards showing key metrics
-    - Implement animated counters and progress indicators
-    - Add quick action cards for common tasks
-    - _Requirements: 12.2_
-
-  - [x] 12.2 Integrate Recharts with Framer Motion animations
-    - Create animated area, line, and bar charts
-    - Implement chart data fetching and real-time updates
-    - Add interactive chart tooltips and legends
-    - _Requirements: 12.2, 12.4_
-
-  - [x] 12.3 Add Three.js hero section with 3D animations
-    - Create 3D animated SRM-themed logo
-    - Implement particle background and gradient mesh
-    - Add magnetic call-to-action buttons with hover effects
-    - _Requirements: 12.1, 12.4_
-
-- [ ] 13. Build assessment management interface
-  - [x] 13.1 Create assessment list view for faculty and students
-    - Implement assessment cards with status indicators
-    - Add filtering and sorting functionality
-    - Display Meet links prominently for active assessments
-    - _Requirements: 4.1, 4.2, 5.1, 5.2_
-
-  - [x] 13.2 Build assessment creation and editing forms
-    - Create comprehensive assessment form with validation
-    - Implement cohort and course selection interface
-    - Add due date picker with timezone handling
-    - _Requirements: 3.1, 4.3_
-
-  - [x] 13.3 Implement assessment detail pages
-    - Create detailed assessment view with Meet link integration
-    - Add submission statistics and progress tracking
-    - Implement faculty grading interface within assessment view
-    - _Requirements: 4.2, 4.5, 5.3_
-
-- [ ] 14. Create submission and grading interfaces
-  - [x] 14.1 Build file upload interface with drag-and-drop
-    - Implement drag-and-drop file upload with progress indicators
-    - Add file type validation and preview functionality
-    - Create submission form with notes and metadata
-    - _Requirements: 6.1, 6.5_
-
-  - [x] 14.2 Create submission history and status tracking
-    - Build submission list view for students
-    - Implement submission detail pages with file downloads
-    - Add grade display and feedback viewing
+  - [ ] 9.3 Build coordinator bulk publish/unpublish functionality
+    - Create coordinator interface for evaluation publication control
+    - Implement bulk publish/unpublish for multiple evaluations
+    - Record publication timestamp and coordinator identity
+    - Add grade visibility toggle for students
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-  - [x] 14.3 Implement grading interface for faculty
-    - Create grading form with rubric support
-    - Add comment system with rich text editing
-    - Implement grade history and revision tracking
-    - _Requirements: 7.1, 7.2, 7.3, 7.5_
+- [ ] 10. Phase 9 - Eligibility Import & Admin
+  - [ ] 10.1 Create eligibility CSV import system
+    - Implement POST /admin/eligibility/import endpoint
+    - Parse CSV files matching pattern /seed/eligibility\_\*.csv
+    - Upsert records by (email, type, termKind, year, semester) combination
+    - Set validFrom/validTo dates based on term windows
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [x] 15. Build project management features
-  - [x] 15.1 Create project listing with masonry grid
-    - Implement masonry layout for project cards
-    - Add project flip cards with 3D animations
-    - Create project filtering and search functionality
-    - _Requirements: 12.3_
+  - [ ] 10.2 Build admin user and faculty roster management
+    - Create admin interface for FacultyRoster management
+    - Implement toggle functionality for coordinator and active status
+    - Add user management with role assignments
+    - Create export functionality for reports and data
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-  - [x] 15.2 Implement Kanban board view
-    - Create drag-and-drop Kanban board interface
-    - Add project status management (Backlog, In-Progress, Review, Done)
-    - Implement real-time updates for collaborative editing
-    - _Requirements: 12.3_
+- [ ] 11. Phase 10 - Remove/Defer Heavy Features
+  - [ ] 11.1 Remove Three.js, particles, 3D visualizations
+    - Remove Three.js dependencies and 3D components
+    - Remove particle background and gradient mesh effects
+    - Simplify hero sections to use standard CSS/Tailwind
+    - _Requirements: 12.5_
 
-  - [x] 15.3 Build project detail pages
-    - Create parallax hero sections for project details
-    - Implement 3D carousel for project artifacts
-    - Add Gantt chart integration for timeline visualization
-    - _Requirements: 12.3, 12.4_
+  - [ ] 11.2 Remove analytics, Gantt charts, Kanban boards
+    - Remove complex analytics dashboards and reporting
+    - Remove Gantt chart components and timeline visualizations
+    - Remove Kanban board drag-and-drop functionality
+    - Simplify project management to basic list views
+    - _Requirements: 12.5_
 
-- [x] 16. Create user profile and admin interfaces
-  - [x] 16.1 Build user profile pages with 3D visualizations
-    - Create 3D radar chart for skills visualization
-    - Implement tag cloud for user interests and expertise
-    - Add education timeline with interactive elements
-    - _Requirements: 12.4_
+  - [ ] 11.3 Remove command palette and presence indicators
+    - Remove command palette (Cmd/Ctrl+K) functionality
+    - Remove real-time presence dots and collaboration features
+    - Remove complex filtering and search interfaces
+    - Simplify navigation to basic menu structure
+    - _Requirements: 12.5_
 
-  - [x] 16.2 Implement admin dashboard and user management
-    - Create admin dashboard with system analytics
-    - Build user management interface with role editing
-    - Add cohort and course management functionality
-    - _Requirements: 9.1, 9.2_
+  - [ ] 11.4 Consolidate grades into assessments page
+    - Remove separate "Grades" page from navigation
+    - Show all grade information within Assessments page
+    - Simplify grade display to essential information only
+    - _Requirements: 8.1, 8.2_
 
-  - [x] 16.3 Create reporting interface with CSV export
-    - Implement interactive reports with chart visualizations
-    - Add filtering and date range selection for reports
-    - Create CSV export functionality with progress indicators
-    - _Requirements: 9.3, 9.4, 9.5_
+- [ ] 12. Phase 11 - Tests & Deploy
+  - [ ] 12.1 Write unit tests for core functionality
+    - Test group code generation and uniqueness validation
+    - Test evaluation score converters and totals calculation
+    - Test authentication guards and role validation
+    - Test CSV parsers and data import functionality
+    - _Requirements: 3.1, 7.4, 1.1, 10.1_
 
-- [x] 17. Implement API documentation and testing
-  - [x] 17.1 Set up OpenAPI documentation with Swagger UI
-    - Generate OpenAPI 3.0 specification from route definitions
-    - Configure Swagger UI at /docs endpoint
-    - Add comprehensive API examples and response schemas
-    - _Requirements: 13.1_
+  - [ ] 12.2 Create end-to-end smoke tests
+    - Test complete student workflow: auth → group → apply → submit → view grades
+    - Test faculty workflow: project creation → approval → evaluation
+    - Test coordinator workflow: window management → grade publication
+    - _Requirements: 1.1, 4.1, 7.1, 8.1_
 
-  - [x] 17.2 Create comprehensive test suites
-    - Write unit tests for API controllers and services
-    - Implement integration tests for authentication and RBAC
-    - Add E2E tests for critical user workflows
-    - _Requirements: 13.5_
+  - [ ] 12.3 Configure deployment environments
+    - Set up Vercel deployment for apps/web with environment variables
+    - Configure Render deployment for apps/api with health checks
+    - Set up MongoDB Atlas connection and environment secrets
+    - Configure Google OAuth and Calendar API credentials
+    - _Requirements: 1.1, 5.1_
 
-  - [x] 17.3 Set up performance monitoring and optimization
-    - Implement Lighthouse performance auditing
-    - Add bundle analysis and code splitting optimization
-    - Create performance budgets and monitoring alerts
-    - _Requirements: 10.5_
-
-- [x] 18. Create seed data and development utilities
-  - [x] 18.1 Build comprehensive seed data scripts
-    - Create seed script for demo users (1 Admin, 2 Faculty, 4 Students)
-    - Generate sample assessments with Meet links and calendar events
-    - Create realistic submission and grading data
-    - _Requirements: 14.5_
-
-  - [x] 18.2 Implement development and debugging utilities
-    - Create database reset and migration scripts
-    - Add development logging and debugging middleware
-    - Implement health check endpoints for monitoring
-    - _Requirements: 14.4, 14.5_
-
-- [x] 19. Set up deployment and CI/CD pipeline
-  - [x] 19.1 Configure Vercel deployment for frontend
-    - Set up Vercel project with environment variables
-    - Configure build optimization and static asset handling
-    - Implement preview deployments for pull requests
-    - _Requirements: 14.1, 14.3_
-
-  - [x] 19.2 Configure Render deployment for backend API
-    - Set up Render service with Docker configuration
-    - Configure environment variables and secrets management
-    - Implement health checks and auto-deployment
-    - _Requirements: 14.1, 14.3_
-
-  - [x] 19.3 Set up CI/CD with GitHub Actions
-    - Create workflows for linting, type checking, and testing
-    - Implement automated deployment on main branch
-    - Add smoke tests for deployed applications
-    - _Requirements: 14.2, 14.3_
-
-- [x] 20. Final integration and performance optimization
-  - [x] 20.1 Implement end-to-end integration testing
-    - Test complete user workflows from authentication to grading
-    - Verify Google OAuth and Calendar API integration
-    - Validate file upload and real-time features
-    - _Requirements: 1.1, 3.1, 6.1_
-
-  - [x] 20.2 Optimize application performance and bundle size
-    - Implement code splitting and lazy loading optimization
-    - Optimize images and static assets for web delivery
-    - Add service worker for offline functionality
-    - _Requirements: 10.5_
-
-  - [x] 20.3 Conduct final security audit and documentation
-    - Review and test all security measures and access controls
-    - Create deployment guides and environment setup documentation
-    - Validate compliance with all acceptance criteria
-    - _Requirements: 13.2, 13.4_
+  - [ ] 12.4 Create seed data and run initial deployment
+    - Create seed scripts for eligibility, faculty roster, and sample projects
+    - Run database migrations and seed data in production
+    - Perform smoke tests on deployed applications
+    - Validate Google integrations in production environment
+    - _Requirements: 10.1, 11.1_

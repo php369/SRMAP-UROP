@@ -2,190 +2,161 @@
 
 ## Introduction
 
-The SRM University-AP Project Management Portal is a comprehensive web application designed to facilitate project management, assessment workflows, and collaboration between students, faculty, and administrators. The system integrates with Google services for authentication, calendar management, and video conferencing, while providing a modern, high-performance user interface with advanced visualizations and animations.
+The SRM University-AP Project Management Portal is a lean MVP designed to streamline project management for students and faculty. The system provides a public landing page with department-filtered project listings, strict authentication controls based on eligibility rosters, student group formation with unique codes, integrated Google Meet links, simplified submissions, and a comprehensive evaluation system with coordinator-controlled grade release.
 
 ## Glossary
 
-- **Portal**: The SRM University-AP Project Management Portal web application
-- **User**: Any person accessing the Portal (Student, Faculty, or Admin)
-- **Student**: A user with student role privileges enrolled at SRM University-AP
-- **Faculty**: A user with faculty role privileges who can create assessments and grade submissions
-- **Admin**: A user with administrative privileges who can manage users, roles, and system configuration
-- **Assessment**: A task or assignment created by Faculty with associated deadlines and evaluation criteria
-- **Submission**: Student work uploaded in response to an Assessment
-- **Cohort**: A group of students organized by year, department, or course
-- **Meet Link**: A Google Meet video conference URL automatically generated for assessments
-- **Calendar Event**: A Google Calendar entry created automatically when an assessment is scheduled
-- **RBAC**: Role-Based Access Control system that restricts access based on user roles
-- **OAuth Token**: Authentication credential used to access Google services on behalf of a user
-- **Domain Restriction**: Security measure limiting access to users with @srmap.edu.in email addresses
+- **Portal_System**: The SRM University-AP Project Management Portal web application
+- **Eligibility_System**: The student eligibility validation system based on imported CSV data
+- **Faculty_Roster**: The approved faculty member database with coordinator privileges
+- **Group_System**: The student group formation and management system using 6-character codes
+- **Project_System**: The project creation, approval, and assignment system
+- **Evaluation_System**: The multi-component grading system with internal and external assessments
+- **Window_System**: The time-based control system for various portal activities
+- **Meet_Integration**: The Google Calendar and Meet link generation system
 
 ## Requirements
 
-### Requirement 1
+### Requirement 1: Authentication and Access Control
 
-**User Story:** As a user, I want to authenticate using my Google account with domain restrictions, so that only authorized SRM University-AP members can access the portal.
-
-#### Acceptance Criteria
-
-1. WHEN a user attempts to sign in, THE Portal SHALL verify the Google ID token including audience, issuer, expiration, and email verification status
-2. IF a user's email domain is not @srmap.edu.in, THEN THE Portal SHALL block access with HTTP 403 status and display a clear error message
-3. WHEN authentication succeeds, THE Portal SHALL create a session containing user ID, name, email, and role information
-4. THE Portal SHALL maintain secure session management using JWT tokens
-5. WHEN a user's Google account lacks email verification, THE Portal SHALL reject the authentication attempt
-
-### Requirement 2
-
-**User Story:** As a system administrator, I want role-based access control implemented throughout the application, so that users can only access features appropriate to their role.
+**User Story:** As a system administrator, I want strict access control based on eligibility and faculty rosters, so that only authorized users can access the portal.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL implement three distinct roles: Student, Faculty, and Admin
-2. WHEN a user attempts to access a protected route, THE Portal SHALL verify their role permissions using RBAC middleware
-3. IF a user lacks required permissions for a route, THEN THE Portal SHALL return HTTP 403 status and deny access
-4. THE Portal SHALL guard every protected API endpoint with role-based authorization
-5. WHEN role verification fails, THE Portal SHALL log the unauthorized access attempt
+1. WHEN a student attempts to authenticate, THE Portal_System SHALL verify their presence in the Eligibility_System for the active term
+2. IF a student is not found in the Eligibility_System, THEN THE Portal_System SHALL return a 403 error with guidance based on their year (IDP for year-2, UROP for sem-7, CAPSTONE for sem-8)
+3. WHEN a faculty member attempts to authenticate, THE Portal_System SHALL verify their presence in the Faculty_Roster with active status
+4. WHERE a faculty member has isCoordinator set to true in Faculty_Roster, THE Portal_System SHALL grant coordinator privileges
+5. THE Portal_System SHALL allow access to a single pre-seeded admin email with full administrative rights
 
-### Requirement 3
+### Requirement 2: Public Project Discovery
 
-**User Story:** As faculty, I want to create assessments that automatically generate Google Meet links and calendar events, so that I can efficiently schedule and conduct virtual assessment sessions.
-
-#### Acceptance Criteria
-
-1. WHEN faculty creates an assessment, THE Portal SHALL automatically generate a Google Calendar event with conference data
-2. THE Portal SHALL store Google Meet URL and calendar event ID in the assessment record
-3. WHEN creating calendar events, THE Portal SHALL use OAuth 3-legged flow for faculty Google account access
-4. THE Portal SHALL store and refresh OAuth tokens per faculty member
-5. IF calendar event creation fails, THEN THE Portal SHALL return an error and prevent assessment creation
-
-### Requirement 4
-
-**User Story:** As faculty, I want to manage my assessments and view submission statistics, so that I can track student engagement and progress.
+**User Story:** As a prospective student or visitor, I want to browse published projects filtered by department, so that I can understand available opportunities.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL display a list of assessments created by the authenticated faculty member
-2. WHEN faculty views assessment details, THE Portal SHALL show Meet link, submission count, and current status
-3. THE Portal SHALL allow faculty to edit assessment details including title, description, and due date
-4. THE Portal SHALL enable faculty to delete assessments and automatically remove associated calendar events
-5. THE Portal SHALL display real-time submission statistics for each assessment
+1. THE Portal_System SHALL display a public landing page with SRM branding and navigation to project listings
+2. THE Portal_System SHALL show only projects with status "published" on the public projects page
+3. WHEN displaying projects publicly, THE Portal_System SHALL show title, brief description, type, department, and faculty name
+4. THE Portal_System SHALL generate department filter chips dynamically from the loaded project data
+5. THE Portal_System SHALL allow filtering projects by department and type without requiring authentication
 
-### Requirement 5
+### Requirement 3: Group Formation and Management
 
-**User Story:** As a student, I want to view assessments assigned to my cohort and access Meet links, so that I can participate in scheduled assessment sessions.
-
-#### Acceptance Criteria
-
-1. THE Portal SHALL display assessments targeted to the student's cohort and enrolled courses
-2. WHEN a student views an assessment, THE Portal SHALL show the Google Meet link prominently
-3. THE Portal SHALL display assessment due dates and remaining time until deadline
-4. THE Portal SHALL show assessment status (upcoming, active, completed)
-5. THE Portal SHALL filter assessments based on student's cohort membership and course enrollment
-
-### Requirement 6
-
-**User Story:** As a student, I want to submit work files and notes before assessment deadlines, so that I can complete my assignments and receive evaluation.
+**User Story:** As a student, I want to create or join groups using unique codes, so that I can collaborate with peers on project applications.
 
 #### Acceptance Criteria
 
-1. WHEN a student uploads files, THE Portal SHALL save them to cloud storage with progress indication
-2. THE Portal SHALL validate file types and sizes before accepting uploads
-3. IF submission occurs after due date, THEN THE Portal SHALL reject the submission with appropriate error message
-4. THE Portal SHALL store submission metadata including file URLs, names, sizes, and content types in MongoDB
-5. THE Portal SHALL allow students to include text notes with their file submissions
+1. WHEN a student creates a group, THE Group_System SHALL generate a unique 6-character code using A-Z and 2-9 (excluding O/0, I/1, S/5)
+2. THE Group_System SHALL allow up to 4 students to join a single group
+3. WHILE a group has status "forming", THE Group_System SHALL allow members to leave and the creator to reset the code
+4. WHEN a group submits an application, THE Group_System SHALL change status to "applied" and lock membership changes
+5. THE Group_System SHALL prevent students from joining multiple groups of the same project type
 
-### Requirement 7
+### Requirement 4: Project Application and Assignment
 
-**User Story:** As faculty, I want to grade student submissions with scores and detailed feedback, so that I can provide comprehensive evaluation and guidance.
-
-#### Acceptance Criteria
-
-1. THE Portal SHALL allow faculty to assign numerical scores to submissions
-2. WHEN faculty grades a submission, THE Portal SHALL record rubric fields and detailed comments
-3. THE Portal SHALL maintain timestamped history of all grading actions
-4. THE Portal SHALL make grades visible only to the respective student who submitted the work
-5. THE Portal SHALL allow faculty to update grades and maintain revision history
-
-### Requirement 8
-
-**User Story:** As a student, I want to view my submissions and received grades, so that I can track my academic progress and understand feedback.
+**User Story:** As a student group, I want to apply for up to 3 project choices, so that I have options for project assignment.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL display all submissions made by the authenticated student
-2. WHEN a student views submission details, THE Portal SHALL show grading information if available
-3. THE Portal SHALL display faculty comments and rubric scores for graded submissions
-4. THE Portal SHALL show submission timestamps and grade history
-5. THE Portal SHALL indicate pending submissions awaiting grading
+1. THE Portal_System SHALL allow groups to select up to 3 project choices when applying
+2. WHEN a faculty member or coordinator approves an application, THE Portal_System SHALL assign the group to the selected project
+3. WHEN a group is approved for a project, THE Portal_System SHALL automatically reject their other pending applications
+4. THE Portal_System SHALL set the group's projectId and facultyId upon approval
+5. THE Portal_System SHALL create a Google Calendar event with Meet link for the approved group
 
-### Requirement 9
+### Requirement 5: Google Meet Integration
 
-**User Story:** As an admin, I want to manage users, roles, and generate reports, so that I can oversee system usage and academic performance.
-
-#### Acceptance Criteria
-
-1. THE Portal SHALL allow admins to view and modify user roles
-2. THE Portal SHALL enable admins to manage cohorts and course assignments
-3. WHEN admin requests reports, THE Portal SHALL generate analytics on submissions by assessment and course
-4. THE Portal SHALL calculate and display grading latency metrics
-5. THE Portal SHALL export report data in CSV format for external analysis
-
-### Requirement 10
-
-**User Story:** As a user, I want a modern, responsive interface with smooth animations and dark/light themes, so that I have an engaging and accessible user experience.
+**User Story:** As a faculty member, I want automatic Google Meet links created for approved groups, so that I can conduct virtual meetings efficiently.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL implement glassmorphism design with gradient borders and glowing interactive elements
-2. THE Portal SHALL provide dark and light theme options with smooth transitions
-3. WHEN users interact with elements, THE Portal SHALL display neon hover effects and backdrop blur
-4. THE Portal SHALL maintain responsive design across desktop, tablet, and mobile devices
-5. THE Portal SHALL achieve Lighthouse performance scores of 90 or higher on key pages
+1. WHEN a group is approved for a project, THE Meet_Integration SHALL create a Google Calendar event with conferenceData
+2. THE Meet_Integration SHALL include all group members and the assigned faculty as attendees
+3. THE Meet_Integration SHALL store the meetUrl and calendarEventId in the group record
+4. WHEN an external evaluator is assigned, THE Meet_Integration SHALL update the calendar event to include the external attendee
+5. THE Meet_Integration SHALL handle calendar API errors gracefully and provide fallback options
 
-### Requirement 11
+### Requirement 6: Submission Management
 
-**User Story:** As a user, I want advanced navigation features including a command palette and floating sidebar, so that I can efficiently navigate the application.
-
-#### Acceptance Criteria
-
-1. THE Portal SHALL provide a floating glass sidebar for primary navigation
-2. WHEN users press Cmd/Ctrl+K, THE Portal SHALL open a command palette for quick actions
-3. THE Portal SHALL display smooth breadcrumb navigation showing current location
-4. THE Portal SHALL implement magnetic call-to-action buttons with hover animations
-5. THE Portal SHALL provide swipe gesture support on mobile devices
-
-### Requirement 12
-
-**User Story:** As a user, I want interactive 3D visualizations and animated charts, so that I can better understand data and have an engaging experience.
+**User Story:** As a student, I want to submit project deliverables including GitHub repository, report, and presentation, so that my work can be evaluated.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL display a 3D animated SRM-themed logo using Three.js on the hero section
-2. THE Portal SHALL implement animated Recharts for data visualization with area, line, and bar chart types
-3. WHEN displaying project data, THE Portal SHALL use masonry grid layout with flip card animations
-4. THE Portal SHALL provide 3D radar charts for user profiles and skill visualization
-5. THE Portal SHALL implement parallax scrolling effects and smooth page transitions
+1. THE Portal_System SHALL require a GitHub URL for all submissions
+2. THE Portal_System SHALL accept PDF reports with a maximum size of 50 MB
+3. THE Portal_System SHALL accept presentation files (URL or PPT/PPTX) with a maximum size of 50 MB
+4. THE Portal_System SHALL allow optional comments with submissions
+5. THE Portal_System SHALL maintain a single "submitted" state per group
 
-### Requirement 13
+### Requirement 7: Evaluation System
 
-**User Story:** As a developer, I want comprehensive API documentation and security measures, so that the system is maintainable and secure.
-
-#### Acceptance Criteria
-
-1. THE Portal SHALL serve OpenAPI 3.0 specification at /docs endpoint with interactive Swagger UI
-2. THE Portal SHALL implement rate limiting per IP address to prevent abuse
-3. WHEN processing user input, THE Portal SHALL validate all data using Zod or Joi schemas
-4. THE Portal SHALL implement security headers using Helmet and proper CORS configuration
-5. THE Portal SHALL provide structured error responses with appropriate HTTP status codes
-
-### Requirement 14
-
-**User Story:** As a system operator, I want automated deployment and monitoring capabilities, so that I can maintain system reliability and performance.
+**User Story:** As a faculty member, I want to evaluate student projects using a structured scoring system, so that grades are consistent and fair.
 
 #### Acceptance Criteria
 
-1. THE Portal SHALL support deployment to Vercel for frontend and Render for backend
-2. THE Portal SHALL include CI/CD scripts for type checking, linting, and testing
-3. WHEN deployment occurs, THE Portal SHALL run automated smoke tests to verify functionality
-4. THE Portal SHALL provide health check endpoints for monitoring system status
-5. THE Portal SHALL include seed data scripts for quick demonstration and testing
+1. THE Evaluation_System SHALL provide three internal assessment components (A1: 0-20 points, A2: 0-30 points, A3: 0-50 points)
+2. THE Evaluation_System SHALL automatically convert internal scores to final grades (A1: max 10, A2: max 15, A3: max 25)
+3. THE Evaluation_System SHALL provide external evaluation with 0-100 points converting to maximum 50 points
+4. THE Evaluation_System SHALL calculate total scores as sum of converted internal and external components
+5. THE Evaluation_System SHALL recalculate totals automatically when any component score is updated
+
+### Requirement 8: Grade Publication Control
+
+**User Story:** As a coordinator, I want to control when evaluation results are visible to students, so that grades are released appropriately.
+
+#### Acceptance Criteria
+
+1. THE Portal_System SHALL hide all evaluation scores from students until coordinator publishes them
+2. WHEN a coordinator publishes evaluations, THE Portal_System SHALL make component scores, conversions, and totals visible to students
+3. THE Portal_System SHALL allow coordinators to bulk publish or unpublish multiple evaluations
+4. THE Portal_System SHALL record publication timestamp and coordinator identity for audit purposes
+5. THE Portal_System SHALL show Meet button to students for accessing group video calls
+
+### Requirement 9: Window-Based Access Control
+
+**User Story:** As a coordinator, I want to control time periods for different activities, so that the portal workflow follows academic schedules.
+
+#### Acceptance Criteria
+
+1. THE Window_System SHALL support five window types: grouping, application, faculty-edit-title, internal-eval, and external-eval
+2. THE Window_System SHALL enforce time restrictions when enforced flag is set to true
+3. WHEN a window is not active and enforcement is enabled, THE Portal_System SHALL reject related API requests
+4. THE Window_System SHALL allow different windows for different project types (IDP, UROP, CAPSTONE)
+5. THE Portal_System SHALL display appropriate user interface indicators for active and inactive windows
+
+### Requirement 10: Eligibility Import and Management
+
+**User Story:** As an administrator, I want to import student eligibility data from CSV files, so that access control is maintained for each academic term.
+
+#### Acceptance Criteria
+
+1. THE Portal_System SHALL accept CSV files matching the pattern eligibility_*.csv for bulk import
+2. THE Portal_System SHALL upsert eligibility records based on the combination of email, type, termKind, year, and semester
+3. THE Portal_System SHALL set validFrom and validTo dates based on term windows (odd: Jan-May, even: Aug-Dec)
+4. THE Portal_System SHALL validate required fields (studentEmail, year, semester, termKind, type) during import
+5. THE Portal_System SHALL provide import status feedback including success and error counts
+
+### Requirement 11: Faculty Roster Management
+
+**User Story:** As an administrator, I want to manage faculty roster with coordinator privileges, so that access levels are properly controlled.
+
+#### Acceptance Criteria
+
+1. THE Portal_System SHALL maintain a Faculty_Roster with email, name, department, coordinator status, and active status
+2. THE Portal_System SHALL allow administrators to toggle coordinator and active status for faculty members
+3. THE Portal_System SHALL prevent inactive faculty from accessing the portal
+4. THE Portal_System SHALL grant coordinator privileges only to faculty with isCoordinator set to true
+5. THE Portal_System SHALL support bulk import of faculty roster from CSV files
+
+### Requirement 12: Theme and Accessibility
+
+**User Story:** As a user, I want accessible light and dark themes with consistent design tokens, so that the portal is usable in different environments.
+
+#### Acceptance Criteria
+
+1. THE Portal_System SHALL provide CSS custom properties for background, surface, text colors, borders, and accent colors
+2. THE Portal_System SHALL support both light and dark theme variants using CSS classes
+3. THE Portal_System SHALL map theme tokens to Tailwind CSS utility classes
+4. THE Portal_System SHALL replace all hardcoded color references with tokenized classes
+5. THE Portal_System SHALL maintain the floating glass sidebar design while ensuring accessibility compliance

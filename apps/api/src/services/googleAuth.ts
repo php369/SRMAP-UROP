@@ -140,12 +140,17 @@ export function generateAuthUrl(state?: string): string {
  */
 export async function exchangeCodeForTokens(code: string) {
   try {
+    logger.info(`Attempting token exchange with code: ${code.substring(0, 20)}...`);
+    logger.info(`OAuth2 Client Config - Client ID: ${config.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
+    logger.info(`OAuth2 Client Config - Redirect URI: ${config.GOOGLE_REDIRECT_URI}`);
+    
     const { tokens } = await oauth2Client.getToken(code);
     
     if (!tokens.id_token) {
       throw new Error('No ID token received');
     }
 
+    logger.info('Token exchange successful');
     return {
       idToken: tokens.id_token,
       accessToken: tokens.access_token,
@@ -153,8 +158,31 @@ export async function exchangeCodeForTokens(code: string) {
       expiryDate: tokens.expiry_date,
     };
 
-  } catch (error) {
-    logger.error('Token exchange failed:', error);
+  } catch (error: any) {
+    logger.error('Token exchange failed:', {
+      error: error.message,
+      code: error.code,
+      status: error.status,
+      response: error.response?.data,
+      config: {
+        clientId: config.GOOGLE_CLIENT_ID.substring(0, 20) + '...',
+        redirectUri: config.GOOGLE_REDIRECT_URI,
+      }
+    });
+    
+    // Provide specific error messages based on error type
+    if (error.message?.includes('invalid_grant')) {
+      if (error.response?.data?.error_description?.includes('Bad Request')) {
+        throw new Error('OAuth configuration mismatch: The redirect URI used to obtain the authorization code does not match the redirect URI configured in Google Cloud Console. Please verify your OAuth settings.');
+      } else if (error.response?.data?.error_description?.includes('Malformed auth code')) {
+        throw new Error('Authorization code is malformed or has already been used. Please try logging in again.');
+      } else {
+        throw new Error('Authorization code is invalid or expired. Please try logging in again.');
+      }
+    } else if (error.message?.includes('invalid_client')) {
+      throw new Error('OAuth client configuration error: Invalid client ID or secret. Please check your Google Cloud Console settings.');
+    }
+    
     throw new Error(`Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

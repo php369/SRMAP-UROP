@@ -104,7 +104,7 @@ export function PerformanceMonitor() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-surface rounded-lg shadow-sm border p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Activity className="h-5 w-5 text-blue-600" />
           <h3 className="text-lg font-semibold">Performance Monitor</h3>
@@ -119,7 +119,7 @@ export function PerformanceMonitor() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-surface rounded-lg shadow-sm border p-6">
         <div className="flex items-center space-x-2 mb-4">
           <AlertTriangle className="h-5 w-5 text-red-600" />
           <h3 className="text-lg font-semibold">Performance Monitor</h3>
@@ -140,7 +140,7 @@ export function PerformanceMonitor() {
   return (
     <div className="space-y-6">
       {/* Performance Overview */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-surface rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Activity className="h-5 w-5 text-blue-600" />
@@ -200,7 +200,7 @@ export function PerformanceMonitor() {
       </div>
 
       {/* Memory Usage */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-surface rounded-lg shadow-sm border p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Server className="h-5 w-5 text-purple-600" />
           <h3 className="text-lg font-semibold">Memory Usage</h3>
@@ -245,7 +245,7 @@ export function PerformanceMonitor() {
       </div>
 
       {/* Slow Endpoints */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="bg-surface rounded-lg shadow-sm border p-6">
         <h3 className="text-lg font-semibold mb-4">Slowest Endpoints</h3>
         <div className="space-y-3">
           {stats.topSlowEndpoints.map((endpoint, index) => (
@@ -265,7 +265,7 @@ export function PerformanceMonitor() {
 
       {/* Budget Violations */}
       {budget.violations.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-surface rounded-lg shadow-sm border p-6">
           <h3 className="text-lg font-semibold mb-4 text-yellow-800">Performance Budget Violations</h3>
           <div className="space-y-2 mb-4">
             {budget.violations.map((violation, index) => (

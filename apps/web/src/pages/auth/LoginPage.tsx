@@ -1,13 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI, ROUTES } from '../../utils/constants';
-import { GlassCard, GlowButton } from '../../components/ui';
+import {
+  GOOGLE_CLIENT_ID,
+  GOOGLE_REDIRECT_URI,
+  ROUTES,
+} from '../../utils/constants';
+import { LoginLayout } from '../../components/auth/LoginLayout';
+
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
+  const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
+    // Force light mode for login page
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    
+    // Debug auth configuration in development
+    if (import.meta.env.DEV) {
+      console.log('🔐 Login page loaded in development mode');
+      console.log('Google Client ID:', GOOGLE_CLIENT_ID ? '✅ Set' : '❌ Missing');
+    }
+
     // Load Google Identity Services script
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
@@ -16,7 +32,10 @@ export function LoginPage() {
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+      // Don't remove the light class on cleanup as user might navigate away
     };
   }, []);
 
@@ -26,48 +45,73 @@ export function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
+    // Check if we have the required configuration
+    if (!GOOGLE_CLIENT_ID) {
+      console.error('Google Client ID is not configured');
+      alert(
+        'Authentication is not properly configured. Please contact support.'
+      );
+      return;
+    }
+
+    // Add a random state parameter for security and to avoid caching issues
+    const state = Math.random().toString(36).substring(2, 15);
+
     const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID || '',
+      client_id: GOOGLE_CLIENT_ID,
       redirect_uri: GOOGLE_REDIRECT_URI,
       response_type: 'code',
       scope: 'openid email profile',
       access_type: 'offline',
-      prompt: 'consent',
+      prompt: 'select_account', // Changed from 'consent' to reduce rate limiting
+      state: state,
+      include_granted_scopes: 'true',
     });
+
+    // Store state and remember preference for after login
+    sessionStorage.setItem('oauth_state', state);
+    sessionStorage.setItem('remember_me', rememberMe.toString());
 
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-secondary/5">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl" />
-      </div>
-      
-      <GlassCard variant="elevated" className="relative max-w-md w-full mx-4 p-8 space-y-8">
-        <div className="text-center">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl mx-auto flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">S</span>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-text">SRM Project Portal</h1>
-          <p className="mt-2 text-textSecondary">
+    <LoginLayout>
+      <div className="login-card">
+        <div className="login-header">
+          <img
+            src="/branding/srm-logo.svg"
+            alt="SRM University-AP"
+            className="login-logo"
+          />
+          <h1 className="login-title">
+            SRM-AP Project Management Portal
+          </h1>
+          <p className="login-subtitle">
             Sign in with your SRM email account
           </p>
         </div>
 
-        <div className="space-y-4">
-          <GlowButton
+        <div className="login-form">
+          {/* Remember Me Option */}
+          <div className="remember-me-container">
+            <input
+              id="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              className="remember-me-checkbox"
+            />
+            <label htmlFor="remember-me" className="remember-me-label">
+              Keep me signed in for 30 days
+            </label>
+          </div>
+
+          <button
             onClick={handleGoogleLogin}
-            variant="ghost"
-            size="lg"
-            className="w-full"
-            glow
+            className="google-login-button"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="google-icon" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -86,13 +130,13 @@ export function LoginPage() {
               />
             </svg>
             Continue with Google
-          </GlowButton>
-          
-          <div className="text-center text-sm text-textSecondary">
+          </button>
+{/* 
+          <div className="text-center text-sm text-gray-600">
             Only @srmap.edu.in email addresses are allowed
-          </div>
+          </div> */}
         </div>
-      </GlassCard>
-    </div>
+      </div>
+    </LoginLayout>
   );
 }

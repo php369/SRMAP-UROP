@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { LoginLayout } from '../../components/auth/LoginLayout';
 import { ROUTES } from '../../utils/constants';
 
 export function AuthCallbackPage() {
@@ -40,10 +41,10 @@ export function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <LoginLayout>
         <div className="max-w-md w-full text-center space-y-4">
           <div className="text-red-500 text-lg font-medium">Authentication Failed</div>
-          <p className="text-textSecondary">{error}</p>
+          <p className="text-gray-600">{error}</p>
           <button
             onClick={() => navigate(ROUTES.LOGIN)}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
@@ -51,16 +52,16 @@ export function AuthCallbackPage() {
             Try Again
           </button>
         </div>
-      </div>
+      </LoginLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <LoginLayout>
       <div className="text-center space-y-4">
         <LoadingSpinner size="lg" />
-        <p className="text-textSecondary">Completing authentication...</p>
+        <p className="text-gray-600">Completing authentication...</p>
       </div>
-    </div>
+    </LoginLayout>
   );
 }

@@ -34,7 +34,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth check on mount
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    // Listen for session expiration events
+    const handleSessionExpired = () => {
+      console.log('🔒 Session expired, logging out');
+      logout();
+    };
+
+    window.addEventListener('session-expired', handleSessionExpired);
+
+    return () => {
+      window.removeEventListener('session-expired', handleSessionExpired);
+    };
+  }, [checkAuth, logout]);
 
   // Role-based access control helpers
   const hasRole = (role: string | string[]): boolean => {

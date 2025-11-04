@@ -226,7 +226,7 @@ export function SkillsRadarChart({
               className={cn(
                 'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 !selectedCategory
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-textPrimary'
                   : 'bg-surface text-textSecondary hover:text-text'
               )}
             >

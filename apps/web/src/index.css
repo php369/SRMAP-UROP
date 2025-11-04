@@ -1,3 +1,6 @@
+@import './styles/color-palette.css';
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,21 +10,21 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* Default light theme colors */
-  --color-primary: #6366F1;
-  --color-primaryGradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
-  --color-secondary: #14B8A6;
-  --color-accent: #F59E0B;
-  --color-background: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-glass: rgba(255, 255, 255, 0.7);
-  --color-text: #0F172A;
-  --color-textSecondary: #64748B;
-  --color-border: #E2E8F0;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  /* Earth-toned color palette - Light theme */
+  --color-primary: var(--tussock, #ca9a4a);
+  --color-primaryGradient: linear-gradient(135deg, var(--tussock, #ca9a4a) 0%, var(--sycamore, #928b42) 100%);
+  --color-secondary: var(--green-smoke, #afa76f);
+  --color-accent: var(--tussock, #ca9a4a);
+  --color-background: var(--satin-linen, #e6e5d4);
+  --color-surface: var(--chino, #cbc6a4);
+  --color-glass: rgba(203, 198, 164, 0.7);
+  --color-text: var(--lisbon-brown, #494623);
+  --color-textSecondary: var(--crocodile, #787659);
+  --color-border: var(--green-smoke, #afa76f);
+  --color-success: var(--sycamore, #928b42);
+  --color-warning: var(--tussock, #ca9a4a);
+  --color-error: #d4704a;
+  --color-info: var(--gurkha, #98957d);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,22 +33,22 @@
   -webkit-text-size-adjust: 100%;
 }
 
-/* Dark theme */
+/* Earth-toned color palette - Dark theme */
 .dark {
-  --color-primary: #818CF8;
-  --color-primaryGradient: linear-gradient(135deg, #818CF8 0%, #A78BFA 100%);
-  --color-secondary: #14B8A6;
-  --color-accent: #F59E0B;
-  --color-background: #0F172A;
-  --color-surface: #1E293B;
-  --color-glass: rgba(30, 41, 59, 0.7);
-  --color-text: #F8FAFC;
-  --color-textSecondary: #94A3B8;
-  --color-border: #334155;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  --color-primary: #d4b76c;
+  --color-primaryGradient: linear-gradient(135deg, #d4b76c 0%, #bba44a 100%);
+  --color-secondary: #3e3c2f;
+  --color-accent: #d4b76c;
+  --color-background: #1f1e17;
+  --color-surface: #2b2a22;
+  --color-glass: rgba(43, 42, 34, 0.7);
+  --color-text: #e3dec3;
+  --color-textSecondary: #b0ab8c;
+  --color-border: #3e3c2f;
+  --color-success: #bba44a;
+  --color-warning: #d4b76c;
+  --color-error: #d4704a;
+  --color-info: #b0ab8c;
 }
 
 @layer base {

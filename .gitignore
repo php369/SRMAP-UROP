@@ -92,3 +92,6 @@ temp/
 
 # OS generated files
 Thumbs.db
+
+.kiro
+.github

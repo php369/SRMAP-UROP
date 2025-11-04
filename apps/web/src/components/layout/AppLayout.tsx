@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopNavigation } from './TopNavigation';
+import { useSidebar } from '../../contexts/SidebarContext';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 
 interface AppLayoutProps {
@@ -9,6 +10,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const { isCollapsed } = useSidebar();
 
   // Track mobile state
   useEffect(() => {
@@ -57,13 +59,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
       
       {/* Main content area */}
-      <div className={`transition-all duration-300 ${isMobile ? 'pl-0' : 'lg:pl-20'}`}>
+      <div className={`transition-all duration-300 ${
+        isMobile ? 'pl-0' : isCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+      }`}>
         {/* Top navigation */}
         <TopNavigation />
         
         {/* Page content */}
         <main className={`relative z-10 py-4 sm:py-6 px-4 sm:px-6 transition-all duration-300 ${
-          isMobile ? 'pt-20' : 'lg:ml-52 lg:pt-6'
+          isMobile ? 'pt-20' : 'lg:pt-6'
         }`}>
           <div className="max-w-7xl mx-auto">
             {children}

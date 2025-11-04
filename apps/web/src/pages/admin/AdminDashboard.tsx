@@ -171,7 +171,7 @@ export function AdminDashboard() {
                 className={cn(
                   'px-4 py-2 rounded-md text-sm font-medium transition-colors',
                   selectedTimeRange === range
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-textPrimary'
                     : 'text-textSecondary hover:text-text'
                 )}
               >

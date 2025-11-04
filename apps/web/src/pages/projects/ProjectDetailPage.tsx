@@ -271,7 +271,7 @@ export function ProjectDetailPage() {
           </p>
           <button
             onClick={() => navigate('/projects')}
-            className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Projects
           </button>
@@ -312,7 +312,7 @@ export function ProjectDetailPage() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-white"
+              className="text-textPrimary"
             >
               <div className="flex items-center space-x-3 mb-4">
                 <Badge variant="glass" className={getStatusColor(project.status)}>
@@ -332,9 +332,9 @@ export function ProjectDetailPage() {
               </div>
 
               <h1 className="text-4xl md:text-5xl font-bold mb-4">{project.title}</h1>
-              <p className="text-xl text-white/90 mb-6 max-w-3xl">{project.description}</p>
+              <p className="text-xl text-textPrimary/90 mb-6 max-w-3xl">{project.description}</p>
 
-              <div className="flex items-center space-x-6 text-white/80">
+              <div className="flex items-center space-x-6 text-textPrimary/80">
                 <div>
                   <span className="text-sm">Progress</span>
                   <div className="text-2xl font-bold">{project.progress}%</div>
@@ -356,7 +356,7 @@ export function ProjectDetailPage() {
 
         {/* Scroll Indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-textPrimary"
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >

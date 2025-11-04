@@ -277,7 +277,7 @@ export async function getAssessmentSubmissions(
 export async function getSubmissionById(
   submissionId: string,
   userId: string,
-  userRole: 'student' | 'faculty' | 'admin'
+  userRole: 'student' | 'faculty' | 'coordinator' | 'admin'
 ): Promise<SubmissionWithAssessment> {
   try {
     const submission = await Submission.findById(submissionId)
@@ -371,7 +371,7 @@ export async function updateSubmissionStatus(
 export async function deleteSubmission(
   submissionId: string,
   userId: string,
-  userRole: 'student' | 'faculty' | 'admin'
+  userRole: 'student' | 'faculty' | 'coordinator' | 'admin'
 ): Promise<void> {
   try {
     const submission = await Submission.findById(submissionId)

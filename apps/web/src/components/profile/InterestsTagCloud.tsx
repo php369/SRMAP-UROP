@@ -280,7 +280,7 @@ export function InterestsTagCloud({
               key={tag}
               className={cn(
                 'px-2 py-1 rounded text-xs font-medium cursor-pointer transition-all duration-200',
-                selectedTags.has(tag) ? 'bg-primary text-white' : 'bg-secondary/50 hover:bg-secondary/70',
+                selectedTags.has(tag) ? 'bg-primary text-textPrimary' : 'bg-secondary/50 hover:bg-secondary/70',
                 hoveredTag === tag && 'scale-105'
               )}
               onClick={() => handleTagClick(tag)}

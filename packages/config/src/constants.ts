@@ -1,6 +1,6 @@
 // Application constants
 export const APP_CONFIG = {
-  name: 'SRM Project Portal',
+  name: 'SRM-AP Project Management Portal',
   description: 'SRM University-AP Project Management Portal',
   version: '1.0.0',
   domain: 'srmap.edu.in',

@@ -291,7 +291,7 @@ export function ProjectsPage() {
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   viewMode === 'masonry'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-textPrimary'
                     : 'text-textSecondary hover:text-text'
                 )}
                 title="Masonry Grid"
@@ -305,7 +305,7 @@ export function ProjectsPage() {
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   viewMode === 'kanban'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-textPrimary'
                     : 'text-textSecondary hover:text-text'
                 )}
                 title="Kanban Board"
@@ -319,7 +319,7 @@ export function ProjectsPage() {
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   viewMode === 'list'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-textPrimary'
                     : 'text-textSecondary hover:text-text'
                 )}
                 title="List View"

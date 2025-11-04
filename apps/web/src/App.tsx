@@ -6,16 +6,18 @@ import { Toaster } from 'react-hot-toast';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
-import { initializeTheme } from './stores/themeStore';
 
 // Components
 import { AuthGuard } from './components/auth/AuthGuard';
-import { LoadingSpinner } from './components/ui/LoadingSpinner';
+
 import { NotificationProvider } from './components/common/NotificationProvider';
-import { ThemeProvider } from './components/providers/ThemeProvider';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { SidebarProvider } from './contexts/SidebarContext';
 
 // Pages
+import { LandingPage } from './pages/public/LandingPage';
+import { ProjectsPage } from './pages/public/ProjectsPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
@@ -24,6 +26,8 @@ import { AssessmentDetailPage } from './pages/assessments/AssessmentDetailPage';
 import { SubmissionsPage } from './pages/submissions/SubmissionsPage';
 import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { FacultyProjectsPage } from './pages/projects/FacultyProjectsPage';
+import { CoordinatorApprovalsPage } from './pages/projects/CoordinatorApprovalsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminCohortsPage } from './pages/admin/AdminCohortsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
@@ -34,6 +38,10 @@ import { AppLayout } from './components/layout/AppLayout';
 
 // Constants
 import { ROUTES } from './utils/constants';
+
+// Theme preloader and styles
+import './utils/themePreloader';
+import './styles/dashboard-theme.css';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -47,23 +55,12 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Initialize theme
-    initializeTheme();
-    
-    // Check authentication status
+    // Check authentication status in background (don't block public routes)
     checkAuth();
   }, [checkAuth]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -75,50 +72,67 @@ function App() {
           
           <Routes>
             {/* Public routes */}
+            <Route path={ROUTES.HOME} element={<LandingPage />} />
+            <Route path={ROUTES.PROJECTS} element={<ProjectsPage />} />
             <Route path={ROUTES.LOGIN} element={<LoginPage />} />
             <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
             
             {/* Protected routes */}
             <Route
-              path="/*"
+              path="/dashboard/*"
               element={
                 <AuthGuard>
-                  <AppLayout>
-                    <Routes>
-                      <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-                      <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-                      <Route path={ROUTES.ASSESSMENTS} element={<AssessmentsPage />} />
-                      <Route path={ROUTES.ASSESSMENT_DETAIL} element={<AssessmentDetailPage />} />
-                      <Route path={ROUTES.SUBMISSIONS} element={<SubmissionsPage />} />
-                      <Route path={ROUTES.SUBMISSION_DETAIL} element={<SubmissionDetailPage />} />
-                      <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+                  <SidebarProvider>
+                    <AppLayout>
+                      <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/assessments" element={<AssessmentsPage />} />
+                      <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
+                      <Route path="/submissions" element={<SubmissionsPage />} />
+                      <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      
+                      {/* Faculty routes */}
+                      <Route path="/projects" element={
+                        <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                          <FacultyProjectsPage />
+                        </AuthGuard>
+                      } />
+                      
+                      {/* Coordinator routes */}
+                      <Route path="/projects/approvals" element={
+                        <AuthGuard requiredRole="coordinator">
+                          <CoordinatorApprovalsPage />
+                        </AuthGuard>
+                      } />
                       
                       {/* Admin routes */}
-                      <Route path={ROUTES.ADMIN_USERS} element={
+                      <Route path="/admin/users" element={
                         <AuthGuard requiredRole="admin">
                           <AdminUsersPage />
                         </AuthGuard>
                       } />
-                      <Route path={ROUTES.ADMIN_COHORTS} element={
+                      <Route path="/admin/cohorts" element={
                         <AuthGuard requiredRole="admin">
                           <AdminCohortsPage />
                         </AuthGuard>
                       } />
-                      <Route path={ROUTES.ADMIN_COURSES} element={
+                      <Route path="/admin/courses" element={
                         <AuthGuard requiredRole="admin">
                           <AdminCoursesPage />
                         </AuthGuard>
                       } />
-                      <Route path={ROUTES.ADMIN_REPORTS} element={
+                      <Route path="/admin/reports" element={
                         <AuthGuard requiredRole={['admin', 'faculty']}>
                           <AdminReportsPage />
                         </AuthGuard>
                       } />
                       
                       {/* Catch all route */}
-                      <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-                    </Routes>
-                  </AppLayout>
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                      </Routes>
+                    </AppLayout>
+                  </SidebarProvider>
                 </AuthGuard>
               }
             />

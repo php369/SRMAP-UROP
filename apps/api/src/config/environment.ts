@@ -32,6 +32,7 @@ const envSchema = z.object({
   // App Configuration
   FRONTEND_URL: z.string().url('Invalid Frontend URL').default('http://localhost:5173'),
   ALLOWED_ORIGINS: z.string().optional(),
+  ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
   
   // Security
   BCRYPT_ROUNDS: z.string().transform(Number).default('12'),
@@ -54,6 +55,32 @@ if (!parseResult.success) {
 
 export const config = parseResult.data;
 
+// OAuth Configuration Validation and Logging
+export function validateOAuthConfig() {
+  console.log('🔐 OAuth Configuration:');
+  console.log(`  Client ID: ${config.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
+  console.log(`  Redirect URI: ${config.GOOGLE_REDIRECT_URI}`);
+  console.log(`  Frontend URL: ${config.FRONTEND_URL}`);
+  
+  // Validate redirect URI format
+  try {
+    new URL(config.GOOGLE_REDIRECT_URI);
+  } catch (error) {
+    console.error('❌ Invalid GOOGLE_REDIRECT_URI format');
+    process.exit(1);
+  }
+  
+  // Check if redirect URI matches expected pattern
+  const expectedRedirectUri = `${config.FRONTEND_URL}/auth/callback`;
+  if (config.GOOGLE_REDIRECT_URI !== expectedRedirectUri) {
+    console.warn(`⚠️  Redirect URI mismatch:`);
+    console.warn(`  Configured: ${config.GOOGLE_REDIRECT_URI}`);
+    console.warn(`  Expected:   ${expectedRedirectUri}`);
+  }
+  
+  console.log('✅ OAuth configuration validated');
+}
+
 // Export individual configs for convenience
 export const {
   NODE_ENV,
@@ -72,6 +99,7 @@ export const {
   CLOUDINARY_API_SECRET,
   FRONTEND_URL,
   ALLOWED_ORIGINS,
+  ADMIN_EMAIL,
   BCRYPT_ROUNDS,
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,

@@ -49,11 +49,20 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
 
 function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const segments = pathname.split('/').filter(Boolean);
-  const breadcrumbs: BreadcrumbItem[] = [{ label: 'Home', path: '/' }];
+  
+  // Start with Dashboard for authenticated routes
+  const breadcrumbs: BreadcrumbItem[] = pathname.startsWith('/dashboard') 
+    ? [{ label: 'Dashboard', path: '/dashboard' }]
+    : [{ label: 'Home', path: '/' }];
 
   let currentPath = '';
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
+    
+    // Skip the dashboard segment since it's already added as root
+    if (segment === 'dashboard') {
+      return;
+    }
     
     // Convert segment to readable label
     const label = segment
