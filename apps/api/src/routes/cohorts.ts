@@ -320,6 +320,60 @@ router.delete(
 );
 
 /**
+ * @route   POST /api/cohorts/:id/members/remove
+ * @desc    Remove members from cohort (alternative to DELETE for better compatibility)
+ * @access  Admin only
+ */
+router.post(
+    '/:id/members/remove',
+    authenticate,
+    adminGuard(),
+    async (req: Request, res: Response) => {
+        try {
+            const { memberIds } = req.body;
+
+            if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'VALIDATION_ERROR',
+                        message: 'memberIds array is required'
+                    }
+                });
+            }
+
+            const cohort = await cohortService.removeMembers(
+                req.params.id,
+                memberIds.map((id: string) => new mongoose.Types.ObjectId(id))
+            );
+
+            if (!cohort) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        code: 'COHORT_NOT_FOUND',
+                        message: 'Cohort not found'
+                    }
+                });
+            }
+
+            res.json({
+                success: true,
+                data: cohort
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'REMOVE_MEMBERS_FAILED',
+                    message: error.message
+                }
+            });
+        }
+    }
+);
+
+/**
  * @route   POST /api/cohorts/:id/members/bulk
  * @desc    Bulk add members by email
  * @access  Admin only

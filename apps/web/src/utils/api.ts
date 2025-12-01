@@ -5,6 +5,7 @@ import { API_BASE_URL, STORAGE_KEYS } from './constants';
 class ApiClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;
+  private pendingRequests: Map<string, Promise<any>> = new Map();
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
@@ -65,23 +66,102 @@ class ApiClient {
     return data;
   }
 
-  // Make API request
+  // Check if error is retryable
+  private isRetryableError(error: any): boolean {
+    // Network errors
+    if (error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
+      return true;
+    }
+    
+    // Timeout errors
+    if (error.message?.includes('timeout')) {
+      return true;
+    }
+    
+    // 5xx server errors (except 501 Not Implemented)
+    if (error.status >= 500 && error.status !== 501) {
+      return true;
+    }
+    
+    // 429 Too Many Requests
+    if (error.status === 429) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Delay helper
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Calculate exponential backoff delay
+  private getBackoffDelay(attempt: number): number {
+    // Exponential backoff: 1s, 2s, 4s
+    return Math.min(1000 * Math.pow(2, attempt), 4000);
+  }
+
+  // Make API request with retry logic and deduplication
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retries = 3
   ): Promise<ApiResponse<T>> {
-    const url = `${this.baseURL}${endpoint}`;
+    // Create unique key for request deduplication
+    const requestKey = `${options.method || 'GET'}:${endpoint}:${
+      options.body instanceof FormData ? 'FormData' : JSON.stringify(options.body || {})
+    }`;
 
-    // Check if body is FormData to skip Content-Type header
-    const isFormData = options.body instanceof FormData;
-    const headers = this.buildHeaders(options.headers as Record<string, string>, isFormData);
+    // Check if identical request is already pending
+    if (this.pendingRequests.has(requestKey)) {
+      console.log(`🔄 Deduplicating request: ${requestKey.substring(0, 50)}...`);
+      return this.pendingRequests.get(requestKey)!;
+    }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    // Create new request promise
+    const requestPromise = (async () => {
+      try {
+        const url = `${this.baseURL}${endpoint}`;
 
-    return await this.handleResponse<T>(response);
+        // Check if body is FormData to skip Content-Type header
+        const isFormData = options.body instanceof FormData;
+        const headers = this.buildHeaders(options.headers as Record<string, string>, isFormData);
+
+        const response = await fetch(url, {
+          ...options,
+          headers,
+        });
+
+        return await this.handleResponse<T>(response);
+      } catch (error: any) {
+        // If retries remaining and error is retryable, retry
+        if (retries > 0 && this.isRetryableError(error)) {
+          const attempt = 3 - retries;
+          const delay = this.getBackoffDelay(attempt);
+          
+          console.warn(`Request failed, retrying in ${delay}ms... (${retries} retries left)`, {
+            endpoint,
+            error: error.message,
+          });
+          
+          await this.delay(delay);
+          // Remove from pending before retry
+          this.pendingRequests.delete(requestKey);
+          return this.makeRequest<T>(endpoint, options, retries - 1);
+        }
+        
+        // No more retries or non-retryable error
+        throw error;
+      } finally {
+        // Clean up pending request
+        this.pendingRequests.delete(requestKey);
+      }
+    })();
+
+    // Store pending request
+    this.pendingRequests.set(requestKey, requestPromise);
+    return requestPromise;
   }
 
   // HTTP Methods

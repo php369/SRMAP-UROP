@@ -122,7 +122,7 @@ export const cohortService = {
      * Remove members from cohort
      */
     async removeMembers(cohortId: string, memberIds: string[]): Promise<Cohort> {
-        const response = await apiClient.delete(`/cohorts/${cohortId}/members`, {
+        const response = await apiClient.post(`/cohorts/${cohortId}/members/remove`, {
             memberIds,
         });
         if (response.success) {

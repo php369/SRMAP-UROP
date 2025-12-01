@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { sessionManager } from '../utils/session';
 import { persistentAuth } from '../utils/persistent-auth';
 import { clearThemeStorage } from '../utils/theme-reset';
+import { tokenRefreshQueue } from '../utils/tokenRefreshQueue';
 
 interface AuthStore {
   // State
@@ -109,6 +110,9 @@ export const useAuthStore = create<AuthStore>()(
           console.log('🚪 Logout called');
           console.trace('Logout stack trace:');
 
+          // Clear token refresh queue
+          tokenRefreshQueue.clear();
+
           // Clear all sessions
           sessionManager.clearTokens();
           sessionManager.stopSessionMonitoring();
@@ -133,47 +137,50 @@ export const useAuthStore = create<AuthStore>()(
         },
 
         refreshAuthToken: async () => {
-          const { refreshToken, user } = get();
+          // Use token refresh queue to prevent multiple simultaneous refreshes
+          return tokenRefreshQueue.refresh(async () => {
+            const { refreshToken, user } = get();
 
-          if (!refreshToken) {
-            console.log('❌ No refresh token available');
-            return false;
-          }
-
-          try {
-            console.log('🔄 Attempting to refresh token...');
-            const response = await apiClient.post('/auth/refresh', { refreshToken });
-
-            if (response.success && response.data) {
-              const { token: newToken, refreshToken: newRefreshToken } = response.data as any;
-
-              // Update tokens in all storage systems
-              sessionManager.setTokens(newToken, newRefreshToken || refreshToken);
-
-              if (user && (newRefreshToken || refreshToken)) {
-                // Update persistent session
-                const currentSession = persistentAuth.getCurrentSession();
-                const rememberMe = currentSession?.rememberMe ?? true;
-                persistentAuth.saveSession(newToken, newRefreshToken || refreshToken, user, rememberMe);
-              }
-
-              set({
-                token: newToken,
-                refreshToken: newRefreshToken || refreshToken,
-              });
-
-              console.log('✅ Token refreshed successfully');
-              return true;
-            } else {
-              console.log('❌ Token refresh failed:', response.error);
+            if (!refreshToken) {
+              console.log('❌ No refresh token available');
+              return false;
             }
-          } catch (error) {
-            console.error('❌ Token refresh error:', error);
-            // Don't logout immediately, give user a chance to re-authenticate
-            return false;
-          }
 
-          return false;
+            try {
+              console.log('🔄 Attempting to refresh token...');
+              const response = await apiClient.post('/auth/refresh', { refreshToken });
+
+              if (response.success && response.data) {
+                const { token: newToken, refreshToken: newRefreshToken } = response.data as any;
+
+                // Update tokens in all storage systems
+                sessionManager.setTokens(newToken, newRefreshToken || refreshToken);
+
+                if (user && (newRefreshToken || refreshToken)) {
+                  // Update persistent session
+                  const currentSession = persistentAuth.getCurrentSession();
+                  const rememberMe = currentSession?.rememberMe ?? true;
+                  persistentAuth.saveSession(newToken, newRefreshToken || refreshToken, user, rememberMe);
+                }
+
+                set({
+                  token: newToken,
+                  refreshToken: newRefreshToken || refreshToken,
+                });
+
+                console.log('✅ Token refreshed successfully');
+                return true;
+              } else {
+                console.log('❌ Token refresh failed:', response.error);
+              }
+            } catch (error) {
+              console.error('❌ Token refresh error:', error);
+              // Don't logout immediately, give user a chance to re-authenticate
+              return false;
+            }
+
+            return false;
+          });
         },
 
         updateUser: (userData: Partial<User>) => {

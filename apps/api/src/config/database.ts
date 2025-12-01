@@ -4,18 +4,37 @@ import { logger } from '../utils/logger';
 
 export async function connectDatabase(): Promise<void> {
   try {
-    // Configure mongoose options
+    // Configure mongoose options with optimized connection pooling
     const options = {
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds
-      bufferCommands: false, // Disable mongoose buffering
+      // Connection pool settings
+      maxPoolSize: 10,        // Maximum number of connections in the pool
+      minPoolSize: 2,         // Minimum number of connections to maintain
+      maxIdleTimeMS: 30000,   // Close idle connections after 30 seconds
+      
+      // Timeout settings
+      serverSelectionTimeoutMS: 5000,  // Timeout for server selection
+      socketTimeoutMS: 45000,          // Socket timeout
+      connectTimeoutMS: 10000,         // Connection timeout
+      
+      // Retry settings
+      retryWrites: true,      // Retry write operations
+      retryReads: true,       // Retry read operations
+      
+      // Network settings
+      family: 4,              // Use IPv4, skip trying IPv6
+      
+      // Other settings
+      bufferCommands: false,  // Disable mongoose buffering
     };
 
     // Connect to MongoDB
     await mongoose.connect(config.MONGODB_URI, options);
 
-    logger.info('✅ Connected to MongoDB successfully');
+    logger.info('✅ Connected to MongoDB with optimized connection pool', {
+      maxPoolSize: options.maxPoolSize,
+      minPoolSize: options.minPoolSize,
+      maxIdleTimeMS: options.maxIdleTimeMS,
+    });
 
     // Handle connection events
     mongoose.connection.on('error', (error) => {

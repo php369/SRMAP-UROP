@@ -110,6 +110,13 @@ const GroupSchema = new Schema<IGroup>({
   }
 });
 
+// Indexes for performance optimization
+GroupSchema.index({ groupCode: 1 }); // Find group by code (already unique)
+GroupSchema.index({ leaderId: 1 }); // Find groups by leader
+GroupSchema.index({ members: 1 }); // Find groups by member
+GroupSchema.index({ projectType: 1, semester: 1 }); // Groups by type and semester
+GroupSchema.index({ createdAt: -1 }); // Recent groups
+
 // Validation for member count (2-4 students)
 GroupSchema.pre('save', function (next) {
   if (this.members.length < 2 || this.members.length > 4) {

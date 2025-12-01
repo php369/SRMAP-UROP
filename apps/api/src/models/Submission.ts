@@ -128,6 +128,14 @@ const SubmissionSchema = new Schema<ISubmission>({
   }
 });
 
+// Indexes for performance optimization
+SubmissionSchema.index({ groupId: 1, assessmentType: 1 }); // Group submissions by type
+SubmissionSchema.index({ studentId: 1, assessmentType: 1 }); // Student submissions by type
+SubmissionSchema.index({ facultyId: 1, gradeReleased: 1 }); // Faculty grading queue
+SubmissionSchema.index({ externalEvaluatorId: 1, gradeReleased: 1 }); // External evaluator queue
+SubmissionSchema.index({ projectId: 1, assessmentType: 1 }); // Project submissions
+SubmissionSchema.index({ submittedAt: -1 }); // Recent submissions
+
 // Validation: Must have either groupId OR studentId (not both, not neither)
 SubmissionSchema.pre('save', function (next) {
   const hasGroup = !!this.groupId;

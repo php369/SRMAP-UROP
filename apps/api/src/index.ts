@@ -22,6 +22,10 @@ import { setupSocketIO } from './services/socketService';
 import { initializeNotificationService } from './services/notificationService';
 import { performanceMonitoring } from './middleware/performanceMonitoring';
 import { developmentLogger } from './middleware/developmentLogger';
+import { requestIdMiddleware } from './middleware/requestId';
+import { userRateLimiter } from './middleware/userRateLimit';
+import { monitoring } from './utils/monitoring';
+import { compressionMiddleware } from './middleware/compression';
 
 // Import models to register them with Mongoose
 import './models';
@@ -70,28 +74,30 @@ async function startServer() {
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
     
-    // Rate limiting
-    const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
-      message: {
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          message: 'Too many requests from this IP, please try again later.',
-        },
-      },
-    });
-    app.use(limiter);
+    // Rate limiting (per-user instead of per-IP)
+    app.use(userRateLimiter);
     
     // Body parsing middleware
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
+    // Request ID middleware (must be early in the chain)
+    app.use(requestIdMiddleware);
+    
+    // Response compression middleware (add early for maximum benefit)
+    app.use(compressionMiddleware);
+    
     // Performance monitoring middleware
     app.use(performanceMonitoring);
     
+    // Monitoring metrics middleware
+    app.use(monitoring.requestMetricsMiddleware());
+    
     // Development logging middleware
     app.use(developmentLogger);
+    
+    // Start system monitoring
+    monitoring.startSystemMonitoring(60000); // Every minute
     
     /**
      * @swagger

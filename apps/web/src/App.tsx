@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -9,8 +9,9 @@ import { useAuthStore } from './stores/authStore';
 
 // Components
 import { AuthGuard } from './components/auth/AuthGuard';
-
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/common/NotificationProvider';
+import { PageLoader } from './components/common/PageLoader';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -27,22 +28,26 @@ import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { PreferencesPage } from './pages/profile/PreferencesPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
-import { CoordinatorApprovalsPage } from './pages/projects/CoordinatorApprovalsPage';
-import { StudentApplicationPage } from './pages/dashboard/StudentApplicationPage';
-import { ApplicationPage } from './pages/student/ApplicationPage';
-import { SubmissionPage } from './pages/student/SubmissionPage';
-import { AssessmentPage } from './pages/student/AssessmentPage';
-import { MeetingsPage } from './pages/student/MeetingsPage';
-import { ControlPanel } from './pages/coordinator/ControlPanel';
-import { FacultyProjectsPage } from './pages/faculty/ProjectsPage';
-import { FacultyApplicationsPage } from './pages/faculty/ApplicationsPage';
-import { FacultyAssessmentPage } from './pages/faculty/AssessmentPage';
-import { FacultyMeetingsPage } from './pages/faculty/MeetingsPage';
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminCohortsPage } from './pages/admin/AdminCohortsPage';
-import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
-import { AdminReportsPage } from './pages/admin/AdminReportsPage';
-import { EligibilityUpload } from './pages/admin/EligibilityUpload';
+// Lazy load pages for better performance
+import { lazy, Suspense } from 'react';
+
+// Lazy loaded pages
+const CoordinatorApprovalsPage = lazy(() => import('./pages/projects/CoordinatorApprovalsPage').then(m => ({ default: m.CoordinatorApprovalsPage })));
+const StudentApplicationPage = lazy(() => import('./pages/dashboard/StudentApplicationPage').then(m => ({ default: m.StudentApplicationPage })));
+const ApplicationPage = lazy(() => import('./pages/student/ApplicationPage').then(m => ({ default: m.ApplicationPage })));
+const SubmissionPage = lazy(() => import('./pages/student/SubmissionPage').then(m => ({ default: m.SubmissionPage })));
+const AssessmentPage = lazy(() => import('./pages/student/AssessmentPage').then(m => ({ default: m.AssessmentPage })));
+const MeetingsPage = lazy(() => import('./pages/student/MeetingsPage').then(m => ({ default: m.MeetingsPage })));
+const ControlPanel = lazy(() => import('./pages/coordinator/ControlPanel').then(m => ({ default: m.ControlPanel })));
+const FacultyProjectsPage = lazy(() => import('./pages/faculty/ProjectsPage').then(m => ({ default: m.FacultyProjectsPage })));
+const FacultyApplicationsPage = lazy(() => import('./pages/faculty/ApplicationsPage').then(m => ({ default: m.FacultyApplicationsPage })));
+const FacultyAssessmentPage = lazy(() => import('./pages/faculty/AssessmentPage').then(m => ({ default: m.FacultyAssessmentPage })));
+const FacultyMeetingsPage = lazy(() => import('./pages/faculty/MeetingsPage').then(m => ({ default: m.FacultyMeetingsPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminCohortsPage = lazy(() => import('./pages/admin/AdminCohortsPage').then(m => ({ default: m.AdminCohortsPage })));
+const AdminCoursesPage = lazy(() => import('./pages/admin/AdminCoursesPage').then(m => ({ default: m.AdminCoursesPage })));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage').then(m => ({ default: m.AdminReportsPage })));
+const EligibilityUpload = lazy(() => import('./pages/admin/EligibilityUpload').then(m => ({ default: m.EligibilityUpload })));
 
 // Layout
 import { AppLayout } from './components/layout/AppLayout';
@@ -74,20 +79,22 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <Router>
-            <div className="min-h-screen bg-background text-text">
-              <NotificationProvider />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <Router>
+              <div className="min-h-screen bg-background text-text">
+                <NotificationProvider />
 
-              <Routes>
-                {/* Public routes */}
-                <Route path={ROUTES.HOME} element={<LandingPage />} />
-                <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path={ROUTES.HOME} element={<LandingPage />} />
+                  <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                  <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
 
-                {/* Protected routes */}
+                  {/* Protected routes */}
                 <Route
                   path="/dashboard/*"
                   element={
@@ -194,6 +201,7 @@ function App() {
                   }
                 />
               </Routes>
+              </Suspense>
 
               {/* Toast notifications */}
               <Toaster
@@ -211,6 +219,7 @@ function App() {
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
