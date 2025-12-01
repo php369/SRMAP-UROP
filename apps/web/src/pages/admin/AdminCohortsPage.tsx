@@ -8,10 +8,11 @@ interface Cohort {
   _id: string;
   name: string;
   year: number;
-  semester: number;
-  type: 'IDP' | 'UROP' | 'CAPSTONE';
+  department: string;
+  members: any[];
   status: 'active' | 'inactive';
   createdAt: string;
+  updatedAt: string;
 }
 
 export function AdminCohortsPage() {
@@ -35,10 +36,10 @@ export function AdminCohortsPage() {
     setError(null);
 
     try {
-      const response = await apiClient.get('/admin/cohorts');
+      const response = await apiClient.get('/cohorts');
 
       if (response.success && response.data) {
-        setCohorts(response.data.cohorts || []);
+        setCohorts(response.data || []);
       } else {
         setError(response.error?.message || 'Failed to fetch cohorts');
       }
@@ -54,7 +55,7 @@ export function AdminCohortsPage() {
     setError(null);
 
     try {
-      const response = await apiClient.post('/admin/cohorts', formData);
+      const response = await apiClient.post('/cohorts', formData);
 
       if (response.success) {
         await fetchCohorts();
@@ -71,15 +72,6 @@ export function AdminCohortsPage() {
       setError(err.message || 'Failed to create cohort');
     } finally {
       setCreating(false);
-    }
-  };
-
-  const getTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case 'IDP': return 'bg-primary/20 text-primary border-primary/30';
-      case 'UROP': return 'bg-secondary/20 text-secondary border-secondary/30';
-      case 'CAPSTONE': return 'bg-info/20 text-info border-info/30';
-      default: return 'bg-white/10 text-textSecondary border-white/20';
     }
   };
 
@@ -158,14 +150,12 @@ export function AdminCohortsPage() {
                       <span className="text-text font-medium">{cohort.year}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-textSecondary">Semester:</span>
-                      <span className="text-text font-medium">{cohort.semester}</span>
+                      <span className="text-textSecondary">Department:</span>
+                      <span className="text-text font-medium">{cohort.department}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-textSecondary">Type:</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getTypeBadgeColor(cohort.type)}`}>
-                        {cohort.type}
-                      </span>
+                      <span className="text-textSecondary">Members:</span>
+                      <span className="text-text font-medium">{cohort.members?.length || 0}</span>
                     </div>
                   </div>
 

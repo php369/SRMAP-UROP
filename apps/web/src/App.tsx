@@ -29,6 +29,7 @@ import { PreferencesPage } from './pages/profile/PreferencesPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
 import { FacultyProjectsPage } from './pages/projects/FacultyProjectsPage';
 import { CoordinatorApprovalsPage } from './pages/projects/CoordinatorApprovalsPage';
+import { StudentApplicationPage } from './pages/dashboard/StudentApplicationPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminCohortsPage } from './pages/admin/AdminCohortsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
@@ -94,6 +95,11 @@ function App() {
                             <Route path="/profile" element={<ProfilePage />} />
                             <Route path="/preferences" element={<PreferencesPage />} />
                             <Route path="/help" element={<HelpSupportPage />} />
+                            <Route path="/application" element={
+                              <AuthGuard requiredRole="student">
+                                <StudentApplicationPage />
+                              </AuthGuard>
+                            } />
 
                             {/* Faculty routes */}
                             <Route path="/projects" element={

@@ -17,6 +17,7 @@ export const ROUTES = {
   LOGIN: '/login',
   AUTH_CALLBACK: '/auth/callback',
   DASHBOARD: '/dashboard',
+  APPLICATION: '/dashboard/application',
   ASSESSMENTS: '/dashboard/assessments',
   ASSESSMENT_DETAIL: '/dashboard/assessments/:id',
   SUBMISSIONS: '/dashboard/submissions',
@@ -90,6 +91,7 @@ export const THEMES = {
 export const ROLE_NAVIGATION = {
   student: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
+    { label: 'Application', path: ROUTES.APPLICATION, icon: 'Users' },
     { label: 'Assessments', path: ROUTES.ASSESSMENTS, icon: 'FileText' },
     { label: 'Submissions', path: ROUTES.SUBMISSIONS, icon: 'Upload' },
     { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },

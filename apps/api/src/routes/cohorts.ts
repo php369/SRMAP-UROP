@@ -55,12 +55,11 @@ router.post(
 /**
  * @route   GET /api/cohorts
  * @desc    Get all cohorts with optional filters
- * @access  Admin, Coordinator, Faculty
+ * @access  Authenticated users (all roles)
  */
 router.get(
     '/',
     authenticate,
-    rbacGuard('admin', 'faculty', 'coordinator'),
     async (req: Request, res: Response) => {
         try {
             const { year, department, status } = req.query;
@@ -91,12 +90,11 @@ router.get(
 /**
  * @route   GET /api/cohorts/:id
  * @desc    Get cohort by ID
- * @access  Admin, Coordinator, Faculty
+ * @access  Authenticated users (all roles)
  */
 router.get(
     '/:id',
     authenticate,
-    rbacGuard('admin', 'faculty', 'coordinator'),
     async (req: Request, res: Response) => {
         try {
             const cohort = await cohortService.getCohortById(req.params.id);
@@ -365,12 +363,11 @@ router.post(
 /**
  * @route   GET /api/cohorts/:id/stats
  * @desc    Get cohort statistics
- * @access  Admin, Coordinator, Faculty
+ * @access  Authenticated users (all roles)
  */
 router.get(
     '/:id/stats',
     authenticate,
-    rbacGuard('admin', 'faculty', 'coordinator'),
     async (req: Request, res: Response) => {
         try {
             const stats = await cohortService.getCohortStats(req.params.id);
@@ -392,6 +389,61 @@ router.get(
 );
 
 /**
+ * @route   POST /api/cohorts/:id/join
+ * @desc    Join a cohort (student adds themselves)
+ * @access  Authenticated students
+ */
+router.post(
+    '/:id/join',
+    authenticate,
+    async (req: Request, res: Response) => {
+        try {
+            const cohortId = req.params.id;
+            const userId = req.user?.id;
+
+            if (!userId) {
+                return res.status(401).json({
+                    success: false,
+                    error: {
+                        code: 'NOT_AUTHENTICATED',
+                        message: 'User not authenticated'
+                    }
+                });
+            }
+
+            // Add the current user to the cohort
+            const cohort = await cohortService.addMembers(
+                cohortId,
+                [new mongoose.Types.ObjectId(userId)]
+            );
+
+            if (!cohort) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        code: 'COHORT_NOT_FOUND',
+                        message: 'Cohort not found'
+                    }
+                });
+            }
+
+            res.json({
+                success: true,
+                data: cohort
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'JOIN_COHORT_FAILED',
+                    message: error.message
+                }
+            });
+        }
+    }
+);
+
+/**
  * @route   GET /api/cohorts/user/:userId
  * @desc    Get cohorts for a specific user
  * @access  Authenticated
@@ -402,7 +454,7 @@ router.get(
     async (req: Request, res: Response) => {
         try {
             // Users can only view their own cohorts unless they're admin
-            if (req.user?.userId !== req.params.userId && req.user?.role !== 'admin') {
+            if (req.user?.id !== req.params.userId && req.user?.role !== 'admin') {
                 return res.status(403).json({
                     success: false,
                     error: {
