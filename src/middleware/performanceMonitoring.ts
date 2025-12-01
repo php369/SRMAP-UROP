@@ -49,8 +49,9 @@ export function performanceMonitoring(req: Request, res: Response, next: NextFun
     // Store metrics
     storeMetrics(metrics);
 
-    // Log slow requests (> 1 second)
-    if (responseTime > 1000) {
+    // Log slow requests (> 1 second, but > 2 seconds for auth endpoints)
+    const slowThreshold = req.url.includes('/auth/') ? 2000 : 1000;
+    if (responseTime > slowThreshold) {
       logger.warn(`Slow request detected: ${req.method} ${req.url} - ${responseTime.toFixed(2)}ms`, {
         requestId,
         responseTime,

@@ -1,3 +1,12 @@
+// Suppress punycode deprecation warning
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning' && warning.message.includes('punycode')) {
+    return; // Ignore punycode deprecation warnings
+  }
+  console.warn(warning.name, warning.message);
+});
+
 import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';

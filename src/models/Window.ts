@@ -2,38 +2,48 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWindow extends Document {
   _id: mongoose.Types.ObjectId;
-  kind: 'grouping' | 'application' | 'faculty-edit-title' | 'internal-eval' | 'external-eval';
-  type: 'IDP' | 'UROP' | 'CAPSTONE';
-  start: Date;
-  end: Date;
-  enforced: boolean;
+  windowType: 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
+  projectType: 'IDP' | 'UROP' | 'CAPSTONE';
+  assessmentType?: 'A1' | 'A2' | 'A3' | 'External'; // For submission/assessment windows
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean; // Computed based on current time
+  createdBy: mongoose.Types.ObjectId; // Coordinator
   createdAt: Date;
   updatedAt: Date;
 }
 
 const WindowSchema = new Schema<IWindow>({
-  kind: {
+  windowType: {
     type: String,
-    enum: ['grouping', 'application', 'faculty-edit-title', 'internal-eval', 'external-eval'],
+    enum: ['proposal', 'application', 'submission', 'assessment', 'grade_release'],
     required: true
   },
-  type: {
+  projectType: {
     type: String,
     enum: ['IDP', 'UROP', 'CAPSTONE'],
     required: true
   },
-  start: {
+  assessmentType: {
+    type: String,
+    enum: ['A1', 'A2', 'A3', 'External']
+  },
+  startDate: {
     type: Date,
     required: true
   },
-  end: {
+  endDate: {
     type: Date,
     required: true
   },
-  enforced: {
+  isActive: {
     type: Boolean,
-    required: true,
-    default: true
+    default: false
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   }
 }, {
   timestamps: true,
@@ -45,20 +55,27 @@ const WindowSchema = new Schema<IWindow>({
   }
 });
 
-// Validation to ensure end is after start
-WindowSchema.pre('save', function(next) {
-  if (this.end <= this.start) {
+// Validation to ensure endDate is after startDate
+WindowSchema.pre('save', function (next) {
+  if (this.endDate <= this.startDate) {
     next(new Error('Window end time must be after start time'));
   } else {
     next();
   }
 });
 
+// Compute isActive based on current time
+WindowSchema.pre('save', function (next) {
+  const now = new Date();
+  this.isActive = now >= this.startDate && now <= this.endDate;
+  next();
+});
+
 // Compound index for efficient window lookups
-WindowSchema.index({ kind: 1, type: 1 });
+WindowSchema.index({ windowType: 1, projectType: 1, isActive: 1 });
 // Additional indexes for performance
-WindowSchema.index({ enforced: 1 });
-WindowSchema.index({ start: 1, end: 1 });
+WindowSchema.index({ startDate: 1, endDate: 1 });
+WindowSchema.index({ createdBy: 1 });
 
 export const Window = mongoose.model<IWindow>('Window', WindowSchema);
 export default Window;

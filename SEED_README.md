@@ -1,44 +1,29 @@
 # SRM Project Portal - Seed Data
 
-This document explains how to populate the database with sample data for development and testing.
+This document explains how to initialize the database with minimal data for production use.
 
 ## What Gets Created
 
-The seed script creates comprehensive sample data including:
+The seed script creates only essential data:
 
-### 👥 Users (6 total)
+### 👥 Users (1 total)
 
-- **1 Admin**: `admin@srmap.edu.in`
-- **2 Faculty**:
-  - `priya.sharma@srmap.edu.in` (Computer Science)
-  - `rajesh.gupta@srmap.edu.in` (Information Technology)
-- **5 Students**:
-  - `poojan_patel@srmap.edu.in` (Computer Science, Year 3) - **Your Account**
-  - `arjun.patel@srmap.edu.in` (Computer Science, Year 3)
-  - `sneha.reddy@srmap.edu.in` (Computer Science, Year 3)
-  - `vikram.singh@srmap.edu.in` (Information Technology, Year 2)
-  - `ananya.iyer@srmap.edu.in` (Computer Science, Year 4)
+- **1 Admin**: `poojan_patel@srmap.edu.in` (Poojan Patel)
 
-### 🎓 Academic Data
+### 👨‍🏫 Faculty Roster (1 entry)
 
-- **2 Cohorts**: CS 2024 Batch, IT 2024 Batch
-- **3 Courses**: Web Development, Software Engineering, System Design
-- **4 Assessments**: Including React Portfolio Project, Design Patterns, etc.
-- **4 Submissions**: Sample student submissions with files
-- **3 Grades**: Detailed rubric-based grading
+- **Admin as Coordinator**: `poojan_patel@srmap.edu.in` (Administration department)
 
-### 🎯 Eligibility Entries (Correct Rules)
+### 🎓 No Sample Data
 
-- **5 Eligibility entries** following proper rules:
-  - **Poojan Patel** (4th year, 7th sem): UROP only
-  - **2nd & 3rd year students**: IDP only (up to 2 IDPs)
-  - **4th year, 8th sem**: CAPSTONE only
-
-### 🚀 Sample Projects (8 total)
-
-- **3 IDP Projects**: Blockchain credentials, AR navigation, Microservices
-- **3 UROP Projects**: AI analytics, NLP research, etc.
-- **2 CAPSTONE Projects**: Smart campus IoT, Energy management
+- **No Students**: Students will register through Google OAuth
+- **No Projects**: Faculty will create projects through the admin interface
+- **No Eligibilities**: Admin will upload eligibility data via CSV
+- **No Groups**: Students will form groups during the grouping window
+- **No Applications**: Students will apply to projects during application window
+- **No Submissions**: Students will submit work through the portal
+- **No Evaluations**: Faculty will evaluate submissions through the portal
+- **No Windows**: Admin will configure time windows through the admin interface
 
 ## How to Run
 
@@ -78,47 +63,43 @@ npx tsx src/scripts/seed.ts
 7. **Sets eligibility** - Project eligibility for all students
 8. **Publishes projects** - Sample projects for browsing
 
-## Your Account Details
+## Admin Account Details
 
 **Email**: `poojan_patel@srmap.edu.in`
 **Name**: Poojan Patel
-**Role**: Student
-**Department**: Computer Science
-**Year**: 4th Year, 7th Semester (Odd Term)
-**Registration**: AP21110010001
+**Role**: Admin & Coordinator
+**Department**: Administration
 
-**Project Eligibility**:
-
-- ❌ IDP (2nd & 3rd year only)
-- ✅ UROP (4th year, odd semester)
-- ❌ CAPSTONE (4th year, even semester only)
-
-## Testing the System
+## After Running Seed Script
 
 After running the seed script, you can:
 
-1. **Visit the public pages**:
+1. **Visit the portal**:
    - Landing page: `http://localhost:5174/`
-   - Projects page: `http://localhost:5174/projects`
+   - Login with Google OAuth using admin email
 
-2. **Test authentication** with your account:
-   - Email: `poojan_patel@srmap.edu.in`
-   - Use Google OAuth (development setup required)
+2. **Configure the system**:
+   - Upload student eligibility data via CSV
+   - Configure time windows for grouping and applications
+   - Add faculty to the roster
+   - Create or approve projects
 
-3. **Browse sample projects** on the public projects page
-
-4. **Check eligibility** - Your account will be eligible for IDP and UROP projects
+3. **Clean slate**:
+   - No dummy data to clean up
+   - Ready for production use
+   - All data will be real data entered by users
 
 ## Database Collections Created
 
-- `users` - All user accounts
-- `cohorts` - Academic cohorts
-- `courses` - Course information
-- `assessments` - Assignments and projects
-- `submissions` - Student submissions
-- `grades` - Grading data with rubrics
-- `eligibilities` - Project eligibility entries
-- `projects` - Published project listings
+- `users` - Admin user only
+- `facultyRoster` - Admin as coordinator
+- `eligibilities` - Empty (admin will upload)
+- `projects` - Empty (faculty will create)
+- `groups` - Empty (students will create)
+- `applications` - Empty (students will apply)
+- `submissions` - Empty (students will submit)
+- `evaluations` - Empty (faculty will evaluate)
+- `windows` - Empty (admin will configure)
 
 ## Troubleshooting
 

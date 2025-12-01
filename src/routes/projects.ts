@@ -100,7 +100,8 @@ router.get('/public', async (req: Request, res: Response) => {
     
     res.json({
       success: true,
-      data: projects
+      data: projects,
+      message: projects.length === 0 ? 'No projects are currently available. Please check back later.' : undefined
     });
   } catch (error) {
     logger.error('Error fetching published projects:', error);
@@ -148,7 +149,8 @@ router.get('/departments', async (_req: Request, res: Response) => {
     
     res.json({
       success: true,
-      data: departments.sort()
+      data: departments.sort(),
+      message: departments.length === 0 ? 'No departments have published projects yet.' : undefined
     });
   } catch (error) {
     logger.error('Error fetching departments:', error);
@@ -323,7 +325,8 @@ router.get('/faculty', authenticate, facultyGuard(), async (req: Request, res: R
     
     res.json({
       success: true,
-      data: projects
+      data: projects,
+      message: projects.length === 0 ? 'You have not created any projects yet. Create your first project to get started.' : undefined
     });
 
   } catch (error) {
@@ -750,7 +753,8 @@ router.get('/pending', authenticate, facultyGuard(true), async (req: Request, re
     
     res.json({
       success: true,
-      data: projects
+      data: projects,
+      message: projects.length === 0 ? 'No projects are pending approval at this time.' : undefined
     });
 
   } catch (error) {

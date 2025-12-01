@@ -7,6 +7,8 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
+    readinessCheckPath: /api/v1/status/ready
+    livenessCheckPath: /api/v1/status/live
     envVars:
       - key: NODE_ENV
         value: production

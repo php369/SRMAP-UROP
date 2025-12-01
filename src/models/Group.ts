@@ -2,20 +2,32 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IGroup extends Document {
   _id: mongoose.Types.ObjectId;
-  code: string; // 6-char A-Z + 2-9 (no O/0 I/1 S/5)
-  type: 'IDP' | 'UROP' | 'CAPSTONE';
-  memberIds: mongoose.Types.ObjectId[]; // 1-4 students
-  projectId?: mongoose.Types.ObjectId;
-  facultyId?: mongoose.Types.ObjectId;
+  groupId: string; // Unique identifier
+  groupCode: string; // 6-char alphanumeric
+  groupName?: string;
+  leaderId: mongoose.Types.ObjectId; // Student who created the group
+  members: mongoose.Types.ObjectId[]; // 2-4 students
+  projectType: 'IDP' | 'UROP' | 'CAPSTONE';
+  semester: string;
+  year: number;
+  status: 'forming' | 'complete' | 'applied' | 'approved' | 'frozen';
+  assignedProjectId?: mongoose.Types.ObjectId;
+  assignedFacultyId?: mongoose.Types.ObjectId;
+  externalEvaluatorId?: mongoose.Types.ObjectId;
   meetUrl?: string;
   calendarEventId?: string;
-  status: 'forming' | 'applied' | 'approved' | 'rejected' | 'frozen';
   createdAt: Date;
   updatedAt: Date;
 }
 
 const GroupSchema = new Schema<IGroup>({
-  code: {
+  groupId: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  groupCode: {
     type: String,
     required: true,
     unique: true,
@@ -23,28 +35,57 @@ const GroupSchema = new Schema<IGroup>({
     uppercase: true,
     validate: {
       validator: (code: string) => {
-        // Validate 6-char code using A-Z + 2-9 (excluding O/0, I/1, S/5)
-        const validChars = /^[ABCDEFGHJKLMNPQRTUVWXYZ23456789]{6}$/;
+        // Validate 6-char alphanumeric code
+        const validChars = /^[A-Z0-9]{6}$/;
         return validChars.test(code);
       },
-      message: 'Code must be 6 characters using A-Z and 2-9 (excluding O/0, I/1, S/5)'
+      message: 'Code must be 6 alphanumeric characters'
     }
   },
-  type: {
+  groupName: {
     type: String,
-    enum: ['IDP', 'UROP', 'CAPSTONE'],
+    trim: true,
+    maxlength: 100
+  },
+  leaderId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
-  memberIds: [{
+  members: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
   }],
-  projectId: {
+  projectType: {
+    type: String,
+    enum: ['IDP', 'UROP', 'CAPSTONE'],
+    required: true
+  },
+  semester: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  year: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['forming', 'complete', 'applied', 'approved', 'frozen'],
+    required: true,
+    default: 'forming'
+  },
+  assignedProjectId: {
     type: Schema.Types.ObjectId,
     ref: 'Project'
   },
-  facultyId: {
+  assignedFacultyId: {
+    type: Schema.Types.ObjectId,
+    ref: 'FacultyRoster'
+  },
+  externalEvaluatorId: {
     type: Schema.Types.ObjectId,
     ref: 'FacultyRoster'
   },
@@ -58,12 +99,6 @@ const GroupSchema = new Schema<IGroup>({
   calendarEventId: {
     type: String,
     trim: true
-  },
-  status: {
-    type: String,
-    enum: ['forming', 'applied', 'approved', 'rejected', 'frozen'],
-    required: true,
-    default: 'forming'
   }
 }, {
   timestamps: true,
@@ -75,20 +110,22 @@ const GroupSchema = new Schema<IGroup>({
   }
 });
 
-// Validation for member count (1-4 students)
-GroupSchema.pre('save', function(next) {
-  if (this.memberIds.length < 1 || this.memberIds.length > 4) {
-    next(new Error('Group must have between 1 and 4 members'));
+// Validation for member count (2-4 students)
+GroupSchema.pre('save', function (next) {
+  if (this.members.length < 2 || this.members.length > 4) {
+    next(new Error('Group must have between 2 and 4 members'));
   } else {
     next();
   }
 });
 
-// Unique index on code (already defined in schema)
+// Unique index on groupCode (already defined in schema)
 // Additional indexes for performance
-GroupSchema.index({ type: 1 });
-GroupSchema.index({ status: 1 });
-GroupSchema.index({ memberIds: 1 });
+GroupSchema.index({ projectType: 1 });
+GroupSchema.index({ status: 1, projectType: 1 });
+GroupSchema.index({ members: 1 });
+GroupSchema.index({ leaderId: 1 });
+GroupSchema.index({ groupId: 1 });
 
 export const Group = mongoose.model<IGroup>('Group', GroupSchema);
 export default Group;

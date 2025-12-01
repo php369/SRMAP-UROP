@@ -15,8 +15,7 @@ const TokenStoreSchema = new Schema<ITokenStore>({
   facultyId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   provider: {
     type: String,
