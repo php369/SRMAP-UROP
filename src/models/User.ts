@@ -9,10 +9,13 @@ export interface IUser extends Document {
   avatar?: string; // Selected from predefined pool
   studentId?: string; // Unique identifier for students
   facultyId?: string; // Unique identifier for faculty
-  isCoordinator?: boolean; // For faculty members
+  isCoordinator?: boolean; // For faculty members (coordinator is also a faculty)
+  isExternalEvaluator?: boolean; // For faculty members serving as external evaluators
   profile: {
     department?: string;
     year?: number;
+    semester?: number; // Current semester (1-8)
+    specialization?: string; // For 6th sem onwards
   };
   preferences: {
     theme: 'light' | 'dark';
@@ -71,6 +74,10 @@ const UserSchema = new Schema<IUser>({
     type: Boolean,
     default: false
   },
+  isExternalEvaluator: {
+    type: Boolean,
+    default: false
+  },
   profile: {
     department: {
       type: String,
@@ -80,6 +87,15 @@ const UserSchema = new Schema<IUser>({
       type: Number,
       min: 1,
       max: 4
+    },
+    semester: {
+      type: Number,
+      min: 1,
+      max: 8
+    },
+    specialization: {
+      type: String,
+      trim: true
     }
   },
   preferences: {

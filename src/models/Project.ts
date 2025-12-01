@@ -11,10 +11,13 @@ export interface IProject extends Document {
   prerequisites?: string;
   facultyId: mongoose.Types.ObjectId;
   facultyName: string; // Denormalized for performance
+  facultyIdNumber: string; // Faculty ID for display
   capacity?: number;
   status: 'draft' | 'published' | 'frozen' | 'assigned';
   assignedTo?: mongoose.Types.ObjectId; // Group or Student ID
   isFrozen: boolean;
+  semester: string; // e.g., "Fall 2025"
+  year: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,11 +71,25 @@ const ProjectSchema = new Schema<IProject>({
     required: true,
     trim: true
   },
+  facultyIdNumber: {
+    type: String,
+    required: true,
+    trim: true
+  },
   capacity: {
     type: Number,
     min: 1,
     max: 10,
     default: 1
+  },
+  semester: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  year: {
+    type: Number,
+    required: true
   },
   status: {
     type: String,

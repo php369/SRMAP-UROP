@@ -17,6 +17,7 @@ export { MeetingLog } from './MeetingLog';
 export { StudentMeta } from './StudentMeta';
 export { OnlineStatus } from './OnlineStatus';
 export { AvatarPool } from './AvatarPool';
+export { Submission } from './Submission';
 
 // Export types separately
 export type { IUser } from './User';
@@ -37,6 +38,7 @@ export type { IMeetingLog } from './MeetingLog';
 export type { IStudentMeta } from './StudentMeta';
 export type { IOnlineStatus } from './OnlineStatus';
 export type { IAvatarPool } from './AvatarPool';
+export type { ISubmission } from './Submission';
 
 // Re-export mongoose types for convenience
 export { Types as MongooseTypes } from 'mongoose';

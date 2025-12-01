@@ -24,6 +24,7 @@ import eligibilityRoutes from './eligibility';
 import { createDebugRoutes } from '../middleware/developmentLogger';
 import userRoutes from './users';
 import cohortRoutes from './cohorts';
+import controlRoutes from './control';
 
 export function setupRoutes(app: Express): void {
   // API version prefix
@@ -92,6 +93,9 @@ export function setupRoutes(app: Express): void {
 
   // Cohort routes
   app.use(`${API_PREFIX}/cohorts`, cohortRoutes);
+
+  // Control panel routes (Coordinator)
+  app.use(`${API_PREFIX}/control`, controlRoutes);
 
   /**
    * @swagger
