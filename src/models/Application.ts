@@ -88,6 +88,12 @@ const ApplicationSchema = new Schema<IApplication>({
   }
 });
 
+// Indexes for performance optimization
+ApplicationSchema.index({ projectId: 1, status: 1 }); // Applications by project and status
+ApplicationSchema.index({ groupId: 1 }); // Find applications by group
+ApplicationSchema.index({ studentId: 1 }); // Find applications by student
+ApplicationSchema.index({ status: 1, createdAt: -1 }); // Recent applications by status
+
 // Validation: Must have either studentId OR groupId (not both, not neither)
 ApplicationSchema.pre('save', function (next) {
   const hasStudent = !!this.studentId;

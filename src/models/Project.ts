@@ -107,6 +107,7 @@ const ProjectSchema = new Schema<IProject>({
   }
 }, {
   timestamps: true,
+  optimisticConcurrency: true, // Enable optimistic locking
   toJSON: {
     transform: (_doc: any, ret: any) => {
       delete ret.__v;
@@ -115,9 +116,12 @@ const ProjectSchema = new Schema<IProject>({
   }
 });
 
-// Compound index for performance optimization
+// Compound indexes for performance optimization
 ProjectSchema.index({ status: 1, type: 1, department: 1 });
-// Additional indexes for common queries
+ProjectSchema.index({ facultyId: 1, type: 1 }); // Faculty's projects by type
+ProjectSchema.index({ status: 1, createdAt: -1 }); // Recent projects by status
+ProjectSchema.index({ type: 1, semester: 1, year: 1 }); // Projects by semester
+ProjectSchema.index({ assignedTo: 1 }); // Find project by assigned group/student
 ProjectSchema.index({ facultyId: 1, status: 1 });
 ProjectSchema.index({ type: 1 });
 ProjectSchema.index({ projectId: 1 });

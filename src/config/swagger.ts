@@ -1,5 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { config } from './environment';
+import { swaggerExamples, errorCodes } from './swaggerExamples';
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -531,6 +532,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: 'Authentication',
         description: 'Google OAuth authentication and JWT token management',
+        externalDocs: {
+          description: 'Google OAuth 2.0 Documentation',
+          url: 'https://developers.google.com/identity/protocols/oauth2',
+        },
       },
       {
         name: 'Assessments',
@@ -553,6 +558,8 @@ const options: swaggerJsdoc.Options = {
         description: 'System health and status endpoints',
       },
     ],
+    'x-error-codes': errorCodes,
+    'x-examples': swaggerExamples,
   },
   apis: [
     './src/routes/*.ts', // Path to the API routes
