@@ -1,8 +1,4 @@
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import { AnimatedLogo, ParticleBackground, GradientMesh, MagneticButton } from '../three';
 import { GlowButton } from '../ui/GlowButton';
 import { cn } from '../../utils/cn';
 
@@ -14,52 +10,11 @@ interface HeroSectionProps {
 
 export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectionProps) {
   return (
-    <section className={cn('relative min-h-screen flex items-center justify-center overflow-hidden', className)}>
-      {/* 3D Canvas Background */}
+    <section className={cn('relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-bg via-surface to-bg', className)}>
+      {/* Animated Background Pattern */}
       <div className="absolute inset-0 z-0">
-        <Canvas>
-          <Suspense fallback={null}>
-            <PerspectiveCamera makeDefault position={[0, 0, 8]} />
-            
-            {/* Lighting */}
-            <ambientLight intensity={0.6} />
-            <pointLight position={[10, 10, 10]} intensity={0.8} />
-            <pointLight position={[-10, -10, -10]} intensity={0.3} color="#918a41" />
-            
-            {/* 3D Elements */}
-            <ParticleBackground count={1500} />
-            <GradientMesh position={[0, 0, -8]} scale={2} />
-            <AnimatedLogo position={[0, 1, 0]} scale={0.8} />
-            
-            {/* 3D Buttons */}
-            <MagneticButton
-              position={[-2, -2.5, 0]}
-              text="Get Started"
-              onClick={onGetStarted}
-              color="#c89643"
-            />
-            <MagneticButton
-              position={[2, -2.5, 0]}
-              text="Learn More"
-              onClick={onLearnMore}
-              color="#918a41"
-            />
-            
-            {/* Environment */}
-            <Environment preset="night" />
-            
-            {/* Controls */}
-            <OrbitControls
-              enableZoom={false}
-              enablePan={false}
-              enableRotate={true}
-              autoRotate={true}
-              autoRotateSpeed={0.5}
-              maxPolarAngle={Math.PI / 2}
-              minPolarAngle={Math.PI / 2}
-            />
-          </Suspense>
-        </Canvas>
+        <div className="absolute inset-0 bg-gradient-to-r from-accent/10 via-transparent to-accent/10 animate-pulse" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(200,150,67,0.1),transparent_50%)]" />
       </div>
 
       {/* Content Overlay */}
@@ -146,12 +101,12 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
             ))}
           </motion.div>
 
-          {/* CTA Buttons - Fallback for non-3D environments */}
+          {/* CTA Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12 sm:hidden"
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12"
           >
             <GlowButton
               onClick={onGetStarted}

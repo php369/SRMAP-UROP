@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IProject extends Document {
   _id: mongoose.Types.ObjectId;
+  projectId: string; // Unique identifier
   title: string;
   brief: string;
   description?: string;
@@ -11,12 +12,20 @@ export interface IProject extends Document {
   facultyId: mongoose.Types.ObjectId;
   facultyName: string; // Denormalized for performance
   capacity?: number;
-  status: 'draft' | 'pending' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'frozen' | 'assigned';
+  assignedTo?: mongoose.Types.ObjectId; // Group or Student ID
+  isFrozen: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const ProjectSchema = new Schema<IProject>({
+  projectId: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
   title: {
     type: String,
     required: true,
@@ -67,9 +76,17 @@ const ProjectSchema = new Schema<IProject>({
   },
   status: {
     type: String,
-    enum: ['draft', 'pending', 'published', 'archived'],
+    enum: ['draft', 'published', 'frozen', 'assigned'],
     required: true,
     default: 'draft'
+  },
+  assignedTo: {
+    type: Schema.Types.ObjectId,
+    ref: 'Group'
+  },
+  isFrozen: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,
@@ -84,8 +101,10 @@ const ProjectSchema = new Schema<IProject>({
 // Compound index for performance optimization
 ProjectSchema.index({ status: 1, type: 1, department: 1 });
 // Additional indexes for common queries
-ProjectSchema.index({ facultyId: 1 });
+ProjectSchema.index({ facultyId: 1, status: 1 });
 ProjectSchema.index({ type: 1 });
+ProjectSchema.index({ projectId: 1 });
+ProjectSchema.index({ assignedTo: 1 });
 
 export const Project = mongoose.model<IProject>('Project', ProjectSchema);
 export default Project;

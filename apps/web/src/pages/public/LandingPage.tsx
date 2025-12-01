@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, Users, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -29,22 +28,13 @@ export function LandingPage() {
                   SRM University-AP
                 </h1>
                 <p className="text-xs text-textSecondary">
-                  SRM-AP Project Management Portal
+                  Project Management Portal
                 </p>
               </div>
             </div>
 
             {/* Navigation */}
             <nav className="flex items-center space-x-4">
-              {!isAuthenticated && !isLoading && (
-                <Link
-                  to={ROUTES.PROJECTS}
-                  className="transition-colors hover:opacity-80 text-textSecondary"
-                >
-                  Browse Projects
-                </Link>
-              )}
-              
               {isLoading ? (
                 <div className="w-20 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
               ) : isAuthenticated && user ? (
@@ -52,10 +42,10 @@ export function LandingPage() {
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-accent to-highlight rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-medium">
-                        {user.name.charAt(0).toUpperCase()}
+                        {user?.name?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
-                    <span className="text-textPrimary font-medium">{user.name}</span>
+                    <span className="text-textPrimary font-medium">{user?.name || 'User'}</span>
                   </div>
                   <Link
                     to={ROUTES.DASHBOARD}
@@ -81,11 +71,7 @@ export function LandingPage() {
       <main>
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+            <div>
               <img
                 src="/branding/srm-logo.svg"
                 alt="SRM University-AP"
@@ -109,33 +95,27 @@ export function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to={ROUTES.PROJECTS}
-                  className="inline-flex items-center justify-center px-8 py-3 text-white rounded-lg hover:opacity-90 transition-opacity text-lg font-medium bg-accent"
-                >
-                  Browse Projects
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-
                 {isLoading ? (
                   <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
                 ) : isAuthenticated ? (
                   <Link
                     to={ROUTES.DASHBOARD}
-                    className="inline-flex items-center justify-center px-8 py-3 border border-border rounded-lg hover:opacity-80 transition-opacity text-lg font-medium text-textPrimary"
+                    className="inline-flex items-center justify-center px-8 py-3 text-white rounded-lg hover:opacity-90 transition-opacity text-lg font-medium bg-accent"
                   >
                     Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 ) : (
                   <Link
                     to={ROUTES.LOGIN}
-                    className="inline-flex items-center justify-center px-8 py-3 border border-border rounded-lg hover:opacity-80 transition-opacity text-lg font-medium text-textPrimary"
+                    className="inline-flex items-center justify-center px-8 py-3 text-white rounded-lg hover:opacity-90 transition-opacity text-lg font-medium bg-accent"
                   >
                     Sign In
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 )}
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -144,10 +124,7 @@ export function LandingPage() {
           className="py-16 px-4 sm:px-6 lg:px-8 bg-surface"
         >
           <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <div
               className="text-center mb-16"
             >
               <h2
@@ -158,13 +135,10 @@ export function LandingPage() {
               <p className="text-lg text-textSecondary">
                 Comprehensive project management for students and faculty
               </p>
-            </motion.div>
+            </div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+              <div
                 className="text-center p-6"
               >
                 <div
@@ -181,12 +155,9 @@ export function LandingPage() {
                   Browse and filter projects by department and type to find the
                   perfect match for your interests.
                 </p>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+              <div
                 className="text-center p-6"
               >
                 <div
@@ -203,12 +174,9 @@ export function LandingPage() {
                   Form groups, apply for projects, and collaborate with
                   integrated Google Meet links.
                 </p>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
+              <div
                 className="text-center p-6"
               >
                 <div
@@ -225,7 +193,7 @@ export function LandingPage() {
                   Comprehensive evaluation system with internal and external
                   assessments.
                 </p>
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>
@@ -249,14 +217,6 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center space-x-6">
-              {!isAuthenticated && !isLoading && (
-                <Link
-                  to={ROUTES.PROJECTS}
-                  className="transition-colors hover:opacity-80 text-textSecondary"
-                >
-                  Projects
-                </Link>
-              )}
               {isLoading ? (
                 <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
               ) : isAuthenticated ? (

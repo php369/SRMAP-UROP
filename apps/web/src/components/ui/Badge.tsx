@@ -3,7 +3,7 @@ import { cn } from '../../utils/cn';
 
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'glass';
+  variant?: 'default' | 'secondary' | 'outline' | 'success' | 'warning' | 'error' | 'info' | 'glass';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -13,11 +13,13 @@ export function Badge({ children, variant = 'default', size = 'md', className }:
   
   const variantClasses = {
     default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-    success: 'bg-success/10 text-success border border-success/20',
-    warning: 'bg-warning/10 text-warning border border-warning/20',
-    error: 'bg-error/10 text-error border border-error/20',
-    info: 'bg-info/10 text-info border border-info/20',
-    glass: 'bg-white/10 backdrop-blur-md border border-white/20 text-text',
+    secondary: 'bg-textSecondary/10 text-textSecondary border border-textSecondary/20',
+    outline: 'border border-border text-textPrimary bg-transparent',
+    success: 'bg-green-100 text-green-800 border border-green-200',
+    warning: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+    error: 'bg-red-100 text-red-800 border border-red-200',
+    info: 'bg-blue-100 text-blue-800 border border-blue-200',
+    glass: 'bg-white/10 backdrop-blur-md border border-white/20 text-textPrimary',
   };
 
   const sizeClasses = {

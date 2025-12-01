@@ -17,16 +17,26 @@
     "seed": "pnpm --filter api seed",
     "security:audit": "node scripts/security-audit.js",
     "security:validate": "node scripts/security-validation.js",
-    "security:check": "pnpm security:audit && pnpm security:validate"
+    "security:check": "pnpm security:audit && pnpm security:validate",
+    "deploy:validate": "node scripts/validate-deployment.js",
+    "deploy:validate:frontend": "node scripts/validate-deployment.js --frontend-only",
+    "deploy:validate:backend": "node scripts/validate-deployment.js --backend-only"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0",
+    "eslint": "^8.55.0",
     "prettier": "^3.1.0",
-    "eslint": "^8.55.0"
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.2",
+    "framer-motion": "^10.18.0",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.181.2"
   }
 }

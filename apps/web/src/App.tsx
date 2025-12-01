@@ -17,7 +17,6 @@ import { SidebarProvider } from './contexts/SidebarContext';
 
 // Pages
 import { LandingPage } from './pages/public/LandingPage';
-import { ProjectsPage } from './pages/public/ProjectsPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
@@ -26,12 +25,15 @@ import { AssessmentDetailPage } from './pages/assessments/AssessmentDetailPage';
 import { SubmissionsPage } from './pages/submissions/SubmissionsPage';
 import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { PreferencesPage } from './pages/profile/PreferencesPage';
+import { HelpSupportPage } from './pages/support/HelpSupportPage';
 import { FacultyProjectsPage } from './pages/projects/FacultyProjectsPage';
 import { CoordinatorApprovalsPage } from './pages/projects/CoordinatorApprovalsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminCohortsPage } from './pages/admin/AdminCohortsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
 import { AdminReportsPage } from './pages/admin/AdminReportsPage';
+import { EligibilityUpload } from './pages/admin/EligibilityUpload';
 
 // Layout
 import { AppLayout } from './components/layout/AppLayout';
@@ -69,86 +71,92 @@ function App() {
           <Router>
             <div className="min-h-screen bg-background text-text">
               <NotificationProvider />
-          
-          <Routes>
-            {/* Public routes */}
-            <Route path={ROUTES.HOME} element={<LandingPage />} />
-            <Route path={ROUTES.PROJECTS} element={<ProjectsPage />} />
-            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-            <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
-            
-            {/* Protected routes */}
-            <Route
-              path="/dashboard/*"
-              element={
-                <AuthGuard>
-                  <SidebarProvider>
-                    <AppLayout>
-                      <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/assessments" element={<AssessmentsPage />} />
-                      <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
-                      <Route path="/submissions" element={<SubmissionsPage />} />
-                      <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      
-                      {/* Faculty routes */}
-                      <Route path="/projects" element={
-                        <AuthGuard requiredRole={['faculty', 'coordinator']}>
-                          <FacultyProjectsPage />
-                        </AuthGuard>
-                      } />
-                      
-                      {/* Coordinator routes */}
-                      <Route path="/projects/approvals" element={
-                        <AuthGuard requiredRole="coordinator">
-                          <CoordinatorApprovalsPage />
-                        </AuthGuard>
-                      } />
-                      
-                      {/* Admin routes */}
-                      <Route path="/admin/users" element={
-                        <AuthGuard requiredRole="admin">
-                          <AdminUsersPage />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/cohorts" element={
-                        <AuthGuard requiredRole="admin">
-                          <AdminCohortsPage />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/courses" element={
-                        <AuthGuard requiredRole="admin">
-                          <AdminCoursesPage />
-                        </AuthGuard>
-                      } />
-                      <Route path="/admin/reports" element={
-                        <AuthGuard requiredRole={['admin', 'faculty']}>
-                          <AdminReportsPage />
-                        </AuthGuard>
-                      } />
-                      
-                      {/* Catch all route */}
-                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                      </Routes>
-                    </AppLayout>
-                  </SidebarProvider>
-                </AuthGuard>
-              }
-            />
-          </Routes>
-          
-          {/* Toast notifications */}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              className: 'bg-surface text-text border border-border',
-            }}
-          />
-          </div>
+
+              <Routes>
+                {/* Public routes */}
+                <Route path={ROUTES.HOME} element={<LandingPage />} />
+                <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
+
+                {/* Protected routes */}
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <AuthGuard>
+                      <SidebarProvider>
+                        <AppLayout>
+                          <Routes>
+                            <Route path="/" element={<DashboardPage />} />
+                            <Route path="/assessments" element={<AssessmentsPage />} />
+                            <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
+                            <Route path="/submissions" element={<SubmissionsPage />} />
+                            <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
+                            <Route path="/profile" element={<ProfilePage />} />
+                            <Route path="/preferences" element={<PreferencesPage />} />
+                            <Route path="/help" element={<HelpSupportPage />} />
+
+                            {/* Faculty routes */}
+                            <Route path="/projects" element={
+                              <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                <FacultyProjectsPage />
+                              </AuthGuard>
+                            } />
+
+                            {/* Coordinator routes */}
+                            <Route path="/projects/approvals" element={
+                              <AuthGuard requiredRole="coordinator">
+                                <CoordinatorApprovalsPage />
+                              </AuthGuard>
+                            } />
+
+                            {/* Admin routes */}
+                            <Route path="/admin/users" element={
+                              <AuthGuard requiredRole="admin">
+                                <AdminUsersPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/admin/cohorts" element={
+                              <AuthGuard requiredRole="admin">
+                                <AdminCohortsPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/admin/courses" element={
+                              <AuthGuard requiredRole="admin">
+                                <AdminCoursesPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/admin/reports" element={
+                              <AuthGuard requiredRole={['admin', 'faculty']}>
+                                <AdminReportsPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/admin/eligibility" element={
+                              <AuthGuard requiredRole="admin">
+                                <EligibilityUpload />
+                              </AuthGuard>
+                            } />
+
+                            {/* Catch all route */}
+                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                          </Routes>
+                        </AppLayout>
+                      </SidebarProvider>
+                    </AuthGuard>
+                  }
+                />
+              </Routes>
+
+              {/* Toast notifications */}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  className: 'bg-surface text-text border border-border',
+                }}
+              />
+            </div>
           </Router>
-          
+
           {/* React Query DevTools */}
           <ReactQueryDevtools initialIsOpen={false} />
         </AuthProvider>

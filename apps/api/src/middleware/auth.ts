@@ -12,6 +12,9 @@ declare global {
         email: string;
         name: string;
         role: 'student' | 'faculty' | 'coordinator' | 'admin';
+        isGroupLeader?: boolean;
+        isCoordinator?: boolean;
+        isExternalEvaluator?: boolean;
       };
     }
   }
@@ -24,7 +27,7 @@ declare global {
 export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = extractTokenFromHeader(req.headers.authorization);
-    
+
     if (!token) {
       res.status(401).json({
         success: false,
@@ -39,7 +42,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     // Verify token
     const payload = verifyAccessToken(token);
-    
+
     // Find user in database to ensure they still exist
     const user = await User.findById(payload.userId) as IUser | null;
     if (!user) {
@@ -54,19 +57,26 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    // Attach user to request
+    // Get enhanced role information
+    const { getEnhancedUserRole } = await import('../services/roleService');
+    const roleInfo = await getEnhancedUserRole(user._id);
+
+    // Attach user to request with enhanced role information
     req.user = {
       id: user._id.toString(),
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: roleInfo?.effectiveRole || user.role,
+      isGroupLeader: roleInfo?.isGroupLeader || false,
+      isCoordinator: roleInfo?.isCoordinator || false,
+      isExternalEvaluator: roleInfo?.isExternalEvaluator || false,
     };
 
     next();
 
   } catch (error) {
     logger.error('Authentication failed:', error);
-    
+
     if (error instanceof Error) {
       if (error.message.includes('expired')) {
         res.status(401).json({
@@ -79,7 +89,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         });
         return;
       }
-      
+
       if (error.message.includes('Invalid')) {
         res.status(401).json({
           success: false,
@@ -124,7 +134,7 @@ export const authorize = (...allowedRoles: Array<'student' | 'faculty' | 'coordi
 
     if (!allowedRoles.includes(req.user.role)) {
       logger.warn(`Unauthorized access attempt by ${req.user.email} (${req.user.role}) to ${req.path}`);
-      
+
       res.status(403).json({
         success: false,
         error: {
@@ -163,10 +173,10 @@ export const requirePermission = (permission: string) => {
     }
 
     const userPermissions = getUserPermissions(req.user.role);
-    
+
     if (!userPermissions.includes(permission)) {
       logger.warn(`Permission denied for ${req.user.email}: ${permission}`);
-      
+
       res.status(403).json({
         success: false,
         error: {
@@ -193,7 +203,7 @@ export const requirePermission = (permission: string) => {
 export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = extractTokenFromHeader(req.headers.authorization);
-    
+
     if (!token) {
       next();
       return;
@@ -201,15 +211,22 @@ export const optionalAuth = async (req: Request, _res: Response, next: NextFunct
 
     // Verify token
     const payload = verifyAccessToken(token);
-    
+
     // Find user in database
     const user = await User.findById(payload.userId) as IUser | null;
     if (user) {
+      // Get enhanced role information
+      const { getEnhancedUserRole } = await import('../services/roleService');
+      const roleInfo = await getEnhancedUserRole(user._id);
+
       req.user = {
         id: user._id.toString(),
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: roleInfo?.effectiveRole || user.role,
+        isGroupLeader: roleInfo?.isGroupLeader || false,
+        isCoordinator: roleInfo?.isCoordinator || false,
+        isExternalEvaluator: roleInfo?.isExternalEvaluator || false,
       };
     }
 
@@ -248,7 +265,7 @@ export const requireOwnership = (resourceUserIdField: string = 'userId') => {
 
     // Check ownership based on request parameters or body
     const resourceUserId = req.params[resourceUserIdField] || req.body[resourceUserIdField];
-    
+
     if (!resourceUserId) {
       res.status(400).json({
         success: false,
@@ -263,7 +280,7 @@ export const requireOwnership = (resourceUserIdField: string = 'userId') => {
 
     if (resourceUserId !== req.user.id) {
       logger.warn(`Ownership check failed for ${req.user.email}: ${resourceUserId} !== ${req.user.id}`);
-      
+
       res.status(403).json({
         success: false,
         error: {

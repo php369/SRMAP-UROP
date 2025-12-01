@@ -1,151 +1,270 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SubmissionsList } from '../../components/submissions/SubmissionsList';
-import { Submission, SubmissionFile } from '../../components/submissions/SubmissionCard';
+import React, { useState, useEffect } from 'react';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { SubmissionForm } from '../../components/submissions/SubmissionForm';
+import { SubmissionCard } from '../../components/submissions/SubmissionCard';
+import { SubmissionService } from '../../services/submissionService';
+import { GroupService } from '../../services/groupService';
+import { GroupSubmission, Group, SubmissionEligibility } from '../../types';
+import { 
+  Upload, 
+  FileText, 
+  Users, 
+  AlertCircle, 
+  CheckCircle,
+  Clock,
+  ExternalLink
+} from 'lucide-react';
 
-// Mock data - in real app this would come from API
-const mockSubmissions: Submission[] = [
-  {
-    id: '1',
-    assessmentId: 'assessment1',
-    assessmentTitle: 'Machine Learning Fundamentals Quiz',
-    course: 'CS 4641 - Machine Learning',
-    submittedAt: '2024-01-14T15:30:00Z',
-    status: 'graded',
-    score: 85,
-    maxScore: 100,
-    feedback: 'Good understanding of concepts. Minor errors in implementation. Consider reviewing the gradient descent algorithm.',
-    files: [
-      {
-        id: 'file1',
-        name: 'ml_quiz_answers.pdf',
-        size: 1024000,
-        type: 'application/pdf',
-        url: '/files/ml_quiz_answers.pdf',
-      },
-    ],
-    notes: 'I spent extra time on the neural networks section as it was challenging.',
-    attempt: 1,
-    maxAttempts: 2,
-    dueDate: '2024-01-15T23:59:00Z',
-  },
-  {
-    id: '2',
-    assessmentId: 'assessment2',
-    assessmentTitle: 'Data Structures Project',
-    course: 'CS 1332 - Data Structures',
-    submittedAt: '2024-01-20T22:45:00Z',
-    status: 'submitted',
-    files: [
-      {
-        id: 'file2',
-        name: 'binary_tree.py',
-        size: 15000,
-        type: 'text/x-python-script',
-        url: '/files/binary_tree.py',
-      },
-      {
-        id: 'file3',
-        name: 'test_cases.py',
-        size: 8000,
-        type: 'text/x-python-script',
-        url: '/files/test_cases.py',
-      },
-      {
-        id: 'file4',
-        name: 'documentation.pdf',
-        size: 856000,
-        type: 'application/pdf',
-        url: '/files/documentation.pdf',
-      },
-    ],
-    notes: 'Implemented all required methods with comprehensive test cases. The tree balancing algorithm was particularly interesting to implement.',
-    attempt: 1,
-    maxAttempts: 3,
-    dueDate: '2024-01-21T23:59:00Z',
-  },
-  {
-    id: '3',
-    assessmentId: 'assessment3',
-    assessmentTitle: 'Database Design Assignment',
-    course: 'CS 4400 - Database Systems',
-    submittedAt: '2024-01-26T08:15:00Z',
-    status: 'late',
-    score: 78,
-    maxScore: 120,
-    feedback: 'Late submission penalty applied. Good ER diagram design but normalization could be improved.',
-    files: [
-      {
-        id: 'file5',
-        name: 'er_diagram.png',
-        size: 245000,
-        type: 'image/png',
-        url: '/files/er_diagram.png',
-      },
-      {
-        id: 'file6',
-        name: 'schema.sql',
-        size: 12000,
-        type: 'text/plain',
-        url: '/files/schema.sql',
-      },
-    ],
-    attempt: 1,
-    maxAttempts: 1,
-    dueDate: '2024-01-25T23:59:00Z',
-  },
-  {
-    id: '4',
-    assessmentId: 'assessment4',
-    assessmentTitle: 'Software Engineering Project Draft',
-    course: 'CS 3300 - Software Engineering',
-    submittedAt: '2024-01-10T16:20:00Z',
-    status: 'draft',
-    files: [
-      {
-        id: 'file7',
-        name: 'project_proposal.docx',
-        size: 45000,
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        url: '/files/project_proposal.docx',
-      },
-    ],
-    notes: 'Still working on the technical requirements section. Will submit final version soon.',
-    attempt: 1,
-    maxAttempts: 1,
-    dueDate: '2024-01-30T23:59:00Z',
-  },
-];
+export const SubmissionsPage: React.FC = () => {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [submissions, setSubmissions] = useState<GroupSubmission[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+  const [eligibility, setEligibility] = useState<Record<string, SubmissionEligibility>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export function SubmissionsPage() {
-  const navigate = useNavigate();
-  const [loading] = useState(false);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleSubmissionClick = (submission: Submission) => {
-    navigate(`/submissions/${submission.id}`);
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Load user's groups and submissions in parallel
+      const [groupsData, submissionsData] = await Promise.all([
+        GroupService.getMyGroups(),
+        SubmissionService.getMySubmissions()
+      ]);
+
+      setGroups(groupsData);
+      setSubmissions(submissionsData);
+
+      // Check submission eligibility for each approved group
+      const approvedGroups = groupsData.filter(group => group.status === 'approved');
+      const eligibilityPromises = approvedGroups.map(async (group: Group) => {
+        try {
+          const eligibilityData = await SubmissionService.checkSubmissionEligibility(group._id);
+          return { groupId: group._id, eligibility: eligibilityData };
+        } catch (error) {
+          return { groupId: group._id, eligibility: { canSubmit: false, reason: 'Error checking eligibility' } };
+        }
+      });
+
+      const eligibilityResults = await Promise.all(eligibilityPromises);
+      const eligibilityMap = eligibilityResults.reduce((acc: Record<string, SubmissionEligibility>, result: { groupId: string; eligibility: SubmissionEligibility }) => {
+        acc[result.groupId] = result.eligibility;
+        return acc;
+      }, {} as Record<string, SubmissionEligibility>);
+
+      setEligibility(eligibilityMap);
+    } catch (error: any) {
+      setError(error.message || 'Failed to load submissions data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDownloadFile = (file: SubmissionFile) => {
-    // In real app, this would download the file
-    console.log('Downloading file:', file.name);
-    // Simulate download
-    const link = document.createElement('a');
-    link.href = file.url;
-    link.download = file.name;
-    link.click();
+  const handleSubmissionCreated = () => {
+    setShowSubmissionForm(false);
+    setSelectedGroup(null);
+    loadData(); // Reload data to show new submission
   };
 
-  const handleResubmit = (submission: Submission) => {
-    navigate(`/assessments/${submission.assessmentId}/submit`);
+  const handleSubmissionUpdated = (updatedSubmission: GroupSubmission) => {
+    setSubmissions(prev => 
+      prev.map(sub => 
+        sub._id === updatedSubmission._id ? updatedSubmission : sub
+      )
+    );
   };
+
+  const getGroupSubmission = (groupId: string) => {
+    return submissions.find(sub => sub.groupId === groupId);
+  };
+
+  const getStatusBadge = (group: Group) => {
+    const submission = getGroupSubmission(group._id);
+    
+    if (submission) {
+      return <Badge variant="success">Submitted</Badge>;
+    }
+    
+    if (group.status === 'approved') {
+      const groupEligibility = eligibility[group._id];
+      if (groupEligibility?.canSubmit) {
+        return <Badge variant="warning">Pending Submission</Badge>;
+      } else {
+        return <Badge variant="secondary">Cannot Submit</Badge>;
+      }
+    }
+    
+    return <Badge variant="secondary">{group.status}</Badge>;
+  };
+
+  const canSubmitForGroup = (group: Group) => {
+    return group.status === 'approved' && 
+           eligibility[group._id]?.canSubmit && 
+           !getGroupSubmission(group._id);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-textPrimary mb-2">Error Loading Submissions</h2>
+          <p className="text-textSecondary mb-4">{error}</p>
+          <Button onClick={loadData}>Try Again</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (showSubmissionForm && selectedGroup) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <SubmissionForm
+          groupId={selectedGroup._id}
+          onSubmissionCreated={handleSubmissionCreated}
+          onCancel={() => {
+            setShowSubmissionForm(false);
+            setSelectedGroup(null);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <SubmissionsList
-      submissions={mockSubmissions}
-      loading={loading}
-      onSubmissionClick={handleSubmissionClick}
-      onDownloadFile={handleDownloadFile}
-      onResubmit={handleResubmit}
-    />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-textPrimary mb-2">Project Submissions</h1>
+        <p className="text-textSecondary">
+          Submit your project files and track submission status for your groups.
+        </p>
+      </div>
+
+      {groups.length === 0 ? (
+        <Card className="p-8 text-center">
+          <Users className="w-16 h-16 text-textSecondary mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-textPrimary mb-2">No Groups Found</h2>
+          <p className="text-textSecondary mb-4">
+            You need to be part of a group with an approved project to submit.
+          </p>
+          <Button variant="outline">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Go to Groups
+          </Button>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {/* Groups Overview */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-textPrimary mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2" />
+              Your Groups
+            </h2>
+            
+            <div className="space-y-4">
+              {groups.map((group) => {
+                const submission = getGroupSubmission(group._id);
+                const groupEligibility = eligibility[group._id];
+                
+                return (
+                  <div
+                    key={group._id}
+                    className="flex items-center justify-between p-4 bg-surface border border-border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-medium text-textPrimary">
+                          Group {group.code}
+                        </h3>
+                        {getStatusBadge(group)}
+                        <Badge variant="outline">{group.type}</Badge>
+                      </div>
+                      
+                      <div className="text-sm text-textSecondary space-y-1">
+                        <p>Members: {group.memberIds.length}</p>
+                        {group.projectId && (
+                          <p>Project: {(group.projectId as any)?.title || 'Assigned'}</p>
+                        )}
+                        {!groupEligibility?.canSubmit && groupEligibility?.reason && (
+                          <p className="text-red-500 flex items-center">
+                            <AlertCircle className="w-4 h-4 mr-1" />
+                            {groupEligibility.reason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {submission ? (
+                        <div className="flex items-center space-x-2 text-sm text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Submitted</span>
+                        </div>
+                      ) : canSubmitForGroup(group) ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            setShowSubmissionForm(true);
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Submit
+                        </Button>
+                      ) : (
+                        <div className="flex items-center space-x-2 text-sm text-textSecondary">
+                          <Clock className="w-4 h-4" />
+                          <span>Not Ready</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Submissions */}
+          {submissions.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-textPrimary mb-4 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Your Submissions
+              </h2>
+              
+              <div className="space-y-4">
+                {submissions.map((submission) => (
+                  <SubmissionCard
+                    key={submission._id}
+                    submission={submission}
+                    onUpdate={handleSubmissionUpdated}
+                    showGroupInfo={true}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
-}
+};

@@ -78,7 +78,7 @@ export function ProjectCard({
   const isOverdue = project.dueDate && new Date(project.dueDate) < new Date() && project.status !== 'done';
 
   return (
-    <div 
+    <div
       className={cn('relative h-80 perspective-1000', className)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -93,8 +93,8 @@ export function ProjectCard({
       >
         {/* Front Side */}
         <div className="absolute inset-0 backface-hidden">
-          <GlassCard 
-            variant="elevated" 
+          <GlassCard
+            variant="elevated"
             className={cn(
               'h-full p-6 overflow-hidden transition-all duration-300',
               isHovered && 'shadow-2xl',
@@ -104,8 +104,8 @@ export function ProjectCard({
             {/* Cover Image */}
             {project.coverImage && (
               <div className="absolute inset-0 opacity-10">
-                <img 
-                  src={project.coverImage} 
+                <img
+                  src={project.coverImage}
                   alt={project.title}
                   className="w-full h-full object-cover"
                 />
@@ -122,8 +122,8 @@ export function ProjectCard({
                   <p className="text-sm text-textSecondary">{project.category}</p>
                 </div>
                 <div className="flex items-center space-x-2 ml-3">
-                  <Badge 
-                    variant="glass" 
+                  <Badge
+                    variant="glass"
                     size="sm"
                     className={getStatusColor(project.status)}
                   >
@@ -148,8 +148,8 @@ export function ProjectCard({
                   value={project.progress}
                   color={
                     project.progress >= 90 ? 'success' :
-                    project.progress >= 70 ? 'primary' :
-                    project.progress >= 40 ? 'warning' : 'error'
+                      project.progress >= 70 ? 'primary' :
+                        project.progress >= 40 ? 'warning' : 'error'
                   }
                   showLabel={false}
                 />
@@ -159,10 +159,10 @@ export function ProjectCard({
               {project.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-4">
                   {project.tags.slice(0, 3).map((tag) => (
-                    <Badge 
-                      key={tag} 
-                      variant="glass" 
-                      size="sm" 
+                    <Badge
+                      key={tag}
+                      variant="glass"
+                      size="sm"
                       className="bg-secondary/50"
                     >
                       {tag}
@@ -179,8 +179,8 @@ export function ProjectCard({
               {/* Footer */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Badge 
-                    variant="glass" 
+                  <Badge
+                    variant="glass"
                     size="sm"
                     className={getPriorityColor(project.priority)}
                   >
@@ -192,7 +192,7 @@ export function ProjectCard({
                     </Badge>
                   )}
                 </div>
-                
+
                 {/* Collaborators */}
                 <div className="flex -space-x-2">
                   {project.assignedTo.slice(0, 3).map((user, index) => (
@@ -202,7 +202,7 @@ export function ProjectCard({
                       title={user.name}
                       style={{ zIndex: 10 - index }}
                     >
-                      {user.name.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || '?'}
                     </div>
                   ))}
                   {project.assignedTo.length > 3 && (
@@ -295,7 +295,7 @@ export function ProjectCard({
                     Edit
                   </button>
                 )}
-                
+
                 {onStatusChange && (
                   <select
                     value={project.status}

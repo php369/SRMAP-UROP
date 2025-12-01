@@ -2,8 +2,13 @@
 export { LoadingSpinner } from './LoadingSpinner';
 export { GlassCard } from './GlassCard';
 export { GlowButton } from './GlowButton';
+export { GradientBorderBox } from './GradientBorderBox';
 export { Input } from './Input';
 export { Badge } from './Badge';
+export { Button } from './Button';
+export { Card } from './Card';
+export { Textarea } from './Textarea';
+export { Progress } from './Progress';
 export { Modal } from './Modal';
 export { Breadcrumb } from './Breadcrumb';
 export { CommandPalette } from './CommandPalette';

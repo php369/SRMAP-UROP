@@ -54,7 +54,6 @@ export default defineConfig({
           'router-vendor': ['react-router-dom'],
           'query-vendor': ['@tanstack/react-query'],
           'ui-vendor': ['framer-motion', 'lucide-react'],
-          'chart-vendor': ['recharts'],
           'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
           
           // Utility chunks
@@ -124,7 +123,6 @@ export default defineConfig({
       'react-router-dom',
       '@tanstack/react-query',
       'framer-motion',
-      'recharts',
       'three',
       '@react-three/fiber',
       '@react-three/drei',

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+
 import {
   Search,
   Filter,
@@ -132,7 +132,7 @@ export function ProjectsPage() {
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ca9a4a' }}>
                     <span className="text-white text-sm font-medium">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>
                   <span className="text-sm font-medium" style={{ color: '#494623' }}>{user.name}</span>
@@ -216,10 +216,10 @@ export function ProjectsPage() {
                     filters.department === dept
                       ? { backgroundColor: '#ca9a4a', color: 'white' }
                       : {
-                          backgroundColor: '#e6e5d4',
-                          border: '1px solid #cbc6a4',
-                          color: '#494623',
-                        }
+                        backgroundColor: '#e6e5d4',
+                        border: '1px solid #cbc6a4',
+                        color: '#494623',
+                      }
                   }
                 >
                   {dept}
@@ -246,10 +246,10 @@ export function ProjectsPage() {
                     filters.type === type.value
                       ? { backgroundColor: '#ca9a4a', color: 'white' }
                       : {
-                          backgroundColor: '#e6e5d4',
-                          border: '1px solid #cbc6a4',
-                          color: '#494623',
-                        }
+                        backgroundColor: '#e6e5d4',
+                        border: '1px solid #cbc6a4',
+                        color: '#494623',
+                      }
                   }
                 >
                   {type.label}
@@ -292,27 +292,24 @@ export function ProjectsPage() {
             {projects.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {projects.map((project, index) => (
-                  <motion.div
+                  <div
                     key={project._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                    className="border rounded-lg p-6 hover:shadow-lg transition-shadow"
+                    className="border rounded-lg p-6 hover:shadow-lg transition-all duration-300 animate-fade-in-up hover:transform hover:-translate-y-1"
                     style={{
+                      animationDelay: `${index * 0.1}s`,
                       backgroundColor: '#cbc6a4',
-                      borderColor: '#98957d',
+                      borderColor: '#98957d'
                     }}
                   >
                     {/* Project Type Badge */}
                     <div className="flex items-center justify-between mb-4">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          project.type === 'IDP'
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${project.type === 'IDP'
                             ? 'bg-blue-100 text-blue-800'
                             : project.type === 'UROP'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-purple-100 text-purple-800'
-                        }`}
+                          }`}
                       >
                         {project.type}
                       </span>
@@ -373,7 +370,7 @@ export function ProjectsPage() {
                         </p>
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             ) : (

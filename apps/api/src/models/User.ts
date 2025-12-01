@@ -6,7 +6,10 @@ export interface IUser extends Document {
   name: string;
   email: string;
   role: 'student' | 'faculty' | 'admin';
-  avatarUrl?: string;
+  avatar?: string; // Selected from predefined pool
+  studentId?: string; // Unique identifier for students
+  facultyId?: string; // Unique identifier for faculty
+  isCoordinator?: boolean; // For faculty members
   profile: {
     department?: string;
     year?: number;
@@ -15,6 +18,7 @@ export interface IUser extends Document {
     theme: 'light' | 'dark';
     notifications: boolean;
   };
+  lastSeen: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,9 +51,25 @@ const UserSchema = new Schema<IUser>({
     required: true,
     default: 'student'
   },
-  avatarUrl: {
+  avatar: {
     type: String,
     default: null
+  },
+  studentId: {
+    type: String,
+    sparse: true,
+    unique: true,
+    trim: true
+  },
+  facultyId: {
+    type: String,
+    sparse: true,
+    unique: true,
+    trim: true
+  },
+  isCoordinator: {
+    type: Boolean,
+    default: false
   },
   profile: {
     department: {
@@ -72,6 +92,10 @@ const UserSchema = new Schema<IUser>({
       type: Boolean,
       default: true
     }
+  },
+  lastSeen: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,
@@ -84,9 +108,9 @@ const UserSchema = new Schema<IUser>({
 });
 
 // Indexes for performance (email already has unique index)
-UserSchema.index({ role: 1 });
+UserSchema.index({ role: 1, isCoordinator: 1 });
 UserSchema.index({ 'profile.department': 1 });
+UserSchema.index({ lastSeen: -1 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);
 export default User;
- 

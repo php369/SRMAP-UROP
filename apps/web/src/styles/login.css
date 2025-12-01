@@ -15,7 +15,7 @@
   width: 100%;
   max-width: 28rem; /* 448px */
   padding: 2rem;
-  background-color: var(--color-surface);
+  background-color: rgba(229, 228, 211, 0.85); /* Lighter satin-linen (#e5e4d3) with more transparency */
   border: 2px solid var(--green-smoke); /* Using green-smoke for visual separation */
   border-radius: 1rem;
   box-shadow: 0 8px 32px rgba(170, 164, 108, 0.15); /* Green-smoke shadow */
@@ -395,4 +395,44 @@
   .remember-me-checkbox {
     border: 2px solid var(--color-text-primary);
   }
+}
+/* Acce
+ss Requirements Note Styles */
+.access-requirements-note {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(200, 195, 163, 0.25); /* Light coral-reef (#c8c3a3) with transparency */
+  border: 1px solid rgba(170, 164, 108, 0.4); /* Green-smoke (#aaa46c) border with transparency */
+  border-radius: 0.5rem;
+  backdrop-filter: blur(5px);
+}
+
+.access-requirements-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #4a4724; /* Woodland color for icon */
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.access-requirements-content {
+  font-size: 0.875rem;
+}
+
+.access-requirements-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #4a4724; /* Woodland color for title */
+}
+
+.access-requirements-text {
+  color: #817f63; /* Flax-smoke color for body text */
+  line-height: 1.4;
+}
+
+/* Hover effect for the note */
+.access-requirements-note:hover {
+  background-color: rgba(200, 195, 163, 0.35);
+  border-color: rgba(170, 164, 108, 0.6);
+  transition: all 0.3s ease;
 }

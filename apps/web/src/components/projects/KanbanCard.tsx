@@ -66,16 +66,16 @@ export function KanbanCard({
         <h3 className="text-sm font-semibold text-text line-clamp-2 flex-1 pr-2">
           {project.title}
         </h3>
-        
+
         <div className="flex items-center space-x-1">
-          <Badge 
-            variant="glass" 
+          <Badge
+            variant="glass"
             size="sm"
             className={getPriorityColor(project.priority)}
           >
             {project.priority}
           </Badge>
-          
+
           {isHovered && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -96,7 +96,7 @@ export function KanbanCard({
                   </svg>
                 </button>
               )}
-              
+
               {onDelete && (
                 <button
                   onClick={(e) => {
@@ -134,8 +134,8 @@ export function KanbanCard({
             value={project.progress}
             color={
               project.progress >= 90 ? 'success' :
-              project.progress >= 70 ? 'primary' :
-              project.progress >= 40 ? 'warning' : 'error'
+                project.progress >= 70 ? 'primary' :
+                  project.progress >= 40 ? 'warning' : 'error'
             }
             showLabel={false}
             className="h-1"
@@ -147,10 +147,10 @@ export function KanbanCard({
       {project.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {project.tags.slice(0, 2).map((tag) => (
-            <Badge 
-              key={tag} 
-              variant="glass" 
-              size="sm" 
+            <Badge
+              key={tag}
+              variant="glass"
+              size="sm"
               className="bg-secondary/30 text-xs"
             >
               {tag}
@@ -176,7 +176,7 @@ export function KanbanCard({
               {isOverdue ? '⚠️' : '📅'} {formatDate(project.dueDate)}
             </div>
           )}
-          
+
           {/* Artifacts count */}
           {project.artifacts.length > 0 && (
             <div className="text-xs text-textSecondary">
@@ -194,7 +194,7 @@ export function KanbanCard({
               title={user.name}
               style={{ zIndex: 10 - index }}
             >
-              {user.name.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0).toUpperCase() || '?'}
             </div>
           ))}
           {project.assignedTo.length > 2 && (

@@ -209,7 +209,7 @@ function UserProfilePage() {
               <div className="flex items-center space-x-6">
                 <div className="relative">
                   <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center text-4xl font-bold text-primary">
-                    {user.name.charAt(0).toUpperCase()}
+                    {user?.name?.charAt(0).toUpperCase() || '?'}
                   </div>
                   <div className="absolute -bottom-2 -right-2">
                     <Badge variant="glass" className={getRoleColor(user.role)}>
@@ -221,7 +221,7 @@ function UserProfilePage() {
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-text mb-2">{user.name}</h1>
                   <p className="text-textSecondary text-lg mb-2">{user.email}</p>
-                  
+
                   <div className="flex flex-wrap items-center gap-4 text-sm text-textSecondary">
                     {user.profile.department && (
                       <span>📚 {user.profile.department}</span>

@@ -408,7 +408,7 @@ VITE_WEBSOCKET_URL=wss://your-api-domain.com
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['@headlessui/react', 'framer-motion'],
-          charts: ['recharts', 'three']
+          three: ['three']
         }
       }
     },

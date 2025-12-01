@@ -149,7 +149,7 @@ export function UserManagement() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Update users based on action
       setUsers(prev => prev.map(user => {
         if (action.userIds.includes(user.id)) {
@@ -236,7 +236,7 @@ export function UserManagement() {
                 Bulk Actions ({selectedUsers.size})
               </button>
             )}
-            
+
             <GlowButton>
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -266,9 +266,9 @@ export function UserManagement() {
               {/* Role Filter */}
               <select
                 value={filters.role?.[0] || ''}
-                onChange={(e) => setFilters(prev => ({ 
-                  ...prev, 
-                  role: e.target.value ? [e.target.value as User['role']] : undefined 
+                onChange={(e) => setFilters(prev => ({
+                  ...prev,
+                  role: e.target.value ? [e.target.value as User['role']] : undefined
                 }))}
                 className="px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
               >
@@ -281,9 +281,9 @@ export function UserManagement() {
               {/* Department Filter */}
               <select
                 value={filters.department?.[0] || ''}
-                onChange={(e) => setFilters(prev => ({ 
-                  ...prev, 
-                  department: e.target.value ? [e.target.value] : undefined 
+                onChange={(e) => setFilters(prev => ({
+                  ...prev,
+                  department: e.target.value ? [e.target.value] : undefined
                 }))}
                 className="px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
               >
@@ -415,7 +415,7 @@ export function UserManagement() {
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-sm font-medium text-primary">
-                            {user.name.charAt(0).toUpperCase()}
+                            {user?.name?.charAt(0).toUpperCase() || '?'}
                           </div>
                           <div>
                             <div className="font-medium text-text">{user.name}</div>

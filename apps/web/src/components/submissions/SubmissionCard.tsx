@@ -1,258 +1,277 @@
-import { motion } from 'framer-motion';
-import { Badge, GlassCard } from '../ui';
-import { cn } from '../../utils/cn';
-
-interface SubmissionFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  url: string;
-}
-
-interface Submission {
-  id: string;
-  assessmentId: string;
-  assessmentTitle: string;
-  course: string;
-  submittedAt: string;
-  status: 'draft' | 'submitted' | 'graded' | 'late' | 'missing';
-  score?: number;
-  maxScore?: number;
-  feedback?: string;
-  files: SubmissionFile[];
-  notes?: string;
-  attempt: number;
-  maxAttempts: number;
-  dueDate: string;
-}
+import React, { useState } from 'react';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
+import { Textarea } from '../ui/Textarea';
+import { GroupSubmission } from '../../types';
+import { SubmissionService } from '../../services/submissionService';
+import { 
+  FileText, 
+  Presentation, 
+  Github, 
+  Calendar, 
+  User, 
+  MessageSquare,
+  ExternalLink,
+  Download,
+  Edit3,
+  Save,
+  X
+} from 'lucide-react';
 
 interface SubmissionCardProps {
-  submission: Submission;
-  onClick?: () => void;
-  onDownload?: (file: SubmissionFile) => void;
-  onResubmit?: () => void;
-  className?: string;
+  submission: GroupSubmission;
+  onUpdate?: (updatedSubmission: GroupSubmission) => void;
+  showGroupInfo?: boolean;
 }
 
-export function SubmissionCard({
+export const SubmissionCard: React.FC<SubmissionCardProps> = ({
   submission,
-  onClick,
-  onDownload,
-  onResubmit,
-  className,
-}: SubmissionCardProps) {
+  onUpdate,
+  showGroupInfo = false
+}) => {
+  const [isEditingComments, setIsEditingComments] = useState(false);
+  const [editedComments, setEditedComments] = useState(submission.comments || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleUpdateComments = async () => {
+    if (editedComments === submission.comments) {
+      setIsEditingComments(false);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const updatedSubmission = await SubmissionService.updateSubmissionComments(
+        submission._id,
+        editedComments
+      );
+      
+      if (onUpdate) {
+        onUpdate(updatedSubmission);
+      }
+      
+      setIsEditingComments(false);
+    } catch (error) {
+      console.error('Failed to update comments:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditedComments(submission.comments || '');
+    setIsEditingComments(false);
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return new Date(dateString).toLocaleString();
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const openLink = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
-
-  const getFileIcon = (fileType: string): string => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word')) return '📝';
-    if (fileType.includes('text')) return '📄';
-    if (fileType.includes('zip')) return '🗜️';
-    if (fileType.includes('python')) return '🐍';
-    if (fileType.includes('javascript')) return '📜';
-    return '📎';
-  };
-
-  const statusConfig = {
-    draft: { color: 'bg-gray-500', text: 'Draft', icon: '📝' },
-    submitted: { color: 'bg-info', text: 'Submitted', icon: '📤' },
-    graded: { color: 'bg-success', text: 'Graded', icon: '✅' },
-    late: { color: 'bg-warning', text: 'Late', icon: '⏰' },
-    missing: { color: 'bg-error', text: 'Missing', icon: '❌' },
-  };
-
-  const status = statusConfig[submission.status];
-  const isOverdue = new Date(submission.dueDate) < new Date();
-  const canResubmit = submission.attempt < submission.maxAttempts && !isOverdue;
-  const hasGrade = submission.score !== undefined && submission.maxScore !== undefined;
-  const gradePercentage = hasGrade ? Math.round((submission.score! / submission.maxScore!) * 100) : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.3 }}
-      className={className}
-    >
-      <GlassCard
-        variant="elevated"
-        className={cn(
-          'p-6 cursor-pointer transition-all duration-300 hover:shadow-xl',
-          'border-l-4',
-          submission.status === 'graded' ? 'border-l-success' : 
-          submission.status === 'submitted' ? 'border-l-info' :
-          submission.status === 'late' ? 'border-l-warning' :
-          submission.status === 'missing' ? 'border-l-error' : 'border-l-gray-500'
-        )}
-        onClick={onClick}
-      >
+    <Card className="p-6">
+      <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-2">
-              <Badge variant="glass" size="sm" className={status.color}>
-                <span className="mr-1">{status.icon}</span>
-                {status.text}
-              </Badge>
-              
-              {hasGrade && (
-                <Badge 
-                  variant="glass" 
-                  size="sm" 
-                  className={cn(
-                    gradePercentage >= 90 ? 'bg-success' :
-                    gradePercentage >= 80 ? 'bg-info' :
-                    gradePercentage >= 70 ? 'bg-warning' : 'bg-error'
-                  )}
-                >
-                  {submission.score}/{submission.maxScore} ({gradePercentage}%)
-                </Badge>
-              )}
-
-              {submission.attempt > 1 && (
-                <Badge variant="glass" size="sm" className="bg-secondary">
-                  Attempt {submission.attempt}
-                </Badge>
-              )}
-            </div>
-            
-            <h3 className="text-lg font-semibold text-text mb-1 line-clamp-2">
-              {submission.assessmentTitle}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-textPrimary mb-1">
+              Project Submission
             </h3>
-            <p className="text-sm text-textSecondary mb-2">{submission.course}</p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center space-x-2 ml-4">
-            {canResubmit && onResubmit && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onResubmit();
-                }}
-                className="p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
-                title="Resubmit"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </motion.button>
+            {showGroupInfo && (
+              <p className="text-sm text-textSecondary">
+                Group: {(submission.groupId as any)?.code || submission.groupId}
+              </p>
             )}
+          </div>
+          <Badge variant="success">
+            {submission.status}
+          </Badge>
+        </div>
+
+        {/* Submission Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center space-x-2 text-sm">
+            <Calendar className="w-4 h-4 text-textSecondary" />
+            <span className="text-textSecondary">Submitted:</span>
+            <span className="text-textPrimary">{formatDate(submission.submittedAt)}</span>
+          </div>
+          
+          <div className="flex items-center space-x-2 text-sm">
+            <User className="w-4 h-4 text-textSecondary" />
+            <span className="text-textSecondary">By:</span>
+            <span className="text-textPrimary">{submission.submittedBy.name}</span>
           </div>
         </div>
 
-        {/* Files */}
-        {submission.files.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-text mb-2">
-              Files ({submission.files.length})
+        {/* GitHub Repository */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-textPrimary flex items-center">
+            <Github className="w-4 h-4 mr-2" />
+            GitHub Repository
+          </h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openLink(submission.githubUrl)}
+            className="w-full justify-start"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            {submission.githubUrl}
+          </Button>
+        </div>
+
+        {/* Report File */}
+        {submission.reportFile && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-textPrimary flex items-center">
+              <FileText className="w-4 h-4 mr-2" />
+              Project Report
             </h4>
-            <div className="space-y-2">
-              {submission.files.slice(0, 3).map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center space-x-3 p-2 bg-surface/50 rounded-lg hover:bg-surface/70 transition-colors"
+            <div className="flex items-center justify-between p-3 bg-surface border border-border rounded-lg">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4 text-accent" />
+                <span className="text-sm text-textPrimary">{submission.reportFile.name}</span>
+                <Badge variant="secondary">
+                  {SubmissionService.formatFileSize(submission.reportFile.size)}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openLink(submission.reportFile!.url)}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Presentation */}
+        {(submission.presentationFile || submission.presentationUrl) && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-textPrimary flex items-center">
+              <Presentation className="w-4 h-4 mr-2" />
+              Presentation
+            </h4>
+            
+            {submission.presentationFile ? (
+              <div className="flex items-center justify-between p-3 bg-surface border border-border rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Presentation className="w-4 h-4 text-accent" />
+                  <span className="text-sm text-textPrimary">{submission.presentationFile.name}</span>
+                  <Badge variant="secondary">
+                    {SubmissionService.formatFileSize(submission.presentationFile.size)}
+                  </Badge>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openLink(submission.presentationFile!.url)}
                 >
-                  <div className="text-lg">{getFileIcon(file.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-text truncate">{file.name}</p>
-                    <p className="text-xs text-textSecondary">{formatFileSize(file.size)}</p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDownload?.(file);
-                    }}
-                    className="p-1 text-textSecondary hover:text-primary transition-colors"
-                    title="Download file"
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : submission.presentationUrl ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openLink(submission.presentationUrl!)}
+                className="w-full justify-start"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {submission.presentationUrl}
+              </Button>
+            ) : null}
+          </div>
+        )}
+
+        {/* Comments */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-textPrimary flex items-center">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Comments
+            </h4>
+            {onUpdate && !isEditingComments && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingComments(true)}
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+          
+          {isEditingComments ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editedComments}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditedComments(e.target.value)}
+                placeholder="Add any additional comments..."
+                rows={3}
+                maxLength={1000}
+                disabled={isUpdating}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-textSecondary">
+                  {editedComments.length}/1000 characters
+                </p>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEdit}
+                    disabled={isUpdating}
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
+                    <X className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleUpdateComments}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
-              ))}
-              
-              {submission.files.length > 3 && (
-                <div className="text-sm text-textSecondary text-center py-1">
-                  +{submission.files.length - 3} more files
-                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-surface border border-border rounded-lg">
+              {submission.comments ? (
+                <p className="text-sm text-textPrimary whitespace-pre-wrap">
+                  {submission.comments}
+                </p>
+              ) : (
+                <p className="text-sm text-textSecondary italic">
+                  No additional comments provided
+                </p>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Notes Preview */}
-        {submission.notes && (
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-text mb-1">Notes</h4>
-            <p className="text-sm text-textSecondary line-clamp-2">{submission.notes}</p>
-          </div>
-        )}
-
-        {/* Feedback Preview */}
-        {submission.feedback && (
-          <div className="mb-4 p-3 bg-success/10 border border-success/20 rounded-lg">
-            <h4 className="text-sm font-medium text-success mb-1">Instructor Feedback</h4>
-            <p className="text-sm text-textSecondary line-clamp-2">{submission.feedback}</p>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border/50">
-          <div className="flex items-center space-x-4 text-sm text-textSecondary">
-            <div className="flex items-center space-x-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Submitted: {formatDate(submission.submittedAt)}</span>
+        {/* Metadata */}
+        <div className="pt-4 border-t border-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-textSecondary">
+            <div>
+              Total file size: {SubmissionService.formatFileSize(submission.metadata.totalFileSize)}
             </div>
-            
-            <div className="flex items-center space-x-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1V8a1 1 0 011-1h3z" />
-              </svg>
-              <span>Due: {formatDate(submission.dueDate)}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {submission.maxAttempts > 1 && (
-              <div className="text-xs text-textSecondary">
-                {submission.attempt}/{submission.maxAttempts} attempts
-              </div>
-            )}
-            
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg className="w-4 h-4 text-textSecondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            <div>
+              Submitted from: {submission.metadata.ipAddress}
             </div>
           </div>
         </div>
-      </GlassCard>
-    </motion.div>
+      </div>
+    </Card>
   );
-}
-
-export type { Submission, SubmissionFile };
+};

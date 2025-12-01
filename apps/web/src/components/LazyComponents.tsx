@@ -188,10 +188,7 @@ export const LazyPerformanceMonitor = lazy(
   LoadingSpinner
 );
 
-export const LazyThreeJSComponents = lazy(
-  () => import('./3d/ThreeJSComponents'),
-  LoadingSpinner
-);
+
 
 export const LazyChartComponents = lazy(
   () => import('./charts/ChartComponents'),

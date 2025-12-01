@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge, GlassCard, GlowButton, ProgressIndicator } from '../ui';
-import { AnimatedBarChart, AnimatedLineChart } from '../charts';
+
 import { Assessment } from './AssessmentCard';
 import { cn } from '../../utils/cn';
 
@@ -369,23 +369,27 @@ export function AssessmentDetail({
             {/* Grade Distribution */}
             <GlassCard variant="subtle" className="p-6">
               <h3 className="text-lg font-semibold text-text mb-4">Grade Distribution</h3>
-              <AnimatedBarChart
-                data={getGradeDistribution()}
-                height={250}
-                variant="gradient"
-                chartId="gradeDistribution"
-              />
+              <div className="space-y-4">
+                {getGradeDistribution().map((grade, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-textSecondary">{grade.name}</span>
+                    <span className="text-xl font-bold text-text">{grade.value}</span>
+                  </div>
+                ))}
+              </div>
             </GlassCard>
 
-            {/* Submission Trend */}
+            {/* Submission Summary */}
             <GlassCard variant="subtle" className="p-6">
-              <h3 className="text-lg font-semibold text-text mb-4">Submission Timeline</h3>
-              <AnimatedLineChart
-                data={getSubmissionTrend()}
-                lines={[{ dataKey: 'submissions', color: '#6366f1' }]}
-                height={250}
-                chartId="submissionTrend"
-              />
+              <h3 className="text-lg font-semibold text-text mb-4">Submission Summary</h3>
+              <div className="space-y-4">
+                {getSubmissionTrend().map((day, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-textSecondary">{day.name}</span>
+                    <span className="text-xl font-bold text-text">{day.submissions}</span>
+                  </div>
+                ))}
+              </div>
             </GlassCard>
           </div>
         )}

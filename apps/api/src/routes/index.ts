@@ -6,56 +6,92 @@ import { logger } from '../utils/logger';
 // Import route modules
 import authRoutes from './auth';
 import projectRoutes from './projects';
+import groupRoutes from './groups';
+import applicationRoutes from './applications';
 import assessmentRoutes from './assessments';
 import submissionRoutes from './submissions';
-import gradeRoutes from './grades';
+import evaluationRoutes from './evaluations';
 import adminRoutes from './admin';
 import presenceRoutes from './presence';
 import performanceRoutes from './performance';
 import healthRoutes from './health';
+import statusRoutes from './status';
+import notificationRoutes from './notifications';
+import meetingLogRoutes from './meetingLogs';
+import studentMetaRoutes from './studentMeta';
+import windowRoutes from './windows';
+import eligibilityRoutes from './eligibility';
 import { createDebugRoutes } from '../middleware/developmentLogger';
-// import userRoutes from './users';
+import userRoutes from './users';
+import cohortRoutes from './cohorts';
 
 export function setupRoutes(app: Express): void {
   // API version prefix
   const API_PREFIX = '/api/v1';
 
   // Health check (already defined in main server file)
-  
+
   // Authentication routes
   app.use(`${API_PREFIX}/auth`, authRoutes);
-  
+
   // Project routes
   app.use(`${API_PREFIX}/projects`, projectRoutes);
-  
+
+  // Group routes
+  app.use(`${API_PREFIX}/groups`, groupRoutes);
+
+  // Application routes
+  app.use(`${API_PREFIX}/applications`, applicationRoutes);
+
   // Assessment routes
   app.use(`${API_PREFIX}/assessments`, assessmentRoutes);
-  
+
   // Submission routes
   app.use(`${API_PREFIX}/submissions`, submissionRoutes);
-  
-  // Grade routes
-  app.use(`${API_PREFIX}`, gradeRoutes);
-  
+
+  // Evaluation routes
+  app.use(`${API_PREFIX}/evaluations`, evaluationRoutes);
+
   // Admin routes
   app.use(`${API_PREFIX}/admin`, adminRoutes);
-  
+
   // Presence routes
   app.use(`${API_PREFIX}/presence`, presenceRoutes);
-  
+
   // Performance routes
   app.use(`${API_PREFIX}/performance`, performanceRoutes);
-  
+
   // Health routes
   app.use('/health', healthRoutes);
-  
+
+  // Status routes
+  app.use(`${API_PREFIX}/status`, statusRoutes);
+
+  // Notification routes
+  app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+
+  // Meeting log routes
+  app.use(`${API_PREFIX}/meeting-logs`, meetingLogRoutes);
+
+  // Student metadata routes
+  app.use(`${API_PREFIX}/student-meta`, studentMetaRoutes);
+
+  // Window routes
+  app.use(`${API_PREFIX}/windows`, windowRoutes);
+
+  // Eligibility routes
+  app.use(`${API_PREFIX}/eligibility`, eligibilityRoutes);
+
   // Development debug routes (only in development)
   if (process.env.NODE_ENV === 'development') {
     app.use(`${API_PREFIX}/debug`, createDebugRoutes());
   }
-  
+
   // User routes
-  // app.use(`${API_PREFIX}/users`, userRoutes);
+  app.use(`${API_PREFIX}/users`, userRoutes);
+
+  // Cohort routes
+  app.use(`${API_PREFIX}/cohorts`, cohortRoutes);
 
   /**
    * @swagger
@@ -118,11 +154,18 @@ export function setupRoutes(app: Express): void {
         docs: '/docs',
         auth: `${API_PREFIX}/auth`,
         projects: `${API_PREFIX}/projects`,
+        groups: `${API_PREFIX}/groups`,
+        applications: `${API_PREFIX}/applications`,
         assessments: `${API_PREFIX}/assessments`,
         submissions: `${API_PREFIX}/submissions`,
+        evaluations: `${API_PREFIX}/evaluations`,
         users: `${API_PREFIX}/users`,
         admin: `${API_PREFIX}/admin`,
+        notifications: `${API_PREFIX}/notifications`,
+        meetingLogs: `${API_PREFIX}/meeting-logs`,
+        studentMeta: `${API_PREFIX}/student-meta`,
         performance: `${API_PREFIX}/performance`,
+        cohorts: `${API_PREFIX}/cohorts`,
         debug: process.env.NODE_ENV === 'development' ? `${API_PREFIX}/debug` : undefined,
       }
     });

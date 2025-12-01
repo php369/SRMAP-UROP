@@ -21,7 +21,7 @@ export const ROUTES = {
   ASSESSMENT_DETAIL: '/dashboard/assessments/:id',
   SUBMISSIONS: '/dashboard/submissions',
   SUBMISSION_DETAIL: '/dashboard/submissions/:id',
-  GRADES: '/dashboard/grades',
+
   FACULTY_PROJECTS: '/dashboard/projects',
   PROJECT_APPROVALS: '/dashboard/projects/approvals',
   PROFILE: '/dashboard/profile',
@@ -92,7 +92,6 @@ export const ROLE_NAVIGATION = {
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
     { label: 'Assessments', path: ROUTES.ASSESSMENTS, icon: 'FileText' },
     { label: 'Submissions', path: ROUTES.SUBMISSIONS, icon: 'Upload' },
-    { label: 'Grades', path: ROUTES.GRADES, icon: 'Award' },
     { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   faculty: [
@@ -100,7 +99,6 @@ export const ROLE_NAVIGATION = {
     { label: 'My Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen' },
     { label: 'Assessments', path: ROUTES.ASSESSMENTS, icon: 'FileText' },
     { label: 'Submissions', path: ROUTES.SUBMISSIONS, icon: 'Upload' },
-    { label: 'Grades', path: ROUTES.GRADES, icon: 'Award' },
     { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   coordinator: [
@@ -109,11 +107,11 @@ export const ROLE_NAVIGATION = {
     { label: 'Project Approvals', path: ROUTES.PROJECT_APPROVALS, icon: 'CheckCircle' },
     { label: 'Assessments', path: ROUTES.ASSESSMENTS, icon: 'FileText' },
     { label: 'Submissions', path: ROUTES.SUBMISSIONS, icon: 'Upload' },
-    { label: 'Grades', path: ROUTES.GRADES, icon: 'Award' },
     { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   admin: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
+    { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload' },
     { label: 'Users', path: ROUTES.ADMIN_USERS, icon: 'Users' },
     { label: 'Cohorts', path: ROUTES.ADMIN_COHORTS, icon: 'Users' },
     { label: 'Courses', path: ROUTES.ADMIN_COURSES, icon: 'BookOpen' },

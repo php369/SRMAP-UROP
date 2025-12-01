@@ -9,7 +9,12 @@ import {
   updateCohort,
   createCourse,
   generateReports,
-  deleteUser
+  deleteUser,
+  importEligibilityFromCSV,
+  getEligibilityRecords,
+  importFacultyRosterFromCSV,
+  getFacultyRosterRecords,
+  updateFacultyRosterRecord
 } from '../services/adminService';
 import { Cohort } from '../models/Cohort';
 import { Course } from '../models/Course';
@@ -89,6 +94,282 @@ const reportDateRangeSchema = z.object({
   endDate: z.string().datetime().optional(),
 });
 
+const eligibilitySearchSchema = z.object({
+  type: z.enum(['IDP', 'UROP', 'CAPSTONE']).optional(),
+  termKind: z.enum(['odd', 'even']).optional(),
+  year: z.string().transform(Number).optional(),
+  semester: z.string().transform(Number).optional(),
+  search: z.string().optional(),
+  limit: z.string().transform(Number).optional(),
+  skip: z.string().transform(Number).optional(),
+});
+
+const facultyRosterSearchSchema = z.object({
+  dept: z.string().optional(),
+  isCoordinator: z.string().transform(val => val === 'true').optional(),
+  active: z.string().transform(val => val === 'true').optional(),
+  search: z.string().optional(),
+  limit: z.string().transform(Number).optional(),
+  skip: z.string().transform(Number).optional(),
+});
+
+const updateFacultyRosterSchema = z.object({
+  name: z.string().min(1).optional(),
+  dept: z.string().min(1).optional(),
+  isCoordinator: z.boolean().optional(),
+  active: z.boolean().optional(),
+});
+
+/**
+ * POST /admin/eligibility/import
+ * Import eligibility records from CSV
+ */
+router.post('/eligibility/import', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const adminId = req.user!.id;
+
+  // Check if CSV content is provided
+  if (!req.body.csvContent) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'CSV content is required',
+      },
+    });
+  }
+
+  try {
+    const { projectType, userType } = req.body;
+    const result = await importEligibilityFromCSV(req.body.csvContent, adminId, projectType, userType);
+
+    logger.info(`Eligibility import completed by admin ${adminId}: ${result.success}/${result.total} records imported`);
+
+    res.json({
+      success: true,
+      data: {
+        result,
+        message: `Import completed: ${result.success} successful, ${result.errors} errors out of ${result.total} total records`,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Failed to import eligibility CSV:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'IMPORT_FAILED',
+        message: 'Failed to import eligibility records',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /admin/eligibility
+ * Get eligibility records with filtering
+ */
+router.get('/eligibility', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  // Validate query parameters
+  const queryResult = eligibilitySearchSchema.safeParse(req.query);
+  if (!queryResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid query parameters',
+        details: queryResult.error.errors,
+      },
+    });
+  }
+
+  const filters = queryResult.data;
+
+  try {
+    const eligibilityRecords = await getEligibilityRecords(filters);
+
+    res.json({
+      success: true,
+      data: {
+        eligibilityRecords,
+        count: eligibilityRecords.length,
+        filters: filters,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Failed to get eligibility records:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ELIGIBILITY_FETCH_FAILED',
+        message: 'Failed to retrieve eligibility records',
+      },
+    });
+  }
+}));
+
+/**
+ * POST /admin/faculty-roster/import
+ * Import faculty roster from CSV
+ */
+router.post('/faculty-roster/import', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const adminId = req.user!.id;
+
+  // Check if CSV content is provided
+  if (!req.body.csvContent) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'CSV content is required',
+      },
+    });
+  }
+
+  try {
+    const result = await importFacultyRosterFromCSV(req.body.csvContent, adminId);
+
+    logger.info(`Faculty roster import completed by admin ${adminId}: ${result.success}/${result.total} records imported`);
+
+    res.json({
+      success: true,
+      data: {
+        result,
+        message: `Import completed: ${result.success} successful, ${result.errors} errors out of ${result.total} total records`,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Failed to import faculty roster CSV:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'IMPORT_FAILED',
+        message: 'Failed to import faculty roster records',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /admin/faculty-roster
+ * Get faculty roster records with filtering
+ */
+router.get('/faculty-roster', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  // Validate query parameters
+  const queryResult = facultyRosterSearchSchema.safeParse(req.query);
+  if (!queryResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid query parameters',
+        details: queryResult.error.errors,
+      },
+    });
+  }
+
+  const filters = queryResult.data;
+
+  try {
+    const facultyRecords = await getFacultyRosterRecords(filters);
+
+    res.json({
+      success: true,
+      data: {
+        facultyRecords,
+        count: facultyRecords.length,
+        filters: filters,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Failed to get faculty roster records:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FACULTY_ROSTER_FETCH_FAILED',
+        message: 'Failed to retrieve faculty roster records',
+      },
+    });
+  }
+}));
+
+/**
+ * PATCH /admin/faculty-roster/:facultyId
+ * Update faculty roster record
+ */
+router.patch('/faculty-roster/:facultyId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const { facultyId } = req.params;
+  const adminId = req.user!.id;
+
+  if (!mongoose.Types.ObjectId.isValid(facultyId)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_ID',
+        message: 'Invalid faculty ID',
+      },
+    });
+  }
+
+  // Validate request body
+  const validationResult = updateFacultyRosterSchema.safeParse(req.body);
+  if (!validationResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid update data',
+        details: validationResult.error.errors,
+      },
+    });
+  }
+
+  const updates = validationResult.data;
+
+  try {
+    const faculty = await updateFacultyRosterRecord(facultyId, updates, adminId);
+
+    logger.info(`Faculty roster updated: ${facultyId} by admin ${adminId}`);
+
+    res.json({
+      success: true,
+      data: {
+        faculty,
+        message: 'Faculty roster record updated successfully',
+      },
+    });
+
+  } catch (error) {
+    logger.error(`Failed to update faculty roster record ${facultyId}:`, error);
+
+    if (error instanceof Error && error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'FACULTY_NOT_FOUND',
+          message: error.message,
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FACULTY_UPDATE_FAILED',
+        message: 'Failed to update faculty roster record',
+      },
+    });
+  }
+}));
+
 /**
  * GET /admin/users
  * Get all users with optional filtering and search
@@ -123,7 +404,7 @@ router.get('/users', authenticate, authorize('admin'), asyncHandler(async (req: 
 
   } catch (error) {
     logger.error('Failed to get users:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -298,7 +579,7 @@ router.get('/stats', authenticate, authorize('admin'), asyncHandler(async (_req:
 
   } catch (error) {
     logger.error('Failed to get system stats:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -316,8 +597,7 @@ router.get('/stats', authenticate, authorize('admin'), asyncHandler(async (_req:
 router.get('/cohorts', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
   try {
     const cohorts = await Cohort.find()
-      .populate('students', 'name email')
-      .populate('faculty', 'name email')
+      .populate('members', 'name email role')
       .sort({ year: -1, name: 1 });
 
     res.json({
@@ -330,7 +610,7 @@ router.get('/cohorts', authenticate, authorize('admin'), asyncHandler(async (_re
 
   } catch (error) {
     logger.error('Failed to get cohorts:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -469,6 +749,133 @@ router.patch('/cohorts/:cohortId', authenticate, authorize('admin'), asyncHandle
 }));
 
 /**
+ * POST /admin/cohorts/:cohortId/members
+ * Add members to a cohort
+ */
+router.post('/cohorts/:cohortId/members', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const { cohortId } = req.params;
+  const { userIds } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(cohortId)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_ID',
+        message: 'Invalid cohort ID',
+      },
+    });
+  }
+
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_INPUT',
+        message: 'userIds must be a non-empty array',
+      },
+    });
+  }
+
+  try {
+    const cohort = await Cohort.findById(cohortId);
+    if (!cohort) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'COHORT_NOT_FOUND',
+          message: 'Cohort not found',
+        },
+      });
+    }
+
+    // Add members (avoid duplicates)
+    const newMembers = userIds.filter(id => !cohort.members.includes(id));
+    cohort.members.push(...newMembers);
+    await cohort.save();
+
+    const updatedCohort = await Cohort.findById(cohortId).populate('members', 'name email role');
+
+    logger.info(`Added ${newMembers.length} members to cohort ${cohortId}`);
+
+    res.json({
+      success: true,
+      data: {
+        cohort: updatedCohort,
+        addedCount: newMembers.length,
+        message: `Added ${newMembers.length} member(s) to cohort`,
+      },
+    });
+
+  } catch (error) {
+    logger.error(`Failed to add members to cohort ${cohortId}:`, error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ADD_MEMBERS_FAILED',
+        message: 'Failed to add members to cohort',
+      },
+    });
+  }
+}));
+
+/**
+ * DELETE /admin/cohorts/:cohortId/members/:userId
+ * Remove a member from a cohort
+ */
+router.delete('/cohorts/:cohortId/members/:userId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const { cohortId, userId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(cohortId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_ID',
+        message: 'Invalid cohort or user ID',
+      },
+    });
+  }
+
+  try {
+    const cohort = await Cohort.findById(cohortId);
+    if (!cohort) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'COHORT_NOT_FOUND',
+          message: 'Cohort not found',
+        },
+      });
+    }
+
+    // Remove member
+    cohort.members = cohort.members.filter(id => id.toString() !== userId);
+    await cohort.save();
+
+    const updatedCohort = await Cohort.findById(cohortId).populate('members', 'name email role');
+
+    logger.info(`Removed member ${userId} from cohort ${cohortId}`);
+
+    res.json({
+      success: true,
+      data: {
+        cohort: updatedCohort,
+        message: 'Member removed from cohort',
+      },
+    });
+
+  } catch (error) {
+    logger.error(`Failed to remove member from cohort ${cohortId}:`, error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REMOVE_MEMBER_FAILED',
+        message: 'Failed to remove member from cohort',
+      },
+    });
+  }
+}));
+
+/**
  * GET /admin/courses
  * Get all courses
  */
@@ -489,7 +896,7 @@ router.get('/courses', authenticate, authorize('admin'), asyncHandler(async (_re
 
   } catch (error) {
     logger.error('Failed to get courses:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -583,7 +990,7 @@ router.get('/reports', authenticate, authorize('admin'), asyncHandler(async (req
   } : undefined;
 
   try {
-    const reports = await generateReports(dateRange);
+    const reports = await generateReports('users', dateRange || {});
 
     res.json({
       success: true,
@@ -596,12 +1003,209 @@ router.get('/reports', authenticate, authorize('admin'), asyncHandler(async (req
 
   } catch (error) {
     logger.error('Failed to generate reports:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
         code: 'REPORTS_GENERATION_FAILED',
         message: 'Failed to generate reports',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /admin/eligibility/export
+ * Export eligibility records as CSV
+ */
+router.get('/eligibility/export', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const eligibilityRecords = await getEligibilityRecords();
+
+    let csvData = 'Student Email,Registration Number,Year,Semester,Term Kind,Type,Valid From,Valid To,Created At\n';
+    csvData += eligibilityRecords.map(record =>
+      `${record.studentEmail},"${record.regNo || ''}",${record.year},${record.semester},${record.termKind},${record.type},${record.validFrom.toISOString()},${record.validTo.toISOString()},${record.createdAt.toISOString()}`
+    ).join('\n');
+
+    const filename = `eligibility-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
+
+  } catch (error) {
+    logger.error('Failed to export eligibility CSV:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'CSV_EXPORT_FAILED',
+        message: 'Failed to export eligibility records',
+      },
+    });
+  }
+}));
+
+/**
+ * GET /admin/faculty-roster/export
+ * Export faculty roster as CSV
+ */
+router.get('/faculty-roster/export', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const facultyRecords = await getFacultyRosterRecords();
+
+    let csvData = 'Email,Name,Department,Is Coordinator,Active,Created At,Updated At\n';
+    csvData += facultyRecords.map(record =>
+      `${record.email},"${record.name}","${record.dept}",${record.isCoordinator},${record.active},${record.createdAt.toISOString()},${record.updatedAt.toISOString()}`
+    ).join('\n');
+
+    const filename = `faculty-roster-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
+
+  } catch (error) {
+    logger.error('Failed to export faculty roster CSV:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'CSV_EXPORT_FAILED',
+        message: 'Failed to export faculty roster',
+      },
+    });
+  }
+}));
+
+/**
+ * DELETE /admin/eligibility/:eligibilityId
+ * Delete eligibility record
+ */
+router.delete('/eligibility/:eligibilityId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const { eligibilityId } = req.params;
+  const adminId = req.user!.id;
+
+  if (!mongoose.Types.ObjectId.isValid(eligibilityId)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_ID',
+        message: 'Invalid eligibility ID',
+      },
+    });
+  }
+
+  try {
+    const { Eligibility } = await import('../models/Eligibility');
+
+    const eligibility = await Eligibility.findById(eligibilityId);
+    if (!eligibility) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'ELIGIBILITY_NOT_FOUND',
+          message: 'Eligibility record not found',
+        },
+      });
+    }
+
+    await Eligibility.findByIdAndDelete(eligibilityId);
+
+    logger.info(`Eligibility record deleted: ${eligibilityId} by admin ${adminId}`);
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Eligibility record deleted successfully',
+        deleted: true,
+      },
+    });
+
+  } catch (error) {
+    logger.error(`Failed to delete eligibility record ${eligibilityId}:`, error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ELIGIBILITY_DELETE_FAILED',
+        message: 'Failed to delete eligibility record',
+      },
+    });
+  }
+}));
+
+/**
+ * DELETE /admin/faculty-roster/:facultyId
+ * Delete faculty roster record
+ */
+router.delete('/faculty-roster/:facultyId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  const { facultyId } = req.params;
+  const adminId = req.user!.id;
+
+  if (!mongoose.Types.ObjectId.isValid(facultyId)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_ID',
+        message: 'Invalid faculty ID',
+      },
+    });
+  }
+
+  try {
+    const { FacultyRoster } = await import('../models/FacultyRoster');
+
+    const faculty = await FacultyRoster.findById(facultyId);
+    if (!faculty) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'FACULTY_NOT_FOUND',
+          message: 'Faculty record not found',
+        },
+      });
+    }
+
+    // Check if faculty has any active projects or evaluations
+    const { Project } = await import('../models/Project');
+    const { Evaluation } = await import('../models/Evaluation');
+
+    const projectCount = await Project.countDocuments({ facultyId: facultyId });
+    const evaluationCount = await Evaluation.countDocuments({
+      $or: [{ facultyId: facultyId }, { externalFacultyId: facultyId }]
+    });
+
+    if (projectCount > 0 || evaluationCount > 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'DELETE_FORBIDDEN',
+          message: 'Cannot delete faculty with existing projects or evaluations',
+        },
+      });
+    }
+
+    await FacultyRoster.findByIdAndDelete(facultyId);
+
+    logger.info(`Faculty roster record deleted: ${facultyId} by admin ${adminId}`);
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Faculty roster record deleted successfully',
+        deleted: true,
+      },
+    });
+
+  } catch (error) {
+    logger.error(`Failed to delete faculty roster record ${facultyId}:`, error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FACULTY_DELETE_FAILED',
+        message: 'Failed to delete faculty roster record',
       },
     });
   }
@@ -625,7 +1229,7 @@ router.get('/reports/csv', authenticate, authorize('admin'), asyncHandler(async 
   }
 
   try {
-    const reports = await generateReports();
+    const reports = await generateReports('users');
     let csvData = '';
     let filename = '';
 
@@ -633,7 +1237,7 @@ router.get('/reports/csv', authenticate, authorize('admin'), asyncHandler(async 
       case 'assessments':
         filename = `assessment-report-${new Date().toISOString().split('T')[0]}.csv`;
         csvData = 'Assessment ID,Title,Course,Faculty,Total Submissions,Graded Submissions,Average Grade,Due Date,Created At\n';
-        csvData += reports.assessmentReport.map(row => 
+        csvData += (reports.assessmentReport || []).map((row: any) =>
           `${row.assessmentId},"${row.title}","${row.course}","${row.faculty}",${row.totalSubmissions},${row.gradedSubmissions},${row.averageGrade},${row.dueDate.toISOString()},${row.createdAt.toISOString()}`
         ).join('\n');
         break;
@@ -641,7 +1245,7 @@ router.get('/reports/csv', authenticate, authorize('admin'), asyncHandler(async 
       case 'grading':
         filename = `grading-latency-report-${new Date().toISOString().split('T')[0]}.csv`;
         csvData = 'Faculty ID,Faculty Name,Average Grading Time (hours),Total Graded,Pending Grades\n';
-        csvData += reports.gradingLatencyReport.map(row => 
+        csvData += (reports.gradingLatencyReport || []).map((row: any) =>
           `${row.facultyId},"${row.facultyName}",${row.averageGradingTime},${row.totalGraded},${row.pendingGrades}`
         ).join('\n');
         break;
@@ -649,7 +1253,7 @@ router.get('/reports/csv', authenticate, authorize('admin'), asyncHandler(async 
       case 'activity':
         filename = `activity-report-${new Date().toISOString().split('T')[0]}.csv`;
         csvData = 'Date,New Users,Submissions,Grades,Assessments\n';
-        csvData += reports.activityReport.map(row => 
+        csvData += (reports.activityReport || []).map((row: any) =>
           `${row.date.toISOString().split('T')[0]},${row.newUsers},${row.submissions},${row.grades},${row.assessments}`
         ).join('\n');
         break;
@@ -661,7 +1265,7 @@ router.get('/reports/csv', authenticate, authorize('admin'), asyncHandler(async 
 
   } catch (error) {
     logger.error('Failed to export CSV report:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {

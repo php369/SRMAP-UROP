@@ -294,9 +294,9 @@ export function Sidebar() {
               className={() => {
                 // Check if current path matches exactly or starts with the item path (for nested routes)
                 const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path || 
+                const isCurrentPage = currentPath === item.path ||
                   (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
-                
+
                 return cn(
                   'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden theme-transition',
                   isCurrentPage
@@ -307,9 +307,9 @@ export function Sidebar() {
               }}
               style={() => {
                 const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path || 
+                const isCurrentPage = currentPath === item.path ||
                   (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
-                
+
                 return {
                   backgroundColor: isCurrentPage ? 'var(--color-hover)' : 'transparent',
                   color: isCurrentPage ? 'var(--color-accent)' : 'var(--color-text-secondary)',
@@ -319,15 +319,15 @@ export function Sidebar() {
             >
               {() => {
                 const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path || 
+                const isCurrentPage = currentPath === item.path ||
                   (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
-                
+
                 return (
                   <>
                     {/* Active indicator */}
                     {isCurrentPage && (
-                      <div 
-                        className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full" 
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full"
                         style={{ backgroundColor: 'var(--color-accent)' }}
                       />
                     )}
@@ -335,7 +335,7 @@ export function Sidebar() {
                     {/* Icon */}
                     <div
                       className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                      style={{ 
+                      style={{
                         color: isCurrentPage ? 'var(--color-accent)' : 'inherit'
                       }}
                     >
@@ -351,10 +351,10 @@ export function Sidebar() {
 
                     {/* Tooltip for collapsed state */}
                     {isCollapsed && (
-                      <div 
+                      <div
                         className="absolute left-full ml-2 px-2 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
-                        style={{ 
-                          backgroundColor: 'var(--color-surface)', 
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
                           border: '1px solid var(--color-border)',
                           color: 'var(--color-text-primary)'
                         }}
@@ -381,7 +381,7 @@ export function Sidebar() {
           <div className="flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
               <span className="text-textPrimary text-sm font-medium">
-                {user.name.charAt(0).toUpperCase()}
+                {user?.name?.charAt(0).toUpperCase() || '?'}
               </span>
             </div>
           </div>
@@ -389,11 +389,11 @@ export function Sidebar() {
           {!isCollapsed && (
             <div className="ml-3 flex-1 min-w-0">
               <p className="text-sm font-medium text-text truncate">
-                {user.name}
+                {user?.name || 'Loading...'}
               </p>
               <div className="flex items-center space-x-2">
                 <Badge variant="glass" size="sm">
-                  {user.role}
+                  {user?.role || 'user'}
                 </Badge>
               </div>
               <SessionStatus className="mt-1" />

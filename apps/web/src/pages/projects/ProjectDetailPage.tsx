@@ -157,13 +157,13 @@ export function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'artifacts' | 'team'>('overview');
-  
+
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"]
   });
-  
+
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.8, 0.3]);
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
@@ -174,7 +174,7 @@ export function ProjectDetailPage() {
       try {
         setLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (projectId === '1') {
           setProject(mockProject);
         } else {
@@ -291,13 +291,13 @@ export function ProjectDetailPage() {
           style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
         >
           {project.coverImage ? (
-            <img 
-              src={project.coverImage} 
+            <img
+              src={project.coverImage}
               alt={project.title}
               className="w-full h-full object-cover"
             />
           ) : (
-            <div 
+            <div
               className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20"
               style={{ backgroundColor: project.color }}
             />
@@ -389,8 +389,8 @@ export function ProjectDetailPage() {
               value={project.progress}
               color={
                 project.progress >= 90 ? 'success' :
-                project.progress >= 70 ? 'primary' :
-                project.progress >= 40 ? 'warning' : 'error'
+                  project.progress >= 70 ? 'primary' :
+                    project.progress >= 40 ? 'warning' : 'error'
               }
               showLabel={false}
               className="h-3"
@@ -449,7 +449,7 @@ export function ProjectDetailPage() {
                       <h4 className="font-medium text-text mb-2">Description</h4>
                       <p className="text-textSecondary leading-relaxed">{project.description}</p>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-medium text-text mb-2">Tags</h4>
                       <div className="flex flex-wrap gap-2">
@@ -470,9 +470,9 @@ export function ProjectDetailPage() {
                     {project.timeline.slice(0, 3).map(event => (
                       <div key={event.id} className="flex items-start space-x-3">
                         <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-sm">
-                          {event.type === 'milestone' ? '🎯' : 
-                           event.type === 'task' ? '📋' : 
-                           event.type === 'meeting' ? '👥' : '📝'}
+                          {event.type === 'milestone' ? '🎯' :
+                            event.type === 'task' ? '📋' :
+                              event.type === 'meeting' ? '👥' : '📝'}
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-text">{event.title}</h4>
@@ -523,11 +523,11 @@ export function ProjectDetailPage() {
                     {project.assignedTo.map(user => (
                       <div key={user.id} className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-sm font-medium text-primary">
-                          {user.name.charAt(0).toUpperCase()}
+                          {user?.name?.charAt(0).toUpperCase() || '?'}
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-text">{user.name}</p>
-                          <p className="text-xs text-textSecondary">{user.email}</p>
+                          <p className="font-medium text-text">{user?.name || 'Unknown'}</p>
+                          <p className="text-xs text-textSecondary">{user?.email || ''}</p>
                         </div>
                       </div>
                     ))}
@@ -557,14 +557,14 @@ export function ProjectDetailPage() {
                 <GlassCard key={user.id} variant="subtle" className="p-6">
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center text-lg font-medium text-primary">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || '?'}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-text">{user.name}</h3>
-                      <p className="text-sm text-textSecondary">{user.email}</p>
+                      <h3 className="font-semibold text-text">{user?.name || 'Unknown'}</h3>
+                      <p className="text-sm text-textSecondary">{user?.email || ''}</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-textSecondary">Role:</span>

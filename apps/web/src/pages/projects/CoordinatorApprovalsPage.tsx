@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+
 import { Check, X, Filter, CheckSquare, Square } from 'lucide-react';
 import { Project } from '../../types';
 import { ProjectService } from '../../services/projectService';
@@ -156,12 +156,7 @@ export function CoordinatorApprovalsPage() {
     <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8"
-        >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-textPrimary mb-2">Project Approvals</h1>
             <p className="text-textSecondary">
@@ -204,15 +199,11 @@ export function CoordinatorApprovalsPage() {
               </GlowButton>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Error Message */}
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
-          >
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-red-400">{error}</p>
             <button
               onClick={() => setError(null)}
@@ -220,15 +211,11 @@ export function CoordinatorApprovalsPage() {
             >
               Dismiss
             </button>
-          </motion.div>
+          </div>
         )}
 
         {/* Projects List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <div>
           {projects.length === 0 ? (
             <GlassCard className="p-12 text-center">
               <div className="text-6xl mb-4">✅</div>
@@ -262,11 +249,8 @@ export function CoordinatorApprovalsPage() {
               {/* Projects */}
               <div className="divide-y divide-border">
                 {projects.map((project) => (
-                  <motion.div
+                  <div
                     key={project._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
                     className="p-6"
                   >
                     <div className="flex items-start space-x-4">
@@ -344,21 +328,17 @@ export function CoordinatorApprovalsPage() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </GlassCard>
           )}
-        </motion.div>
+        </div>
 
         {/* Reject Modal */}
         {showRejectModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-surface border border-border rounded-lg p-6 max-w-md w-full mx-4"
-            >
+            <div className="bg-surface border border-border rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold text-textPrimary mb-4">
                 Reject Project
               </h3>
@@ -389,7 +369,7 @@ export function CoordinatorApprovalsPage() {
                   Reject Project
                 </button>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </div>

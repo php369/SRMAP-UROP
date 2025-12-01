@@ -13,7 +13,7 @@ initializeTheme()
 setupSystemThemeListener()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode> // Disabled to prevent duplicate auth requests in development
     <App />
-  </React.StrictMode>,
+  // </React.StrictMode>,
 )

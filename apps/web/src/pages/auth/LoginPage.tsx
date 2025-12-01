@@ -87,9 +87,6 @@ export function LoginPage() {
           <h1 className="login-title">
             SRM-AP Project Management Portal
           </h1>
-          <p className="login-subtitle">
-            Sign in with your SRM email account
-          </p>
         </div>
 
         <div className="login-form">
@@ -103,7 +100,7 @@ export function LoginPage() {
               className="remember-me-checkbox"
             />
             <label htmlFor="remember-me" className="remember-me-label">
-              Keep me signed in for 30 days
+              Keep me signed in
             </label>
           </div>
 
@@ -131,10 +128,19 @@ export function LoginPage() {
             </svg>
             Continue with Google
           </button>
-{/* 
-          <div className="text-center text-sm text-gray-600">
-            Only @srmap.edu.in email addresses are allowed
-          </div> */}
+
+          {/* Information note */}
+          <div className="access-requirements-note">
+            <div className="flex items-start space-x-3">
+              <svg className="access-requirements-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="access-requirements-content">
+                <p className="access-requirements-title">Access Requirements</p>
+                <p className="access-requirements-text">Only eligible SRM University-AP students and faculties with official @srmap.edu.in email addresses can access this portal.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </LoginLayout>

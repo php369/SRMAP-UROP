@@ -73,7 +73,7 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
       role: 'student', // Default role for error response
       error: {
         code: 'NOT_ELIGIBLE',
-        message: 'User not found in eligibility roster or faculty roster for current term',
+        message: 'You are currently not eligible to access the portal',
         guidance
       }
     };
@@ -97,7 +97,18 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
  * @returns Guidance message for unauthorized users
  */
 function generateGuidanceMessage(email: string): string {
-  // Try to extract year from email pattern (common patterns like ap21110xxx@srmap.edu.in)
+  // Check if it's a non-SRMAP email (like Gmail, Yahoo, etc.)
+  if (!email.endsWith('@srmap.edu.in')) {
+    return 'Please use your official SRM University-AP email address (@srmap.edu.in) to access the portal.';
+  }
+
+  // Check if it's a faculty email pattern (usually firstname.lastname@srmap.edu.in)
+  const facultyPattern = /^[a-z]+\.[a-z]+@srmap\.edu\.in$/i;
+  if (facultyPattern.test(email)) {
+    return 'If you are a faculty member, please contact the academic office to be added to the faculty roster for the current term.';
+  }
+
+  // Try to extract year from student email pattern (common patterns like ap21110xxx@srmap.edu.in)
   const yearMatch = email.match(/ap(\d{2})/i);
   
   if (yearMatch) {
@@ -106,17 +117,19 @@ function generateGuidanceMessage(email: string): string {
     const admissionYear = 2000 + yearSuffix;
     const academicYear = currentYear - admissionYear + 1;
 
-    if (academicYear === 2) {
-      return 'IDP projects are available from year 2. Please check with academic office for eligibility.';
+    if (academicYear <= 1) {
+      return 'Project enrollment is available from the 2nd year onwards. Please contact the academic office if you believe this is an error.';
+    } else if (academicYear === 2) {
+      return 'You may be eligible for IDP projects. Please contact the academic office to verify your enrollment status for the current term.';
     } else if (academicYear === 3) {
-      return 'UROP projects are available from semester 7. Please check with academic office for eligibility.';
-    } else if (academicYear === 4) {
-      return 'CAPSTONE projects are available from semester 8. Please check with academic office for eligibility.';
+      return 'You may be eligible for UROP projects (semester 7). Please contact the academic office to verify your enrollment status.';
+    } else if (academicYear >= 4) {
+      return 'You may be eligible for CAPSTONE projects (semester 8). Please contact the academic office to verify your enrollment status.';
     }
   }
 
-  // Generic guidance if year cannot be determined
-  return 'Please contact the academic office to verify your eligibility for project enrollment. IDP (year-2), UROP (sem-7), CAPSTONE (sem-8).';
+  // Generic guidance for SRMAP emails that don't match known patterns
+  return 'Please contact the academic office to verify your eligibility. Project types: IDP (2nd year), UROP (7th semester), CAPSTONE (8th semester).';
 }
 
 /**

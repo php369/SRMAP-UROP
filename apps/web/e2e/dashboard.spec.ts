@@ -16,7 +16,7 @@ test.describe('Dashboard Functionality', () => {
       'text=Dashboard',
       'text=Welcome',
       '[data-testid="stats-card"], .stats-card, .metric-card',
-      '[data-testid="chart"], .chart, canvas, svg'
+      '[data-testid="dashboard-content"], .dashboard-content'
     ];
     
     for (const selector of dashboardElements) {
@@ -44,27 +44,20 @@ test.describe('Dashboard Functionality', () => {
     }
   });
 
-  test('should render charts and visualizations', async ({ page }) => {
+  test('should display dashboard content', async ({ page }) => {
     await page.waitForLoadState('networkidle');
     
-    // Look for chart elements (canvas, svg, or chart containers)
-    const chartElements = page.locator('canvas, svg, [data-testid="chart"], .chart, .recharts-wrapper');
+    // Look for dashboard content elements
+    const contentElements = page.locator('[data-testid="dashboard-content"], .dashboard-content, .bento-grid');
     
-    if (await chartElements.count() > 0) {
-      await expect(chartElements.first()).toBeVisible();
+    if (await contentElements.count() > 0) {
+      await expect(contentElements.first()).toBeVisible();
       
-      // For canvas elements, check if they have content
-      const canvasElements = page.locator('canvas');
-      if (await canvasElements.count() > 0) {
-        const canvas = canvasElements.first();
-        const width = await canvas.getAttribute('width');
-        const height = await canvas.getAttribute('height');
-        
-        expect(width).toBeTruthy();
-        expect(height).toBeTruthy();
-        expect(parseInt(width!)).toBeGreaterThan(0);
-        expect(parseInt(height!)).toBeGreaterThan(0);
-      }
+      // Check if content has meaningful text
+      const content = contentElements.first();
+      const contentText = await content.textContent();
+      expect(contentText).toBeTruthy();
+      expect(contentText!.trim().length).toBeGreaterThan(0);
     }
   });
 

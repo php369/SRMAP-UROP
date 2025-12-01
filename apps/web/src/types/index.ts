@@ -62,17 +62,6 @@ export interface SocialLink {
 }
 
 // Admin and Management types
-export interface SystemAnalytics {
-  totalUsers: number;
-  activeUsers: number;
-  totalAssessments: number;
-  totalSubmissions: number;
-  averageGradingTime: number; // in hours
-  systemUptime: number; // in percentage
-  storageUsed: number; // in bytes
-  storageLimit: number; // in bytes
-  recentActivity: ActivityLog[];
-}
 
 export interface ActivityLog {
   id: string;
@@ -402,6 +391,32 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface Group {
+  _id: string;
+  code: string;
+  type: 'IDP' | 'UROP' | 'CAPSTONE';
+  memberIds: User[];
+  projectId?: Project;
+  facultyId?: User;
+  meetUrl?: string;
+  calendarEventId?: string;
+  status: 'forming' | 'applied' | 'approved' | 'rejected' | 'frozen';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Application {
+  _id: string;
+  groupId: Group;
+  choices: Project[];
+  state: 'pending' | 'approved' | 'rejected';
+  decidedBy?: User;
+  decidedAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProjectLegacy {
   id: string;
   title: string;
@@ -460,7 +475,14 @@ export interface ProjectCollaborator {
 
 export interface ProjectFilter {
   status?: Project['status'][];
-  priority?: Project['priority'][];
+  type?: Project['type'][];
+  department?: string[];
+  search?: string;
+}
+
+export interface ProjectLegacyFilter {
+  status?: ProjectLegacy['status'][];
+  priority?: ProjectLegacy['priority'][];
   category?: string[];
   tags?: string[];
   assignedTo?: string[];
@@ -470,4 +492,47 @@ export interface ProjectFilter {
     end: string;
   };
   search?: string;
+}
+
+// Group Submission types
+export interface GroupSubmissionFile {
+  url: string;
+  name: string;
+  size: number;
+  contentType: string;
+  cloudinaryId?: string;
+}
+
+export interface GroupSubmission {
+  _id: string;
+  groupId: string;
+  githubUrl: string;
+  reportFile?: GroupSubmissionFile;
+  presentationFile?: GroupSubmissionFile;
+  presentationUrl?: string;
+  comments?: string;
+  submittedAt: string;
+  submittedBy: User;
+  status: 'submitted';
+  metadata: {
+    ipAddress: string;
+    userAgent: string;
+    totalFileSize: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGroupSubmissionData {
+  groupId: string;
+  githubUrl: string;
+  reportFile?: File;
+  presentationFile?: File;
+  presentationUrl?: string;
+  comments?: string;
+}
+
+export interface SubmissionEligibility {
+  canSubmit: boolean;
+  reason?: string;
 }

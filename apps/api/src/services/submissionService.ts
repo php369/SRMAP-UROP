@@ -1,494 +1,274 @@
-import { Submission, ISubmission, FileMetadata } from '../models/Submission';
-import { Assessment, IAssessment } from '../models/Assessment';
-import { User } from '../models/User';
-import { uploadFileBuffer, generateFolderPath, deleteFile } from './cloudinaryService';
-import { logger } from '../utils/logger';
+import { GroupSubmission, IGroupSubmission } from '../models/GroupSubmission';
+import { Group } from '../models/Group';
 import mongoose from 'mongoose';
+import { logger } from '../utils/logger';
 
-export interface CreateSubmissionRequest {
-  assessmentId: string;
-  notes?: string;
-  files: Express.Multer.File[];
+export interface CreateSubmissionData {
+  groupId: string;
+  githubUrl: string;
+  reportFile?: {
+    url: string;
+    name: string;
+    size: number;
+    contentType: string;
+    cloudinaryId?: string;
+  };
+  presentationFile?: {
+    url: string;
+    name: string;
+    size: number;
+    contentType: string;
+    cloudinaryId?: string;
+  };
+  presentationUrl?: string;
+  comments?: string;
+  submittedBy: string;
   metadata: {
     ipAddress: string;
     userAgent: string;
   };
 }
 
-export interface SubmissionWithAssessment extends ISubmission {
-  assessment?: IAssessment;
-  isLate?: boolean;
-}
-
-/**
- * Create a new submission with file uploads
- * @param studentId - Student creating the submission
- * @param submissionData - Submission details and files
- * @returns Created submission
- */
-export async function createSubmission(
-  studentId: string,
-  submissionData: CreateSubmissionRequest
-): Promise<SubmissionWithAssessment> {
-  try {
-    // Validate student exists
-    const student = await User.findById(studentId);
-    if (!student || student.role !== 'student') {
-      throw new Error('Only students can create submissions');
-    }
-
-    // Validate assessment exists and is published
-    const assessment = await Assessment.findById(submissionData.assessmentId) as IAssessment | null;
-    if (!assessment) {
-      throw new Error('Assessment not found');
-    }
-
-    if (assessment.status !== 'published') {
-      throw new Error('Assessment is not available for submissions');
-    }
-
-    // Check if submission deadline has passed
-    const now = new Date();
-    const isLate = now > assessment.dueAt;
-    
-    if (isLate && !assessment.settings.allowLateSubmissions) {
-      throw new Error('Submission deadline has passed and late submissions are not allowed');
-    }
-
-    // Check if student already has a submission for this assessment
-    const existingSubmission = await Submission.findOne({
-      assessmentId: submissionData.assessmentId,
-      studentId: new mongoose.Types.ObjectId(studentId),
-    });
-
-    if (existingSubmission) {
-      throw new Error('You have already submitted for this assessment');
-    }
-
-    // Validate files against assessment settings
-    const totalSize = submissionData.files.reduce((sum, file) => sum + file.size, 0);
-    
-    if (totalSize > assessment.settings.maxFileSize) {
-      const maxSizeMB = Math.round(assessment.settings.maxFileSize / (1024 * 1024));
-      const totalSizeMB = Math.round(totalSize / (1024 * 1024) * 100) / 100;
-      throw new Error(`Total file size ${totalSizeMB}MB exceeds assessment limit of ${maxSizeMB}MB`);
-    }
-
-    // Validate file types
-    for (const file of submissionData.files) {
-      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
-      if (!fileExtension || !assessment.settings.allowedFileTypes.includes(fileExtension)) {
-        throw new Error(`File type '${fileExtension}' is not allowed for this assessment. Allowed types: ${assessment.settings.allowedFileTypes.join(', ')}`);
-      }
-    }
-
-    // Upload files to Cloudinary
-    const uploadedFiles: FileMetadata[] = [];
-    const folderPath = generateFolderPath('submissions', studentId, submissionData.assessmentId);
+export class SubmissionService {
+  /**
+   * Create a new group submission
+   */
+  static async createSubmission(data: CreateSubmissionData): Promise<IGroupSubmission> {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
-      for (const file of submissionData.files) {
-        const uploadResult = await uploadFileBuffer(file.buffer, {
-          folder: folderPath,
-          publicId: `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`,
-          resourceType: 'auto',
-          allowedFormats: assessment.settings.allowedFileTypes,
-          maxBytes: assessment.settings.maxFileSize,
-        });
-
-        uploadedFiles.push({
-          url: uploadResult.secureUrl,
-          name: file.originalname,
-          size: file.size,
-          contentType: file.mimetype,
-          cloudinaryId: uploadResult.publicId,
-        });
-
-        logger.info(`File uploaded for submission: ${uploadResult.publicId}`);
+      // Validate group exists and user is a member
+      const group = await Group.findById(data.groupId).session(session);
+      if (!group) {
+        throw new Error('Group not found');
       }
 
-      // Create submission in database
-      const submission = new Submission({
-        assessmentId: submissionData.assessmentId,
-        studentId: new mongoose.Types.ObjectId(studentId),
-        files: uploadedFiles,
-        notes: submissionData.notes,
-        submittedAt: now,
-        status: 'submitted',
+      // Check if user is a member of the group
+      const isGroupMember = group.memberIds.some(
+        memberId => memberId.toString() === data.submittedBy
+      );
+      if (!isGroupMember) {
+        throw new Error('Only group members can submit for the group');
+      }
+
+      // Check if group has an approved project
+      if (group.status !== 'approved' || !group.projectId) {
+        throw new Error('Group must have an approved project to submit');
+      }
+
+      // Check if submission already exists
+      const existingSubmission = await GroupSubmission.findOne({ groupId: data.groupId }).session(session);
+      if (existingSubmission) {
+        throw new Error('Group has already submitted. Only one submission per group is allowed.');
+      }
+
+      // Validate file sizes
+      let totalFileSize = 0;
+      if (data.reportFile) {
+        if (data.reportFile.size > 50 * 1024 * 1024) {
+          throw new Error('Report file must be under 50MB');
+        }
+        totalFileSize += data.reportFile.size;
+      }
+      if (data.presentationFile) {
+        if (data.presentationFile.size > 50 * 1024 * 1024) {
+          throw new Error('Presentation file must be under 50MB');
+        }
+        totalFileSize += data.presentationFile.size;
+      }
+
+      // Create submission
+      const submission = new GroupSubmission({
+        groupId: data.groupId,
+        githubUrl: data.githubUrl,
+        reportFile: data.reportFile,
+        presentationFile: data.presentationFile,
+        presentationUrl: data.presentationUrl,
+        comments: data.comments,
+        submittedBy: data.submittedBy,
         metadata: {
-          ipAddress: submissionData.metadata.ipAddress,
-          userAgent: submissionData.metadata.userAgent,
-          fileCount: uploadedFiles.length,
-          totalSize,
-        },
+          ...data.metadata,
+          totalFileSize
+        }
       });
 
-      await submission.save();
-      logger.info(`Submission created: ${submission._id} by student: ${studentId}`);
+      await submission.save({ session });
 
-      // Return submission with assessment data and late flag
-      const submissionWithData = submission.toObject() as SubmissionWithAssessment;
-      submissionWithData.assessment = assessment;
-      submissionWithData.isLate = isLate;
+      // Update group status to indicate submission
+      await Group.findByIdAndUpdate(
+        data.groupId,
+        { status: 'frozen' }, // Freeze group after submission
+        { session }
+      );
 
-      return submissionWithData;
+      await session.commitTransaction();
+      
+      logger.info(`Group submission created: ${submission._id} by user ${data.submittedBy}`);
+      
+      return submission;
+    } catch (error) {
+      await session.abortTransaction();
+      logger.error('Error creating group submission:', error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
 
-    } catch (uploadError) {
-      // Clean up any uploaded files if submission creation fails
-      for (const uploadedFile of uploadedFiles) {
-        if (uploadedFile.cloudinaryId) {
-          try {
-            await deleteFile(uploadedFile.cloudinaryId);
-          } catch (deleteError) {
-            logger.warn(`Failed to cleanup uploaded file: ${uploadedFile.cloudinaryId}`, deleteError);
+  /**
+   * Get submission by group ID
+   */
+  static async getSubmissionByGroupId(groupId: string): Promise<IGroupSubmission | null> {
+    try {
+      const submission = await GroupSubmission.findOne({ groupId })
+        .populate('submittedBy', 'name email')
+        .populate('groupId');
+      
+      return submission;
+    } catch (error) {
+      logger.error('Error fetching group submission:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all submissions for groups that a user is a member of
+   */
+  static async getSubmissionsForUser(userId: string): Promise<IGroupSubmission[]> {
+    try {
+      // Find all groups where user is a member
+      const userGroups = await Group.find({ 
+        memberIds: userId,
+        status: { $in: ['approved', 'frozen'] }
+      }).select('_id');
+
+      const groupIds = userGroups.map(group => group._id);
+
+      // Find submissions for these groups
+      const submissions = await GroupSubmission.find({ 
+        groupId: { $in: groupIds } 
+      })
+        .populate('submittedBy', 'name email')
+        .populate('groupId')
+        .sort({ submittedAt: -1 });
+
+      return submissions;
+    } catch (error) {
+      logger.error('Error fetching user submissions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all submissions for faculty review
+   */
+  static async getSubmissionsForFaculty(facultyId: string): Promise<IGroupSubmission[]> {
+    try {
+      // Find all groups assigned to this faculty
+      const facultyGroups = await Group.find({ 
+        facultyId,
+        status: { $in: ['approved', 'frozen'] }
+      }).select('_id');
+
+      const groupIds = facultyGroups.map(group => group._id);
+
+      // Find submissions for these groups
+      const submissions = await GroupSubmission.find({ 
+        groupId: { $in: groupIds } 
+      })
+        .populate('submittedBy', 'name email')
+        .populate({
+          path: 'groupId',
+          populate: {
+            path: 'memberIds',
+            select: 'name email'
           }
-        }
+        })
+        .sort({ submittedAt: -1 });
+
+      return submissions;
+    } catch (error) {
+      logger.error('Error fetching faculty submissions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user can submit for a group
+   */
+  static async canUserSubmit(userId: string, groupId: string): Promise<{
+    canSubmit: boolean;
+    reason?: string;
+  }> {
+    try {
+      const group = await Group.findById(groupId);
+      if (!group) {
+        return { canSubmit: false, reason: 'Group not found' };
       }
-      throw uploadError;
-    }
 
-  } catch (error) {
-    logger.error(`Failed to create submission for student ${studentId}:`, error);
-    throw error;
+      // Check if user is a member
+      const isGroupMember = group.memberIds.some(
+        memberId => memberId.toString() === userId
+      );
+      if (!isGroupMember) {
+        return { canSubmit: false, reason: 'You are not a member of this group' };
+      }
+
+      // Check if group has approved project
+      if (group.status !== 'approved' || !group.projectId) {
+        return { canSubmit: false, reason: 'Group must have an approved project to submit' };
+      }
+
+      // Check if already submitted
+      const existingSubmission = await GroupSubmission.findOne({ groupId });
+      if (existingSubmission) {
+        return { canSubmit: false, reason: 'Group has already submitted' };
+      }
+
+      return { canSubmit: true };
+    } catch (error) {
+      logger.error('Error checking submission eligibility:', error);
+      return { canSubmit: false, reason: 'Error checking eligibility' };
+    }
   }
-}
 
-/**
- * Get submissions for a student
- * @param studentId - Student ID
- * @param filters - Optional filters
- * @returns List of submissions
- */
-export async function getStudentSubmissions(
-  studentId: string,
-  filters?: {
-    assessmentId?: string;
-    status?: 'submitted' | 'graded' | 'returned';
-    limit?: number;
-    skip?: number;
-  }
-): Promise<SubmissionWithAssessment[]> {
-  try {
-    const query: any = { studentId: new mongoose.Types.ObjectId(studentId) };
-    
-    if (filters?.assessmentId) {
-      query.assessmentId = new mongoose.Types.ObjectId(filters.assessmentId);
-    }
-    
-    if (filters?.status) {
-      query.status = filters.status;
-    }
+  /**
+   * Update submission (limited updates allowed)
+   */
+  static async updateSubmission(
+    submissionId: string, 
+    userId: string, 
+    updates: Partial<Pick<IGroupSubmission, 'comments'>>
+  ): Promise<IGroupSubmission> {
+    try {
+      const submission = await GroupSubmission.findById(submissionId).populate('groupId');
+      if (!submission) {
+        throw new Error('Submission not found');
+      }
 
-    const submissions = await Submission.find(query)
-      .populate({
-        path: 'assessmentId',
-        select: 'title description dueAt status settings',
-        populate: {
-          path: 'courseId',
-          select: 'title code',
-        },
-      })
-      .sort({ submittedAt: -1 })
-      .limit(filters?.limit || 50)
-      .skip(filters?.skip || 0);
+      // Check if user is a member of the group
+      const group = submission.groupId as any;
+      const isGroupMember = group.memberIds.some(
+        (memberId: mongoose.Types.ObjectId) => memberId.toString() === userId
+      );
+      if (!isGroupMember) {
+        throw new Error('Only group members can update the submission');
+      }
 
-    // Add isLate flag to each submission
-    const submissionsWithData = submissions.map(submission => {
-      const submissionObj = submission.toObject() as SubmissionWithAssessment;
-      const assessment = submissionObj.assessmentId as any;
+      // Only allow updating comments
+      if (updates.comments !== undefined) {
+        submission.comments = updates.comments;
+      }
+
+      await submission.save();
       
-      if (assessment && assessment.dueAt) {
-        submissionObj.isLate = submission.submittedAt > new Date(assessment.dueAt);
-      }
+      logger.info(`Submission updated: ${submissionId} by user ${userId}`);
       
-      return submissionObj;
-    });
-
-    return submissionsWithData;
-
-  } catch (error) {
-    logger.error(`Failed to get submissions for student ${studentId}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Get submissions for an assessment (faculty view)
- * @param facultyId - Faculty ID (for authorization)
- * @param assessmentId - Assessment ID
- * @param filters - Optional filters
- * @returns List of submissions
- */
-export async function getAssessmentSubmissions(
-  facultyId: string,
-  assessmentId: string,
-  filters?: {
-    status?: 'submitted' | 'graded' | 'returned';
-    limit?: number;
-    skip?: number;
-  }
-): Promise<SubmissionWithAssessment[]> {
-  try {
-    // Validate assessment exists and faculty owns it
-    const assessment = await Assessment.findById(assessmentId) as IAssessment | null;
-    if (!assessment) {
-      throw new Error('Assessment not found');
+      return submission;
+    } catch (error) {
+      logger.error('Error updating submission:', error);
+      throw error;
     }
-
-    if (assessment.facultyId.toString() !== facultyId) {
-      throw new Error('You can only view submissions for your own assessments');
-    }
-
-    const query: any = { assessmentId: new mongoose.Types.ObjectId(assessmentId) };
-    
-    if (filters?.status) {
-      query.status = filters.status;
-    }
-
-    const submissions = await Submission.find(query)
-      .populate('studentId', 'name email profile.department profile.year')
-      .sort({ submittedAt: -1 })
-      .limit(filters?.limit || 100)
-      .skip(filters?.skip || 0);
-
-    // Add isLate flag to each submission
-    const submissionsWithData = submissions.map(submission => {
-      const submissionObj = submission.toObject() as SubmissionWithAssessment;
-      submissionObj.isLate = submission.submittedAt > assessment.dueAt;
-      submissionObj.assessment = assessment;
-      return submissionObj;
-    });
-
-    return submissionsWithData;
-
-  } catch (error) {
-    logger.error(`Failed to get submissions for assessment ${assessmentId}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Get a specific submission by ID
- * @param submissionId - Submission ID
- * @param userId - User ID (for authorization)
- * @param userRole - User role
- * @returns Submission details
- */
-export async function getSubmissionById(
-  submissionId: string,
-  userId: string,
-  userRole: 'student' | 'faculty' | 'coordinator' | 'admin'
-): Promise<SubmissionWithAssessment> {
-  try {
-    const submission = await Submission.findById(submissionId)
-      .populate({
-        path: 'assessmentId',
-        select: 'title description dueAt status facultyId',
-        populate: {
-          path: 'courseId',
-          select: 'title code',
-        },
-      })
-      .populate('studentId', 'name email profile.department profile.year');
-
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    // Authorization check
-    if (userRole === 'student') {
-      if (submission.studentId._id.toString() !== userId) {
-        throw new Error('You can only view your own submissions');
-      }
-    } else if (userRole === 'faculty') {
-      const assessment = submission.assessmentId as any;
-      if (assessment.facultyId.toString() !== userId) {
-        throw new Error('You can only view submissions for your own assessments');
-      }
-    }
-    // Admins can view all submissions
-
-    // Add isLate flag
-    const submissionObj = submission.toObject() as SubmissionWithAssessment;
-    const assessment = submissionObj.assessmentId as any;
-    
-    if (assessment && assessment.dueAt) {
-      submissionObj.isLate = submission.submittedAt > new Date(assessment.dueAt);
-    }
-
-    return submissionObj;
-
-  } catch (error) {
-    logger.error(`Failed to get submission ${submissionId}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Update submission status (for grading workflow)
- * @param submissionId - Submission ID
- * @param status - New status
- * @param facultyId - Faculty ID (for authorization)
- * @returns Updated submission
- */
-export async function updateSubmissionStatus(
-  submissionId: string,
-  status: 'submitted' | 'graded' | 'returned',
-  facultyId: string
-): Promise<ISubmission> {
-  try {
-    const submission = await Submission.findById(submissionId)
-      .populate('assessmentId', 'facultyId');
-
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    // Check authorization
-    const assessment = submission.assessmentId as any;
-    if (assessment.facultyId.toString() !== facultyId) {
-      throw new Error('You can only update submissions for your own assessments');
-    }
-
-    submission.status = status;
-    await submission.save();
-
-    logger.info(`Submission status updated: ${submissionId} -> ${status}`);
-    return submission;
-
-  } catch (error) {
-    logger.error(`Failed to update submission status ${submissionId}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Delete a submission and its files
- * @param submissionId - Submission ID
- * @param userId - User ID (for authorization)
- * @param userRole - User role
- */
-export async function deleteSubmission(
-  submissionId: string,
-  userId: string,
-  userRole: 'student' | 'faculty' | 'coordinator' | 'admin'
-): Promise<void> {
-  try {
-    const submission = await Submission.findById(submissionId)
-      .populate('assessmentId', 'facultyId dueAt settings');
-
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    // Authorization check
-    if (userRole === 'student') {
-      if (submission.studentId.toString() !== userId) {
-        throw new Error('You can only delete your own submissions');
-      }
-      
-      // Check if deletion is allowed (e.g., before deadline)
-      const assessment = submission.assessmentId as any;
-      const now = new Date();
-      if (now > assessment.dueAt) {
-        throw new Error('Cannot delete submission after the deadline');
-      }
-    } else if (userRole === 'faculty') {
-      const assessment = submission.assessmentId as any;
-      if (assessment.facultyId.toString() !== userId) {
-        throw new Error('You can only delete submissions for your own assessments');
-      }
-    }
-    // Admins can delete any submission
-
-    // Delete files from Cloudinary
-    for (const file of submission.files) {
-      if (file.cloudinaryId) {
-        try {
-          await deleteFile(file.cloudinaryId);
-          logger.info(`File deleted from Cloudinary: ${file.cloudinaryId}`);
-        } catch (deleteError) {
-          logger.warn(`Failed to delete file from Cloudinary: ${file.cloudinaryId}`, deleteError);
-        }
-      }
-    }
-
-    // Delete submission from database
-    await Submission.findByIdAndDelete(submissionId);
-    logger.info(`Submission deleted: ${submissionId}`);
-
-  } catch (error) {
-    logger.error(`Failed to delete submission ${submissionId}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Get submission statistics for an assessment
- * @param assessmentId - Assessment ID
- * @param facultyId - Faculty ID (for authorization)
- * @returns Submission statistics
- */
-export async function getSubmissionStats(
-  assessmentId: string,
-  facultyId: string
-): Promise<{
-  total: number;
-  submitted: number;
-  graded: number;
-  returned: number;
-  late: number;
-  onTime: number;
-}> {
-  try {
-    // Validate assessment exists and faculty owns it
-    const assessment = await Assessment.findById(assessmentId) as IAssessment | null;
-    if (!assessment) {
-      throw new Error('Assessment not found');
-    }
-
-    if (assessment.facultyId.toString() !== facultyId) {
-      throw new Error('You can only view statistics for your own assessments');
-    }
-
-    // Get all submissions for the assessment
-    const submissions = await Submission.find({ assessmentId: new mongoose.Types.ObjectId(assessmentId) });
-
-    const stats = {
-      total: submissions.length,
-      submitted: 0,
-      graded: 0,
-      returned: 0,
-      late: 0,
-      onTime: 0,
-    };
-
-    submissions.forEach(submission => {
-      // Count by status
-      switch (submission.status) {
-        case 'submitted':
-          stats.submitted++;
-          break;
-        case 'graded':
-          stats.graded++;
-          break;
-        case 'returned':
-          stats.returned++;
-          break;
-      }
-
-      // Count by timing
-      if (submission.submittedAt > assessment.dueAt) {
-        stats.late++;
-      } else {
-        stats.onTime++;
-      }
-    });
-
-    return stats;
-
-  } catch (error) {
-    logger.error(`Failed to get submission stats for assessment ${assessmentId}:`, error);
-    throw error;
   }
 }

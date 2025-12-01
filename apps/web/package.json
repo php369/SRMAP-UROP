@@ -23,23 +23,18 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
-    "@react-three/drei": "^9.88.0",
-    "@react-three/fiber": "^8.15.0",
     "@srm-portal/ui": "workspace:*",
     "@tanstack/react-query": "^5.8.0",
     "@tanstack/react-query-devtools": "^5.90.2",
     "axios": "^1.6.0",
     "clsx": "^2.0.0",
-    "framer-motion": "^10.16.0",
+    "framer-motion": "^12.23.24",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.20.0",
-    "recharts": "^2.8.0",
-    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.0.0",
-    "three": "^0.158.0",
     "zustand": "^4.4.0"
   },
   "devDependencies": {
@@ -48,7 +43,6 @@
     "@srm-portal/config": "workspace:*",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@types/three": "^0.158.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react": "^4.0.3",

@@ -170,7 +170,8 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
         success: false,
         error: {
           code: 'DOMAIN_RESTRICTION_FAILED',
-          message: 'Access restricted to @srmap.edu.in email addresses only',
+          message: 'Only SRM University-AP students and faculty are allowed to access the portal',
+          guidance: 'Please use your official @srmap.edu.in email address to sign in',
           details: {
             email: googleUser.email,
             requiredDomain: 'srmap.edu.in',
