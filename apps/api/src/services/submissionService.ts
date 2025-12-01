@@ -1,274 +1,281 @@
-import { GroupSubmission, IGroupSubmission } from '../models/GroupSubmission';
+import { Submission, ISubmission } from '../models/Submission';
 import { Group } from '../models/Group';
+import { User } from '../models/User';
+import { Window } from '../models/Window';
+import { Project } from '../models/Project';
 import mongoose from 'mongoose';
-import { logger } from '../utils/logger';
-
-export interface CreateSubmissionData {
-  groupId: string;
-  githubUrl: string;
-  reportFile?: {
-    url: string;
-    name: string;
-    size: number;
-    contentType: string;
-    cloudinaryId?: string;
-  };
-  presentationFile?: {
-    url: string;
-    name: string;
-    size: number;
-    contentType: string;
-    cloudinaryId?: string;
-  };
-  presentationUrl?: string;
-  comments?: string;
-  submittedBy: string;
-  metadata: {
-    ipAddress: string;
-    userAgent: string;
-  };
-}
 
 export class SubmissionService {
   /**
-   * Create a new group submission
+   * Create a new submission
    */
-  static async createSubmission(data: CreateSubmissionData): Promise<IGroupSubmission> {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  static async createSubmission(data: {
+    groupId?: string;
+    studentId?: string;
+    projectId: string;
+    projectType: 'IDP' | 'UROP' | 'CAPSTONE';
+    assessmentType: 'A1' | 'A2' | 'A3' | 'External';
+    githubLink: string;
+    reportUrl: string;
+    pptUrl?: string;
+    submittedBy: string;
+    facultyId: string;
+    externalEvaluatorId?: string;
+  }): Promise<ISubmission> {
+    // Validate submission window is open
+    const isWindowOpen = await this.checkSubmissionWindow(
+      data.projectType,
+      data.assessmentType
+    );
 
-    try {
-      // Validate group exists and user is a member
-      const group = await Group.findById(data.groupId).session(session);
+    if (!isWindowOpen) {
+      throw new Error('Submission window is not open');
+    }
+
+    // Validate submitter is group leader or solo student
+    if (data.groupId) {
+      const group = await Group.findById(data.groupId);
       if (!group) {
         throw new Error('Group not found');
       }
-
-      // Check if user is a member of the group
-      const isGroupMember = group.memberIds.some(
-        memberId => memberId.toString() === data.submittedBy
-      );
-      if (!isGroupMember) {
-        throw new Error('Only group members can submit for the group');
+      if (group.leaderId.toString() !== data.submittedBy) {
+        throw new Error('Only group leader can submit');
       }
-
-      // Check if group has an approved project
-      if (group.status !== 'approved' || !group.projectId) {
-        throw new Error('Group must have an approved project to submit');
-      }
-
-      // Check if submission already exists
-      const existingSubmission = await GroupSubmission.findOne({ groupId: data.groupId }).session(session);
-      if (existingSubmission) {
-        throw new Error('Group has already submitted. Only one submission per group is allowed.');
-      }
-
-      // Validate file sizes
-      let totalFileSize = 0;
-      if (data.reportFile) {
-        if (data.reportFile.size > 50 * 1024 * 1024) {
-          throw new Error('Report file must be under 50MB');
-        }
-        totalFileSize += data.reportFile.size;
-      }
-      if (data.presentationFile) {
-        if (data.presentationFile.size > 50 * 1024 * 1024) {
-          throw new Error('Presentation file must be under 50MB');
-        }
-        totalFileSize += data.presentationFile.size;
-      }
-
-      // Create submission
-      const submission = new GroupSubmission({
-        groupId: data.groupId,
-        githubUrl: data.githubUrl,
-        reportFile: data.reportFile,
-        presentationFile: data.presentationFile,
-        presentationUrl: data.presentationUrl,
-        comments: data.comments,
-        submittedBy: data.submittedBy,
-        metadata: {
-          ...data.metadata,
-          totalFileSize
-        }
-      });
-
-      await submission.save({ session });
-
-      // Update group status to indicate submission
-      await Group.findByIdAndUpdate(
-        data.groupId,
-        { status: 'frozen' }, // Freeze group after submission
-        { session }
-      );
-
-      await session.commitTransaction();
-      
-      logger.info(`Group submission created: ${submission._id} by user ${data.submittedBy}`);
-      
-      return submission;
-    } catch (error) {
-      await session.abortTransaction();
-      logger.error('Error creating group submission:', error);
-      throw error;
-    } finally {
-      session.endSession();
     }
+
+    // Check if submission already exists
+    const existingSubmission = await Submission.findOne({
+      ...(data.groupId ? { groupId: data.groupId } : { studentId: data.studentId }),
+      projectId: data.projectId,
+      assessmentType: data.assessmentType
+    });
+
+    if (existingSubmission) {
+      throw new Error('Submission already exists for this assessment');
+    }
+
+    // Generate unique submission ID
+    const submissionId = await this.generateSubmissionId(data.projectType, data.assessmentType);
+
+    // Create submission
+    const submission = new Submission({
+      submissionId,
+      ...data,
+      submittedAt: new Date(),
+      isFrozen: true,
+      isGraded: false,
+      isGradeReleased: false
+    });
+
+    await submission.save();
+    return submission;
   }
 
   /**
-   * Get submission by group ID
+   * Get submission by ID
    */
-  static async getSubmissionByGroupId(groupId: string): Promise<IGroupSubmission | null> {
-    try {
-      const submission = await GroupSubmission.findOne({ groupId })
-        .populate('submittedBy', 'name email')
-        .populate('groupId');
-      
-      return submission;
-    } catch (error) {
-      logger.error('Error fetching group submission:', error);
-      throw error;
-    }
+  static async getSubmissionById(submissionId: string): Promise<ISubmission | null> {
+    return await Submission.findById(submissionId)
+      .populate('groupId')
+      .populate('studentId')
+      .populate('projectId')
+      .populate('facultyId')
+      .populate('externalEvaluatorId')
+      .populate('submittedBy');
   }
 
   /**
-   * Get all submissions for groups that a user is a member of
+   * Get submissions for a group
    */
-  static async getSubmissionsForUser(userId: string): Promise<IGroupSubmission[]> {
-    try {
-      // Find all groups where user is a member
-      const userGroups = await Group.find({ 
-        memberIds: userId,
-        status: { $in: ['approved', 'frozen'] }
-      }).select('_id');
-
-      const groupIds = userGroups.map(group => group._id);
-
-      // Find submissions for these groups
-      const submissions = await GroupSubmission.find({ 
-        groupId: { $in: groupIds } 
-      })
-        .populate('submittedBy', 'name email')
-        .populate('groupId')
-        .sort({ submittedAt: -1 });
-
-      return submissions;
-    } catch (error) {
-      logger.error('Error fetching user submissions:', error);
-      throw error;
-    }
+  static async getGroupSubmissions(groupId: string): Promise<ISubmission[]> {
+    return await Submission.find({ groupId })
+      .populate('projectId')
+      .populate('facultyId')
+      .populate('externalEvaluatorId')
+      .sort({ submittedAt: -1 });
   }
 
   /**
-   * Get all submissions for faculty review
+   * Get submissions for a student
    */
-  static async getSubmissionsForFaculty(facultyId: string): Promise<IGroupSubmission[]> {
-    try {
-      // Find all groups assigned to this faculty
-      const facultyGroups = await Group.find({ 
-        facultyId,
-        status: { $in: ['approved', 'frozen'] }
-      }).select('_id');
-
-      const groupIds = facultyGroups.map(group => group._id);
-
-      // Find submissions for these groups
-      const submissions = await GroupSubmission.find({ 
-        groupId: { $in: groupIds } 
-      })
-        .populate('submittedBy', 'name email')
-        .populate({
-          path: 'groupId',
-          populate: {
-            path: 'memberIds',
-            select: 'name email'
-          }
-        })
-        .sort({ submittedAt: -1 });
-
-      return submissions;
-    } catch (error) {
-      logger.error('Error fetching faculty submissions:', error);
-      throw error;
-    }
+  static async getStudentSubmissions(studentId: string): Promise<ISubmission[]> {
+    return await Submission.find({ studentId })
+      .populate('projectId')
+      .populate('facultyId')
+      .populate('externalEvaluatorId')
+      .sort({ submittedAt: -1 });
   }
 
   /**
-   * Check if user can submit for a group
+   * Get submissions for faculty to grade
    */
-  static async canUserSubmit(userId: string, groupId: string): Promise<{
-    canSubmit: boolean;
-    reason?: string;
-  }> {
-    try {
-      const group = await Group.findById(groupId);
-      if (!group) {
-        return { canSubmit: false, reason: 'Group not found' };
-      }
-
-      // Check if user is a member
-      const isGroupMember = group.memberIds.some(
-        memberId => memberId.toString() === userId
-      );
-      if (!isGroupMember) {
-        return { canSubmit: false, reason: 'You are not a member of this group' };
-      }
-
-      // Check if group has approved project
-      if (group.status !== 'approved' || !group.projectId) {
-        return { canSubmit: false, reason: 'Group must have an approved project to submit' };
-      }
-
-      // Check if already submitted
-      const existingSubmission = await GroupSubmission.findOne({ groupId });
-      if (existingSubmission) {
-        return { canSubmit: false, reason: 'Group has already submitted' };
-      }
-
-      return { canSubmit: true };
-    } catch (error) {
-      logger.error('Error checking submission eligibility:', error);
-      return { canSubmit: false, reason: 'Error checking eligibility' };
-    }
+  static async getFacultySubmissions(facultyId: string): Promise<ISubmission[]> {
+    return await Submission.find({ facultyId })
+      .populate('groupId')
+      .populate('studentId')
+      .populate('projectId')
+      .populate('submittedBy')
+      .sort({ submittedAt: -1 });
   }
 
   /**
-   * Update submission (limited updates allowed)
+   * Get submissions for external evaluator
    */
-  static async updateSubmission(
-    submissionId: string, 
-    userId: string, 
-    updates: Partial<Pick<IGroupSubmission, 'comments'>>
-  ): Promise<IGroupSubmission> {
-    try {
-      const submission = await GroupSubmission.findById(submissionId).populate('groupId');
-      if (!submission) {
-        throw new Error('Submission not found');
-      }
+  static async getExternalEvaluatorSubmissions(evaluatorId: string): Promise<ISubmission[]> {
+    return await Submission.find({ 
+      externalEvaluatorId: evaluatorId,
+      assessmentType: 'External'
+    })
+      .populate('groupId')
+      .populate('studentId')
+      .populate('projectId')
+      .populate('facultyId')
+      .populate('submittedBy')
+      .sort({ submittedAt: -1 });
+  }
 
-      // Check if user is a member of the group
-      const group = submission.groupId as any;
-      const isGroupMember = group.memberIds.some(
-        (memberId: mongoose.Types.ObjectId) => memberId.toString() === userId
-      );
-      if (!isGroupMember) {
-        throw new Error('Only group members can update the submission');
-      }
+  /**
+   * Grade a submission (faculty)
+   */
+  static async gradeFacultySubmission(
+    submissionId: string,
+    facultyId: string,
+    grade: number
+  ): Promise<ISubmission> {
+    const submission = await Submission.findById(submissionId);
 
-      // Only allow updating comments
-      if (updates.comments !== undefined) {
-        submission.comments = updates.comments;
-      }
-
-      await submission.save();
-      
-      logger.info(`Submission updated: ${submissionId} by user ${userId}`);
-      
-      return submission;
-    } catch (error) {
-      logger.error('Error updating submission:', error);
-      throw error;
+    if (!submission) {
+      throw new Error('Submission not found');
     }
+
+    if (submission.facultyId.toString() !== facultyId) {
+      throw new Error('Unauthorized to grade this submission');
+    }
+
+    if (grade < 0 || grade > 100) {
+      throw new Error('Grade must be between 0 and 100');
+    }
+
+    submission.facultyGrade = grade;
+    await submission.save();
+
+    return submission;
+  }
+
+  /**
+   * Grade a submission (external evaluator)
+   */
+  static async gradeExternalSubmission(
+    submissionId: string,
+    evaluatorId: string,
+    grade: number
+  ): Promise<ISubmission> {
+    const submission = await Submission.findById(submissionId);
+
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+
+    if (submission.assessmentType !== 'External') {
+      throw new Error('External grading only allowed for External assessments');
+    }
+
+    if (submission.externalEvaluatorId?.toString() !== evaluatorId) {
+      throw new Error('Unauthorized to grade this submission');
+    }
+
+    if (grade < 0 || grade > 100) {
+      throw new Error('Grade must be between 0 and 100');
+    }
+
+    submission.externalGrade = grade;
+    await submission.save();
+
+    return submission;
+  }
+
+  /**
+   * Release grades (coordinator only)
+   */
+  static async releaseGrades(
+    projectType: 'IDP' | 'UROP' | 'CAPSTONE',
+    assessmentType?: 'A1' | 'A2' | 'A3' | 'External'
+  ): Promise<number> {
+    const query: any = { 
+      projectType,
+      isGraded: true,
+      isGradeReleased: false
+    };
+
+    if (assessmentType) {
+      query.assessmentType = assessmentType;
+    }
+
+    const result = await Submission.updateMany(
+      query,
+      { isGradeReleased: true }
+    );
+
+    return result.modifiedCount;
+  }
+
+  /**
+   * Check if submission window is open
+   */
+  static async checkSubmissionWindow(
+    projectType: 'IDP' | 'UROP' | 'CAPSTONE',
+    assessmentType: 'A1' | 'A2' | 'A3' | 'External'
+  ): Promise<boolean> {
+    const now = new Date();
+
+    const window = await Window.findOne({
+      windowType: 'submission',
+      projectType,
+      assessmentType,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+
+    return !!window;
+  }
+
+  /**
+   * Generate unique submission ID
+   */
+  private static async generateSubmissionId(
+    projectType: string,
+    assessmentType: string
+  ): Promise<string> {
+    const prefix = `${projectType}-${assessmentType}`;
+    const count = await Submission.countDocuments({
+      projectType,
+      assessmentType
+    });
+
+    return `${prefix}-${String(count + 1).padStart(5, '0')}`;
+  }
+
+  /**
+   * Get submission statistics
+   */
+  static async getSubmissionStats(projectType?: 'IDP' | 'UROP' | 'CAPSTONE') {
+    const query = projectType ? { projectType } : {};
+
+    const total = await Submission.countDocuments(query);
+    const graded = await Submission.countDocuments({ ...query, isGraded: true });
+    const released = await Submission.countDocuments({ ...query, isGradeReleased: true });
+
+    const byAssessment = await Submission.aggregate([
+      { $match: query },
+      { $group: { _id: '$assessmentType', count: { $sum: 1 } } }
+    ]);
+
+    return {
+      total,
+      graded,
+      released,
+      pending: total - graded,
+      byAssessment
+    };
   }
 }

@@ -2,19 +2,22 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMeetingLog extends Document {
   _id: mongoose.Types.ObjectId;
-  groupId: mongoose.Types.ObjectId;
+  groupId?: mongoose.Types.ObjectId; // Optional for solo students
+  studentId?: mongoose.Types.ObjectId; // For solo students
   projectId: mongoose.Types.ObjectId;
   facultyId: mongoose.Types.ObjectId;
-  createdBy: mongoose.Types.ObjectId; // student user ID
+  createdBy: mongoose.Types.ObjectId; // Group leader or solo student user ID
   attendees: Array<{
     studentId: mongoose.Types.ObjectId;
     present: boolean;
   }>;
-  mode: 'physical' | 'online';
+  mode: 'online' | 'in-person';
+  meetingDate: Date;
   startedAt: Date;
   endedAt?: Date;
-  location?: string;
-  notes?: string;
+  location?: string; // For in-person meetings
+  meetUrl?: string; // Google Meet URL for online meetings
+  minutesOfMeeting?: string; // MOM - meeting notes
   status: 'submitted' | 'approved' | 'rejected';
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
@@ -25,8 +28,11 @@ export interface IMeetingLog extends Document {
 const MeetingLogSchema = new Schema<IMeetingLog>({
   groupId: {
     type: Schema.Types.ObjectId,
-    ref: 'Group',
-    required: true
+    ref: 'Group'
+  },
+  studentId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
   },
   projectId: {
     type: Schema.Types.ObjectId,
@@ -35,7 +41,7 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   },
   facultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster',
+    ref: 'User',
     required: true
   },
   createdBy: {
@@ -57,7 +63,11 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   }],
   mode: {
     type: String,
-    enum: ['physical', 'online'],
+    enum: ['online', 'in-person'],
+    required: true
+  },
+  meetingDate: {
+    type: Date,
     required: true
   },
   startedAt: {
@@ -72,10 +82,18 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
     trim: true,
     maxlength: 200
   },
-  notes: {
+  meetUrl: {
     type: String,
     trim: true,
-    maxlength: 2000
+    validate: {
+      validator: (url: string) => !url || url.startsWith('https://meet.google.com/'),
+      message: 'Meet URL must be a valid Google Meet link'
+    }
+  },
+  minutesOfMeeting: {
+    type: String,
+    trim: true,
+    maxlength: 5000
   },
   status: {
     type: String,
@@ -85,7 +103,7 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   },
   reviewedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   },
   reviewedAt: {
     type: Date
@@ -98,6 +116,20 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
       return ret;
     }
   }
+});
+
+// Validation: Must have either groupId OR studentId (not both, not neither)
+MeetingLogSchema.pre('save', function(next) {
+  const hasGroup = !!this.groupId;
+  const hasStudent = !!this.studentId;
+
+  if (hasGroup && hasStudent) {
+    return next(new Error('Meeting log cannot have both groupId and studentId'));
+  }
+  if (!hasGroup && !hasStudent) {
+    return next(new Error('Meeting log must have either groupId or studentId'));
+  }
+  next();
 });
 
 // Validation for attendees (at least one attendee required)

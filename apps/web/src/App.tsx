@@ -27,9 +27,17 @@ import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { PreferencesPage } from './pages/profile/PreferencesPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
-import { FacultyProjectsPage } from './pages/projects/FacultyProjectsPage';
 import { CoordinatorApprovalsPage } from './pages/projects/CoordinatorApprovalsPage';
 import { StudentApplicationPage } from './pages/dashboard/StudentApplicationPage';
+import { ApplicationPage } from './pages/student/ApplicationPage';
+import { SubmissionPage } from './pages/student/SubmissionPage';
+import { AssessmentPage } from './pages/student/AssessmentPage';
+import { MeetingsPage } from './pages/student/MeetingsPage';
+import { ControlPanel } from './pages/coordinator/ControlPanel';
+import { ProjectsPage as FacultyProjectsPage } from './pages/faculty/ProjectsPage';
+import { ApplicationsPage as FacultyApplicationsPage } from './pages/faculty/ApplicationsPage';
+import { AssessmentPage as FacultyAssessmentPage } from './pages/faculty/AssessmentPage';
+import { MeetingsPage as FacultyMeetingsPage } from './pages/faculty/MeetingsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminCohortsPage } from './pages/admin/AdminCohortsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
@@ -97,7 +105,22 @@ function App() {
                             <Route path="/help" element={<HelpSupportPage />} />
                             <Route path="/application" element={
                               <AuthGuard requiredRole="student">
-                                <StudentApplicationPage />
+                                <ApplicationPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/submission" element={
+                              <AuthGuard requiredRole="student">
+                                <SubmissionPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/assessment" element={
+                              <AuthGuard requiredRole="student">
+                                <AssessmentPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/meetings" element={
+                              <AuthGuard requiredRole="student">
+                                <MeetingsPage />
                               </AuthGuard>
                             } />
 
@@ -107,11 +130,31 @@ function App() {
                                 <FacultyProjectsPage />
                               </AuthGuard>
                             } />
+                            <Route path="/faculty/applications" element={
+                              <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                <FacultyApplicationsPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/faculty/assessment" element={
+                              <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                <FacultyAssessmentPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/faculty/meetings" element={
+                              <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                <FacultyMeetingsPage />
+                              </AuthGuard>
+                            } />
 
                             {/* Coordinator routes */}
                             <Route path="/projects/approvals" element={
                               <AuthGuard requiredRole="coordinator">
                                 <CoordinatorApprovalsPage />
+                              </AuthGuard>
+                            } />
+                            <Route path="/control" element={
+                              <AuthGuard requiredRole="coordinator">
+                                <ControlPanel />
                               </AuthGuard>
                             } />
 

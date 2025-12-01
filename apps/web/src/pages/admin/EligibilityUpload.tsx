@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GlowButton, Badge } from '../../components/ui';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/animations';
 import { apiClient } from '../../utils/api';
@@ -7,6 +7,21 @@ import { useAuth } from '../../contexts/AuthContext';
 
 type UserType = 'student' | 'faculty';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
+
+interface ParsedRow {
+    rowNumber: number;
+    data: Record<string, string>;
+    valid: boolean;
+    errors: string[];
+}
+
+interface ValidationResult {
+    valid: boolean;
+    rows: ParsedRow[];
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+}
 
 export function EligibilityUpload() {
     const { user } = useAuth();
@@ -16,13 +31,116 @@ export function EligibilityUpload() {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+    const [showPreview, setShowPreview] = useState(false);
+
+    const validateCSV = (csvContent: string): ValidationResult => {
+        const lines = csvContent.trim().split('\n');
+        if (lines.length < 2) {
+            return {
+                valid: false,
+                rows: [],
+                totalRows: 0,
+                validRows: 0,
+                invalidRows: 0
+            };
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const expectedHeaders = userType === 'student' 
+            ? ['email', 'regno', 'year', 'semester']
+            : ['email', 'facultyid', 'department'];
+
+        const rows: ParsedRow[] = [];
+        let validCount = 0;
+        let invalidCount = 0;
+
+        // Validate headers
+        const headerErrors: string[] = [];
+        expectedHeaders.forEach(expected => {
+            if (!headers.includes(expected)) {
+                headerErrors.push(`Missing column: ${expected}`);
+            }
+        });
+
+        // Validate each data row
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const values = line.split(',').map(v => v.trim());
+            const rowData: Record<string, string> = {};
+            const rowErrors: string[] = [...headerErrors];
+
+            headers.forEach((header, index) => {
+                rowData[header] = values[index] || '';
+            });
+
+            // Validate email
+            if (!rowData.email || !rowData.email.endsWith('@srmap.edu.in')) {
+                rowErrors.push('Invalid email (must end with @srmap.edu.in)');
+            }
+
+            if (userType === 'student') {
+                // Validate year
+                const year = parseInt(rowData.year);
+                if (!year || ![2, 3, 4].includes(year)) {
+                    rowErrors.push('Year must be 2, 3, or 4');
+                }
+
+                // Validate semester
+                const semester = parseInt(rowData.semester);
+                if (!semester || ![3, 4, 7, 8].includes(semester)) {
+                    rowErrors.push('Semester must be 3, 4, 7, or 8');
+                }
+
+                // Validate regno
+                if (!rowData.regno) {
+                    rowErrors.push('Registration number is required');
+                }
+            } else {
+                // Validate faculty
+                if (!rowData.facultyid) {
+                    rowErrors.push('Faculty ID is required');
+                }
+                if (!rowData.department) {
+                    rowErrors.push('Department is required');
+                }
+            }
+
+            const isValid = rowErrors.length === 0;
+            if (isValid) validCount++;
+            else invalidCount++;
+
+            rows.push({
+                rowNumber: i,
+                data: rowData,
+                valid: isValid,
+                errors: rowErrors
+            });
+        }
+
+        return {
+            valid: invalidCount === 0 && rows.length > 0,
+            rows,
+            totalRows: rows.length,
+            validRows: validCount,
+            invalidRows: invalidCount
+        };
+    };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setCsvData(event.target?.result as string);
+                const content = event.target?.result as string;
+                setCsvData(content);
+                const validation = validateCSV(content);
+                setValidationResult(validation);
+                setShowPreview(true);
+                setError(null);
+                setResult(null);
             };
             reader.readAsText(file);
         }
@@ -31,6 +149,11 @@ export function EligibilityUpload() {
     const handleUpload = async () => {
         if (!csvData) {
             setError('Please select a CSV file');
+            return;
+        }
+
+        if (validationResult && !validationResult.valid) {
+            setError(`Cannot upload: ${validationResult.invalidRows} invalid rows found. Please fix errors first.`);
             return;
         }
 
@@ -50,6 +173,7 @@ export function EligibilityUpload() {
 
             if (response.success && response.data) {
                 setResult(response.data);
+                setShowPreview(false);
             } else {
                 setError(response.error?.message || 'Upload failed');
             }
@@ -58,6 +182,14 @@ export function EligibilityUpload() {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleReset = () => {
+        setCsvData('');
+        setValidationResult(null);
+        setShowPreview(false);
+        setResult(null);
+        setError(null);
     };
 
     const getCSVFormatExample = () => {
@@ -243,32 +375,168 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                                 />
                             </div>
 
-                            {/* CSV Preview */}
-                            {csvData && (
-                                <div>
-                                    <label className="block text-sm font-medium text-text mb-2">
-                                        Preview & Edit
-                                    </label>
-                                    <textarea
-                                        value={csvData}
-                                        onChange={(e) => setCsvData(e.target.value)}
-                                        rows={10}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                    />
-                                </div>
-                            )}
+                            {/* Validation Summary */}
+                            <AnimatePresence>
+                                {validationResult && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="space-y-4"
+                                    >
+                                        {/* Summary Cards */}
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="text-center p-4 bg-white/5 border border-white/10 rounded-lg">
+                                                <div className="text-2xl font-bold text-text">
+                                                    {validationResult.totalRows}
+                                                </div>
+                                                <div className="text-xs text-textSecondary">Total Rows</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-success/10 border border-success/30 rounded-lg">
+                                                <div className="text-2xl font-bold text-success">
+                                                    {validationResult.validRows}
+                                                </div>
+                                                <div className="text-xs text-textSecondary">Valid</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-error/10 border border-error/30 rounded-lg">
+                                                <div className="text-2xl font-bold text-error">
+                                                    {validationResult.invalidRows}
+                                                </div>
+                                                <div className="text-xs text-textSecondary">Invalid</div>
+                                            </div>
+                                        </div>
 
-                            {/* Upload Button */}
-                            <GlowButton
-                                onClick={handleUpload}
-                                loading={uploading}
-                                disabled={!csvData || uploading}
-                                variant="primary"
-                                glow
-                                className="w-full"
-                            >
-                                {uploading ? 'Uploading...' : `Upload ${projectType} ${userType === 'student' ? 'Students' : 'Faculty'} List`}
-                            </GlowButton>
+                                        {/* Preview Toggle */}
+                                        <button
+                                            onClick={() => setShowPreview(!showPreview)}
+                                            className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all flex items-center justify-between"
+                                        >
+                                            <span className="font-medium">
+                                                {showPreview ? 'Hide' : 'Show'} Data Preview
+                                            </span>
+                                            <svg
+                                                className={`w-5 h-5 transition-transform ${showPreview ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        {/* Data Preview Table */}
+                                        {showPreview && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="bg-white/5 border border-white/10 rounded-lg overflow-hidden"
+                                            >
+                                                <div className="max-h-96 overflow-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead className="bg-white/10 sticky top-0">
+                                                            <tr>
+                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Row</th>
+                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Status</th>
+                                                                {userType === 'student' ? (
+                                                                    <>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Reg No</th>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Year</th>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Semester</th>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Faculty ID</th>
+                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Department</th>
+                                                                    </>
+                                                                )}
+                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Errors</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {validationResult.rows.map((row) => (
+                                                                <tr
+                                                                    key={row.rowNumber}
+                                                                    className={`border-t border-white/5 ${
+                                                                        row.valid ? 'bg-success/5' : 'bg-error/5'
+                                                                    }`}
+                                                                >
+                                                                    <td className="px-3 py-2 text-textSecondary">{row.rowNumber}</td>
+                                                                    <td className="px-3 py-2">
+                                                                        {row.valid ? (
+                                                                            <span className="inline-flex items-center gap-1 text-success">
+                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                                </svg>
+                                                                                Valid
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="inline-flex items-center gap-1 text-error">
+                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                                </svg>
+                                                                                Invalid
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    {userType === 'student' ? (
+                                                                        <>
+                                                                            <td className="px-3 py-2 text-text">{row.data.email}</td>
+                                                                            <td className="px-3 py-2 text-text">{row.data.regno}</td>
+                                                                            <td className="px-3 py-2 text-text">{row.data.year}</td>
+                                                                            <td className="px-3 py-2 text-text">{row.data.semester}</td>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <td className="px-3 py-2 text-text">{row.data.email}</td>
+                                                                            <td className="px-3 py-2 text-text">{row.data.facultyid}</td>
+                                                                            <td className="px-3 py-2 text-text">{row.data.department}</td>
+                                                                        </>
+                                                                    )}
+                                                                    <td className="px-3 py-2">
+                                                                        {row.errors.length > 0 && (
+                                                                            <div className="space-y-1">
+                                                                                {row.errors.map((err, idx) => (
+                                                                                    <div key={idx} className="text-xs text-error">
+                                                                                        • {err}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3">
+                                {csvData && (
+                                    <button
+                                        onClick={handleReset}
+                                        className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                                <GlowButton
+                                    onClick={handleUpload}
+                                    loading={uploading}
+                                    disabled={!csvData || uploading || (validationResult && !validationResult.valid)}
+                                    variant="primary"
+                                    glow
+                                    className="flex-1"
+                                >
+                                    {uploading ? 'Uploading...' : `Upload ${validationResult?.validRows || 0} Records`}
+                                </GlowButton>
+                            </div>
                         </div>
                     </GlassCard>
                 </motion.div>

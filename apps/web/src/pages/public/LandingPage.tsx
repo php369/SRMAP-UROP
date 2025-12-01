@@ -149,11 +149,10 @@ export function LandingPage() {
                 <h3
                   className="text-xl font-semibold mb-2 text-textPrimary"
                 >
-                  Project Discovery
+                  Project Management
                 </h3>
                 <p className="text-textSecondary">
-                  Browse and filter projects by department and type to find the
-                  perfect match for your interests.
+                  Streamlined workflow for IDP, UROP, and Capstone projects with faculty proposals and student applications.
                 </p>
               </div>
 
@@ -172,7 +171,7 @@ export function LandingPage() {
                 </h3>
                 <p className="text-textSecondary">
                   Form groups, apply for projects, and collaborate with
-                  integrated Google Meet links.
+                  integrated Google Meet links and meeting logs.
                 </p>
               </div>
 
@@ -191,7 +190,7 @@ export function LandingPage() {
                 </h3>
                 <p className="text-textSecondary">
                   Comprehensive evaluation system with internal and external
-                  assessments.
+                  assessments, grade tracking, and release management.
                 </p>
               </div>
             </div>

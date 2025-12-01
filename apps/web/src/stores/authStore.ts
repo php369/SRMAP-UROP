@@ -359,11 +359,17 @@ export const useAuthStore = create<AuthStore>()(
               }
             }
           } catch (error: any) {
-            console.error('❌ Auth check error:', error);
+            // Only log unexpected errors, not expired tokens (which are normal)
+            if (!error?.message?.includes('expired')) {
+              console.error('❌ Auth check error:', error);
+            }
 
             // Only logout on explicit auth errors (401, 403), not on network/server errors
             if (error?.message?.includes('401') || error?.message?.includes('403') || error?.message?.includes('UNAUTHORIZED')) {
-              console.log('❌ Authentication error detected, logging out');
+              console.log('🔄 Session expired, please login again');
+              get().logout();
+            } else if (error?.message?.includes('expired')) {
+              // Token expired - silent logout
               get().logout();
             } else {
               // For other errors (network, 500, etc.), keep the session and let monitoring handle it

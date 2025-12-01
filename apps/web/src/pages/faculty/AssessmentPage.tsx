@@ -1,0 +1,457 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Github, Presentation, Video, Send, Eye } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { GlassCard, GlowButton } from '../../components/ui';
+import toast from 'react-hot-toast';
+
+interface Submission {
+  _id: string;
+  groupId?: {
+    _id: string;
+    groupCode: string;
+    members: any[];
+  };
+  studentId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  projectId: {
+    _id: string;
+    title: string;
+    projectType: string;
+  };
+  assessmentType: 'A1' | 'A2' | 'A3' | 'External';
+  githubLink?: string;
+  reportUrl?: string;
+  presentationUrl?: string;
+  facultyGrade?: number;
+  externalGrade?: number;
+  facultyComments?: string;
+  externalComments?: string;
+  gradeReleased: boolean;
+  submittedAt: string;
+}
+
+export function FacultyAssessmentPage() {
+  const { user } = useAuth();
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [gradeData, setGradeData] = useState({
+    grade: '',
+    comments: '',
+    meetUrl: ''
+  });
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
+
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/submissions/faculty/${user?._id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        }
+      });
+      const data = await response.json();
+      setSubmissions(data);
+    } catch (error) {
+      toast.error('Failed to fetch submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGradeSubmission = async () => {
+    if (!selectedSubmission) return;
+
+    const grade = parseFloat(gradeData.grade);
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+      toast.error('Please enter a valid grade (0-100)');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/submissions/${selectedSubmission._id}/grade`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        },
+        body: JSON.stringify({
+          facultyGrade: grade,
+          facultyComments: gradeData.comments,
+          meetUrl: gradeData.meetUrl
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Grade submitted successfully');
+        setSelectedSubmission(null);
+        setGradeData({ grade: '', comments: '', meetUrl: '' });
+        fetchSubmissions();
+      } else {
+        const error = await response.json();
+        toast.error(error.error?.message || 'Failed to submit grade');
+      }
+    } catch (error) {
+      toast.error('Failed to submit grade');
+    }
+  };
+
+  const getAssessmentBadge = (type: string) => {
+    const colors = {
+      A1: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      A2: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      A3: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+      External: 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${colors[type as keyof typeof colors]}`}>
+        {type}
+      </span>
+    );
+  };
+
+  return (
+    <div className="min-h-screen p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-7xl mx-auto space-y-6"
+      >
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-text">Assessment & Grading</h1>
+          <p className="text-textSecondary mt-1">
+            Review submissions and provide grades
+          </p>
+        </div>
+
+        {/* Submissions List */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : submissions.length === 0 ? (
+          <GlassCard className="p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
+              <p className="text-textSecondary">
+                No submissions to grade at the moment
+              </p>
+            </div>
+          </GlassCard>
+        ) : (
+          <div className="grid gap-4">
+            {submissions.map((submission) => (
+              <motion.div
+                key={submission._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <GlassCard className="p-6 hover:bg-white/10 transition-all">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="text-lg font-semibold text-text">
+                          {submission.groupId 
+                            ? `Group ${submission.groupId.groupCode}` 
+                            : submission.studentId?.name}
+                        </h3>
+                        {getAssessmentBadge(submission.assessmentType)}
+                        <span className="px-2 py-1 bg-secondary/20 text-secondary text-xs font-medium rounded-lg border border-secondary/30">
+                          {submission.projectId.projectType}
+                        </span>
+                        {submission.facultyGrade !== undefined && (
+                          <span className="px-2 py-1 bg-success/20 text-success text-xs font-medium rounded-lg border border-success/30">
+                            Graded: {submission.facultyGrade}/100
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div>
+                          <span className="text-sm font-medium text-text">Project: </span>
+                          <span className="text-sm text-textSecondary">{submission.projectId.title}</span>
+                        </div>
+                        {submission.groupId && (
+                          <div>
+                            <span className="text-sm font-medium text-text">Members: </span>
+                            <span className="text-sm text-textSecondary">
+                              {submission.groupId.members.length} students
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex gap-3 text-sm">
+                          {submission.githubLink && (
+                            <a
+                              href={submission.githubLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Github className="w-4 h-4" />
+                              GitHub
+                            </a>
+                          )}
+                          {submission.reportUrl && (
+                            <a
+                              href={submission.reportUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Report
+                            </a>
+                          )}
+                          {submission.presentationUrl && (
+                            <a
+                              href={submission.presentationUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Presentation className="w-4 h-4" />
+                              Presentation
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-textSecondary">
+                        Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => {
+                          setSelectedSubmission(submission);
+                          setGradeData({
+                            grade: submission.facultyGrade?.toString() || '',
+                            comments: submission.facultyComments || '',
+                            meetUrl: ''
+                          });
+                        }}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                        title={submission.facultyGrade !== undefined ? 'View/Edit Grade' : 'Grade Submission'}
+                      >
+                        <Eye className="w-4 h-4 text-text" />
+                      </button>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Grading Modal */}
+      <AnimatePresence>
+        {selectedSubmission && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setSelectedSubmission(null);
+              setGradeData({ grade: '', comments: '', meetUrl: '' });
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            >
+              <GlassCard className="p-6">
+                <h2 className="text-2xl font-bold text-text mb-6">Grade Submission</h2>
+
+                <div className="space-y-6">
+                  {/* Submission Info */}
+                  <div className="p-4 bg-white/5 rounded-lg space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-textSecondary">
+                        {selectedSubmission.groupId ? 'Group' : 'Student'}:
+                      </span>
+                      <p className="text-text">
+                        {selectedSubmission.groupId 
+                          ? `Group ${selectedSubmission.groupId.groupCode}` 
+                          : selectedSubmission.studentId?.name}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-textSecondary">Project:</span>
+                      <p className="text-text">{selectedSubmission.projectId.title}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-textSecondary">Assessment:</span>
+                      <div className="mt-1">{getAssessmentBadge(selectedSubmission.assessmentType)}</div>
+                    </div>
+                  </div>
+
+                  {/* Submission Links */}
+                  <div>
+                    <label className="block text-sm font-medium text-text mb-3">Submitted Work</label>
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedSubmission.githubLink && (
+                        <a
+                          href={selectedSubmission.githubLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                        >
+                          <Github className="w-5 h-5 text-primary" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-text">GitHub Repository</p>
+                            <p className="text-xs text-textSecondary truncate">{selectedSubmission.githubLink}</p>
+                          </div>
+                        </a>
+                      )}
+                      {selectedSubmission.reportUrl && (
+                        <a
+                          href={selectedSubmission.reportUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                        >
+                          <FileText className="w-5 h-5 text-primary" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-text">Report PDF</p>
+                            <p className="text-xs text-textSecondary">Click to view</p>
+                          </div>
+                        </a>
+                      )}
+                      {selectedSubmission.presentationUrl && (
+                        <a
+                          href={selectedSubmission.presentationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                        >
+                          <Presentation className="w-5 h-5 text-primary" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-text">Presentation</p>
+                            <p className="text-xs text-textSecondary">Click to view</p>
+                          </div>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grading Form */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-text mb-2">
+                        Grade (0-100) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        value={gradeData.grade}
+                        onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Enter grade"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-text mb-2">
+                        Comments / Feedback
+                      </label>
+                      <textarea
+                        value={gradeData.comments}
+                        onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        rows={4}
+                        placeholder="Provide feedback to students..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-text mb-2">
+                        Google Meet Link (Optional)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={gradeData.meetUrl}
+                          onChange={(e) => setGradeData({ ...gradeData, meetUrl: e.target.value })}
+                          className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="https://meet.google.com/..."
+                        />
+                        {gradeData.meetUrl && (
+                          <a
+                            href={gradeData.meetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition-all flex items-center gap-2"
+                          >
+                            <Video className="w-4 h-4" />
+                            Join
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-xs text-textSecondary mt-1">
+                        Schedule a meeting for presentation or discussion
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Existing Grade Info */}
+                  {selectedSubmission.facultyGrade !== undefined && (
+                    <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
+                      <p className="text-sm text-success mb-2">Previously Graded</p>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-text">Grade: {selectedSubmission.facultyGrade}/100</p>
+                        {selectedSubmission.facultyComments && (
+                          <p className="text-textSecondary">Comments: {selectedSubmission.facultyComments}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setSelectedSubmission(null);
+                      setGradeData({ grade: '', comments: '', meetUrl: '' });
+                    }}
+                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <GlowButton
+                    onClick={handleGradeSubmission}
+                    variant="primary"
+                    glow
+                    className="flex-1"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Submit Grade
+                  </GlowButton>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

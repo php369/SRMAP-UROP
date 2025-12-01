@@ -76,7 +76,10 @@ export function NotificationProvider() {
     });
 
     socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      // Only log if it's not an authentication error (which is expected when not logged in)
+      if (!error.message?.includes('Authentication')) {
+        console.error('Socket connection error:', error);
+      }
     });
 
     // Cleanup on unmount
