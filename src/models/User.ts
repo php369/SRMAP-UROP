@@ -16,10 +16,20 @@ export interface IUser extends Document {
     year?: number;
     semester?: number; // Current semester (1-8)
     specialization?: string; // For 6th sem onwards
+    bio?: string;
+    skills?: string[];
+    interests?: string[];
+    phone?: string;
+    location?: string;
+    github?: string;
+    linkedin?: string;
+    portfolio?: string;
   };
   preferences: {
     theme: 'light' | 'dark';
     notifications: boolean;
+    emailNotifications?: boolean;
+    profileVisibility?: 'public' | 'private' | 'connections';
   };
   lastSeen: Date;
   createdAt: Date;
@@ -96,6 +106,39 @@ const UserSchema = new Schema<IUser>({
     specialization: {
       type: String,
       trim: true
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 500
+    },
+    skills: [{
+      type: String,
+      trim: true
+    }],
+    interests: [{
+      type: String,
+      trim: true
+    }],
+    phone: {
+      type: String,
+      trim: true
+    },
+    location: {
+      type: String,
+      trim: true
+    },
+    github: {
+      type: String,
+      trim: true
+    },
+    linkedin: {
+      type: String,
+      trim: true
+    },
+    portfolio: {
+      type: String,
+      trim: true
     }
   },
   preferences: {
@@ -107,6 +150,15 @@ const UserSchema = new Schema<IUser>({
     notifications: {
       type: Boolean,
       default: true
+    },
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    profileVisibility: {
+      type: String,
+      enum: ['public', 'private', 'connections'],
+      default: 'public'
     }
   },
   lastSeen: {
