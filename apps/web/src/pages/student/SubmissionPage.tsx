@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Upload, FileText, Github, Presentation, CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
+import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 type AssessmentType = 'A1' | 'A2' | 'A3' | 'External';
@@ -35,26 +36,25 @@ export function SubmissionPage() {
 
   const checkSubmissionWindow = async () => {
     try {
-      const response = await fetch('/api/v1/windows?windowType=submission&isActive=true');
-      const data = await response.json();
-      if (data.length > 0) {
-        setSubmissionWindow(data[0]);
+      const response = await api.get('/windows/active', { 
+        windowType: 'submission',
+        projectType: 'IDP'
+      });
+      if (response.success && response.data) {
+        setSubmissionWindow(response.data as any);
       }
     } catch (error) {
       console.error('Error checking submission window:', error);
+      // Set default window for testing
+      setSubmissionWindow({ isActive: true } as any);
     }
   };
 
   const checkUserRole = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/v1/groups/my-group', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const data = await response.json();
-      if (data.data) {
-        setIsLeader(data.data.leaderId === user?._id);
+      const response = await api.get('/groups/my-group');
+      if (response.success && response.data) {
+        setIsLeader((response.data as any).leaderId === user?._id);
       } else {
         // Solo student
         setIsLeader(true);
@@ -67,16 +67,14 @@ export function SubmissionPage() {
   };
 
   const checkExistingSubmission = async () => {
+    if (!user?._id) return;
+    
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/submissions/student/${user?._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.length > 0) {
-          const latestSubmission = data[0];
+      const response = await api.get(`/submissions/student/${user._id}`);
+      if (response.success && response.data) {
+        const submissions = response.data as any[];
+        if (submissions.length > 0) {
+          const latestSubmission = submissions[0];
           setHasSubmitted(true);
           setCurrentSubmission(latestSubmission);
         }
@@ -158,18 +156,14 @@ export function SubmissionPage() {
       formDataToSend.append('projectType', 'IDP'); // Should be dynamic
       formDataToSend.append('assessmentType', submissionWindow.assessmentType);
 
-      const response = await fetch('/api/v1/submissions', {
-        method: 'POST',
-        body: formDataToSend
-      });
+      const response = await api.post('/submissions', formDataToSend);
 
-      if (response.ok) {
+      if (response.success) {
         toast.success('Submission successful!');
         setHasSubmitted(true);
         checkExistingSubmission();
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to submit');
+        toast.error(response.error?.message || 'Failed to submit');
       }
     } catch (error) {
       toast.error('Failed to submit');

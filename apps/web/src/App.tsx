@@ -28,8 +28,6 @@ import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { PreferencesPage } from './pages/profile/PreferencesPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
-// Lazy load pages for better performance
-import { lazy, Suspense } from 'react';
 
 // Lazy loaded pages
 const CoordinatorApprovalsPage = lazy(() => import('./pages/projects/CoordinatorApprovalsPage').then(m => ({ default: m.CoordinatorApprovalsPage })));

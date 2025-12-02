@@ -84,7 +84,7 @@ export function AssessmentDetailPage() {
         setSubmissions(mockSubmissions);
       } catch (error) {
         console.error('Error fetching assessment:', error);
-        navigate('/assessments');
+        navigate('/dashboard/assessments');
       } finally {
         setLoading(false);
       }
@@ -93,7 +93,7 @@ export function AssessmentDetailPage() {
     if (id) {
       fetchData();
     } else {
-      navigate('/assessments');
+      navigate('/dashboard/assessments');
     }
   }, [id, navigate]);
 
@@ -142,7 +142,7 @@ export function AssessmentDetailPage() {
           <h2 className="text-2xl font-bold text-text mb-2">Assessment Not Found</h2>
           <p className="text-textSecondary mb-4">The assessment you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate('/assessments')}
+            onClick={() => navigate('/dashboard/assessments')}
             className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Assessments

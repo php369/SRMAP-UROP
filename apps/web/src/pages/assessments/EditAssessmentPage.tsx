@@ -54,7 +54,7 @@ export function EditAssessmentPage() {
       } catch (error) {
         console.error('Error fetching assessment:', error);
         // Handle error (show toast, navigate back, etc.)
-        navigate('/assessments');
+        navigate('/dashboard/assessments');
       } finally {
         setInitialLoading(false);
       }
@@ -63,7 +63,7 @@ export function EditAssessmentPage() {
     if (id) {
       fetchAssessment();
     } else {
-      navigate('/assessments');
+      navigate('/dashboard/assessments');
     }
   }, [id, navigate]);
 
@@ -106,7 +106,7 @@ export function EditAssessmentPage() {
           <h2 className="text-2xl font-bold text-text mb-2">Assessment Not Found</h2>
           <p className="text-textSecondary mb-4">The assessment you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate('/assessments')}
+            onClick={() => navigate('/dashboard/assessments')}
             className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Assessments

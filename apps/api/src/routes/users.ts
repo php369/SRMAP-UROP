@@ -80,7 +80,7 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
         res.json({
             success: true,
             data: {
-                id: user._id,
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
@@ -88,9 +88,11 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
                 studentId: user.studentId,
                 facultyId: user.facultyId,
                 isCoordinator: user.isCoordinator,
+                isExternalEvaluator: user.isExternalEvaluator,
                 profile: user.profile,
                 preferences: user.preferences,
                 lastSeen: user.lastSeen,
+                createdAt: user.createdAt,
             },
         });
 
@@ -101,6 +103,86 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
             error: {
                 code: 'PROFILE_FETCH_FAILED',
                 message: 'Failed to fetch profile information',
+            },
+        });
+    }
+}));
+
+/**
+ * PUT /api/users/profile
+ * Update user's profile information
+ */
+router.put('/profile', authenticate, asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { profile } = req.body;
+
+    if (!profile) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                message: 'Profile data is required',
+            },
+        });
+    }
+
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found',
+                },
+            });
+        }
+
+        // Update profile fields
+        if (profile.department !== undefined) user.profile.department = profile.department;
+        if (profile.year !== undefined) user.profile.year = profile.year;
+        if (profile.semester !== undefined) user.profile.semester = profile.semester;
+        if (profile.specialization !== undefined) user.profile.specialization = profile.specialization;
+        if (profile.bio !== undefined) user.profile.bio = profile.bio;
+        if (profile.skills !== undefined) user.profile.skills = profile.skills;
+        if (profile.interests !== undefined) user.profile.interests = profile.interests;
+        if (profile.phone !== undefined) user.profile.phone = profile.phone;
+        if (profile.location !== undefined) user.profile.location = profile.location;
+        if (profile.github !== undefined) user.profile.github = profile.github;
+        if (profile.linkedin !== undefined) user.profile.linkedin = profile.linkedin;
+        if (profile.portfolio !== undefined) user.profile.portfolio = profile.portfolio;
+
+        // Update preferences if provided
+        const { preferences } = req.body;
+        if (preferences) {
+            if (preferences.emailNotifications !== undefined) {
+                user.preferences.emailNotifications = preferences.emailNotifications;
+            }
+            if (preferences.profileVisibility !== undefined) {
+                user.preferences.profileVisibility = preferences.profileVisibility;
+            }
+        }
+
+        await user.save();
+
+        logger.info(`Profile updated for user: ${user.email}`);
+
+        res.json({
+            success: true,
+            data: {
+                message: 'Profile updated successfully',
+                profile: user.profile,
+            },
+        });
+
+    } catch (error) {
+        logger.error('Error updating profile:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'PROFILE_UPDATE_FAILED',
+                message: 'Failed to update profile',
             },
         });
     }

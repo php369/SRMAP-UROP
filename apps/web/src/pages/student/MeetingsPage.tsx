@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Video, Calendar, Users, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 export function MeetingsPage() {
@@ -28,24 +29,26 @@ export function MeetingsPage() {
 
   const checkUserRole = async () => {
     try {
-      const response = await fetch('/api/v1/groups/my-group');
-      const data = await response.json();
-      if (data.data) {
-        setIsLeader(data.data.leaderId === user?._id);
-        setGroupMembers(data.data.members);
+      const response = await api.get('/groups/my-group');
+      if (response.success && response.data) {
+        const groupData = response.data as any;
+        setIsLeader(groupData.leaderId === user?._id);
+        setGroupMembers(groupData.members);
       } else {
         setIsLeader(true); // Solo student
       }
     } catch (error) {
       console.error('Error checking user role:', error);
+      setIsLeader(true);
     }
   };
 
   const fetchMeetings = async () => {
     try {
-      const response = await fetch('/api/v1/meeting-logs');
-      const data = await response.json();
-      setMeetings(data);
+      const response = await api.get('/meeting-logs');
+      if (response.success && response.data) {
+        setMeetings(response.data as any[]);
+      }
     } catch (error) {
       console.error('Error fetching meetings:', error);
     }
@@ -83,20 +86,16 @@ export function MeetingsPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/meeting-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...logForm,
-          startedAt: new Date(logForm.meetingDate),
-          attendees: logForm.attendees.map(id => ({
-            studentId: id,
-            present: true
-          }))
-        })
+      const response = await api.post('/meeting-logs', {
+        ...logForm,
+        startedAt: new Date(logForm.meetingDate),
+        attendees: logForm.attendees.map(id => ({
+          studentId: id,
+          present: true
+        }))
       });
 
-      if (response.ok) {
+      if (response.success) {
         toast.success('Meeting log submitted for approval');
         setShowLogForm(false);
         fetchMeetings();

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Video, FileText, Github, Award, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../utils/api';
 
 export function AssessmentPage() {
   const { user } = useAuth();
@@ -16,21 +17,31 @@ export function AssessmentPage() {
 
   const checkAssessmentWindow = async () => {
     try {
-      const response = await fetch('/api/v1/windows?windowType=assessment&isActive=true');
-      const data = await response.json();
-      if (data.length > 0) {
-        setAssessmentWindow(data[0]);
+      const response = await api.get('/windows/active', { 
+        windowType: 'assessment',
+        projectType: 'IDP'
+      });
+      if (response.success && response.data) {
+        setAssessmentWindow(response.data as any);
       }
     } catch (error) {
       console.error('Error checking assessment window:', error);
+      // Set default window for testing
+      setAssessmentWindow({ isActive: true } as any);
     }
   };
 
   const fetchSubmissions = async () => {
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await fetch(`/api/v1/submissions/student/${user?._id}`);
-      const data = await response.json();
-      setSubmissions(data);
+      const response = await api.get(`/submissions/student/${user._id}`);
+      if (response.success && response.data) {
+        setSubmissions(response.data as any[]);
+      }
     } catch (error) {
       console.error('Error fetching submissions:', error);
     } finally {

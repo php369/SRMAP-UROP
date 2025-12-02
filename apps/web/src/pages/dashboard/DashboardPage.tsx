@@ -206,7 +206,7 @@ export function DashboardPage() {
             </div>
             {!application && (
               <button
-                onClick={() => navigate('/application')}
+                onClick={() => navigate('/dashboard/application')}
                 className="mt-4 w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
               >
                 Apply Now
@@ -246,7 +246,7 @@ export function DashboardPage() {
               </button>
 
               <button
-                onClick={() => navigate('/application')}
+                onClick={() => navigate('/dashboard/application')}
                 className="flex flex-col items-center gap-2 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
               >
                 <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +256,7 @@ export function DashboardPage() {
               </button>
 
               <button
-                onClick={() => navigate('/submission')}
+                onClick={() => navigate('/dashboard/submission')}
                 className="flex flex-col items-center gap-2 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
               >
                 <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -266,7 +266,7 @@ export function DashboardPage() {
               </button>
 
               <button
-                onClick={() => navigate('/assessment')}
+                onClick={() => navigate('/dashboard/assessment')}
                 className="flex flex-col items-center gap-2 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
               >
                 <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">

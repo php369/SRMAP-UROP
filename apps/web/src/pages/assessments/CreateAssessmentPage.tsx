@@ -33,7 +33,7 @@ export function CreateAssessmentPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Navigate back to assessments list
-      navigate('/assessments');
+      navigate('/dashboard/assessments');
     } catch (error) {
       console.error('Error creating assessment:', error);
       // Handle error (show toast, etc.)
@@ -43,7 +43,7 @@ export function CreateAssessmentPage() {
   };
 
   const handleCancel = () => {
-    navigate('/assessments');
+    navigate('/dashboard/assessments');
   };
 
   return (

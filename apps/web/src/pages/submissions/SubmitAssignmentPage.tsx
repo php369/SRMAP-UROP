@@ -37,7 +37,7 @@ export function SubmitAssignmentPage() {
         setAssessment(mockAssessment);
       } catch (error) {
         console.error('Error fetching assessment:', error);
-        navigate('/assessments');
+        navigate('/dashboard/assessments');
       } finally {
         setLoading(false);
       }
@@ -46,7 +46,7 @@ export function SubmitAssignmentPage() {
     if (assessmentId) {
       fetchAssessment();
     } else {
-      navigate('/assessments');
+      navigate('/dashboard/assessments');
     }
   }, [assessmentId, navigate]);
 
@@ -61,7 +61,7 @@ export function SubmitAssignmentPage() {
       await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Navigate to submissions page with success message
-      navigate('/submissions', { 
+      navigate('/dashboard/submissions', { 
         state: { 
           message: 'Assignment submitted successfully!',
           type: 'success'
@@ -110,7 +110,7 @@ export function SubmitAssignmentPage() {
           <h2 className="text-2xl font-bold text-text mb-2">Assessment Not Found</h2>
           <p className="text-textSecondary mb-4">The assessment you're trying to submit to doesn't exist.</p>
           <button
-            onClick={() => navigate('/assessments')}
+            onClick={() => navigate('/dashboard/assessments')}
             className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Assessments

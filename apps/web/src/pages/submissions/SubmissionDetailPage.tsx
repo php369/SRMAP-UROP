@@ -52,7 +52,7 @@ export function SubmissionDetailPage() {
         setSubmission(mockSubmission);
       } catch (error) {
         console.error('Error fetching submission:', error);
-        navigate('/submissions');
+        navigate('/dashboard/submissions');
       } finally {
         setLoading(false);
       }
@@ -61,7 +61,7 @@ export function SubmissionDetailPage() {
     if (id) {
       fetchSubmission();
     } else {
-      navigate('/submissions');
+      navigate('/dashboard/submissions');
     }
   }, [id, navigate]);
 
@@ -106,7 +106,7 @@ export function SubmissionDetailPage() {
           <h2 className="text-2xl font-bold text-text mb-2">Submission Not Found</h2>
           <p className="text-textSecondary mb-4">The submission you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate('/submissions')}
+            onClick={() => navigate('/dashboard/submissions')}
             className="px-6 py-3 bg-primary text-textPrimary rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Submissions
