@@ -190,6 +190,23 @@ export async function joinGroup(
 
     await group.save();
 
+    // Delete any solo application the user might have for this project type
+    // They will now be linked to the group's application instead
+    try {
+      const { Application } = await import('../models/Application');
+      const deletedApp = await Application.findOneAndDelete({
+        studentId: userId,
+        projectType: group.projectType
+      });
+
+      if (deletedApp) {
+        logger.info(`Deleted solo application for user ${userId} as they joined group ${group.groupId}`);
+      }
+    } catch (error) {
+      logger.error('Error deleting solo application:', error);
+      // Don't fail the join operation if application deletion fails
+    }
+
     // Create notification for group leader
     try {
       const { createNotification } = await import('./notificationService');
