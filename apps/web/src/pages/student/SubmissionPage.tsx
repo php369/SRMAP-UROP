@@ -15,6 +15,7 @@ export function SubmissionPage() {
   const [isLeader, setIsLeader] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [currentSubmission, setCurrentSubmission] = useState<any>(null);
+  const [userGroup, setUserGroup] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     githubLink: '',
@@ -31,8 +32,16 @@ export function SubmissionPage() {
   useEffect(() => {
     checkSubmissionWindow();
     checkUserRole();
-    checkExistingSubmission();
   }, []);
+
+  // Check for existing submission when userGroup is loaded
+  useEffect(() => {
+    console.log('userGroup changed:', userGroup);
+    if (userGroup?._id) {
+      console.log('Checking for existing submission for group:', userGroup._id);
+      checkExistingSubmission();
+    }
+  }, [userGroup]);
 
   const checkSubmissionWindow = async () => {
     try {
@@ -54,7 +63,13 @@ export function SubmissionPage() {
     try {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
-        setIsLeader((response.data as any).leaderId === user?._id);
+        setUserGroup(response.data);
+        const groupLeaderId = response.data.leaderId?._id || response.data.leaderId;
+        const userId = user?.id || user?._id; // Use user.id (not user._id)
+        console.log('Group Leader ID:', groupLeaderId);
+        console.log('Current User ID:', userId);
+        console.log('Is Leader:', groupLeaderId === userId || String(groupLeaderId) === String(userId));
+        setIsLeader(groupLeaderId === userId || String(groupLeaderId) === String(userId));
       } else {
         // Solo student
         setIsLeader(true);
@@ -67,20 +82,31 @@ export function SubmissionPage() {
   };
 
   const checkExistingSubmission = async () => {
-    if (!user?._id) return;
+    // Wait for userGroup to be loaded
+    if (!userGroup?._id) {
+      return;
+    }
     
     try {
-      const response = await api.get(`/submissions/student/${user._id}`);
-      if (response.success && response.data) {
-        const submissions = response.data as any[];
-        if (submissions.length > 0) {
-          const latestSubmission = submissions[0];
-          setHasSubmitted(true);
-          setCurrentSubmission(latestSubmission);
-        }
+      const response = await api.get(`/submissions/group/${userGroup._id}`);
+      console.log('Submission check response:', response);
+      
+      // The response structure is { submission: {...} } directly, not wrapped in success/data
+      const submission = (response as any).submission;
+      console.log('Found submission:', submission);
+      
+      if (submission && submission._id) {
+        setHasSubmitted(true);
+        setCurrentSubmission(submission);
+      } else {
+        console.log('No valid submission found in response');
       }
-    } catch (error) {
-      console.error('Error checking existing submission:', error);
+    } catch (error: any) {
+      // 404 means no submission exists, which is fine
+      console.log('Submission check error:', error);
+      if (error?.response?.status !== 404 && error?.message !== 'HTTP 404: Not Found') {
+        console.error('Error checking existing submission:', error);
+      }
     }
   };
 
@@ -140,6 +166,12 @@ export function SubmissionPage() {
   };
 
   const handleSubmit = async () => {
+    // Check if user is in a group
+    if (!userGroup || !userGroup._id) {
+      toast.error('You must create or join a group before submitting. Please go to the Groups page to create a group.');
+      return;
+    }
+
     if (!validateForm()) {
       toast.error('Please fix all errors before submitting');
       return;
@@ -148,25 +180,41 @@ export function SubmissionPage() {
     setLoading(true);
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('githubLink', formData.githubLink);
-      formDataToSend.append('report', formData.reportFile!);
+      formDataToSend.append('groupId', userGroup._id);
+      formDataToSend.append('githubUrl', formData.githubLink);
+      formDataToSend.append('reportFile', formData.reportFile!);
       if (formData.pptFile) {
-        formDataToSend.append('ppt', formData.pptFile);
+        formDataToSend.append('presentationFile', formData.pptFile);
       }
-      formDataToSend.append('projectType', 'IDP'); // Should be dynamic
-      formDataToSend.append('assessmentType', submissionWindow.assessmentType);
 
       const response = await api.post('/submissions', formDataToSend);
 
       if (response.success) {
         toast.success('Submission successful!');
         setHasSubmitted(true);
-        checkExistingSubmission();
+        setCurrentSubmission(response.data);
       } else {
         toast.error(response.error?.message || 'Failed to submit');
       }
-    } catch (error) {
-      toast.error('Failed to submit');
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      let errorMessage = 'Failed to submit';
+      
+      // Handle different error types
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Show user-friendly messages
+      if (errorMessage.includes('already submitted')) {
+        errorMessage = 'Your group has already submitted. You cannot submit again.';
+      } else if (errorMessage.includes('not a member')) {
+        errorMessage = 'You are not a member of this group.';
+      } else if (errorMessage.includes('Only the group leader')) {
+        errorMessage = 'Only the group leader can submit.';
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -185,6 +233,34 @@ export function SubmissionPage() {
           <p className="text-gray-600">
             The submission window hasn't started yet. Please check back later.
           </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Check if user doesn't have a group
+  if (!userGroup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md"
+        >
+          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Group Required</h2>
+          <p className="text-gray-600 mb-4">
+            You need to create or join a group before you can submit your work.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Even if you're working solo, you need to create a group with just yourself as the leader.
+          </p>
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard
+          </button>
         </motion.div>
       </div>
     );

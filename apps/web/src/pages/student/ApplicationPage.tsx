@@ -381,41 +381,62 @@ export function ApplicationPage() {
               <h3 className="text-xl font-bold mb-4">
                 Select Projects (up to 3) - {selectedProjects.length}/3 selected
               </h3>
-              <div className="space-y-4">
-                {projects.map((project) => (
-                  <div
-                    key={project._id}
-                    onClick={() => handleProjectSelection(project._id)}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      selectedProjects.includes(project._id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-bold mb-1">{project.title}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-gray-500">
-                            Faculty: {project.facultyName} ({project.facultyIdNumber})
-                          </span>
-                          <span className="text-gray-500">Dept: {project.department}</span>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose the projects you're interested in working on. You can select up to 3 projects in order of preference.
+              </p>
+              
+              {projects.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                  <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">No projects available yet</p>
+                  <p className="text-sm text-gray-500">
+                    Projects will be posted by faculty soon. Check back later!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {projects.map((project) => (
+                    <div
+                      key={project._id}
+                      onClick={() => handleProjectSelection(project._id)}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedProjects.includes(project._id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold mb-1">{project.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-gray-500">
+                              Faculty: {project.facultyName} ({project.facultyIdNumber})
+                            </span>
+                            <span className="text-gray-500">Dept: {project.department}</span>
+                          </div>
                         </div>
+                        {selectedProjects.includes(project._id) && (
+                          <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                        )}
                       </div>
-                      {selectedProjects.includes(project._id) && (
-                        <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {selectedProjects.length === 0 && projects.length > 0 && (
+              <p className="text-sm text-amber-600 mb-3 text-center">
+                ⚠️ Please select at least one project to continue
+              </p>
+            )}
+            
             <button
               onClick={handleSubmitApplication}
               disabled={loading || selectedProjects.length === 0}
-              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title={selectedProjects.length === 0 ? 'Please select at least one project' : 'Submit your application'}
             >
               {loading ? <Loader className="animate-spin mx-auto" /> : 'Submit Application'}
             </button>

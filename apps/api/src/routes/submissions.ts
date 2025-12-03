@@ -6,6 +6,8 @@ import { logger } from '../utils/logger';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
+import { Group } from '../models/Group';
+import { Submission } from '../models/Submission';
 
 const router = express.Router();
 
@@ -85,15 +87,41 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
     const { groupId, githubUrl, presentationUrl, comments } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
+    // Debug logging
+    logger.info('Submission request received:', {
+      groupId,
+      githubUrl,
+      presentationUrl,
+      hasReportFile: !!(files.reportFile && files.reportFile[0]),
+      hasPresentationFile: !!(files.presentationFile && files.presentationFile[0]),
+      userId: req.user!.id
+    });
+
     // Validate required fields
-    if (!groupId || !githubUrl) {
+    if (!githubUrl) {
+      logger.warn('Submission failed: Missing GitHub URL');
       return res.status(400).json({
-        error: 'Group ID and GitHub URL are required'
+        error: 'GitHub URL is required'
+      });
+    }
+    
+    // For solo students without a group, groupId can be null
+    if (!groupId) {
+      logger.warn(`Solo student submission attempt by user ${req.user!.id} without a group`);
+      return res.status(400).json({
+        error: 'You must create or join a group before submitting. Solo students should create a group with just themselves.'
       });
     }
 
     // Check if user can submit
     const eligibility = await SubmissionService.canUserSubmit(req.user!.id, groupId);
+    logger.info('Submission eligibility check:', {
+      userId: req.user!.id,
+      groupId,
+      canSubmit: eligibility.canSubmit,
+      reason: eligibility.reason
+    });
+    
     if (!eligibility.canSubmit) {
       return res.status(403).json({
         error: eligibility.reason
@@ -271,6 +299,50 @@ router.get('/:groupId/eligibility', authenticate, rbacGuard('student'), async (r
     logger.error('Error checking submission eligibility:', error);
     res.status(500).json({
       error: 'Failed to check eligibility'
+    });
+  }
+});
+
+/**
+ * DELETE /api/submissions/group/:groupId
+ * Delete submission for a group (development only)
+ */
+router.delete('/group/:groupId', authenticate, rbacGuard('student'), async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    
+    // Find the submission
+    const submission = await SubmissionService.getSubmissionByGroupId(groupId);
+    if (!submission) {
+      return res.status(404).json({
+        error: 'No submission found for this group'
+      });
+    }
+    
+    // Verify user is the group leader
+    const group = await Group.findById(groupId);
+    if (!group || group.leaderId.toString() !== req.user!.id) {
+      return res.status(403).json({
+        error: 'Only the group leader can delete submissions'
+      });
+    }
+    
+    // Delete the submission
+    await Submission.findByIdAndDelete(submission._id);
+    
+    logger.info('Submission deleted:', {
+      submissionId: submission._id,
+      groupId,
+      deletedBy: req.user!.id
+    });
+    
+    res.json({
+      message: 'Submission deleted successfully'
+    });
+  } catch (error: any) {
+    logger.error('Error deleting submission:', error);
+    res.status(500).json({
+      error: 'Failed to delete submission'
     });
   }
 });

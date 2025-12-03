@@ -5,6 +5,8 @@ export interface IGroup extends Document {
   groupId: string; // Unique identifier
   groupCode: string; // 6-char alphanumeric
   groupName?: string;
+  description?: string; // Group description
+  avatarUrl?: string; // Group avatar/image URL
   leaderId: mongoose.Types.ObjectId; // Student who created the group
   members: mongoose.Types.ObjectId[]; // 2-4 students
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
@@ -46,6 +48,15 @@ const GroupSchema = new Schema<IGroup>({
     type: String,
     trim: true,
     maxlength: 100
+  },
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  },
+  avatarUrl: {
+    type: String,
+    trim: true
   },
   leaderId: {
     type: Schema.Types.ObjectId,
@@ -117,10 +128,10 @@ GroupSchema.index({ members: 1 }); // Find groups by member
 GroupSchema.index({ projectType: 1, semester: 1 }); // Groups by type and semester
 GroupSchema.index({ createdAt: -1 }); // Recent groups
 
-// Validation for member count (2-4 students)
+// Validation for member count (1-4 students, allowing solo students)
 GroupSchema.pre('save', function (next) {
-  if (this.members.length < 2 || this.members.length > 4) {
-    next(new Error('Group must have between 2 and 4 members'));
+  if (this.members.length < 1 || this.members.length > 4) {
+    next(new Error('Group must have between 1 and 4 members'));
   } else {
     next();
   }
