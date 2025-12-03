@@ -236,8 +236,395 @@ router.post('/:id/leave', authenticate, authorize('student'), async (req, res) =
 });
 
 /**
+ * POST /api/groups/:id/remove-member
+ * Remove a member from group (leader only)
+ * Accessible by: students (group leaders only)
+ */
+router.post('/:id/remove-member', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { memberId } = req.body;
+
+    if (!memberId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_MEMBER_ID',
+          message: 'Member ID is required',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Get the group
+    const group = await Group.findById(id);
+    
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if requester is the group leader
+    if (group.leaderId.toString() !== req.user!.id) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_LEADER',
+          message: 'Only the group leader can remove members',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Cannot remove the leader
+    if (memberId === group.leaderId.toString()) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CANNOT_REMOVE_LEADER',
+          message: 'Cannot remove the group leader',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Remove member from the group
+    group.members = group.members.filter(m => m.toString() !== memberId);
+    
+    // Update status if needed
+    if (group.members.length < 2 && group.status === 'complete') {
+      group.status = 'forming';
+    }
+    
+    await group.save();
+
+    logger.info(`Member ${memberId} removed from group ${group.groupId} by leader ${req.user!.id}`);
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Member removed successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error removing member:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REMOVE_MEMBER_FAILED',
+        message: 'Failed to remove member',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * POST /api/groups/:id/transfer-leadership
+ * Transfer group leadership to another member
+ * Accessible by: students (group leaders only)
+ */
+router.post('/:id/transfer-leadership', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newLeaderId } = req.body;
+
+    if (!newLeaderId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_NEW_LEADER_ID',
+          message: 'New leader ID is required',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Get the group
+    const group = await Group.findById(id);
+    
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if requester is the current group leader
+    if (group.leaderId.toString() !== req.user!.id) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_LEADER',
+          message: 'Only the current group leader can transfer leadership',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if new leader is a member of the group
+    const isMember = group.members.some(m => m.toString() === newLeaderId);
+    if (!isMember) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'NOT_A_MEMBER',
+          message: 'New leader must be a member of the group',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Transfer leadership
+    const oldLeaderId = group.leaderId;
+    group.leaderId = new mongoose.Types.ObjectId(newLeaderId);
+    await group.save();
+
+    logger.info(`Leadership transferred in group ${group.groupId} from ${oldLeaderId} to ${newLeaderId}`);
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Leadership transferred successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error transferring leadership:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'TRANSFER_LEADERSHIP_FAILED',
+        message: 'Failed to transfer leadership',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * PATCH /api/groups/:id
+ * Update group details (name, description, avatar)
+ * Accessible by: students (group leaders only)
+ */
+router.patch('/:id', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { groupName, description, avatarUrl } = req.body;
+
+    // Get the group
+    const group = await Group.findById(id);
+    
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if requester is the group leader
+    if (group.leaderId.toString() !== req.user!.id) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_LEADER',
+          message: 'Only the group leader can update group details',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Update fields if provided
+    if (groupName !== undefined) group.groupName = groupName;
+    if (description !== undefined) group.description = description;
+    if (avatarUrl !== undefined) group.avatarUrl = avatarUrl;
+    
+    await group.save();
+
+    logger.info(`Group ${group.groupId} updated by leader ${req.user!.id}`);
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Group updated successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error updating group:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_GROUP_FAILED',
+        message: 'Failed to update group',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * GET /api/groups/:id/analytics
+ * Get group analytics (submission stats, grades, etc.)
+ * Accessible by: students (group members), faculty, coordinator
+ */
+router.get('/:id/analytics', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the group
+    const group = await Group.findById(id)
+      .populate('members', 'name email studentId')
+      .populate('leaderId', 'name email studentId');
+    
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if user has access (member, faculty, or coordinator)
+    const isMember = group.members.some((m: any) => m._id.toString() === req.user!.id);
+    const isFaculty = req.user!.role === 'faculty' || req.user!.role === 'coordinator';
+    
+    if (!isMember && !isFaculty) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'ACCESS_DENIED',
+          message: 'You do not have access to this group analytics',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Get submissions count
+    const { Submission } = await import('../models/Submission');
+    const submissions = await Submission.find({ groupId: id });
+    
+    // Get evaluations/grades
+    const { Evaluation } = await import('../models/Evaluation');
+    const evaluations = await Evaluation.find({ groupId: id });
+    
+    // Calculate analytics
+    const analytics = {
+      group: {
+        id: group._id,
+        name: group.groupName,
+        code: group.groupCode,
+        status: group.status,
+        memberCount: group.members.length,
+        createdAt: group.createdAt
+      },
+      submissions: {
+        total: submissions.length,
+        byType: submissions.reduce((acc: any, sub: any) => {
+          acc[sub.assessmentType] = (acc[sub.assessmentType] || 0) + 1;
+          return acc;
+        }, {}),
+        latest: submissions.length > 0 ? submissions[submissions.length - 1] : null
+      },
+      evaluations: {
+        total: evaluations.length,
+        averageGrade: evaluations.length > 0 
+          ? evaluations.reduce((sum: number, ev: any) => sum + (ev.totalMarks || 0), 0) / evaluations.length 
+          : 0,
+        graded: evaluations.filter((ev: any) => ev.isGraded).length,
+        pending: evaluations.filter((ev: any) => !ev.isGraded).length
+      },
+      members: group.members.map((member: any) => ({
+        id: member._id,
+        name: member.name,
+        email: member.email,
+        studentId: member.studentId,
+        isLeader: member._id.toString() === group.leaderId.toString()
+      }))
+    };
+
+    res.json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error: any) {
+    logger.error('Error fetching group analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_ANALYTICS_FAILED',
+        message: 'Failed to fetch group analytics',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * GET /api/groups/my-groups
+ * Get all groups for current user
+ * Accessible by: students only
+ */
+router.get('/my-groups', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.id);
+    
+    // Find all groups where user is a member or leader
+    const groups = await Group.find({
+      $or: [
+        { members: userId },
+        { leaderId: userId }
+      ]
+    })
+    .populate('leaderId', 'name email avatar')
+    .populate('members', 'name email avatar')
+    .populate('assignedProjectId')
+    .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: groups,
+    });
+  } catch (error) {
+    logger.error('Error getting user groups:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_GROUPS_FAILED',
+        message: 'Failed to get user groups',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
  * GET /api/groups/my-group
- * Get current user's group
+ * Get current user's group (for backward compatibility - returns first group)
  * Accessible by: students only
  */
 router.get('/my-group', authenticate, authorize('student'), async (req, res) => {

@@ -67,14 +67,17 @@ export async function createGroup(data: {
   try {
     const { leaderId, projectType, semester, year, groupName } = data;
 
-    // Check if user is already a group leader
+    // Check if user is already a group leader for this project type and semester
     const existingAsLeader = await Group.findOne({
       leaderId,
+      projectType,
+      semester,
+      year,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
     });
 
     if (existingAsLeader) {
-      throw new Error('User is already a group leader and cannot create another group');
+      throw new Error(`You are already leading a group for ${projectType} in ${semester} ${year}`);
     }
 
     // Check if user is already a member of another group
@@ -146,14 +149,17 @@ export async function joinGroup(
       throw new Error('Group leaders cannot join other groups');
     }
 
-    // Check if user is already in a group
+    // Check if user is already in a group for this project type and semester
     const existingMembership = await Group.findOne({
       members: userId,
+      projectType,
+      semester,
+      year,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
     });
 
     if (existingMembership) {
-      throw new Error('User is already a member of a group');
+      throw new Error(`You are already in a group for ${projectType} in ${semester} ${year}`);
     }
 
     // Find the group
@@ -183,6 +189,23 @@ export async function joinGroup(
     }
 
     await group.save();
+
+    // Create notification for group leader
+    try {
+      const { createNotification } = await import('./notificationService');
+      const user = await User.findById(userId);
+      await createNotification({
+        userId: group.leaderId,
+        type: 'group_member_joined',
+        title: 'New Member Joined',
+        message: `${user?.name || 'A student'} has joined your group ${group.groupCode}`,
+        relatedId: group._id,
+        relatedModel: 'Group'
+      });
+    } catch (error) {
+      logger.error('Error creating join notification:', error);
+      // Don't fail the join operation if notification fails
+    }
 
     logger.info(`User ${userId} joined group ${group.groupId}`);
     return group;

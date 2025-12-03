@@ -21,6 +21,11 @@ export interface ISubmission extends Document {
   finalGrade?: number; // Combined grade
   isGraded: boolean;
   isGradeReleased: boolean;
+  comments?: string; // Optional comments from submitter
+  metadata?: {
+    ipAddress?: string;
+    userAgent?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -117,6 +122,14 @@ const SubmissionSchema = new Schema<ISubmission>({
   isGradeReleased: {
     type: Boolean,
     default: false
+  },
+  comments: {
+    type: String,
+    trim: true
+  },
+  metadata: {
+    ipAddress: String,
+    userAgent: String
   }
 }, {
   timestamps: true,
