@@ -21,6 +21,7 @@ interface AuthStore {
   logout: () => void;
   refreshAuthToken: () => Promise<boolean>;
   updateUser: (user: Partial<User>) => void;
+  refreshUserData: () => Promise<boolean>;
   checkAuth: () => Promise<void>;
   setLoading: (loading: boolean) => void;
 }
@@ -189,6 +190,41 @@ export const useAuthStore = create<AuthStore>()(
             const updatedUser = { ...user, ...userData };
             localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
             set({ user: updatedUser });
+          }
+        },
+
+        refreshUserData: async () => {
+          try {
+            const response = await apiClient.get('/auth/me');
+
+            if (response.success && response.data?.user) {
+              const updatedUser = response.data.user;
+
+              // Update user in all storage systems
+              sessionManager.setUserData(updatedUser);
+              localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+
+              // Update persistent session if it exists
+              const currentSession = persistentAuth.getCurrentSession();
+              if (currentSession) {
+                persistentAuth.saveSession(
+                  currentSession.token,
+                  currentSession.refreshToken,
+                  updatedUser,
+                  currentSession.rememberMe
+                );
+              }
+
+              set({ user: updatedUser });
+
+              console.log('✅ User data refreshed:', updatedUser);
+              return true;
+            }
+
+            return false;
+          } catch (error) {
+            console.error('❌ Failed to refresh user data:', error);
+            return false;
           }
         },
 

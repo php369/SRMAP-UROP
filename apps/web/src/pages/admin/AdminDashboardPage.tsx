@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard, GlowButton, Badge } from '../../components/ui';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/animations';
 import { useAuth } from '../../contexts/AuthContext';
-import { Upload, Users, BookOpen, BarChart3, Settings } from 'lucide-react';
+import { Upload, Users, Settings } from 'lucide-react';
 
 export function AdminDashboardPage() {
     const { user } = useAuth();
@@ -26,18 +26,11 @@ export function AdminDashboardPage() {
             action: () => navigate('/dashboard/admin/users')
         },
         {
-            title: 'Manage Cohorts',
-            description: 'Organize students into cohorts',
-            icon: <BookOpen className="w-8 h-8" />,
+            title: 'Manage Windows',
+            description: 'Control application, proposal, and submission windows',
+            icon: <Settings className="w-8 h-8" />,
             color: 'from-green-500 to-green-600',
-            action: () => navigate('/dashboard/admin/cohorts')
-        },
-        {
-            title: 'View Reports',
-            description: 'System analytics and reports',
-            icon: <BarChart3 className="w-8 h-8" />,
-            color: 'from-orange-500 to-orange-600',
-            action: () => navigate('/dashboard/admin/reports')
+            action: () => navigate('/dashboard/admin/windows')
         }
     ];
 

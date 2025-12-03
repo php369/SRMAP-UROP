@@ -8,6 +8,12 @@ import {
     deactivateEligibility,
     getEligibilityStats
 } from '../services/eligibilityService';
+import {
+    uploadFacultyRoster,
+    getFacultyRoster,
+    updateFacultyRecord,
+    deleteFacultyRecord
+} from '../services/facultyService';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -253,6 +259,189 @@ router.post('/deactivate', authenticate, authorize('admin'), async (req, res) =>
             error: {
                 code: 'DEACTIVATE_FAILED',
                 message: 'Failed to deactivate eligibility records',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * POST /api/eligibility/faculty/upload
+ * Upload faculty roster from CSV
+ * Accessible by: admin only
+ */
+router.post('/faculty/upload', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { csvData } = req.body;
+
+        if (!csvData) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MISSING_REQUIRED_FIELDS',
+                    message: 'csvData is required',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        const result = await uploadFacultyRoster(csvData);
+
+        logger.info('Faculty upload result:', result);
+
+        res.json({
+            success: true,
+            data: result,
+            message: `Upload completed: ${result.successful} created, ${result.updated} updated, ${result.failed} failed`,
+        });
+    } catch (error: any) {
+        logger.error('Error uploading faculty roster:', error);
+
+        if (error.message?.includes('Invalid CSV') || error.message?.includes('CSV parsing failed')) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_CSV_FORMAT',
+                    message: error.message,
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        if (error.message?.includes('Invalid email domain')) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_EMAIL_DOMAIN',
+                    message: error.message,
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'UPLOAD_FAILED',
+                message: 'Failed to upload faculty roster',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * GET /api/eligibility/faculty
+ * Get faculty roster
+ * Accessible by: admin, coordinator
+ */
+router.get('/faculty', authenticate, authorize('admin', 'coordinator'), async (req, res) => {
+    try {
+        const { dept, isCoordinator, active } = req.query;
+
+        const faculty = await getFacultyRoster({
+            dept: dept as string,
+            isCoordinator: isCoordinator === 'true' ? true : isCoordinator === 'false' ? false : undefined,
+            active: active === 'true' ? true : active === 'false' ? false : undefined
+        });
+
+        res.json({
+            success: true,
+            data: faculty,
+            count: faculty.length,
+        });
+    } catch (error) {
+        logger.error('Error getting faculty roster:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'FETCH_FAILED',
+                message: 'Failed to fetch faculty roster',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * PUT /api/eligibility/faculty/:email
+ * Update faculty roster record
+ * Accessible by: admin only
+ */
+router.put('/faculty/:email', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { email } = req.params;
+        const updates = req.body;
+
+        const faculty = await updateFacultyRecord(email, updates);
+
+        if (!faculty) {
+            res.status(404).json({
+                success: false,
+                error: {
+                    code: 'FACULTY_NOT_FOUND',
+                    message: 'Faculty record not found',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        res.json({
+            success: true,
+            data: faculty,
+            message: 'Faculty record updated successfully',
+        });
+    } catch (error) {
+        logger.error('Error updating faculty record:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'UPDATE_FAILED',
+                message: 'Failed to update faculty record',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * DELETE /api/eligibility/faculty/:email
+ * Delete faculty roster record
+ * Accessible by: admin only
+ */
+router.delete('/faculty/:email', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        const deleted = await deleteFacultyRecord(email);
+
+        if (!deleted) {
+            res.status(404).json({
+                success: false,
+                error: {
+                    code: 'FACULTY_NOT_FOUND',
+                    message: 'Faculty record not found',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        res.json({
+            success: true,
+            message: 'Faculty record deleted successfully',
+        });
+    } catch (error) {
+        logger.error('Error deleting faculty record:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'DELETE_FAILED',
+                message: 'Failed to delete faculty record',
                 timestamp: new Date().toISOString(),
             },
         });

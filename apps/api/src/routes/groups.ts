@@ -51,7 +51,7 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
   } catch (error: any) {
     logger.error('Error creating group:', error);
 
-    if (error.message?.includes('already a group leader')) {
+    if (error.message?.includes('already leading a group') || error.message?.includes('already a group leader')) {
       res.status(409).json({
         success: false,
         error: {
@@ -259,7 +259,7 @@ router.post('/:id/remove-member', authenticate, authorize('student'), async (req
 
     // Get the group
     const group = await Group.findById(id);
-    
+
     if (!group) {
       res.status(404).json({
         success: false,
@@ -300,12 +300,12 @@ router.post('/:id/remove-member', authenticate, authorize('student'), async (req
 
     // Remove member from the group
     group.members = group.members.filter(m => m.toString() !== memberId);
-    
+
     // Update status if needed
     if (group.members.length < 2 && group.status === 'complete') {
       group.status = 'forming';
     }
-    
+
     await group.save();
 
     logger.info(`Member ${memberId} removed from group ${group.groupId} by leader ${req.user!.id}`);
@@ -352,7 +352,7 @@ router.post('/:id/transfer-leadership', authenticate, authorize('student'), asyn
 
     // Get the group
     const group = await Group.findById(id);
-    
+
     if (!group) {
       res.status(404).json({
         success: false,
@@ -429,7 +429,7 @@ router.patch('/:id', authenticate, authorize('student'), async (req, res) => {
 
     // Get the group
     const group = await Group.findById(id);
-    
+
     if (!group) {
       res.status(404).json({
         success: false,
@@ -459,7 +459,7 @@ router.patch('/:id', authenticate, authorize('student'), async (req, res) => {
     if (groupName !== undefined) group.groupName = groupName;
     if (description !== undefined) group.description = description;
     if (avatarUrl !== undefined) group.avatarUrl = avatarUrl;
-    
+
     await group.save();
 
     logger.info(`Group ${group.groupId} updated by leader ${req.user!.id}`);
@@ -495,7 +495,7 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
     const group = await Group.findById(id)
       .populate('members', 'name email studentId')
       .populate('leaderId', 'name email studentId');
-    
+
     if (!group) {
       res.status(404).json({
         success: false,
@@ -511,7 +511,7 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
     // Check if user has access (member, faculty, or coordinator)
     const isMember = group.members.some((m: any) => m._id.toString() === req.user!.id);
     const isFaculty = req.user!.role === 'faculty' || req.user!.role === 'coordinator';
-    
+
     if (!isMember && !isFaculty) {
       res.status(403).json({
         success: false,
@@ -527,11 +527,11 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
     // Get submissions count
     const { Submission } = await import('../models/Submission');
     const submissions = await Submission.find({ groupId: id });
-    
+
     // Get evaluations/grades
     const { Evaluation } = await import('../models/Evaluation');
     const evaluations = await Evaluation.find({ groupId: id });
-    
+
     // Calculate analytics
     const analytics = {
       group: {
@@ -552,8 +552,8 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
       },
       evaluations: {
         total: evaluations.length,
-        averageGrade: evaluations.length > 0 
-          ? evaluations.reduce((sum: number, ev: any) => sum + (ev.totalMarks || 0), 0) / evaluations.length 
+        averageGrade: evaluations.length > 0
+          ? evaluations.reduce((sum: number, ev: any) => sum + (ev.totalMarks || 0), 0) / evaluations.length
           : 0,
         graded: evaluations.filter((ev: any) => ev.isGraded).length,
         pending: evaluations.filter((ev: any) => !ev.isGraded).length
@@ -592,7 +592,7 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
 router.get('/my-groups', authenticate, authorize('student'), async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user!.id);
-    
+
     // Find all groups where user is a member or leader
     const groups = await Group.find({
       $or: [
@@ -600,10 +600,10 @@ router.get('/my-groups', authenticate, authorize('student'), async (req, res) =>
         { leaderId: userId }
       ]
     })
-    .populate('leaderId', 'name email avatar')
-    .populate('members', 'name email avatar')
-    .populate('assignedProjectId')
-    .sort({ createdAt: -1 });
+      .populate('leaderId', 'name email avatar')
+      .populate('members', 'name email avatar')
+      .populate('assignedProjectId')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -796,6 +796,96 @@ router.get('/', authenticate, authorize('faculty', 'coordinator', 'admin'), asyn
       error: {
         code: 'GET_GROUPS_FAILED',
         message: 'Failed to get groups',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * DELETE /api/groups/:id
+ * Delete a group (only if in 'forming' status and leader hasn't applied yet)
+ * Accessible by: students (group leaders only)
+ */
+router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_GROUP_ID',
+          message: 'Invalid group ID format',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    const { Group } = await import('../models/Group');
+    const group = await Group.findById(id);
+
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if requester is the group leader
+    if (group.leaderId.toString() !== req.user!.id) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_LEADER',
+          message: 'Only the group leader can delete the group',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Only allow deletion if group is in 'forming' status
+    if (group.status !== 'forming') {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_GROUP_STATUS',
+          message: `Cannot delete group with status '${group.status}'. Only groups in 'forming' status can be deleted.`,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Delete the group
+    await Group.findByIdAndDelete(id);
+
+    // Remove Group_Leader role from the user
+    const { User } = await import('../models/User');
+    await User.findByIdAndUpdate(req.user!.id, {
+      $pull: { roles: 'Group_Leader' }
+    });
+
+    logger.info(`Group deleted: ${group.groupId} by user ${req.user!.id}`);
+
+    res.json({
+      success: true,
+      message: 'Group deleted successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error deleting group:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_GROUP_FAILED',
+        message: 'Failed to delete group',
         timestamp: new Date().toISOString(),
       },
     });

@@ -10,8 +10,18 @@ interface Application {
   groupId?: {
     _id: string;
     groupCode: string;
-    members: any[];
-    leaderId: any;
+    members: Array<{
+      _id: string;
+      name: string;
+      email: string;
+      studentId: string;
+    }>;
+    leaderId: {
+      _id: string;
+      name: string;
+      email: string;
+      studentId: string;
+    };
   };
   studentId?: {
     _id: string;
@@ -19,13 +29,12 @@ interface Application {
     email: string;
     idNumber: string;
   };
-  projectId: {
+  projectType: string;
+  projectPreferences: Array<{
     _id: string;
-    projectId: string;
     title: string;
-    projectType: string;
-  };
-  projectPreferences: string[];
+    brief: string;
+  }>;
   department: string;
   stream: string;
   specialization: string;
@@ -41,8 +50,6 @@ export function FacultyApplicationsPage() {
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
 
   useEffect(() => {
     fetchApplications();
@@ -51,78 +58,88 @@ export function FacultyApplicationsPage() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/applications/faculty/${user?._id}`, {
+      const response = await fetch(`http://localhost:3001/api/v1/applications/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
       });
-      const data = await response.json();
-      setApplications(data);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setApplications(result.data);
+      } else {
+        setApplications([]);
+      }
     } catch (error) {
       toast.error('Failed to fetch applications');
+      setApplications([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReview = async (applicationId: string, status: 'accepted' | 'rejected') => {
-    if (!confirm(`Are you sure you want to ${status === 'accepted' ? 'accept' : 'reject'} this application?`)) {
+  const handleAccept = async (applicationId: string, projectId: string) => {
+    if (!confirm('Are you sure you want to accept this application?')) {
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/applications/${applicationId}/review`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:3001/api/v1/applications/${applicationId}/accept`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ projectId })
       });
 
-      if (response.ok) {
-        toast.success(`Application ${status === 'accepted' ? 'accepted' : 'rejected'} successfully`);
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Application accepted successfully');
         fetchApplications();
         setSelectedApplication(null);
       } else {
-        const error = await response.json();
-        toast.error(error.error?.message || 'Failed to review application');
+        toast.error(result.error?.message || 'Failed to accept application');
       }
     } catch (error) {
-      toast.error('Failed to review application');
+      toast.error('Failed to accept application');
     }
   };
 
-  const handleUpdateProjectTitle = async () => {
-    if (!selectedApplication || !newTitle.trim()) {
-      toast.error('Please enter a new title');
+  const handleReject = async (applicationId: string) => {
+    const reason = prompt('Enter rejection reason (optional):');
+
+    if (!confirm('Are you sure you want to reject this application?')) {
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/projects/${selectedApplication.projectId._id}`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:3001/api/v1/applications/${applicationId}/reject`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         },
-        body: JSON.stringify({ title: newTitle })
+        body: JSON.stringify({ reason: reason || undefined })
       });
 
-      if (response.ok) {
-        toast.success('Project title updated successfully');
-        setShowEditModal(false);
-        setNewTitle('');
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Application rejected');
         fetchApplications();
+        setSelectedApplication(null);
       } else {
-        toast.error('Failed to update project title');
+        toast.error(result.error?.message || 'Failed to reject application');
       }
     } catch (error) {
-      toast.error('Failed to update project title');
+      toast.error('Failed to reject application');
     }
   };
 
-  const filteredApplications = applications.filter(app => 
+
+
+  const filteredApplications = applications.filter(app =>
     filterStatus === 'all' ? true : app.status === filterStatus
   );
 
@@ -164,11 +181,10 @@ export function FacultyApplicationsPage() {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filterStatus === status
-                      ? 'bg-primary text-white'
-                      : 'bg-white/5 text-textSecondary hover:bg-white/10'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === status
+                    ? 'bg-primary text-white'
+                    : 'bg-white/5 text-textSecondary hover:bg-white/10'
+                    }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                   <span className="ml-2 text-xs opacity-70">
@@ -193,7 +209,7 @@ export function FacultyApplicationsPage() {
               </div>
               <h3 className="text-xl font-semibold text-text mb-2">No Applications</h3>
               <p className="text-textSecondary">
-                {filterStatus === 'all' 
+                {filterStatus === 'all'
                   ? 'No applications received yet'
                   : `No ${filterStatus} applications`}
               </p>
@@ -217,20 +233,32 @@ export function FacultyApplicationsPage() {
                           <User className="w-5 h-5 text-secondary" />
                         )}
                         <h3 className="text-lg font-semibold text-text">
-                          {application.applicationType === 'group' 
-                            ? `Group ${application.groupId?.groupCode}` 
+                          {application.groupId
+                            ? application.groupId.leaderId?.name || `Group ${application.groupId.groupCode}`
                             : application.studentId?.name}
                         </h3>
+                        {application.groupId && (
+                          <span className="text-xs text-textSecondary">
+                            (Group Leader)
+                          </span>
+                        )}
                         {getStatusBadge(application.status)}
                         <span className="px-2 py-1 bg-secondary/20 text-secondary text-xs font-medium rounded-lg border border-secondary/30">
-                          {application.projectId.projectType}
+                          {application.projectType}
                         </span>
                       </div>
 
                       <div className="space-y-2 mb-4">
                         <div>
-                          <span className="text-sm font-medium text-text">Project: </span>
-                          <span className="text-sm text-textSecondary">{application.projectId.title}</span>
+                          <span className="text-sm font-medium text-text">Projects: </span>
+                          <span className="text-sm text-textSecondary">
+                            {application.projectPreferences?.map((p, i) => (
+                              <span key={p._id}>
+                                {i > 0 && ', '}
+                                {p.title}
+                              </span>
+                            ))}
+                          </span>
                         </div>
                         {application.applicationType === 'group' && application.groupId && (
                           <div>
@@ -262,30 +290,18 @@ export function FacultyApplicationsPage() {
                       >
                         <Eye className="w-4 h-4 text-text" />
                       </button>
-                      {application.status === 'accepted' && (
-                        <button
-                          onClick={() => {
-                            setSelectedApplication(application);
-                            setNewTitle(application.projectId.title);
-                            setShowEditModal(true);
-                          }}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-all"
-                          title="Edit project title"
-                        >
-                          <Edit2 className="w-4 h-4 text-text" />
-                        </button>
-                      )}
-                      {application.status === 'pending' && (
+
+                      {application.status === 'pending' && application.projectPreferences && application.projectPreferences.length > 0 && (
                         <>
                           <button
-                            onClick={() => handleReview(application._id, 'accepted')}
+                            onClick={() => handleAccept(application._id, application.projectPreferences[0]._id)}
                             className="p-2 hover:bg-success/20 rounded-lg transition-all"
-                            title="Accept"
+                            title="Accept (1st choice project)"
                           >
                             <CheckCircle className="w-4 h-4 text-success" />
                           </button>
                           <button
-                            onClick={() => handleReview(application._id, 'rejected')}
+                            onClick={() => handleReject(application._id)}
                             className="p-2 hover:bg-error/20 rounded-lg transition-all"
                             title="Reject"
                           >
@@ -304,7 +320,7 @@ export function FacultyApplicationsPage() {
 
       {/* Details Modal */}
       <AnimatePresence>
-        {selectedApplication && !showEditModal && (
+        {selectedApplication && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -319,28 +335,33 @@ export function FacultyApplicationsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-2xl max-h-[80vh] overflow-y-auto"
             >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">Application Details</h2>
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Application Details</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Type</label>
-                    <p className="text-text capitalize">{selectedApplication.applicationType}</p>
+                    <label className="text-sm font-medium text-gray-600">Type</label>
+                    <p className="text-gray-900 capitalize">{selectedApplication.applicationType}</p>
                   </div>
 
-                  {selectedApplication.applicationType === 'group' && selectedApplication.groupId && (
+                  {selectedApplication.groupId && (
                     <div>
-                      <label className="text-sm font-medium text-textSecondary">Group Members</label>
+                      <label className="text-sm font-medium text-gray-600">
+                        Group Members ({selectedApplication.groupId.groupCode})
+                      </label>
                       <div className="mt-2 space-y-2">
-                        {selectedApplication.groupId.members.map((member: any) => (
-                          <div key={member._id} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg">
-                            <User className="w-4 h-4 text-textSecondary" />
-                            <div>
-                              <p className="text-sm text-text">{member.name}</p>
-                              <p className="text-xs text-textSecondary">{member.email}</p>
+                        {selectedApplication.groupId.members.map((member) => (
+                          <div key={member._id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <User className="w-4 h-4 text-gray-500" />
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900 font-medium">{member.name}</p>
+                              <p className="text-xs text-gray-600">{member.email}</p>
+                              <p className="text-xs text-gray-500">ID: {member.studentId}</p>
                             </div>
-                            {member._id === selectedApplication.groupId.leaderId && (
-                              <span className="ml-auto text-xs bg-primary/20 text-primary px-2 py-1 rounded">Leader</span>
+                            {member._id === selectedApplication.groupId.leaderId._id && (
+                              <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
+                                Leader
+                              </span>
                             )}
                           </div>
                         ))}
@@ -350,149 +371,87 @@ export function FacultyApplicationsPage() {
 
                   {selectedApplication.applicationType === 'solo' && selectedApplication.studentId && (
                     <div>
-                      <label className="text-sm font-medium text-textSecondary">Student</label>
-                      <div className="mt-2 p-3 bg-white/5 rounded-lg">
-                        <p className="text-text font-medium">{selectedApplication.studentId.name}</p>
-                        <p className="text-sm text-textSecondary">{selectedApplication.studentId.email}</p>
-                        <p className="text-sm text-textSecondary">ID: {selectedApplication.studentId.idNumber}</p>
+                      <label className="text-sm font-medium text-gray-600">Student</label>
+                      <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-gray-900 font-medium">{selectedApplication.studentId.name}</p>
+                        <p className="text-sm text-gray-600">{selectedApplication.studentId.email}</p>
+                        <p className="text-sm text-gray-500">ID: {selectedApplication.studentId.idNumber}</p>
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Project</label>
-                    <p className="text-text">{selectedApplication.projectId.title}</p>
-                    <p className="text-xs text-textSecondary">ID: {selectedApplication.projectId.projectId}</p>
+                    <label className="text-sm font-medium text-gray-600">Project Preferences</label>
+                    {selectedApplication.projectPreferences?.map((project, index) => (
+                      <div key={project._id} className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-gray-900 font-medium">
+                          {index + 1}. {project.title}
+                        </p>
+                        {project.brief && (
+                          <p className="text-xs text-gray-600 mt-1">{project.brief}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-textSecondary">CGPA</label>
-                      <p className="text-text">{selectedApplication.cgpa}</p>
+                      <label className="text-sm font-medium text-gray-600">CGPA</label>
+                      <p className="text-gray-900">{selectedApplication.cgpa}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-textSecondary">Department</label>
-                      <p className="text-text">{selectedApplication.department}</p>
+                      <label className="text-sm font-medium text-gray-600">Department</label>
+                      <p className="text-gray-900">{selectedApplication.department}</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Specialization</label>
-                    <p className="text-text">{selectedApplication.specialization}</p>
+                    <label className="text-sm font-medium text-gray-600">Specialization</label>
+                    <p className="text-gray-900">{selectedApplication.specialization}</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Status</label>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
                     <div className="mt-1">{getStatusBadge(selectedApplication.status)}</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => setSelectedApplication(null)}
-                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
                   >
                     Close
                   </button>
                   {selectedApplication.status === 'pending' && (
                     <>
-                      <GlowButton
-                        onClick={() => {
-                          handleReview(selectedApplication._id, 'rejected');
-                        }}
-                        variant="secondary"
-                        className="flex-1"
+                      <button
+                        onClick={() => handleReject(selectedApplication._id)}
+                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
                       >
                         Reject
-                      </GlowButton>
-                      <GlowButton
-                        onClick={() => {
-                          handleReview(selectedApplication._id, 'accepted');
-                        }}
-                        variant="primary"
-                        glow
-                        className="flex-1"
-                      >
-                        Accept
-                      </GlowButton>
+                      </button>
+                      {selectedApplication.projectPreferences && selectedApplication.projectPreferences.length > 0 && (
+                        <button
+                          onClick={() => {
+                            // Accept with the first project preference
+                            handleAccept(selectedApplication._id, selectedApplication.projectPreferences[0]._id);
+                          }}
+                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
+                        >
+                          Accept
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
-              </GlassCard>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Edit Title Modal */}
-      <AnimatePresence>
-        {showEditModal && selectedApplication && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => {
-              setShowEditModal(false);
-              setNewTitle('');
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg"
-            >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">Edit Project Title</h2>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text mb-2">
-                      Current Title
-                    </label>
-                    <p className="text-textSecondary text-sm">{selectedApplication.projectId.title}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text mb-2">
-                      New Title
-                    </label>
-                    <input
-                      type="text"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Enter new project title"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setNewTitle('');
-                    }}
-                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <GlowButton
-                    onClick={handleUpdateProjectTitle}
-                    variant="primary"
-                    glow
-                    className="flex-1"
-                  >
-                    Update Title
-                  </GlowButton>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

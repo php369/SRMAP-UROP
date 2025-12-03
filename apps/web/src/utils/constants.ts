@@ -121,9 +121,7 @@ export const ROLE_NAVIGATION = {
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
     { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload' },
     { label: 'Users', path: ROUTES.ADMIN_USERS, icon: 'Users' },
-    { label: 'Cohorts', path: ROUTES.ADMIN_COHORTS, icon: 'Users' },
-    { label: 'Courses', path: ROUTES.ADMIN_COURSES, icon: 'BookOpen' },
-    { label: 'Reports', path: ROUTES.ADMIN_REPORTS, icon: 'BarChart3' },
+    { label: 'Windows', path: '/dashboard/admin/windows', icon: 'Calendar' },
     { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
 } as const;

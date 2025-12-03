@@ -57,10 +57,15 @@ export function FacultyAssessmentPage() {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
       });
-      const data = await response.json();
-      setSubmissions(data);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setSubmissions(result.data);
+      } else {
+        setSubmissions([]);
+      }
     } catch (error) {
       toast.error('Failed to fetch submissions');
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -163,8 +168,8 @@ export function FacultyAssessmentPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <h3 className="text-lg font-semibold text-text">
-                          {submission.groupId 
-                            ? `Group ${submission.groupId.groupCode}` 
+                          {submission.groupId
+                            ? `Group ${submission.groupId.groupCode}`
                             : submission.studentId?.name}
                         </h3>
                         {getAssessmentBadge(submission.assessmentType)}
@@ -288,8 +293,8 @@ export function FacultyAssessmentPage() {
                         {selectedSubmission.groupId ? 'Group' : 'Student'}:
                       </span>
                       <p className="text-text">
-                        {selectedSubmission.groupId 
-                          ? `Group ${selectedSubmission.groupId.groupCode}` 
+                        {selectedSubmission.groupId
+                          ? `Group ${selectedSubmission.groupId.groupCode}`
                           : selectedSubmission.studentId?.name}
                       </p>
                     </div>

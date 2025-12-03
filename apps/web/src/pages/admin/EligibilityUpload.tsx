@@ -47,9 +47,9 @@ export function EligibilityUpload() {
         }
 
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const expectedHeaders = userType === 'student' 
+        const expectedHeaders = userType === 'student'
             ? ['email', 'regno', 'year', 'semester']
-            : ['email', 'facultyid', 'department'];
+            : ['email', 'name', 'department'];
 
         const rows: ParsedRow[] = [];
         let validCount = 0;
@@ -100,8 +100,8 @@ export function EligibilityUpload() {
                 }
             } else {
                 // Validate faculty
-                if (!rowData.facultyid) {
-                    rowErrors.push('Faculty ID is required');
+                if (!rowData.name) {
+                    rowErrors.push('Name is required');
                 }
                 if (!rowData.department) {
                     rowErrors.push('Department is required');
@@ -162,14 +162,19 @@ export function EligibilityUpload() {
         setResult(null);
 
         try {
-            const response = await apiClient.post(
-                '/admin/eligibility/import',
-                {
-                    csvContent: csvData,
-                    projectType,
-                    userType
-                }
-            );
+            // Use different endpoints for student vs faculty
+            const endpoint = userType === 'faculty'
+                ? '/eligibility/faculty/upload'
+                : '/eligibility/upload';
+
+            const payload = userType === 'faculty'
+                ? { csvData: csvData }
+                : { csvData: csvData, projectType };
+
+            const response = await apiClient.post(endpoint, payload);
+
+            console.log('Upload response:', response);
+            console.log('Response data:', response.data);
 
             if (response.success && response.data) {
                 setResult(response.data);
@@ -199,10 +204,10 @@ student1@srmap.edu.in,AP12345,2,3
 student2@srmap.edu.in,AP12346,3,7
 student3@srmap.edu.in,AP12347,4,7`;
         } else {
-            return `email,facultyId,department
-faculty1@srmap.edu.in,FAC001,Computer Science
-faculty2@srmap.edu.in,FAC002,Electronics
-faculty3@srmap.edu.in,FAC003,Mechanical`;
+            return `email,name,department,isCoordinator
+faculty1@srmap.edu.in,Dr. John Doe,Computer Science,false
+faculty2@srmap.edu.in,Dr. Jane Smith,Electronics,true
+faculty3@srmap.edu.in,Prof. Bob Wilson,Mechanical,false`;
         }
     };
 
@@ -303,29 +308,31 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                                 </div>
                             </div>
 
-                            {/* Step 2: Project Type Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-text mb-3">
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
-                                        2
-                                    </span>
-                                    Select Project Category
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => (
-                                        <button
-                                            key={type}
-                                            onClick={() => setProjectType(type)}
-                                            className={`px-4 py-3 rounded-lg transition-all border-2 ${projectType === type
-                                                ? 'bg-secondary/20 border-secondary text-secondary'
-                                                : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
-                                                }`}
-                                        >
-                                            <span className="font-semibold">{type}</span>
-                                        </button>
-                                    ))}
+                            {/* Step 2: Project Type Selection - Only for Students */}
+                            {userType === 'student' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-text mb-3">
+                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
+                                            2
+                                        </span>
+                                        Select Project Category
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => (
+                                            <button
+                                                key={type}
+                                                onClick={() => setProjectType(type)}
+                                                className={`px-4 py-3 rounded-lg transition-all border-2 ${projectType === type
+                                                    ? 'bg-secondary/20 border-secondary text-secondary'
+                                                    : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <span className="font-semibold">{type}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Current Selection Badge */}
                             <div className="flex items-center gap-2 p-4 bg-primary/10 border border-primary/30 rounded-lg">
@@ -333,7 +340,11 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span className="text-sm text-text">
-                                    Uploading eligibility for <span className="font-bold text-primary">{projectType}</span> {userType === 'student' ? 'Students' : 'Faculty'}
+                                    {userType === 'student' ? (
+                                        <>Uploading eligibility for <span className="font-bold text-primary">{projectType}</span> Students</>
+                                    ) : (
+                                        <>Uploading <span className="font-bold text-primary">Faculty Roster</span></>
+                                    )}
                                 </span>
                             </div>
 
@@ -458,9 +469,8 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                                                             {validationResult.rows.map((row) => (
                                                                 <tr
                                                                     key={row.rowNumber}
-                                                                    className={`border-t border-white/5 ${
-                                                                        row.valid ? 'bg-success/5' : 'bg-error/5'
-                                                                    }`}
+                                                                    className={`border-t border-white/5 ${row.valid ? 'bg-success/5' : 'bg-error/5'
+                                                                        }`}
                                                                 >
                                                                     <td className="px-3 py-2 text-textSecondary">{row.rowNumber}</td>
                                                                     <td className="px-3 py-2">
@@ -554,25 +564,25 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                             <div className="grid grid-cols-3 gap-4 mb-4">
                                 <div className="text-center p-4 bg-success/10 border border-success/30 rounded-lg">
                                     <div className="text-3xl font-bold text-success">
-                                        {result.result?.success || 0}
+                                        {result.success || 0}
                                     </div>
                                     <div className="text-sm text-textSecondary">Successful</div>
                                 </div>
                                 <div className="text-center p-4 bg-error/10 border border-error/30 rounded-lg">
                                     <div className="text-3xl font-bold text-error">
-                                        {result.result?.errors || 0}
+                                        {result.failed || 0}
                                     </div>
                                     <div className="text-sm text-textSecondary">Failed</div>
                                 </div>
                                 <div className="text-center p-4 bg-white/5 border border-white/10 rounded-lg">
                                     <div className="text-3xl font-bold text-text">
-                                        {result.result?.total || 0}
+                                        {(result.success || 0) + (result.failed || 0)}
                                     </div>
                                     <div className="text-sm text-textSecondary">Total</div>
                                 </div>
                             </div>
 
-                            {result.result?.errorDetails && result.result.errorDetails.length > 0 && (
+                            {result.errors && result.errors.length > 0 && (
                                 <div className="mt-4">
                                     <h4 className="text-sm font-semibold text-error mb-2 flex items-center gap-2">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -581,12 +591,12 @@ faculty3@srmap.edu.in,FAC003,Mechanical`;
                                         Errors:
                                     </h4>
                                     <div className="space-y-1 max-h-40 overflow-y-auto">
-                                        {result.result?.errorDetails.map((err: any, idx: number) => (
+                                        {result.errors.map((err: string, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="text-xs text-error bg-error/10 px-3 py-2 rounded border border-error/30"
                                             >
-                                                Row {err.row}: {err.email ? `${err.email} - ` : ''}{err.error}
+                                                {err}
                                             </div>
                                         ))}
                                     </div>

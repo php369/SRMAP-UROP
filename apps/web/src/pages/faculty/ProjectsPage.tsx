@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Eye, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -12,19 +12,12 @@ interface Project {
   brief: string;
   prerequisites?: string;
   department: string;
-  projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  status: 'draft' | 'active' | 'assigned';
+  type: 'IDP' | 'UROP' | 'CAPSTONE';
+  status: 'draft' | 'published' | 'frozen' | 'assigned';
   facultyId: string;
   facultyName: string;
   facultyIdNumber: string;
   createdAt: string;
-}
-
-interface Window {
-  windowType: string;
-  isActive: boolean;
-  startDate: string;
-  endDate: string;
 }
 
 export function FacultyProjectsPage() {
@@ -33,7 +26,6 @@ export function FacultyProjectsPage() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [proposalWindow, setProposalWindow] = useState<Window | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -44,38 +36,26 @@ export function FacultyProjectsPage() {
   });
 
   useEffect(() => {
-    checkProposalWindow();
     fetchProjects();
   }, []);
-
-  const checkProposalWindow = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/v1/windows?windowType=proposal&isActive=true', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const data = await response.json();
-      if (data.length > 0) {
-        setProposalWindow(data[0]);
-      }
-    } catch (error) {
-      console.error('Error checking proposal window:', error);
-    }
-  };
 
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/projects?facultyId=${user?._id}`, {
+      const response = await fetch(`http://localhost:3001/api/v1/projects/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
       });
-      const data = await response.json();
-      setProjects(data);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setProjects(result.data);
+      } else {
+        setProjects([]);
+      }
     } catch (error) {
       toast.error('Failed to fetch projects');
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -83,11 +63,6 @@ export function FacultyProjectsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!proposalWindow?.isActive) {
-      toast.error('Proposal window is not active');
-      return;
-    }
 
     if (projects.length >= 5 && !editingProject) {
       toast.error('You can only create up to 5 projects');
@@ -107,10 +82,11 @@ export function FacultyProjectsPage() {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         },
         body: JSON.stringify({
-          ...formData,
-          facultyId: user?._id,
-          facultyName: user?.name,
-          facultyIdNumber: user?.idNumber
+          title: formData.title,
+          brief: formData.brief,
+          prerequisites: formData.prerequisites,
+          type: formData.projectType,
+          department: formData.department
         })
       });
 
@@ -131,27 +107,18 @@ export function FacultyProjectsPage() {
   };
 
   const handleEdit = (project: Project) => {
-    if (!proposalWindow?.isActive) {
-      toast.error('Cannot edit project outside proposal window');
-      return;
-    }
     setEditingProject(project);
     setFormData({
       title: project.title,
       brief: project.brief,
       prerequisites: project.prerequisites || '',
       department: project.department,
-      projectType: project.projectType
+      projectType: project.type
     });
     setShowModal(true);
   };
 
   const handleDelete = async (projectId: string) => {
-    if (!proposalWindow?.isActive) {
-      toast.error('Cannot delete project outside proposal window');
-      return;
-    }
-
     if (!confirm('Are you sure you want to delete this project?')) {
       return;
     }
@@ -189,20 +156,22 @@ export function FacultyProjectsPage() {
   const getStatusBadge = (status: string) => {
     const styles = {
       draft: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-      active: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      published: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      frozen: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
       assigned: 'bg-green-500/20 text-green-300 border-green-500/30'
     };
 
     const icons = {
       draft: Clock,
-      active: Eye,
+      published: Eye,
+      frozen: Clock,
       assigned: CheckCircle
     };
 
-    const Icon = icons[status as keyof typeof icons];
+    const Icon = icons[status as keyof typeof icons] || Clock;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles]}`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles] || styles.draft}`}>
         <Icon className="w-3 h-3" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -229,7 +198,7 @@ export function FacultyProjectsPage() {
               resetForm();
               setShowModal(true);
             }}
-            disabled={!proposalWindow?.isActive || projects.length >= 5}
+            disabled={projects.length >= 5}
             variant="primary"
             glow
           >
@@ -237,37 +206,6 @@ export function FacultyProjectsPage() {
             New Project
           </GlowButton>
         </div>
-
-        {/* Window Status */}
-        {proposalWindow ? (
-          <GlassCard className="p-4">
-            <div className="flex items-center gap-3">
-              {proposalWindow.isActive ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-success" />
-                  <div>
-                    <p className="text-text font-medium">Proposal Window is Active</p>
-                    <p className="text-xs text-textSecondary">
-                      Ends: {new Date(proposalWindow.endDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-5 h-5 text-warning" />
-                  <p className="text-text">Proposal window is currently closed</p>
-                </>
-              )}
-            </div>
-          </GlassCard>
-        ) : (
-          <GlassCard className="p-4 bg-error/10 border-error/30">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-error" />
-              <p className="text-text">No active proposal window</p>
-            </div>
-          </GlassCard>
-        )}
 
         {/* Projects List */}
         {loading && projects.length === 0 ? (
@@ -284,18 +222,16 @@ export function FacultyProjectsPage() {
               <p className="text-textSecondary mb-6">
                 Create your first project proposal to get started
               </p>
-              {proposalWindow?.isActive && (
-                <GlowButton
-                  onClick={() => {
-                    resetForm();
-                    setShowModal(true);
-                  }}
-                  variant="primary"
-                  glow
-                >
-                  Create Project
-                </GlowButton>
-              )}
+              <GlowButton
+                onClick={() => {
+                  resetForm();
+                  setShowModal(true);
+                }}
+                variant="primary"
+                glow
+              >
+                Create Project
+              </GlowButton>
             </div>
           </GlassCard>
         ) : (
@@ -313,7 +249,7 @@ export function FacultyProjectsPage() {
                         <h3 className="text-xl font-semibold text-text">{project.title}</h3>
                         {getStatusBadge(project.status)}
                         <span className="px-2 py-1 bg-secondary/20 text-secondary text-xs font-medium rounded-lg border border-secondary/30">
-                          {project.projectType}
+                          {project.type}
                         </span>
                       </div>
                       <p className="text-textSecondary text-sm mb-3">{project.brief}</p>
@@ -334,7 +270,7 @@ export function FacultyProjectsPage() {
                     <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => handleEdit(project)}
-                        disabled={!proposalWindow?.isActive || project.status === 'assigned'}
+                        disabled={project.status === 'assigned'}
                         className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Edit project"
                       >
@@ -342,7 +278,7 @@ export function FacultyProjectsPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(project._id)}
-                        disabled={!proposalWindow?.isActive || project.status === 'assigned'}
+                        disabled={project.status === 'assigned'}
                         className="p-2 hover:bg-error/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Delete project"
                       >
@@ -377,14 +313,14 @@ export function FacultyProjectsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-2xl"
             >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   {editingProject ? 'Edit Project' : 'Create New Project'}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Type
                     </label>
                     <div className="grid grid-cols-3 gap-3">
@@ -393,11 +329,10 @@ export function FacultyProjectsPage() {
                           key={type}
                           type="button"
                           onClick={() => setFormData({ ...formData, projectType: type })}
-                          className={`px-4 py-2 rounded-lg transition-all border-2 ${
-                            formData.projectType === type
-                              ? 'bg-secondary/20 border-secondary text-secondary'
-                              : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10'
-                          }`}
+                          className={`px-4 py-2 rounded-lg transition-all border-2 ${formData.projectType === type
+                            ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
+                            : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                            }`}
                         >
                           {type}
                         </button>
@@ -406,27 +341,27 @@ export function FacultyProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Title *
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       maxLength={200}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Brief Description *
                     </label>
                     <textarea
                       value={formData.brief}
                       onChange={(e) => setFormData({ ...formData, brief: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={4}
                       required
                       maxLength={1000}
@@ -434,27 +369,27 @@ export function FacultyProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Prerequisites (Optional)
                     </label>
                     <input
                       type="text"
                       value={formData.prerequisites}
                       onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., Python, Machine Learning basics"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department
                     </label>
                     <input
                       type="text"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -466,7 +401,7 @@ export function FacultyProjectsPage() {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                      className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded-lg text-gray-700 transition-all font-medium"
                     >
                       Cancel
                     </button>
@@ -482,7 +417,7 @@ export function FacultyProjectsPage() {
                     </GlowButton>
                   </div>
                 </form>
-              </GlassCard>
+              </div>
             </motion.div>
           </motion.div>
         )}

@@ -4,17 +4,22 @@ export interface IApplication extends Document {
   _id: mongoose.Types.ObjectId;
   studentId?: mongoose.Types.ObjectId; // For solo applications
   groupId?: mongoose.Types.ObjectId; // For group applications
+  projectType: 'IDP' | 'UROP' | 'CAPSTONE';
   projectPreferences: mongoose.Types.ObjectId[]; // Up to 3 projects in order
   department: string;
   stream: string;
   specialization?: string; // Required if semester >= 6
   cgpa?: number; // Optional, 0-10 scale
+  semester: number; // Student's current semester
   status: 'pending' | 'approved' | 'rejected' | 'released';
   reviewedBy?: mongoose.Types.ObjectId; // Faculty who reviewed
   reviewedAt?: Date;
   selectedProjectId?: mongoose.Types.ObjectId;
+  assignedProject?: mongoose.Types.ObjectId;
   isFrozen: boolean;
+  submittedAt?: Date;
   notes?: string;
+  metadata?: any;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +32,11 @@ const ApplicationSchema = new Schema<IApplication>({
   groupId: {
     type: Schema.Types.ObjectId,
     ref: 'Group'
+  },
+  projectType: {
+    type: String,
+    enum: ['IDP', 'UROP', 'CAPSTONE'],
+    required: true
   },
   projectPreferences: [{
     type: Schema.Types.ObjectId,
@@ -52,6 +62,12 @@ const ApplicationSchema = new Schema<IApplication>({
     min: 0,
     max: 10
   },
+  semester: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 10
+  },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'released'],
@@ -69,14 +85,24 @@ const ApplicationSchema = new Schema<IApplication>({
     type: Schema.Types.ObjectId,
     ref: 'Project'
   },
+  assignedProject: {
+    type: Schema.Types.ObjectId,
+    ref: 'Project'
+  },
   isFrozen: {
     type: Boolean,
     default: false
+  },
+  submittedAt: {
+    type: Date
   },
   notes: {
     type: String,
     trim: true,
     maxlength: 1000
+  },
+  metadata: {
+    type: Schema.Types.Mixed
   }
 }, {
   timestamps: true,

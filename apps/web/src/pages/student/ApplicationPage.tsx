@@ -23,31 +23,94 @@ export function ApplicationPage() {
   const [applicationType, setApplicationType] = useState<'solo' | 'group' | null>(null);
   const [groupAction, setGroupAction] = useState<'create' | 'join' | null>(null);
   const [groupCode, setGroupCode] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [applicationWindow, setApplicationWindow] = useState<any>(null);
+  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
   // Form data
   const [formData, setFormData] = useState({
     department: user?.profile?.department || '',
-    stream: '',
-    specialization: user?.profile?.specialization || '',
-    cgpa: ''
+    specialization: user?.profile?.specialization || ''
   });
 
   useEffect(() => {
-    checkApplicationWindow();
-    fetchProjects();
+    checkEligibility();
   }, []);
 
-  const checkApplicationWindow = async () => {
+  useEffect(() => {
+    if (eligibleProjectType) {
+      checkApplicationWindow();
+      fetchProjects();
+      fetchExistingGroup();
+      fetchExistingApplication();
+    }
+  }, [eligibleProjectType]);
+
+  const checkEligibility = async () => {
     try {
-      const response = await api.get('/windows/active', { 
+      // Check eligibility for each project type
+      const types = ['IDP', 'UROP', 'CAPSTONE'];
+      for (const type of types) {
+        const response = await api.get('/eligibility/check', { projectType: type });
+        if (response.success && response.isEligible) {
+          setEligibleProjectType(type);
+          return;
+        }
+      }
+      // If no eligibility found, show error
+      toast.error('You are not eligible for any project type. Please contact admin.');
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+    }
+  };
+
+  const fetchExistingGroup = async () => {
+    try {
+      const response = await api.get('/groups/my-group');
+      if (response.success && response.data) {
+        const group = response.data as any;
+        setGroupCode(group.groupCode);
+        setGroupId(group._id);
+        setGroupMembers(group.members || []);
+      }
+    } catch (error) {
+      // No existing group, that's fine
+      console.log('No existing group found');
+    }
+  };
+
+  const fetchExistingApplication = async () => {
+    try {
+      const response = await api.get('/applications/my-application');
+      if (response.success && response.data) {
+        setExistingApplication(response.data);
+      }
+    } catch (error) {
+      // No existing application, that's fine
+      console.log('No existing application found');
+    }
+  };
+
+  // Refetch application when group changes
+  useEffect(() => {
+    if (groupId) {
+      fetchExistingApplication();
+    }
+  }, [groupId]);
+
+  const checkApplicationWindow = async () => {
+    if (!eligibleProjectType) return;
+
+    try {
+      const response = await api.get('/windows/active', {
         windowType: 'application',
-        projectType: 'IDP' 
+        projectType: eligibleProjectType
       });
       if (response.success && response.data) {
         setApplicationWindow(response.data as any);
@@ -60,10 +123,16 @@ export function ApplicationPage() {
   };
 
   const fetchProjects = async () => {
+    if (!eligibleProjectType) return;
+
     try {
-      const response = await api.get('/projects/public');
+      const response = await api.get('/projects/public', { type: eligibleProjectType });
       if (response.success && response.data) {
-        setProjects(response.data as any);
+        // Filter projects by eligible type
+        const filteredProjects = (response.data as any[]).filter(
+          (project: any) => project.type === eligibleProjectType
+        );
+        setProjects(filteredProjects);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -80,11 +149,16 @@ export function ApplicationPage() {
   };
 
   const handleCreateGroup = async () => {
+    if (!eligibleProjectType) {
+      toast.error('Unable to determine your project eligibility');
+      return;
+    }
+
     setLoading(true);
     try {
       const code = generateGroupCode();
       const response = await api.post('/groups', {
-        projectType: 'IDP', // This should be dynamic based on selection
+        projectType: eligibleProjectType,
         semester: 'Fall 2025',
         year: 2025,
         groupName: `Group ${code}`
@@ -92,6 +166,7 @@ export function ApplicationPage() {
 
       if (response.success && response.data) {
         setGroupCode((response.data as any).groupCode);
+        setGroupId((response.data as any)._id);
         setGroupMembers([user]);
         toast.success('Group created successfully!');
         setStep('application');
@@ -105,9 +180,40 @@ export function ApplicationPage() {
     }
   };
 
+  const handleDeleteGroup = async () => {
+    if (!groupId) return;
+
+    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.delete(`/groups/${groupId}`);
+      if (response.success) {
+        setGroupCode('');
+        setGroupId('');
+        setGroupMembers([]);
+        toast.success('Group deleted successfully!');
+        setStep('group-formation');
+      } else {
+        toast.error(response.error?.message || 'Failed to delete group');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete group');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleJoinGroup = async () => {
     if (!inputCode || inputCode.length !== 6) {
       toast.error('Please enter a valid 6-character code');
+      return;
+    }
+
+    if (!eligibleProjectType) {
+      toast.error('Unable to determine your project eligibility');
       return;
     }
 
@@ -117,11 +223,13 @@ export function ApplicationPage() {
         groupCode: inputCode.toUpperCase(),
         semester: 'Fall 2025',
         year: 2025,
-        projectType: 'IDP'
+        projectType: eligibleProjectType
       });
 
       if (response.success) {
         toast.success('Joined group successfully!');
+        // Fetch the group's application if it exists
+        await fetchExistingApplication();
         setStep('application');
       } else {
         toast.error(response.error?.message || 'Failed to join group');
@@ -149,24 +257,61 @@ export function ApplicationPage() {
       return;
     }
 
-    if (!formData.department || !formData.stream) {
+    if (!formData.department) {
       toast.error('Please fill all required fields');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await api.post('/applications', {
-        ...(applicationType === 'group' ? { groupId: 'group-id' } : { studentId: user?._id }),
-        projectPreferences: selectedProjects,
-        ...formData
+      // Manually construct array to ensure proper serialization
+      const projectIds = selectedProjects.map(id => id);
+
+      console.log('Selected projects:', selectedProjects);
+      console.log('Project IDs:', projectIds);
+
+      if (!eligibleProjectType) {
+        toast.error('Unable to determine your project eligibility');
+        setLoading(false);
+        return;
+      }
+
+      // Use fetch directly with pre-stringified JSON to avoid any conversion issues
+      const requestBody = JSON.stringify({
+        projectType: eligibleProjectType,
+        selectedProjects: projectIds,
+        department: formData.department,
+        stream: formData.department, // Use department as stream
+        specialization: formData.specialization || '',
+        cgpa: user?.profile?.cgpa || 0,
+        semester: user?.profile?.semester || 1, // Use actual semester number
+        isGroupApplication: applicationType === 'group'
       });
+
+      console.log('Request body:', requestBody);
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        },
+        body: requestBody
+      });
+
+      const response = await res.json();
 
       if (response.success) {
         toast.success('Application submitted successfully!');
-        // Redirect or show success message
+        setExistingApplication(response.data);
       } else {
-        toast.error(response.error?.message || 'Failed to submit application');
+        const errorMessage = response.error?.message || 'Failed to submit application';
+        if (errorMessage.includes('already exists')) {
+          toast.error('You have already submitted an application. Refreshing...');
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          toast.error(errorMessage);
+        }
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit application');
@@ -174,6 +319,100 @@ export function ApplicationPage() {
       setLoading(false);
     }
   };
+
+  // Show existing application if it exists
+  if (existingApplication) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg p-8"
+          >
+            <div className="flex items-center justify-center mb-6">
+              <CheckCircle className="w-16 h-16 text-green-500 mr-4" />
+              <div>
+                <h2 className="text-2xl font-bold">Application Submitted</h2>
+                <p className="text-gray-600">
+                  {existingApplication.groupId ? 'Your group application' : 'Your application'} has been submitted successfully
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-lg mb-2">Application Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Type</p>
+                    <p className="font-medium">
+                      {existingApplication.groupId ? (
+                        <span className="flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          Group Application
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <User className="w-4 h-4 mr-1" />
+                          Solo Application
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <p className="font-medium capitalize">{existingApplication.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Department</p>
+                    <p className="font-medium">{existingApplication.department}</p>
+                  </div>
+                  {existingApplication.specialization && (
+                    <div>
+                      <p className="text-sm text-gray-600">Specialization</p>
+                      <p className="font-medium">{existingApplication.specialization}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-600">Submitted At</p>
+                    <p className="font-medium">
+                      {new Date(existingApplication.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {existingApplication.projectPreferences && existingApplication.projectPreferences.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-lg mb-2">Selected Projects</h3>
+                  <div className="space-y-2">
+                    {existingApplication.projectPreferences.map((project: any, index: number) => (
+                      <div key={project._id || index} className="p-4 border rounded-lg">
+                        <p className="font-medium">
+                          {index + 1}. {project.title || 'Project details not available'}
+                        </p>
+                        {project.brief && (
+                          <p className="text-sm text-gray-600 mt-1">{project.brief}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Your application is currently frozen and under review.
+                  You will be notified once a decision is made.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   if (!applicationWindow) {
     return (
@@ -201,8 +440,18 @@ export function ApplicationPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold mb-2">Project Application</h1>
-          <p className="text-gray-600">Apply for your preferred projects</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Project Application</h1>
+              <p className="text-gray-600">Apply for your preferred projects</p>
+            </div>
+            {eligibleProjectType && (
+              <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
+                <p className="text-sm text-gray-600">Eligible for</p>
+                <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Step 1: Choice */}
@@ -289,12 +538,21 @@ export function ApplicationPage() {
                 <p className="text-sm text-gray-600 mb-6">
                   Share this code with your team members (2-4 members total)
                 </p>
-                <button
-                  onClick={() => setStep('application')}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Continue to Application <ArrowRight className="inline ml-2" />
-                </button>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={handleDeleteGroup}
+                    disabled={loading}
+                    className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                  >
+                    Delete Group
+                  </button>
+                  <button
+                    onClick={() => setStep('application')}
+                    className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  >
+                    Continue to Application <ArrowRight className="inline ml-2" />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -333,45 +591,25 @@ export function ApplicationPage() {
             {/* Form Fields */}
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block mb-2 font-medium">Department *</label>
+                <label className="block mb-2 font-medium text-gray-700">Department *</label>
                 <input
                   type="text"
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., Computer Science"
+                  required
                 />
               </div>
 
               <div>
-                <label className="block mb-2 font-medium">Stream *</label>
-                <input
-                  type="text"
-                  value={formData.stream}
-                  onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium">Specialization (6th sem onwards)</label>
+                <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
                 <input
                   type="text"
                   value={formData.specialization}
                   onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium">CGPA</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="10"
-                  value={formData.cgpa}
-                  onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., AI/ML, Data Science"
                 />
               </div>
             </div>
@@ -384,7 +622,7 @@ export function ApplicationPage() {
               <p className="text-sm text-gray-600 mb-4">
                 Choose the projects you're interested in working on. You can select up to 3 projects in order of preference.
               </p>
-              
+
               {projects.length === 0 ? (
                 <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
                   <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
@@ -399,11 +637,10 @@ export function ApplicationPage() {
                     <div
                       key={project._id}
                       onClick={() => handleProjectSelection(project._id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedProjects.includes(project._id)
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedProjects.includes(project._id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -431,7 +668,7 @@ export function ApplicationPage() {
                 ⚠️ Please select at least one project to continue
               </p>
             )}
-            
+
             <button
               onClick={handleSubmitApplication}
               disabled={loading || selectedProjects.length === 0}

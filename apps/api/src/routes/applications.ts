@@ -25,7 +25,7 @@ const router = express.Router();
  */
 router.post('/', authenticate, authorize('student'), async (req, res) => {
   try {
-    const {
+    let {
       projectType,
       selectedProjects,
       department,
@@ -35,6 +35,14 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
       semester,
       isGroupApplication
     } = req.body;
+
+    // Handle case where selectedProjects comes as an object instead of array
+    logger.info('selectedProjects before conversion:', { selectedProjects, isArray: Array.isArray(selectedProjects) });
+    if (selectedProjects && !Array.isArray(selectedProjects)) {
+      selectedProjects = Object.values(selectedProjects).filter(Boolean);
+      logger.info('Converted selectedProjects from object to array:', selectedProjects);
+    }
+    logger.info('selectedProjects after conversion:', { selectedProjects, isArray: Array.isArray(selectedProjects) });
 
     if (!projectType || !selectedProjects || !department || !semester) {
       res.status(400).json({
@@ -66,8 +74,19 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
         return;
       }
 
+      // Extract the actual leader ID (handle both populated and non-populated cases)
+      const leaderIdStr = typeof group.leaderId === 'object' && group.leaderId._id
+        ? group.leaderId._id.toString()
+        : group.leaderId.toString();
+
+      logger.info('Group application check:', {
+        userId: userId.toString(),
+        groupLeaderId: leaderIdStr,
+        isLeader: leaderIdStr === userId.toString()
+      });
+
       // Verify user is group leader
-      if (group.leaderId.toString() !== userId.toString()) {
+      if (leaderIdStr !== userId.toString()) {
         res.status(403).json({
           success: false,
           error: {

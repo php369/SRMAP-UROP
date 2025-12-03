@@ -21,7 +21,7 @@ export async function createApplication(data: {
   semester: number;
 }): Promise<IApplication> {
   try {
-    const { studentId, groupId, projectType, selectedProjects, department, stream, specialization, cgpa, semester } = data;
+    const { studentId, groupId, projectType, selectedProjects: projectPreferences, department, stream, specialization, cgpa, semester } = data;
 
     // Validate that either studentId or groupId is provided
     if (!studentId && !groupId) {
@@ -33,7 +33,7 @@ export async function createApplication(data: {
     }
 
     // Validate project selection (max 3)
-    if (selectedProjects.length === 0 || selectedProjects.length > 3) {
+    if (projectPreferences.length === 0 || projectPreferences.length > 3) {
       throw new Error('Must select between 1 and 3 projects');
     }
 
@@ -42,7 +42,7 @@ export async function createApplication(data: {
       throw new Error('Specialization is required for semester 6 and above');
     }
 
-    // Check if application already exists
+    // Check if application already exists for this project type
     const existingQuery: any = { projectType };
     if (studentId) {
       existingQuery.studentId = studentId;
@@ -52,7 +52,7 @@ export async function createApplication(data: {
 
     const existing = await Application.findOne(existingQuery);
     if (existing) {
-      throw new Error('Application already exists for this student/group');
+      throw new Error(`Application already exists for this ${projectType} project`);
     }
 
     // If group application, verify user is the group leader
@@ -65,13 +65,25 @@ export async function createApplication(data: {
     }
 
     // Verify all selected projects exist and are published
-    const projects = await Project.find({
-      _id: { $in: selectedProjects },
+    logger.info('Validating projects:', {
+      projectPreferences,
       projectType,
+      projectPreferencesLength: projectPreferences.length
+    });
+
+    const projects = await Project.find({
+      _id: { $in: projectPreferences },
+      type: projectType, // Project model uses 'type' not 'projectType'
       status: 'published'
     });
 
-    if (projects.length !== selectedProjects.length) {
+    logger.info('Found projects:', {
+      foundCount: projects.length,
+      expectedCount: projectPreferences.length,
+      foundProjects: projects.map(p => ({ id: p._id, title: p.title, type: p.type, status: p.status }))
+    });
+
+    if (projects.length !== projectPreferences.length) {
       throw new Error('One or more selected projects are not available');
     }
 
@@ -80,7 +92,7 @@ export async function createApplication(data: {
       studentId,
       groupId,
       projectType,
-      selectedProjects,
+      projectPreferences, // Model uses 'projectPreferences'
       department,
       stream,
       specialization,
@@ -113,7 +125,7 @@ export async function getApplicationById(
     return await Application.findById(applicationId)
       .populate('studentId', 'name email studentId department')
       .populate('groupId')
-      .populate('selectedProjects', 'title abstract facultyName department')
+      .populate('projectPreferences', 'title abstract facultyName department')
       .populate('assignedProject', 'title abstract facultyName');
   } catch (error) {
     logger.error('Error getting application:', error);
@@ -137,8 +149,8 @@ export async function getUserApplication(
     if (groupId) query.groupId = groupId;
 
     return await Application.findOne(query)
-      .populate('selectedProjects', 'title abstract facultyName department')
-      .populate('assignedProject', 'title abstract facultyName');
+      .populate('projectPreferences', 'title brief facultyName department')
+      .populate('selectedProjectId', 'title brief facultyName');
   } catch (error) {
     logger.error('Error getting user application:', error);
     return null;
@@ -165,12 +177,18 @@ export async function getFacultyApplications(
 
     // Get applications that selected these projects
     return await Application.find({
-      selectedProjects: { $in: projectIds }
+      projectPreferences: { $in: projectIds }
     })
       .populate('studentId', 'name email studentId department')
-      .populate('groupId')
-      .populate('selectedProjects', 'title abstract')
-      .sort({ submittedAt: -1 });
+      .populate({
+        path: 'groupId',
+        populate: [
+          { path: 'leaderId', select: 'name email studentId' },
+          { path: 'members', select: 'name email studentId' }
+        ]
+      })
+      .populate('projectPreferences', 'title brief')
+      .sort({ createdAt: -1 });
   } catch (error) {
     logger.error('Error getting faculty applications:', error);
     return [];
@@ -199,12 +217,12 @@ export async function acceptApplication(
       throw new Error('Application is not in pending status');
     }
 
-    // Verify project is in selected projects
-    const isSelected = application.selectedProjects.some(
+    // Verify project is in project preferences
+    const isSelected = application.projectPreferences.some(
       p => p.toString() === projectId.toString()
     );
     if (!isSelected) {
-      throw new Error('Project is not in the application\'s selected projects');
+      throw new Error('Project is not in the application\'s project preferences');
     }
 
     // Verify project belongs to faculty
@@ -243,7 +261,7 @@ export async function acceptApplication(
     await Application.updateMany(
       {
         _id: { $ne: applicationId },
-        selectedProjects: projectId,
+        projectPreferences: projectId,
         status: 'pending'
       },
       {
@@ -343,7 +361,7 @@ export async function getAllApplications(filters?: {
     return await Application.find(query)
       .populate('studentId', 'name email studentId department')
       .populate('groupId')
-      .populate('selectedProjects', 'title abstract facultyName')
+      .populate('projectPreferences', 'title abstract facultyName')
       .populate('assignedProject', 'title abstract facultyName')
       .sort({ submittedAt: -1 });
   } catch (error) {

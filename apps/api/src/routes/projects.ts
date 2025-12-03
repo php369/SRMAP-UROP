@@ -66,20 +66,20 @@ const updateProjectSchema = createProjectSchema.partial();
 router.get('/public', async (req: Request, res: Response) => {
   try {
     const { department, type, search } = req.query;
-    
+
     // Build query for published projects only
     const query: any = { status: 'published' };
-    
+
     // Add department filter
     if (department && typeof department === 'string') {
       query.department = department;
     }
-    
+
     // Add type filter
     if (type && typeof type === 'string') {
       query.type = type;
     }
-    
+
     // Add search filter
     if (search && typeof search === 'string') {
       query.$or = [
@@ -88,16 +88,16 @@ router.get('/public', async (req: Request, res: Response) => {
         { description: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const projects = await Project.find(query)
       .select('title brief description type department facultyName capacity status createdAt updatedAt prerequisites')
       .sort({ createdAt: -1 });
-    
+
     logger.info(`Retrieved ${projects.length} published projects`, {
       filters: { department, type, search },
       count: projects.length
     });
-    
+
     res.json({
       success: true,
       data: projects,
@@ -144,9 +144,9 @@ router.get('/public', async (req: Request, res: Response) => {
 router.get('/departments', async (_req: Request, res: Response) => {
   try {
     const departments = await Project.distinct('department', { status: 'published' });
-    
+
     logger.info(`Retrieved ${departments.length} unique departments`);
-    
+
     res.json({
       success: true,
       data: departments.sort(),
@@ -222,11 +222,11 @@ router.post('/', authenticate, facultyGuard(), async (req: Request, res: Respons
   try {
     // Validate request body
     const validatedData = createProjectSchema.parse(req.body);
-    
+
     // Get faculty info from auth context
     const authContext = (req as any).authContext;
     const facultyInfo = authContext?.facultyInfo;
-    
+
     if (!facultyInfo) {
       return res.status(400).json({
         success: false,
@@ -237,12 +237,26 @@ router.post('/', authenticate, facultyGuard(), async (req: Request, res: Respons
       });
     }
 
+    // Generate unique project ID
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const academicYear = currentMonth >= 6 ? currentYear : currentYear - 1; // July onwards is new academic year
+    const semester = currentMonth >= 6 && currentMonth <= 11 ? 'Fall' : 'Spring';
+
+    // Count existing projects for this faculty to generate unique ID
+    const projectCount = await Project.countDocuments({ facultyId: req.user!.id });
+    const projectId = `${validatedData.type}-${academicYear}-${facultyInfo.email.split('@')[0]}-${projectCount + 1}`;
+
     // Create project
     const project = new Project({
       ...validatedData,
+      projectId,
       facultyId: new mongoose.Types.ObjectId(req.user!.id),
       facultyName: facultyInfo.name,
-      status: 'draft'
+      facultyIdNumber: facultyInfo.email.split('@')[0], // Use email prefix as faculty ID
+      semester: `${semester} ${academicYear}`,
+      year: academicYear,
+      status: 'published' // Automatically publish projects so students can see them
     });
 
     await project.save();
@@ -310,19 +324,19 @@ router.post('/', authenticate, facultyGuard(), async (req: Request, res: Respons
 router.get('/faculty', authenticate, facultyGuard(), async (req: Request, res: Response) => {
   try {
     const { status } = req.query;
-    
+
     // Build query for faculty's projects
     const query: any = { facultyId: new mongoose.Types.ObjectId(req.user!.id) };
-    
+
     if (status && typeof status === 'string') {
       query.status = status;
     }
-    
+
     const projects = await Project.find(query)
       .sort({ updatedAt: -1 });
-    
+
     logger.info(`Retrieved ${projects.length} projects for faculty ${req.user!.email}`);
-    
+
     res.json({
       success: true,
       data: projects,
@@ -372,7 +386,7 @@ router.get('/faculty', authenticate, facultyGuard(), async (req: Request, res: R
 router.get('/:id', authenticate, facultyGuard(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -384,7 +398,7 @@ router.get('/:id', authenticate, facultyGuard(), async (req: Request, res: Respo
     }
 
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -488,7 +502,7 @@ router.get('/:id', authenticate, facultyGuard(), async (req: Request, res: Respo
 router.put('/:id', authenticate, facultyGuard(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -501,9 +515,9 @@ router.put('/:id', authenticate, facultyGuard(), async (req: Request, res: Respo
 
     // Validate request body
     const validatedData = updateProjectSchema.parse(req.body);
-    
+
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -611,7 +625,7 @@ router.put('/:id', authenticate, facultyGuard(), async (req: Request, res: Respo
 router.post('/:id/submit', authenticate, facultyGuard(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -623,7 +637,7 @@ router.post('/:id/submit', authenticate, facultyGuard(), async (req: Request, re
     }
 
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -734,23 +748,23 @@ router.post('/:id/submit', authenticate, facultyGuard(), async (req: Request, re
 router.get('/pending', authenticate, facultyGuard(true), async (req: Request, res: Response) => {
   try {
     const { type, department } = req.query;
-    
+
     // Build query for pending projects
     const query: any = { status: 'pending' };
-    
+
     if (type && typeof type === 'string') {
       query.type = type;
     }
-    
+
     if (department && typeof department === 'string') {
       query.department = department;
     }
-    
+
     const projects = await Project.find(query)
       .sort({ updatedAt: -1 });
-    
+
     logger.info(`Retrieved ${projects.length} pending projects for coordinator ${req.user!.email}`);
-    
+
     res.json({
       success: true,
       data: projects,
@@ -802,7 +816,7 @@ router.get('/pending', authenticate, facultyGuard(true), async (req: Request, re
 router.post('/:id/approve', authenticate, facultyGuard(true), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -814,7 +828,7 @@ router.post('/:id/approve', authenticate, facultyGuard(true), async (req: Reques
     }
 
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -907,7 +921,7 @@ router.post('/:id/reject', authenticate, facultyGuard(true), async (req: Request
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -919,7 +933,7 @@ router.post('/:id/reject', authenticate, facultyGuard(true), async (req: Request
     }
 
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -1011,7 +1025,7 @@ router.post('/:id/reject', authenticate, facultyGuard(true), async (req: Request
 router.post('/bulk-approve', authenticate, facultyGuard(true), async (req: Request, res: Response) => {
   try {
     const { projectIds } = req.body;
-    
+
     if (!Array.isArray(projectIds) || projectIds.length === 0) {
       return res.status(400).json({
         success: false,
@@ -1116,7 +1130,7 @@ router.post('/bulk-approve', authenticate, facultyGuard(true), async (req: Reque
 router.delete('/:id', authenticate, facultyGuard(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -1128,7 +1142,7 @@ router.delete('/:id', authenticate, facultyGuard(), async (req: Request, res: Re
     }
 
     const project = await Project.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
