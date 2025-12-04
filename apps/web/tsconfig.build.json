@@ -12,7 +12,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
