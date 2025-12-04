@@ -33,10 +33,10 @@ const localPkg = path.join(__dirname, 'package.json');
 if (fs.existsSync(localPkg)) {
   const pkg = JSON.parse(fs.readFileSync(localPkg, 'utf8'));
   let modified = false;
-  
-  ['dependencies', 'devDependencies'].forEach(depType => {
+
+  ['dependencies', 'devDependencies'].forEach((depType) => {
     if (pkg[depType]) {
-      Object.keys(pkg[depType]).forEach(dep => {
+      Object.keys(pkg[depType]).forEach((dep) => {
         if (pkg[depType][dep].startsWith('workspace:')) {
           console.log(`⚠️  Found workspace dependency: ${dep}`);
           delete pkg[depType][dep];
@@ -45,7 +45,7 @@ if (fs.existsSync(localPkg)) {
       });
     }
   });
-  
+
   if (modified) {
     fs.writeFileSync(localPkg, JSON.stringify(pkg, null, 2));
     console.log('✅ Cleaned workspace dependencies from package.json');
