@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "node prebuild.js",
     "build": "tsc --project tsconfig.build.json",
     "build:prod": "tsc --project tsconfig.deploy.json",
     "build:deploy": "node build-deploy.js",

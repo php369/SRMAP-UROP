@@ -1,8 +1,9 @@
 {
-  "buildCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @srm-portal/web build:prod",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
   "framework": "vite",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -10,6 +11,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
@@ -28,21 +38,13 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
-        }
-      ]
-    },
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://srm-portal-api.onrender.com",
+    "VITE_API_URL": "https://srm-portal-api.onrender.com",
+    "VITE_ENVIRONMENT": "production"
+  }
 }
