@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node prebuild.cjs",
-    "build": "tsc --project tsconfig.build.json && vite build",
+    "build": "vite build",
     "build:prod": "vite build",
+    "build:check": "tsc --project tsconfig.build.json && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
