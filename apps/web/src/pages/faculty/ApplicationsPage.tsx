@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, User, CheckCircle, XCircle, Eye, Filter, Edit2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
+import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 interface Application {
@@ -10,6 +11,7 @@ interface Application {
   groupId?: {
     _id: string;
     groupCode: string;
+    groupNumber?: number;
     members: Array<{
       _id: string;
       name: string;
@@ -27,21 +29,24 @@ interface Application {
     _id: string;
     name: string;
     email: string;
-    idNumber: string;
+    studentId: string;
+    department: string;
   };
-  projectType: string;
-  projectPreferences: Array<{
+  projectId: {
     _id: string;
     title: string;
     brief: string;
-  }>;
+    facultyName: string;
+  };
+  projectType: string;
   department: string;
-  stream: string;
-  specialization: string;
-  cgpa: number;
-  status: 'pending' | 'accepted' | 'rejected';
-  applicationType: 'solo' | 'group';
+  stream?: string;
+  specialization?: string;
+  cgpa?: number;
+  semester: number;
+  status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  reviewedAt?: string;
 }
 
 export function FacultyApplicationsPage() {
@@ -49,7 +54,7 @@ export function FacultyApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
   useEffect(() => {
     fetchApplications();
@@ -58,14 +63,9 @@ export function FacultyApplicationsPage() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/applications/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
-      if (result.success && result.data) {
-        setApplications(result.data);
+      const response = await api.get('/applications/faculty');
+      if (response.success && response.data) {
+        setApplications(response.data);
       } else {
         setApplications([]);
       }
@@ -83,26 +83,17 @@ export function FacultyApplicationsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/applications/${applicationId}/accept`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({ projectId })
-      });
+      const response = await api.post(`/applications/${applicationId}/accept`, { projectId });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success('Application accepted successfully');
         fetchApplications();
         setSelectedApplication(null);
       } else {
-        toast.error(result.error?.message || 'Failed to accept application');
+        toast.error(response.error?.message || 'Failed to accept application');
       }
-    } catch (error) {
-      toast.error('Failed to accept application');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to accept application');
     }
   };
 
@@ -114,26 +105,19 @@ export function FacultyApplicationsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/applications/${applicationId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({ reason: reason || undefined })
+      const response = await api.post(`/applications/${applicationId}/reject`, {
+        reason: reason || undefined
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success('Application rejected');
         fetchApplications();
         setSelectedApplication(null);
       } else {
-        toast.error(result.error?.message || 'Failed to reject application');
+        toast.error(response.error?.message || 'Failed to reject application');
       }
-    } catch (error) {
-      toast.error('Failed to reject application');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reject application');
     }
   };
 
@@ -146,7 +130,7 @@ export function FacultyApplicationsPage() {
   const getStatusBadge = (status: string) => {
     const styles = {
       pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      accepted: 'bg-green-500/20 text-green-300 border-green-500/30',
+      approved: 'bg-green-500/20 text-green-300 border-green-500/30',
       rejected: 'bg-red-500/20 text-red-300 border-red-500/30'
     };
 
@@ -177,7 +161,7 @@ export function FacultyApplicationsPage() {
           <div className="flex items-center gap-3">
             <Filter className="w-5 h-5 text-textSecondary" />
             <div className="flex gap-2">
-              {(['all', 'pending', 'accepted', 'rejected'] as const).map((status) => (
+              {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
@@ -227,14 +211,14 @@ export function FacultyApplicationsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        {application.applicationType === 'group' ? (
+                        {application.groupId ? (
                           <Users className="w-5 h-5 text-primary" />
                         ) : (
                           <User className="w-5 h-5 text-secondary" />
                         )}
                         <h3 className="text-lg font-semibold text-text">
                           {application.groupId
-                            ? application.groupId.leaderId?.name || `Group ${application.groupId.groupCode}`
+                            ? `${application.groupId.leaderId?.name || 'Group Leader'}${application.groupId.groupNumber ? ` - Group #${application.groupId.groupNumber}` : ` (${application.groupId.groupCode})`}`
                             : application.studentId?.name}
                         </h3>
                         {application.groupId && (
@@ -250,17 +234,12 @@ export function FacultyApplicationsPage() {
 
                       <div className="space-y-2 mb-4">
                         <div>
-                          <span className="text-sm font-medium text-text">Projects: </span>
+                          <span className="text-sm font-medium text-text">Project: </span>
                           <span className="text-sm text-textSecondary">
-                            {application.projectPreferences?.map((p, i) => (
-                              <span key={p._id}>
-                                {i > 0 && ', '}
-                                {p.title}
-                              </span>
-                            ))}
+                            {application.projectId.title}
                           </span>
                         </div>
-                        {application.applicationType === 'group' && application.groupId && (
+                        {application.groupId && (
                           <div>
                             <span className="text-sm font-medium text-text">Members: </span>
                             <span className="text-sm text-textSecondary">
@@ -269,10 +248,10 @@ export function FacultyApplicationsPage() {
                           </div>
                         )}
                         <div className="flex gap-4 text-sm text-textSecondary">
-                          <span>CGPA: {application.cgpa}</span>
-                          <span>•</span>
-                          <span>{application.specialization}</span>
-                          <span>•</span>
+                          {application.cgpa && <span>CGPA: {application.cgpa.toFixed(2)}</span>}
+                          {application.cgpa && application.specialization && <span>•</span>}
+                          {application.specialization && <span>{application.specialization}</span>}
+                          {application.specialization && <span>•</span>}
                           <span>{application.department}</span>
                         </div>
                       </div>
@@ -291,12 +270,12 @@ export function FacultyApplicationsPage() {
                         <Eye className="w-4 h-4 text-text" />
                       </button>
 
-                      {application.status === 'pending' && application.projectPreferences && application.projectPreferences.length > 0 && (
+                      {application.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => handleAccept(application._id, application.projectPreferences[0]._id)}
+                            onClick={() => handleAccept(application._id, application.projectId._id)}
                             className="p-2 hover:bg-success/20 rounded-lg transition-all"
-                            title="Accept (1st choice project)"
+                            title="Accept application"
                           >
                             <CheckCircle className="w-4 h-4 text-success" />
                           </button>
@@ -341,13 +320,13 @@ export function FacultyApplicationsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Type</label>
-                    <p className="text-gray-900 capitalize">{selectedApplication.applicationType}</p>
+                    <p className="text-gray-900 capitalize">{selectedApplication.groupId ? 'Group' : 'Solo'}</p>
                   </div>
 
                   {selectedApplication.groupId && (
                     <div>
                       <label className="text-sm font-medium text-gray-600">
-                        Group Members ({selectedApplication.groupId.groupCode})
+                        Group Members {selectedApplication.groupId.groupNumber ? `(Group #${selectedApplication.groupId.groupNumber})` : `(${selectedApplication.groupId.groupCode})`}
                       </label>
                       <div className="mt-2 space-y-2">
                         {selectedApplication.groupId.members.map((member) => (
@@ -369,46 +348,46 @@ export function FacultyApplicationsPage() {
                     </div>
                   )}
 
-                  {selectedApplication.applicationType === 'solo' && selectedApplication.studentId && (
+                  {!selectedApplication.groupId && selectedApplication.studentId && (
                     <div>
                       <label className="text-sm font-medium text-gray-600">Student</label>
                       <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <p className="text-gray-900 font-medium">{selectedApplication.studentId.name}</p>
                         <p className="text-sm text-gray-600">{selectedApplication.studentId.email}</p>
-                        <p className="text-sm text-gray-500">ID: {selectedApplication.studentId.idNumber}</p>
+                        <p className="text-sm text-gray-500">ID: {selectedApplication.studentId.studentId}</p>
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Project Preferences</label>
-                    {selectedApplication.projectPreferences?.map((project, index) => (
-                      <div key={project._id} className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-900 font-medium">
-                          {index + 1}. {project.title}
-                        </p>
-                        {project.brief && (
-                          <p className="text-xs text-gray-600 mt-1">{project.brief}</p>
-                        )}
-                      </div>
-                    ))}
+                    <label className="text-sm font-medium text-gray-600">Project</label>
+                    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-gray-900 font-medium">{selectedApplication.projectId.title}</p>
+                      {selectedApplication.projectId.brief && (
+                        <p className="text-xs text-gray-600 mt-1">{selectedApplication.projectId.brief}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">CGPA</label>
-                      <p className="text-gray-900">{selectedApplication.cgpa}</p>
-                    </div>
+                    {selectedApplication.cgpa && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">CGPA</label>
+                        <p className="text-gray-900">{selectedApplication.cgpa.toFixed(2)}</p>
+                      </div>
+                    )}
                     <div>
                       <label className="text-sm font-medium text-gray-600">Department</label>
                       <p className="text-gray-900">{selectedApplication.department}</p>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Specialization</label>
-                    <p className="text-gray-900">{selectedApplication.specialization}</p>
-                  </div>
+                  {selectedApplication.specialization && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Specialization</label>
+                      <p className="text-gray-900">{selectedApplication.specialization}</p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="text-sm font-medium text-gray-600">Status</label>
@@ -431,17 +410,14 @@ export function FacultyApplicationsPage() {
                       >
                         Reject
                       </button>
-                      {selectedApplication.projectPreferences && selectedApplication.projectPreferences.length > 0 && (
-                        <button
-                          onClick={() => {
-                            // Accept with the first project preference
-                            handleAccept(selectedApplication._id, selectedApplication.projectPreferences[0]._id);
-                          }}
-                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
-                        >
-                          Accept
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          handleAccept(selectedApplication._id, selectedApplication.projectId._id);
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
+                      >
+                        Accept
+                      </button>
                     </>
                   )}
                 </div>

@@ -18,9 +18,11 @@ export interface IMeetingLog extends Document {
   location?: string; // For in-person meetings
   meetUrl?: string; // Google Meet URL for online meetings
   minutesOfMeeting?: string; // MOM - meeting notes
-  status: 'submitted' | 'approved' | 'rejected';
+  status: 'submitted' | 'completed' | 'approved' | 'rejected';
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
+  rejectionReason?: string; // Faculty notes when rejecting
+  grade?: number; // Grade out of 5 for the meeting log
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,7 +99,7 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   },
   status: {
     type: String,
-    enum: ['submitted', 'approved', 'rejected'],
+    enum: ['submitted', 'completed', 'approved', 'rejected'],
     required: true,
     default: 'submitted'
   },
@@ -107,6 +109,17 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   },
   reviewedAt: {
     type: Date
+  },
+  rejectionReason: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
+  grade: {
+    type: Number,
+    min: 0,
+    max: 5,
+    default: null
   }
 }, {
   timestamps: true,
@@ -119,7 +132,7 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
 });
 
 // Validation: Must have either groupId OR studentId (not both, not neither)
-MeetingLogSchema.pre('save', function(next) {
+MeetingLogSchema.pre('save', function (next) {
   const hasGroup = !!this.groupId;
   const hasStudent = !!this.studentId;
 
@@ -133,7 +146,7 @@ MeetingLogSchema.pre('save', function(next) {
 });
 
 // Validation for attendees (at least one attendee required)
-MeetingLogSchema.pre('save', function(next) {
+MeetingLogSchema.pre('save', function (next) {
   if (this.attendees.length < 1) {
     next(new Error('Meeting log must have at least one attendee'));
   } else {
@@ -142,7 +155,7 @@ MeetingLogSchema.pre('save', function(next) {
 });
 
 // Set reviewedAt when status changes to approved/rejected
-MeetingLogSchema.pre('save', function(next) {
+MeetingLogSchema.pre('save', function (next) {
   if (this.isModified('status') && (this.status === 'approved' || this.status === 'rejected')) {
     if (!this.reviewedAt) {
       this.reviewedAt = new Date();
@@ -152,7 +165,7 @@ MeetingLogSchema.pre('save', function(next) {
 });
 
 // Validate endedAt is after startedAt if provided
-MeetingLogSchema.pre('save', function(next) {
+MeetingLogSchema.pre('save', function (next) {
   if (this.endedAt && this.endedAt <= this.startedAt) {
     next(new Error('Meeting end time must be after start time'));
   } else {

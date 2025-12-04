@@ -29,7 +29,7 @@ interface Meeting {
 
 interface MeetingLog {
   _id: string;
-  meetingId: Meeting;
+  meetingDate: string;
   groupId?: {
     _id: string;
     groupCode: string;
@@ -38,24 +38,38 @@ interface MeetingLog {
     _id: string;
     name: string;
   };
-  attendees: string[];
-  minutesOfMeeting: string;
-  facultyApproved: boolean;
-  facultyNotes?: string;
+  attendees?: any[];
+  minutesOfMeeting?: string;
+  mom?: string;
+  status: 'submitted' | 'completed' | 'approved' | 'rejected';
+  rejectionReason?: string;
   createdAt: string;
+}
+
+interface Project {
+  _id: string;
+  projectId: string;
+  title: string;
+  type: string;
+  assignedTo?: {
+    _id: string;
+    groupCode?: string;
+    groupNumber?: number;
+  };
 }
 
 export function FacultyMeetingsPage() {
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<MeetingLog[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedLog, setSelectedLog] = useState<MeetingLog | null>(null);
   const [activeTab, setActiveTab] = useState<'meetings' | 'logs'>('meetings');
 
   const [scheduleData, setScheduleData] = useState({
-    groupId: '',
+    projectId: '',
     meetingDate: '',
     meetUrl: '',
     mode: 'online' as 'online' | 'in-person'
@@ -68,21 +82,28 @@ export function FacultyMeetingsPage() {
   useEffect(() => {
     fetchMeetings();
     fetchMeetingLogs();
+    fetchProjects();
   }, []);
 
   const fetchMeetings = async () => {
     setLoading(true);
     try {
-      const userId = (user as any)?._id;
-      const response = await fetch(`http://localhost:3001/api/v1/meetings/faculty/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
       });
-      const data = await response.json();
-      setMeetings(data);
+      const result = await response.json();
+      // Filter out meetings that have passed by more than 1 hour
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const activeMeetings = Array.isArray(result.data)
+        ? result.data.filter((meeting: Meeting) => new Date(meeting.meetingDate) > oneHourAgo)
+        : [];
+      setMeetings(activeMeetings);
     } catch (error) {
       toast.error('Failed to fetch meetings');
+      setMeetings([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -90,53 +111,73 @@ export function FacultyMeetingsPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const userId = (user as any)?._id;
-      const response = await fetch(`http://localhost:3001/api/v1/meetings/logs/faculty/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/logs/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
       });
-      const data = await response.json();
-      setMeetingLogs(data);
+      const result = await response.json();
+      // Ensure data is always an array
+      setMeetingLogs(Array.isArray(result.data) ? result.data : []);
     } catch (error) {
       toast.error('Failed to fetch meeting logs');
+      setMeetingLogs([]); // Set empty array on error
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      // Fetch faculty's assigned projects
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/projects/faculty?status=assigned`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        }
+      });
+      const result = await response.json();
+      setProjects(Array.isArray(result.data) ? result.data : []);
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      setProjects([]);
     }
   };
 
   const handleScheduleMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!scheduleData.groupId || !scheduleData.meetingDate) {
+    if (!scheduleData.projectId || !scheduleData.meetingDate) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/v1/meetings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         },
         body: JSON.stringify({
-          ...scheduleData,
-          facultyId: (user as any)?._id
+          projectId: scheduleData.projectId,
+          meetingDate: scheduleData.meetingDate,
+          meetingLink: scheduleData.meetUrl,
+          mode: scheduleData.mode
         })
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (result.success) {
         toast.success('Meeting scheduled successfully');
         setShowScheduleModal(false);
         setScheduleData({
-          groupId: '',
+          projectId: '',
           meetingDate: '',
           meetUrl: '',
           mode: 'online'
         });
         fetchMeetings();
       } else {
-        const error = await response.json();
-        toast.error(error.error?.message || 'Failed to schedule meeting');
+        toast.error(result.error?.message || 'Failed to schedule meeting');
       }
     } catch (error) {
       toast.error('Failed to schedule meeting');
@@ -145,33 +186,35 @@ export function FacultyMeetingsPage() {
 
   const handleApproveLog = async (logId: string, approved: boolean) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/meetings/logs/${logId}/approve`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/logs/${logId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         },
         body: JSON.stringify({
-          facultyApproved: approved,
+          approved,
           facultyNotes: approvalData.facultyNotes
         })
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (result.success) {
         toast.success(`Meeting log ${approved ? 'approved' : 'rejected'}`);
         setSelectedLog(null);
         setApprovalData({ facultyNotes: '' });
         fetchMeetingLogs();
       } else {
-        toast.error('Failed to update meeting log');
+        toast.error(result.error?.message || 'Failed to update meeting log');
       }
     } catch (error) {
       toast.error('Failed to update meeting log');
     }
   };
 
-  const getStatusBadge = (approved: boolean | undefined) => {
-    if (approved === undefined) {
+  const getStatusBadge = (status: string) => {
+    if (status === 'completed' || status === 'submitted') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
           <Clock className="w-3 h-3" />
@@ -179,17 +222,23 @@ export function FacultyMeetingsPage() {
         </span>
       );
     }
-    return approved ? (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-green-500/20 text-green-300 border-green-500/30">
-        <CheckCircle className="w-3 h-3" />
-        Approved
-      </span>
-    ) : (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-red-500/20 text-red-300 border-red-500/30">
-        <XCircle className="w-3 h-3" />
-        Rejected
-      </span>
-    );
+    if (status === 'approved') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-green-500/20 text-green-300 border-green-500/30">
+          <CheckCircle className="w-3 h-3" />
+          Approved
+        </span>
+      );
+    }
+    if (status === 'rejected') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-red-500/20 text-red-300 border-red-500/30">
+          <XCircle className="w-3 h-3" />
+          Rejected
+        </span>
+      );
+    }
+    return null;
   };
 
   return (
@@ -222,23 +271,21 @@ export function FacultyMeetingsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('meetings')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'meetings'
-                  ? 'bg-primary text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'meetings'
+                ? 'bg-primary text-white'
+                : 'bg-transparent text-textSecondary hover:bg-white/5'
+                }`}
             >
               Scheduled Meetings ({meetings.length})
             </button>
             <button
               onClick={() => setActiveTab('logs')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'logs'
-                  ? 'bg-primary text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
-              }`}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'logs'
+                ? 'bg-primary text-white'
+                : 'bg-transparent text-textSecondary hover:bg-white/5'
+                }`}
             >
-              Meeting Logs ({meetingLogs.filter(log => !log.facultyApproved).length} pending)
+              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'submitted').length : 0} pending)
             </button>
           </div>
         </GlassCard>
@@ -282,15 +329,14 @@ export function FacultyMeetingsPage() {
                         <div className="flex items-center gap-3 mb-3">
                           <Calendar className="w-5 h-5 text-primary" />
                           <h3 className="text-lg font-semibold text-text">
-                            {meeting.groupId 
-                              ? `Group ${meeting.groupId.groupCode}` 
+                            {meeting.groupId
+                              ? `Group ${meeting.groupId.groupCode}`
                               : meeting.studentId?.name}
                           </h3>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${
-                            meeting.mode === 'online'
-                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                              : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${meeting.mode === 'online'
+                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                            : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            }`}>
                             {meeting.mode === 'online' ? 'Online' : 'In-Person'}
                           </span>
                         </div>
@@ -350,30 +396,32 @@ export function FacultyMeetingsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <h3 className="text-lg font-semibold text-text">
-                            {log.groupId 
-                              ? `Group ${log.groupId.groupCode}` 
+                            {log.groupId
+                              ? `Group ${log.groupId.groupCode}`
                               : log.studentId?.name}
                           </h3>
-                          {getStatusBadge(log.facultyApproved)}
+                          {getStatusBadge(log.status)}
                         </div>
 
                         <div className="space-y-2 mb-4">
-                          <div>
-                            <span className="text-sm font-medium text-text">Meeting Date: </span>
-                            <span className="text-sm text-textSecondary">
-                              {new Date(log.meetingId.meetingDate).toLocaleString()}
-                            </span>
-                          </div>
+                          {log.meetingDate && (
+                            <div>
+                              <span className="text-sm font-medium text-text">Meeting Date: </span>
+                              <span className="text-sm text-textSecondary">
+                                {new Date(log.meetingDate).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <span className="text-sm font-medium text-text">Attendees: </span>
                             <span className="text-sm text-textSecondary">
-                              {log.attendees.length} present
+                              {log.attendees?.length || log.participants?.length || 0} present
                             </span>
                           </div>
                           <div>
                             <span className="text-sm font-medium text-text">Minutes: </span>
                             <p className="text-sm text-textSecondary mt-1 line-clamp-2">
-                              {log.minutesOfMeeting}
+                              {log.minutesOfMeeting || log.mom || 'No minutes recorded'}
                             </p>
                           </div>
                         </div>
@@ -421,61 +469,69 @@ export function FacultyMeetingsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-lg"
             >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">Schedule Meeting</h2>
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Meeting</h2>
 
                 <form onSubmit={handleScheduleMeeting} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
-                      Group ID *
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Project *
                     </label>
-                    <input
-                      type="text"
-                      value={scheduleData.groupId}
-                      onChange={(e) => setScheduleData({ ...scheduleData, groupId: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Enter group ID"
+                    <select
+                      value={scheduleData.projectId}
+                      onChange={(e) => setScheduleData({ ...scheduleData, projectId: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
-                    />
+                    >
+                      <option value="">-- Select a project --</option>
+                      {projects.map((project) => (
+                        <option key={project._id} value={project._id}>
+                          {project.projectId} - {project.title}
+                        </option>
+                      ))}
+                    </select>
+                    {projects.length === 0 && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        No assigned projects found. Projects will appear here once you accept student applications.
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Meeting Date & Time *
                     </label>
                     <input
                       type="datetime-local"
                       value={scheduleData.meetingDate}
                       onChange={(e) => setScheduleData({ ...scheduleData, meetingDate: e.target.value })}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-text mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Meeting Mode
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setScheduleData({ ...scheduleData, mode: 'online' })}
-                        className={`px-4 py-2 rounded-lg transition-all border-2 ${
-                          scheduleData.mode === 'online'
-                            ? 'bg-primary/20 border-primary text-primary'
-                            : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10'
-                        }`}
+                        className={`px-4 py-2 rounded-lg transition-all border-2 ${scheduleData.mode === 'online'
+                          ? 'bg-blue-50 border-blue-500 text-blue-700'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                          }`}
                       >
                         Online
                       </button>
                       <button
                         type="button"
                         onClick={() => setScheduleData({ ...scheduleData, mode: 'in-person' })}
-                        className={`px-4 py-2 rounded-lg transition-all border-2 ${
-                          scheduleData.mode === 'in-person'
-                            ? 'bg-primary/20 border-primary text-primary'
-                            : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10'
-                        }`}
+                        className={`px-4 py-2 rounded-lg transition-all border-2 ${scheduleData.mode === 'in-person'
+                          ? 'bg-blue-50 border-blue-500 text-blue-700'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                          }`}
                       >
                         In-Person
                       </button>
@@ -484,14 +540,14 @@ export function FacultyMeetingsPage() {
 
                   {scheduleData.mode === 'online' && (
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Google Meet Link
                       </label>
                       <input
                         type="url"
                         value={scheduleData.meetUrl}
                         onChange={(e) => setScheduleData({ ...scheduleData, meetUrl: e.target.value })}
-                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="https://meet.google.com/..."
                       />
                     </div>
@@ -501,21 +557,19 @@ export function FacultyMeetingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowScheduleModal(false)}
-                      className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
                     >
                       Cancel
                     </button>
-                    <GlowButton
+                    <button
                       type="submit"
-                      variant="primary"
-                      glow
-                      className="flex-1"
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all"
                     >
                       Schedule
-                    </GlowButton>
+                    </button>
                   </div>
                 </form>
-              </GlassCard>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -541,50 +595,50 @@ export function FacultyMeetingsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-2xl max-h-[80vh] overflow-y-auto"
             >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">Meeting Log Details</h2>
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Meeting Log Details</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Group/Student</label>
-                    <p className="text-text">
-                      {selectedLog.groupId 
-                        ? `Group ${selectedLog.groupId.groupCode}` 
+                    <label className="text-sm font-medium text-gray-600">Group/Student</label>
+                    <p className="text-gray-900">
+                      {selectedLog.groupId
+                        ? `Group ${selectedLog.groupId.groupCode}`
                         : selectedLog.studentId?.name}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Meeting Date</label>
-                    <p className="text-text">{new Date(selectedLog.meetingId.meetingDate).toLocaleString()}</p>
+                    <label className="text-sm font-medium text-gray-600">Meeting Date</label>
+                    <p className="text-gray-900">{selectedLog.meetingDate ? new Date(selectedLog.meetingDate).toLocaleString() : 'N/A'}</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Attendees</label>
-                    <p className="text-text">{selectedLog.attendees.length} members present</p>
+                    <label className="text-sm font-medium text-gray-600">Attendees</label>
+                    <p className="text-gray-900">{selectedLog.attendees?.length || 0} members present</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Minutes of Meeting</label>
-                    <p className="text-text whitespace-pre-wrap mt-2 p-3 bg-white/5 rounded-lg">
-                      {selectedLog.minutesOfMeeting}
+                    <label className="text-sm font-medium text-gray-600">Minutes of Meeting</label>
+                    <p className="text-gray-900 whitespace-pre-wrap mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      {selectedLog.minutesOfMeeting || selectedLog.mom || 'No minutes recorded'}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-textSecondary">Status</label>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
                     <div className="mt-1">{getStatusBadge(selectedLog.facultyApproved)}</div>
                   </div>
 
                   {!selectedLog.facultyApproved && (
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Faculty Notes (Optional)
                       </label>
                       <textarea
                         value={approvalData.facultyNotes}
                         onChange={(e) => setApprovalData({ facultyNotes: e.target.value })}
-                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={3}
                         placeholder="Add notes or feedback..."
                       />
@@ -593,8 +647,8 @@ export function FacultyMeetingsPage() {
 
                   {selectedLog.facultyNotes && (
                     <div>
-                      <label className="text-sm font-medium text-textSecondary">Faculty Notes</label>
-                      <p className="text-text mt-2 p-3 bg-white/5 rounded-lg">
+                      <label className="text-sm font-medium text-gray-600">Faculty Notes</label>
+                      <p className="text-gray-900 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                         {selectedLog.facultyNotes}
                       </p>
                     </div>
@@ -607,31 +661,28 @@ export function FacultyMeetingsPage() {
                       setSelectedLog(null);
                       setApprovalData({ facultyNotes: '' });
                     }}
-                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
                   >
                     Close
                   </button>
                   {!selectedLog.facultyApproved && (
                     <>
-                      <GlowButton
+                      <button
                         onClick={() => handleApproveLog(selectedLog._id, false)}
-                        variant="secondary"
-                        className="flex-1"
+                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
                       >
                         Reject
-                      </GlowButton>
-                      <GlowButton
+                      </button>
+                      <button
                         onClick={() => handleApproveLog(selectedLog._id, true)}
-                        variant="primary"
-                        glow
-                        className="flex-1"
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
                       >
                         Approve
-                      </GlowButton>
+                      </button>
                     </>
                   )}
                 </div>
-              </GlassCard>
+              </div>
             </motion.div>
           </motion.div>
         )}

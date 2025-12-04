@@ -5,11 +5,11 @@ import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
 
 /**
- * Create a new application
+ * Create multiple applications (one per project)
  * @param data - Application data
- * @returns Created application
+ * @returns Created applications
  */
-export async function createApplication(data: {
+export async function createApplications(data: {
   studentId?: mongoose.Types.ObjectId;
   groupId?: mongoose.Types.ObjectId;
   projectType: IApplication['projectType'];
@@ -19,9 +19,9 @@ export async function createApplication(data: {
   specialization?: string;
   cgpa?: number;
   semester: number;
-}): Promise<IApplication> {
+}): Promise<IApplication[]> {
   try {
-    const { studentId, groupId, projectType, selectedProjects: projectPreferences, department, stream, specialization, cgpa, semester } = data;
+    const { studentId, groupId, projectType, selectedProjects, department, stream, specialization, cgpa, semester } = data;
 
     // Validate that either studentId or groupId is provided
     if (!studentId && !groupId) {
@@ -33,7 +33,7 @@ export async function createApplication(data: {
     }
 
     // Validate project selection (max 3)
-    if (projectPreferences.length === 0 || projectPreferences.length > 3) {
+    if (selectedProjects.length === 0 || selectedProjects.length > 3) {
       throw new Error('Must select between 1 and 3 projects');
     }
 
@@ -42,73 +42,71 @@ export async function createApplication(data: {
       throw new Error('Specialization is required for semester 6 and above');
     }
 
-    // Check if application already exists for this project type
-    const existingQuery: any = { projectType };
-    if (studentId) {
-      existingQuery.studentId = studentId;
-    } else {
-      existingQuery.groupId = groupId;
-    }
-
-    const existing = await Application.findOne(existingQuery);
-    if (existing) {
-      throw new Error(`Application already exists for this ${projectType} project`);
-    }
-
     // If group application, verify user is the group leader
     if (groupId) {
       const group = await Group.findById(groupId);
       if (!group) {
         throw new Error('Group not found');
       }
-      // Note: Authorization check should be done in the route handler
     }
 
     // Verify all selected projects exist and are published
-    logger.info('Validating projects:', {
-      projectPreferences,
-      projectType,
-      projectPreferencesLength: projectPreferences.length
-    });
-
     const projects = await Project.find({
-      _id: { $in: projectPreferences },
-      type: projectType, // Project model uses 'type' not 'projectType'
+      _id: { $in: selectedProjects },
+      type: projectType,
       status: 'published'
     });
 
-    logger.info('Found projects:', {
-      foundCount: projects.length,
-      expectedCount: projectPreferences.length,
-      foundProjects: projects.map(p => ({ id: p._id, title: p.title, type: p.type, status: p.status }))
-    });
-
-    if (projects.length !== projectPreferences.length) {
+    if (projects.length !== selectedProjects.length) {
       throw new Error('One or more selected projects are not available');
     }
 
-    // Create application
-    const application = new Application({
-      studentId,
-      groupId,
-      projectType,
-      projectPreferences, // Model uses 'projectPreferences'
-      department,
-      stream,
-      specialization,
-      cgpa,
-      semester,
-      status: 'pending',
-      isFrozen: true, // Freeze on submission
-      submittedAt: new Date()
-    });
+    // Check for existing pending or approved applications (allow reapplication after rejection)
+    const existingQuery: any = {
+      projectId: { $in: selectedProjects },
+      status: { $in: ['pending', 'approved'] }
+    };
+    if (studentId) {
+      existingQuery.studentId = studentId;
+    } else {
+      existingQuery.groupId = groupId;
+    }
 
-    await application.save();
+    const existingApplications = await Application.find(existingQuery);
+    if (existingApplications.length > 0) {
+      const existingProjects = await Project.find({
+        _id: { $in: existingApplications.map(app => app.projectId) }
+      }).select('title');
+      const projectTitles = existingProjects.map(p => p.title).join(', ');
+      throw new Error(`You already have pending or approved applications for: ${projectTitles}`);
+    }
 
-    logger.info(`Application created: ${application._id}`);
-    return application;
+    // Create one application per project
+    const applications: IApplication[] = [];
+    for (const projectId of selectedProjects) {
+      const application = new Application({
+        studentId,
+        groupId,
+        projectType,
+        projectId,
+        department,
+        stream,
+        specialization,
+        cgpa,
+        semester,
+        status: 'pending',
+        isFrozen: true,
+        submittedAt: new Date()
+      });
+
+      await application.save();
+      applications.push(application);
+    }
+
+    logger.info(`Created ${applications.length} applications`);
+    return applications;
   } catch (error) {
-    logger.error('Error creating application:', error);
+    logger.error('Error creating applications:', error);
     throw error;
   }
 }
@@ -134,26 +132,26 @@ export async function getApplicationById(
 }
 
 /**
- * Get applications for a student or group
+ * Get all applications for a student or group
  * @param studentId - Student ID
  * @param groupId - Group ID
- * @returns Application or null
+ * @returns Array of applications
  */
-export async function getUserApplication(
+export async function getUserApplications(
   studentId?: mongoose.Types.ObjectId,
   groupId?: mongoose.Types.ObjectId
-): Promise<IApplication | null> {
+): Promise<IApplication[]> {
   try {
     const query: any = {};
     if (studentId) query.studentId = studentId;
     if (groupId) query.groupId = groupId;
 
-    return await Application.findOne(query)
-      .populate('projectPreferences', 'title brief facultyName department')
-      .populate('selectedProjectId', 'title brief facultyName');
+    return await Application.find(query)
+      .populate('projectId', 'title brief facultyName department')
+      .sort({ createdAt: -1 });
   } catch (error) {
-    logger.error('Error getting user application:', error);
-    return null;
+    logger.error('Error getting user applications:', error);
+    return [];
   }
 }
 
@@ -175,9 +173,9 @@ export async function getFacultyApplications(
     const projects = await Project.find(query).select('_id');
     const projectIds = projects.map(p => p._id);
 
-    // Get applications that selected these projects
+    // Get applications for these projects only
     return await Application.find({
-      projectPreferences: { $in: projectIds }
+      projectId: { $in: projectIds }
     })
       .populate('studentId', 'name email studentId department')
       .populate({
@@ -187,7 +185,7 @@ export async function getFacultyApplications(
           { path: 'members', select: 'name email studentId' }
         ]
       })
-      .populate('projectPreferences', 'title brief')
+      .populate('projectId', 'title brief facultyName')
       .sort({ createdAt: -1 });
   } catch (error) {
     logger.error('Error getting faculty applications:', error);
@@ -217,12 +215,9 @@ export async function acceptApplication(
       throw new Error('Application is not in pending status');
     }
 
-    // Verify project is in project preferences
-    const isSelected = application.projectPreferences.some(
-      p => p.toString() === projectId.toString()
-    );
-    if (!isSelected) {
-      throw new Error('Project is not in the application\'s project preferences');
+    // Verify project matches the application's project
+    if (application.projectId.toString() !== projectId.toString()) {
+      throw new Error('Project does not match this application');
     }
 
     // Verify project belongs to faculty
@@ -238,7 +233,6 @@ export async function acceptApplication(
 
     // Update application
     application.status = 'approved';
-    application.assignedProject = projectId;
     application.reviewedBy = facultyId;
     application.reviewedAt = new Date();
     await application.save();
@@ -250,11 +244,25 @@ export async function acceptApplication(
 
     // Update group status if group application
     if (application.groupId) {
+      // Get the next group number for this project type and year
+      const maxGroupNumber = await Group.findOne({
+        projectType: application.projectType,
+        year: new Date().getFullYear(),
+        groupNumber: { $exists: true }
+      })
+        .sort({ groupNumber: -1 })
+        .select('groupNumber');
+
+      const nextGroupNumber = maxGroupNumber ? maxGroupNumber.groupNumber! + 1 : 1;
+
       await Group.findByIdAndUpdate(application.groupId, {
         status: 'approved',
         assignedProjectId: projectId,
-        assignedFacultyId: facultyId
+        assignedFacultyId: facultyId,
+        groupNumber: nextGroupNumber
       });
+
+      logger.info(`Assigned group number ${nextGroupNumber} to group ${application.groupId}`);
     }
 
     // Reject other applications for this project

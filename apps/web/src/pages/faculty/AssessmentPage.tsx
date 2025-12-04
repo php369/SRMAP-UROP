@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Github, Presentation, Video, Send, Eye } from 'lucide-react';
+import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -37,8 +37,10 @@ interface Submission {
 export function FacultyAssessmentPage() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [meetingLogs, setMeetingLogs] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedProjectLogs, setSelectedProjectLogs] = useState<any[] | null>(null);
   const [gradeData, setGradeData] = useState({
     grade: '',
     comments: '',
@@ -47,6 +49,7 @@ export function FacultyAssessmentPage() {
 
   useEffect(() => {
     fetchSubmissions();
+    fetchMeetingLogs();
   }, []);
 
   const fetchSubmissions = async () => {
@@ -68,6 +71,110 @@ export function FacultyAssessmentPage() {
       setSubmissions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGradeChange = async (logId: string, grade: number) => {
+    if (isNaN(grade) || grade < 0 || grade > 5) {
+      toast.error('Grade must be between 0 and 5');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/meetings/logs/${logId}/grade`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        },
+        body: JSON.stringify({ grade })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Grade saved');
+        // Update the local state
+        setMeetingLogs(prev => {
+          const updated = { ...prev };
+          Object.keys(updated).forEach(projectId => {
+            updated[projectId] = updated[projectId].map(log =>
+              log._id === logId ? { ...log, grade } : log
+            );
+          });
+          return updated;
+        });
+      } else {
+        toast.error(result.error?.message || 'Failed to save grade');
+      }
+    } catch (error) {
+      toast.error('Failed to save grade');
+    }
+  };
+
+  const fetchMeetingLogs = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/v1/meetings/faculty', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        }
+      });
+      const result = await response.json();
+      console.log('Meeting logs response:', result);
+
+      if (result.success && result.data) {
+        // Get unique project IDs
+        const projectIds = [...new Set(result.data.map((log: any) => log.projectId?._id || log.projectId).filter(Boolean))];
+
+        // Fetch project details
+        const projectDetailsMap: Record<string, any> = {};
+        console.log('Fetching details for projects:', projectIds);
+        await Promise.all(
+          projectIds.map(async (projectId) => {
+            try {
+              const projectResponse = await fetch(`http://localhost:3001/api/v1/projects/${projectId}`, {
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+                }
+              });
+              const projectResult = await projectResponse.json();
+              console.log(`Project ${projectId} fetch result:`, projectResult);
+              if (projectResult.success && projectResult.data) {
+                projectDetailsMap[projectId as string] = projectResult.data;
+              }
+            } catch (err) {
+              console.error('Failed to fetch project:', projectId, err);
+            }
+          })
+        );
+        console.log('Project details map:', projectDetailsMap);
+
+        // Group logs by project ID and attach project details
+        const logsByProject: Record<string, any[]> = {};
+        result.data.forEach((log: any) => {
+          const projectId = log.projectId?._id || log.projectId;
+          console.log('Processing log:', { logId: log._id, projectId, hasMinutes: !!(log.minutesOfMeeting || log.mom) });
+
+          if (projectId) {
+            if (!logsByProject[projectId]) {
+              logsByProject[projectId] = [];
+            }
+            // Only include logs with minutes and approved/completed status
+            if ((log.minutesOfMeeting || log.mom) && (log.status === 'approved' || log.status === 'completed')) {
+              // Attach project details to the log
+              const enrichedLog = {
+                ...log,
+                projectId: projectDetailsMap[projectId] || { _id: projectId, title: projectId }
+              };
+              logsByProject[projectId].push(enrichedLog);
+            }
+          }
+        });
+        console.log('Grouped logs by project:', logsByProject);
+        setMeetingLogs(logsByProject);
+      }
+    } catch (error) {
+      console.error('Failed to fetch meeting logs:', error);
     }
   };
 
@@ -144,17 +251,176 @@ export function FacultyAssessmentPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : submissions.length === 0 ? (
-          <GlassCard className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-primary" />
+          <>
+            <GlassCard className="p-12 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
+                <p className="text-textSecondary">
+                  No submissions to grade at the moment
+                </p>
               </div>
-              <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
-              <p className="text-textSecondary">
-                No submissions to grade at the moment
-              </p>
-            </div>
-          </GlassCard>
+            </GlassCard>
+
+            {/* Show meeting logs even without submissions */}
+            {Object.keys(meetingLogs).length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-2xl font-bold text-text mb-4">Meeting Logs by Project</h2>
+                <div className="grid gap-4">
+                  {Object.entries(meetingLogs)
+                    .filter(([_, logs]) => logs.length > 0) // Only show projects with logs
+                    .map(([projectIdKey, logs]) => {
+                      const isExpanded = selectedProjectLogs === logs;
+                      const firstLog = logs[0];
+
+                      // Get project title - check enriched data first, then use the key
+                      let projectTitle = projectIdKey; // Default to the map key (project ID)
+
+                      // Check if the log has enriched project data
+                      if (firstLog?.projectId && typeof firstLog.projectId === 'object' && firstLog.projectId !== null) {
+                        projectTitle = firstLog.projectId.title || firstLog.projectId.projectId || projectIdKey;
+                      }
+
+                      // Calculate total grade
+                      const totalGrade = logs.reduce((sum, log) => sum + (log.grade || 0), 0);
+                      const maxGrade = logs.length * 5;
+
+                      return (
+                        <GlassCard key={projectIdKey} className="p-6">
+                          <button
+                            onClick={() => setSelectedProjectLogs(isExpanded ? null : logs)}
+                            className="w-full flex items-center justify-between text-left"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-1">
+                                <h3 className="text-lg font-semibold text-text">
+                                  {projectTitle}
+                                </h3>
+                                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-bold rounded-lg border border-primary/30">
+                                  {totalGrade}/{maxGrade} marks
+                                </span>
+                              </div>
+                              <p className="text-sm text-textSecondary">
+                                {logs.length} meeting log{logs.length !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-textSecondary">
+                                {isExpanded ? 'Hide' : 'Show'}
+                              </span>
+                              <svg
+                                className={`w-5 h-5 text-textSecondary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* Expanded logs */}
+                          {isExpanded && (
+                            <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+                              {logs.map((log, index) => (
+                                <div key={log._id} className="p-4 bg-white/5 rounded-lg">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-base font-semibold text-text">Meeting #{index + 1}</span>
+                                      {log.status === 'approved' && (
+                                        <span className="px-2 py-1 bg-success/20 text-success text-xs font-medium rounded-lg border border-success/30">
+                                          Approved
+                                        </span>
+                                      )}
+                                      {log.status === 'completed' && (
+                                        <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs font-medium rounded-lg border border-blue-500/30">
+                                          Completed
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-textSecondary">
+                                      {log.mode === 'online' ? (
+                                        <Video className="w-4 h-4" />
+                                      ) : (
+                                        <Users className="w-4 h-4" />
+                                      )}
+                                      <span className="capitalize">{log.mode}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 text-sm text-textSecondary mb-3">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(log.meetingDate).toLocaleString()}
+                                  </div>
+
+                                  {log.location && (
+                                    <div className="text-sm text-textSecondary mb-3">
+                                      Location: {log.location}
+                                    </div>
+                                  )}
+
+                                  <div className="mt-3 p-3 bg-white/5 rounded-lg">
+                                    <h4 className="text-sm font-medium text-text mb-2 flex items-center gap-2">
+                                      <FileText className="w-4 h-4" />
+                                      Minutes of Meeting
+                                    </h4>
+                                    <p className="text-sm text-textSecondary whitespace-pre-wrap">
+                                      {log.minutesOfMeeting || log.mom}
+                                    </p>
+                                  </div>
+
+                                  {log.attendees && log.attendees.length > 0 && (
+                                    <div className="mt-3">
+                                      <h4 className="text-sm font-medium text-text mb-2">Attendees</h4>
+                                      <div className="flex flex-wrap gap-2">
+                                        {log.attendees.map((attendee: any, idx: number) => (
+                                          <span
+                                            key={idx}
+                                            className={`px-2 py-1 text-xs rounded-lg ${attendee.present
+                                              ? 'bg-success/20 text-success border border-success/30'
+                                              : 'bg-white/5 text-textSecondary border border-white/10'
+                                              }`}
+                                          >
+                                            {attendee.studentId?.name || 'Student'}
+                                            {attendee.present && ' ✓'}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Grading Section */}
+                                  <div className="mt-4 pt-4 border-t border-white/10">
+                                    <div className="flex items-center gap-4">
+                                      <label className="text-sm font-medium text-text">Grade (out of 5):</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="5"
+                                        step="0.5"
+                                        value={log.grade || ''}
+                                        onChange={(e) => handleGradeChange(log._id, parseFloat(e.target.value))}
+                                        className="w-20 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="0-5"
+                                      />
+                                      {log.grade !== undefined && log.grade !== null && (
+                                        <span className="text-sm text-success">✓ Graded</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </GlassCard>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="grid gap-4">
             {submissions.map((submission) => (
@@ -239,6 +505,16 @@ export function FacultyAssessmentPage() {
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
+                      {meetingLogs[submission.projectId._id]?.length > 0 && (
+                        <button
+                          onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId._id])}
+                          className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm"
+                          title="View Meeting Logs"
+                        >
+                          <FileText className="w-4 h-4" />
+                          {meetingLogs[submission.projectId._id].length} Logs
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setSelectedSubmission(submission);

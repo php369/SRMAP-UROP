@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Video, Calendar, Users, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -9,15 +9,11 @@ export function MeetingsPage() {
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [isLeader, setIsLeader] = useState(false);
-  const [showLogForm, setShowLogForm] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
 
   const [logForm, setLogForm] = useState({
-    meetingDate: '',
-    mode: 'online' as 'online' | 'in-person',
-    meetUrl: '',
-    location: '',
     minutesOfMeeting: '',
     attendees: [] as string[]
   });
@@ -32,26 +28,73 @@ export function MeetingsPage() {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
         const groupData = response.data as any;
-        setIsLeader(groupData.leaderId === user?._id);
-        setGroupMembers(groupData.members);
+        const userIsLeader = groupData.leaderId === user?._id || groupData.leaderId?._id === user?._id;
+        setIsLeader(userIsLeader);
+        setGroupMembers(groupData.members || []);
+        console.log('Group data:', { groupData, userIsLeader, userId: user?._id });
       } else {
-        setIsLeader(true); // Solo student
+        // Solo student - always a leader
+        console.log('No group found - treating as solo student (leader)');
+        setIsLeader(true);
+        setGroupMembers([]);
       }
     } catch (error) {
       console.error('Error checking user role:', error);
+      // Default to solo student (leader)
       setIsLeader(true);
+      setGroupMembers([]);
     }
   };
 
   const fetchMeetings = async () => {
     try {
-      const response = await api.get('/meeting-logs');
+      const response = await api.get('/meetings/student');
       if (response.success && response.data) {
         setMeetings(response.data as any[]);
       }
     } catch (error) {
       console.error('Error fetching meetings:', error);
+      toast.error('Failed to load meetings');
     }
+  };
+
+  const hasMeetingPassed = (meetingDate: string) => {
+    return new Date(meetingDate) < new Date();
+  };
+
+  const handleLogMeeting = (meeting: any) => {
+    if (!hasMeetingPassed(meeting.meetingDate)) {
+      toast.error('You can only log meetings after they have occurred');
+      return;
+    }
+
+    // Allow resubmission if rejected, otherwise check if already logged and approved/completed
+    if ((meeting.minutesOfMeeting || meeting.mom) && meeting.status !== 'rejected') {
+      toast.info('This meeting has already been logged');
+      return;
+    }
+
+    setSelectedMeeting(meeting);
+
+    // Initialize attendees - for new logs, use current user or group members
+    let initialAttendees: string[] = [];
+    if (meeting.attendees && meeting.attendees.length > 0) {
+      // Resubmission - use existing attendees
+      initialAttendees = meeting.attendees
+        .map((a: any) => a.studentId?._id || a.studentId)
+        .filter((id: string) => id && id.trim() !== '');
+    } else if (groupMembers.length > 0) {
+      // Group - pre-select all members
+      initialAttendees = groupMembers.map((m: any) => m._id);
+    } else if (user?._id) {
+      // Solo student - use current user ID
+      initialAttendees = [user._id];
+    }
+
+    setLogForm({
+      minutesOfMeeting: meeting.minutesOfMeeting || meeting.mom || '',
+      attendees: initialAttendees
+    });
   };
 
   const handleAttendeeToggle = (memberId: string) => {
@@ -69,54 +112,88 @@ export function MeetingsPage() {
   };
 
   const handleSubmitLog = async () => {
-    if (!logForm.meetingDate || !logForm.minutesOfMeeting) {
-      toast.error('Please fill all required fields');
+    if (!logForm.minutesOfMeeting) {
+      toast.error('Please enter meeting minutes');
       return;
     }
 
-    if (logForm.mode === 'online' && !logForm.meetUrl) {
-      toast.error('Meeting URL is required for online meetings');
+    if (logForm.attendees.length === 0) {
+      toast.error('Please select at least one attendee');
       return;
     }
 
-    if (logForm.mode === 'in-person' && !logForm.location) {
-      toast.error('Location is required for in-person meetings');
-      return;
-    }
+    if (!selectedMeeting) return;
 
     setLoading(true);
     try {
-      const response = await api.post('/meeting-logs', {
-        ...logForm,
-        startedAt: new Date(logForm.meetingDate),
-        attendees: logForm.attendees.map(id => ({
+      console.log('Submitting meeting log:', {
+        meetingId: selectedMeeting._id,
+        participants: logForm.attendees.map(id => ({
           studentId: id,
           present: true
-        }))
+        })),
+        mom: logForm.minutesOfMeeting
       });
+
+      // Filter out empty strings from attendees
+      const validAttendees = logForm.attendees.filter(id => id && id.trim() !== '');
+
+      if (validAttendees.length === 0) {
+        toast.error('Please select at least one attendee');
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.post(`/meetings/${selectedMeeting._id}/log`, {
+        participants: validAttendees.map(id => ({
+          studentId: id,
+          present: true
+        })),
+        mom: logForm.minutesOfMeeting
+      });
+
+      console.log('Response:', response);
 
       if (response.success) {
         toast.success('Meeting log submitted for approval');
-        setShowLogForm(false);
+        setSelectedMeeting(null);
         fetchMeetings();
-        // Reset form
         setLogForm({
-          meetingDate: '',
-          mode: 'online',
-          meetUrl: '',
-          location: '',
           minutesOfMeeting: '',
           attendees: []
         });
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to submit meeting log');
+        const errorMsg = response.error?.message || 'Failed to submit meeting log';
+        console.error('Error response:', response.error);
+        toast.error(errorMsg);
       }
-    } catch (error) {
-      toast.error('Failed to submit meeting log');
+    } catch (error: any) {
+      console.error('Exception:', error);
+      toast.error(error.message || 'Failed to submit meeting log');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getParticipantNames = (meeting: any) => {
+    const names: string[] = [];
+
+    // Add team members or solo student
+    if (meeting.attendees && meeting.attendees.length > 0) {
+      meeting.attendees.forEach((attendee: any) => {
+        const name = attendee.studentId?.name || attendee.name || 'Team Member';
+        names.push(name);
+      });
+    } else if (meeting.studentId) {
+      names.push(meeting.studentId.name || 'Student');
+    }
+
+    // Add faculty
+    if (meeting.facultyId) {
+      names.push(`${meeting.facultyId.name} (Faculty)`);
+    }
+
+    return names;
   };
 
   return (
@@ -125,240 +202,156 @@ export function MeetingsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex items-center justify-between"
+          className="mb-8"
         >
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Meetings</h1>
-            <p className="text-gray-600">
-              Schedule meetings and log meeting entries
-            </p>
-          </div>
-
-          {isLeader && (
-            <button
-              onClick={() => setShowLogForm(!showLogForm)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Log Meeting
-            </button>
-          )}
+          <h1 className="text-3xl font-bold mb-2">Meetings</h1>
+          <p className="text-gray-600">
+            View scheduled meetings and log meeting minutes
+          </p>
         </motion.div>
-
-        {/* Meeting Log Form */}
-        {showLogForm && isLeader && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6 mb-6"
-          >
-            <h2 className="text-xl font-bold mb-4">Create Meeting Log</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-2 font-medium">Meeting Date & Time *</label>
-                <input
-                  type="datetime-local"
-                  value={logForm.meetingDate}
-                  onChange={(e) => setLogForm({ ...logForm, meetingDate: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium">Mode *</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="online"
-                      checked={logForm.mode === 'online'}
-                      onChange={(e) => setLogForm({ ...logForm, mode: e.target.value as any })}
-                    />
-                    Online (Google Meet)
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="in-person"
-                      checked={logForm.mode === 'in-person'}
-                      onChange={(e) => setLogForm({ ...logForm, mode: e.target.value as any })}
-                    />
-                    In-Person
-                  </label>
-                </div>
-              </div>
-
-              {logForm.mode === 'online' && (
-                <div>
-                  <label className="block mb-2 font-medium">Google Meet URL *</label>
-                  <input
-                    type="url"
-                    value={logForm.meetUrl}
-                    onChange={(e) => setLogForm({ ...logForm, meetUrl: e.target.value })}
-                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
-              )}
-
-              {logForm.mode === 'in-person' && (
-                <div>
-                  <label className="block mb-2 font-medium">Location *</label>
-                  <input
-                    type="text"
-                    value={logForm.location}
-                    onChange={(e) => setLogForm({ ...logForm, location: e.target.value })}
-                    placeholder="Room number or location"
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
-              )}
-
-              {groupMembers.length > 0 && (
-                <div>
-                  <label className="block mb-2 font-medium">Participants *</label>
-                  <div className="space-y-2">
-                    {groupMembers.map((member: any) => (
-                      <label key={member._id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={logForm.attendees.includes(member._id)}
-                          onChange={() => handleAttendeeToggle(member._id)}
-                        />
-                        {member.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block mb-2 font-medium">Minutes of Meeting (MOM) *</label>
-                <textarea
-                  value={logForm.minutesOfMeeting}
-                  onChange={(e) => setLogForm({ ...logForm, minutesOfMeeting: e.target.value })}
-                  rows={6}
-                  placeholder="Enter meeting notes, discussions, and action items..."
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={handleSubmitLog}
-                  disabled={loading}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {loading ? 'Submitting...' : 'Submit for Approval'}
-                </button>
-                <button
-                  onClick={() => setShowLogForm(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* Meeting List */}
         <div className="space-y-4">
-          {meetings.map((meeting) => (
-            <motion.div
-              key={meeting._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-lg ${
-                    meeting.mode === 'online' ? 'bg-blue-100' : 'bg-green-100'
-                  }`}>
-                    {meeting.mode === 'online' ? (
-                      <Video className="w-6 h-6 text-blue-600" />
-                    ) : (
-                      <Users className="w-6 h-6 text-green-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold mb-1">
-                      {meeting.mode === 'online' ? 'Online Meeting' : 'In-Person Meeting'}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      {new Date(meeting.meetingDate).toLocaleString()}
+          {meetings.map((meeting) => {
+            const meetingPassed = hasMeetingPassed(meeting.meetingDate);
+            const hasLog = meeting.minutesOfMeeting || meeting.mom;
+            const canResubmit = meeting.status === 'rejected';
+            const participantNames = getParticipantNames(meeting);
+
+            return (
+              <motion.div
+                key={meeting._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className={`p-3 rounded-lg ${meeting.mode === 'online' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      {meeting.mode === 'online' ? (
+                        <Video className="w-6 h-6 text-blue-600" />
+                      ) : (
+                        <Users className="w-6 h-6 text-green-600" />
+                      )}
                     </div>
-                    {meeting.location && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Location: {meeting.location}
-                      </p>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold mb-1">
+                        {meeting.mode === 'online' ? 'Online Meeting' : 'In-Person Meeting'}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(meeting.meetingDate).toLocaleString()}
+                      </div>
+                      {meeting.projectId && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          Project: {meeting.projectId.title} ({meeting.projectId.projectId})
+                        </p>
+                      )}
+                      {meeting.location && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4" />
+                          {meeting.location}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2">
+                    {meeting.status === 'approved' && (
+                      <span className="flex items-center gap-1 text-green-600 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        Approved
+                      </span>
+                    )}
+                    {meeting.status === 'submitted' && (
+                      <span className="flex items-center gap-1 text-yellow-600 text-sm">
+                        <Clock className="w-4 h-4" />
+                        Pending
+                      </span>
+                    )}
+                    {meeting.status === 'rejected' && (
+                      <span className="flex items-center gap-1 text-red-600 text-sm">
+                        <XCircle className="w-4 h-4" />
+                        Rejected
+                      </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {meeting.status === 'approved' && (
-                    <span className="flex items-center gap-1 text-green-600 text-sm">
-                      <CheckCircle className="w-4 h-4" />
-                      Approved
-                    </span>
-                  )}
-                  {meeting.status === 'submitted' && (
-                    <span className="flex items-center gap-1 text-yellow-600 text-sm">
-                      <Clock className="w-4 h-4" />
-                      Pending
-                    </span>
-                  )}
-                  {meeting.status === 'rejected' && (
-                    <span className="flex items-center gap-1 text-red-600 text-sm">
-                      <XCircle className="w-4 h-4" />
-                      Rejected
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {meeting.meetUrl && (
-                <a
-                  href={meeting.meetUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
-                >
-                  <Video className="w-4 h-4" />
-                  Join Meeting
-                </a>
-              )}
-
-              {meeting.minutesOfMeeting && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Minutes of Meeting</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {meeting.minutesOfMeeting}
-                  </p>
-                </div>
-              )}
-
-              {meeting.attendees && meeting.attendees.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Participants</h4>
+                {/* Participants */}
+                <div className="mb-4">
+                  <h4 className="font-medium text-sm text-gray-600 mb-2">Participants</h4>
                   <div className="flex flex-wrap gap-2">
-                    {meeting.attendees.map((attendee: any) => (
+                    {participantNames.map((name, index) => (
                       <span
-                        key={attendee.studentId}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                        key={index}
+                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
                       >
-                        {attendee.present ? '✓' : '✗'} {attendee.studentId.name}
+                        {name}
                       </span>
                     ))}
                   </div>
                 </div>
-              )}
-            </motion.div>
-          ))}
+
+                {/* Meeting Link */}
+                {meeting.meetUrl && (
+                  <a
+                    href={meeting.meetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
+                  >
+                    <Video className="w-4 h-4" />
+                    Join Meeting
+                  </a>
+                )}
+
+                {/* Rejection Reason */}
+                {meeting.status === 'rejected' && meeting.rejectionReason && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                    <h4 className="font-medium mb-2 flex items-center gap-2 text-red-700">
+                      <XCircle className="w-4 h-4" />
+                      Rejection Reason
+                    </h4>
+                    <p className="text-sm text-red-700 whitespace-pre-wrap">
+                      {meeting.rejectionReason}
+                    </p>
+                  </div>
+                )}
+
+                {/* Meeting Minutes */}
+                {hasLog && meeting.status !== 'rejected' && (
+                  <div className="p-4 bg-gray-50 rounded-lg mb-4">
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Minutes of Meeting
+                    </h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {meeting.minutesOfMeeting || meeting.mom}
+                    </p>
+                  </div>
+                )}
+
+                {/* Log Meeting Button */}
+                {/* Show button if: user is leader OR it's a solo meeting, AND (no log OR rejected) */}
+                {((isLeader || meeting.studentId) && meetingPassed && (!hasLog || canResubmit)) && (
+                  <button
+                    onClick={() => handleLogMeeting(meeting)}
+                    className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {canResubmit ? 'Resubmit Meeting Minutes' : 'Log Meeting Minutes'}
+                  </button>
+                )}
+
+                {!meetingPassed && (
+                  <p className="text-sm text-gray-500 italic">
+                    Meeting minutes can be logged after the meeting time
+                  </p>
+                )}
+              </motion.div>
+            );
+          })}
 
           {meetings.length === 0 && (
             <motion.div
@@ -369,14 +362,98 @@ export function MeetingsPage() {
               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">No Meetings Yet</h3>
               <p className="text-gray-600">
-                {isLeader
-                  ? 'Create your first meeting log to get started'
-                  : 'Your group leader will schedule meetings'}
+                Your faculty mentor will schedule meetings for your project
               </p>
             </motion.div>
           )}
         </div>
       </div>
+
+      {/* Log Meeting Modal */}
+      <AnimatePresence>
+        {selectedMeeting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedMeeting(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <h2 className="text-2xl font-bold mb-4">Log Meeting Minutes</h2>
+
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Meeting Date</p>
+                <p className="font-medium">{new Date(selectedMeeting.meetingDate).toLocaleString()}</p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block mb-2 font-medium">Attendees *</label>
+                <div className="space-y-2">
+                  {groupMembers.length > 0 ? (
+                    // Group members
+                    groupMembers.map((member: any) => (
+                      <label key={member._id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={logForm.attendees.includes(member._id)}
+                          onChange={() => handleAttendeeToggle(member._id)}
+                          className="w-4 h-4"
+                        />
+                        <span>{member.name}</span>
+                      </label>
+                    ))
+                  ) : (
+                    // Solo student
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={logForm.attendees.includes(user?._id || '')}
+                        onChange={() => handleAttendeeToggle(user?._id || '')}
+                        className="w-4 h-4"
+                      />
+                      <span>{user?.name} (You)</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block mb-2 font-medium">Minutes of Meeting (MOM) *</label>
+                <textarea
+                  value={logForm.minutesOfMeeting}
+                  onChange={(e) => setLogForm({ ...logForm, minutesOfMeeting: e.target.value })}
+                  rows={8}
+                  placeholder="Enter meeting notes, discussions, decisions, and action items..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleSubmitLog}
+                  disabled={loading}
+                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                >
+                  {loading ? 'Submitting...' : 'Submit for Approval'}
+                </button>
+                <button
+                  onClick={() => setSelectedMeeting(null)}
+                  className="flex-1 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

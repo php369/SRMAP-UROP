@@ -18,6 +18,7 @@ import healthRoutes from './health';
 import statusRoutes from './status';
 import notificationRoutes from './notifications';
 import meetingLogRoutes from './meetingLogs';
+import meetingRoutes from './meetings';
 import studentMetaRoutes from './studentMeta';
 import windowRoutes from './windows';
 import eligibilityRoutes from './eligibility';
@@ -73,6 +74,9 @@ export function setupRoutes(app: Express): void {
 
   // Meeting log routes
   app.use(`${API_PREFIX}/meeting-logs`, meetingLogRoutes);
+
+  // Meeting routes
+  app.use(`${API_PREFIX}/meetings`, meetingRoutes);
 
   // Student metadata routes
   app.use(`${API_PREFIX}/student-meta`, studentMetaRoutes);

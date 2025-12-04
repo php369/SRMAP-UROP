@@ -30,7 +30,7 @@ export function ApplicationPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [applicationWindow, setApplicationWindow] = useState<any>(null);
-  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [existingApplications, setExistingApplications] = useState<any[]>([]);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
   // Form data
@@ -89,11 +89,13 @@ export function ApplicationPage() {
     try {
       const response = await api.get('/applications/my-application');
       if (response.success && response.data) {
-        setExistingApplication(response.data);
+        const apps = Array.isArray(response.data) ? response.data : [response.data];
+        // Only show pending or approved applications
+        const activeApps = apps.filter((app: any) => app.status === 'pending' || app.status === 'approved');
+        setExistingApplications(activeApps);
       }
     } catch (error) {
-      // No existing application, that's fine
-      console.log('No existing application found');
+      console.log('No existing applications found');
     }
   };
 
@@ -302,8 +304,8 @@ export function ApplicationPage() {
       const response = await res.json();
 
       if (response.success) {
-        toast.success('Application submitted successfully!');
-        setExistingApplication(response.data);
+        toast.success(`${response.data.length} application(s) submitted successfully!`);
+        setExistingApplications(response.data);
       } else {
         const errorMessage = response.error?.message || 'Failed to submit application';
         if (errorMessage.includes('already exists')) {
@@ -320,95 +322,104 @@ export function ApplicationPage() {
     }
   };
 
-  // Show existing application if it exists
-  if (existingApplication) {
+  // Show existing applications if they exist
+  if (existingApplications.length > 0) {
     return (
       <div className="min-h-screen p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            className="mb-8"
           >
-            <div className="flex items-center justify-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-500 mr-4" />
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Application Submitted</h2>
-                <p className="text-gray-600">
-                  {existingApplication.groupId ? 'Your group application' : 'Your application'} has been submitted successfully
-                </p>
+                <h1 className="text-3xl font-bold mb-2">Your Applications</h1>
+                <p className="text-gray-600">Track the status of your project applications</p>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-lg mb-2">Application Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Type</p>
-                    <p className="font-medium">
-                      {existingApplication.groupId ? (
-                        <span className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          Group Application
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <User className="w-4 h-4 mr-1" />
-                          Solo Application
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <p className="font-medium capitalize">{existingApplication.status}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Department</p>
-                    <p className="font-medium">{existingApplication.department}</p>
-                  </div>
-                  {existingApplication.specialization && (
-                    <div>
-                      <p className="text-sm text-gray-600">Specialization</p>
-                      <p className="font-medium">{existingApplication.specialization}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-600">Submitted At</p>
-                    <p className="font-medium">
-                      {new Date(existingApplication.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {existingApplication.projectPreferences && existingApplication.projectPreferences.length > 0 && (
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Selected Projects</h3>
-                  <div className="space-y-2">
-                    {existingApplication.projectPreferences.map((project: any, index: number) => (
-                      <div key={project._id || index} className="p-4 border rounded-lg">
-                        <p className="font-medium">
-                          {index + 1}. {project.title || 'Project details not available'}
-                        </p>
-                        {project.brief && (
-                          <p className="text-sm text-gray-600 mt-1">{project.brief}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+              {eligibleProjectType && (
+                <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
+                  <p className="text-sm text-gray-600">Eligible for</p>
+                  <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
                 </div>
               )}
-
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Your application is currently frozen and under review.
-                  You will be notified once a decision is made.
-                </p>
-              </div>
             </div>
           </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {existingApplications.map((application: any) => (
+              <motion.div
+                key={application._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    {application.groupId ? (
+                      <Users className="w-6 h-6 text-blue-500 mr-2" />
+                    ) : (
+                      <User className="w-6 h-6 text-green-500 mr-2" />
+                    )}
+                    <span className="text-sm font-medium text-gray-600">
+                      {application.groupId ? 'Group' : 'Solo'}
+                    </span>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      application.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                    }`}>
+                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                  </span>
+                </div>
+
+                <h3 className="font-bold text-lg mb-2">
+                  {application.projectId?.title || 'Project Title'}
+                </h3>
+
+                {application.projectId?.brief && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                    {application.projectId.brief}
+                  </p>
+                )}
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Department:</span>
+                    <span className="font-medium">{application.department}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Submitted:</span>
+                    <span className="font-medium">
+                      {new Date(application.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {application.reviewedAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reviewed:</span>
+                      <span className="font-medium">
+                        {new Date(application.reviewedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+            <div className="flex items-start">
+              <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1" />
+              <div>
+                <h3 className="font-bold text-blue-900 mb-2">Application Status Guide</h3>
+                <div className="space-y-1 text-sm text-blue-800">
+                  <p><strong>Pending:</strong> Your application is under review</p>
+                  <p><strong>Approved:</strong> Congratulations! Your application has been accepted</p>
+                  <p><strong>Rejected:</strong> You can apply to other projects or reapply to this project</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
