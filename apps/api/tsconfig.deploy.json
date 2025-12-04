@@ -20,7 +20,7 @@
     "noUnusedParameters": false,
     "noImplicitThis": false,
     "noPropertyAccessFromIndexSignature": false,
-
+    "noEmitOnError": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
