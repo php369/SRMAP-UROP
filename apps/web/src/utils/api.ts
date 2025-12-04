@@ -14,9 +14,10 @@ class ApiClient {
     };
   }
 
-  // Get auth token from localStorage
+  // Get auth token from localStorage or sessionStorage
   private getAuthToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || 
+           sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 
   // Build request headers
