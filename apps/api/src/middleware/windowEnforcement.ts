@@ -118,3 +118,36 @@ export const requireGradeReleaseWindow = requireActiveWindow(
   'grade_release',
   (req) => req.body.projectType || req.params.projectType || req.query.projectType
 );
+
+/**
+ * Enforce window access for any window type
+ * @param windowType - Type of window to enforce
+ * @param projectType - Project type to check
+ * @param assessmentType - Optional assessment type
+ */
+export const enforceWindow = requireActiveWindow;
+
+/**
+ * Enforce window access for any window type (alias)
+ */
+export const enforceAnyWindow = requireActiveWindow;
+
+/**
+ * Get window status for a specific window type and project type
+ * @param windowType - Type of window to check
+ * @param projectType - Project type to check
+ * @param assessmentType - Optional assessment type
+ * @returns Promise<boolean> - Whether the window is active
+ */
+export async function getWindowStatus(
+  windowType: IWindow['windowType'],
+  projectType: IWindow['projectType'],
+  assessmentType?: IWindow['assessmentType']
+): Promise<boolean> {
+  try {
+    return await isWindowActive(windowType, projectType, assessmentType);
+  } catch (error) {
+    logger.error('Failed to get window status:', error);
+    return false;
+  }
+}

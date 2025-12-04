@@ -641,7 +641,13 @@ router.post('/cohorts', authenticate, authorize('admin'), asyncHandler(async (re
     });
   }
 
-  const cohortData = validationResult.data;
+  const cohortData = validationResult.data as {
+    name: string;
+    year: number;
+    department: string;
+    studentIds?: string[];
+    facultyIds?: string[];
+  };
 
   try {
     const cohort = await createCohort(cohortData, adminId);
@@ -927,7 +933,16 @@ router.post('/courses', authenticate, authorize('admin'), asyncHandler(async (re
     });
   }
 
-  const courseData = validationResult.data;
+  const courseData = validationResult.data as {
+    code: string;
+    title: string;
+    description?: string;
+    credits: number;
+    facultyId: string;
+    cohortIds?: string[];
+    semester: 'Fall' | 'Spring' | 'Summer';
+    year: number;
+  };
 
   try {
     const course = await createCourse(courseData, adminId);

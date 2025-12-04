@@ -11,6 +11,7 @@ import {
 } from '../services/groupService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
+import Group from '../models/Group';
 
 const router = express.Router();
 

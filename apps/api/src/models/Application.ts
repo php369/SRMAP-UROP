@@ -6,6 +6,8 @@ export interface IApplication extends Document {
   groupId?: mongoose.Types.ObjectId; // For group applications
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
   projectId: mongoose.Types.ObjectId; // Single project per application
+  selectedProjectId?: mongoose.Types.ObjectId; // Selected project (for compatibility)
+  assignedProject?: mongoose.Types.ObjectId; // Assigned project
   department: string;
   stream: string;
   specialization?: string; // Required if semester >= 6

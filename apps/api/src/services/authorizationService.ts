@@ -173,8 +173,8 @@ export async function getUserWindowStatus(authContext: AuthorizationContext): Pr
     
     for (const windowKind of windowKinds) {
       try {
-        const windowStatus = await getWindowStatus(windowKind, projectType as any);
-        status[projectType][windowKind] = windowStatus;
+        const windowStatus = await getWindowStatus(windowKind as any, projectType as any);
+        status[projectType][windowKind] = { isActive: windowStatus };
       } catch (error) {
         logger.error(`Failed to get window status for ${projectType}/${windowKind}:`, error);
         status[projectType][windowKind] = {
@@ -213,8 +213,8 @@ export async function canPerformActionInWindow(
   }
 
   // Check window status
-  const windowStatus = await getWindowStatus(action, targetProjectType);
-  return windowStatus.isActive;
+  const windowStatus = await getWindowStatus(action as any, targetProjectType);
+  return windowStatus;
 }
 
 /**
