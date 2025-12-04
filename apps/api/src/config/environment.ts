@@ -30,7 +30,7 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1, 'Cloudinary API Secret is required'),
   
   // App Configuration
-  FRONTEND_URL: z.string().url('Invalid Frontend URL').default('http://localhost:5173'),
+  FRONTEND_URL: z.string().url('Invalid Frontend URL').default('http://localhost:5173').transform(url => url.replace(/\/$/, '')),
   ALLOWED_ORIGINS: z.string().optional(),
   ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
   

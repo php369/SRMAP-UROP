@@ -31,7 +31,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        sync: false
+        value: https://srmap-urop-web.vercel.app/auth/callback
       - key: GOOGLE_CALENDAR_API_KEY
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
@@ -41,9 +41,9 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://srmap-urop-web.vercel.app
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://srmap-urop-web.vercel.app,http://localhost:5173
       - key: ADMIN_EMAIL
         sync: false
       - key: BCRYPT_ROUNDS

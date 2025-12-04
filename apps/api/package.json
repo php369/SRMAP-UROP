@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "SRM Project Portal API Server",
   "main": "dist/index.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.build.json",
-    "build:prod": "node build-deploy.js",
+    "build:prod": "tsc --project tsconfig.deploy.json",
     "build:deploy": "node build-deploy.js",
     "build:deploy:ts": "tsc --project tsconfig.deploy.json --noEmit false || true",
     "start": "node dist/index.js",
