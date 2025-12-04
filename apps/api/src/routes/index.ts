@@ -35,6 +35,10 @@ export function setupRoutes(app: Express): void {
 
   // Authentication routes
   app.use(`${API_PREFIX}/auth`, authRoutes);
+  
+  // Compatibility route for frontend URL duplication issue
+  // Frontend is calling /api/v1/api/v1/auth/* instead of /api/v1/auth/*
+  app.use(`${API_PREFIX}${API_PREFIX}/auth`, authRoutes);
 
   // Project routes
   app.use(`${API_PREFIX}/projects`, projectRoutes);
