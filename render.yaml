@@ -5,11 +5,9 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: |
-      npm install -g pnpm &&
-      pnpm install --frozen-lockfile &&
-      pnpm --filter @srm-portal/api build:prod
-    startCommand: cd apps/api && npm start
+    rootDirectory: apps/api
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
