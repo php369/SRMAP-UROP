@@ -42,11 +42,12 @@ async function startServer() {
     const app = express();
     const server = createServer(app);
     
-    // Setup Socket.IO
+    // Parse allowed origins for CORS
     const allowedOrigins = config.ALLOWED_ORIGINS 
       ? config.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
       : [config.FRONTEND_URL];
     
+    // Setup Socket.IO
     const io = new Server(server, {
       cors: {
         origin: allowedOrigins,
@@ -71,10 +72,6 @@ async function startServer() {
     }));
     
     // CORS configuration
-    const allowedOrigins = config.ALLOWED_ORIGINS 
-      ? config.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-      : [config.FRONTEND_URL];
-    
     app.use(cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
