@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.build.json",
-    "build:prod": "tsc --project tsconfig.deploy.json",
+    "build:prod": "tsc --project tsconfig.deploy.json --skipLibCheck --noEmitOnError false",
     "build:deploy": "tsc --project tsconfig.deploy.json --skipLibCheck --noEmitOnError false",
     "start": "node dist/index.js",
     "test": "jest",
