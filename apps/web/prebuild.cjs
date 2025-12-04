@@ -52,4 +52,15 @@ if (fs.existsSync(localPkg)) {
   }
 }
 
+// Fix tsconfig.json to remove workspace extends
+const tsconfig = path.join(__dirname, 'tsconfig.json');
+if (fs.existsSync(tsconfig)) {
+  const config = JSON.parse(fs.readFileSync(tsconfig, 'utf8'));
+  if (config.extends && config.extends.includes('@srm-portal/config')) {
+    delete config.extends;
+    fs.writeFileSync(tsconfig, JSON.stringify(config, null, 2));
+    console.log('✅ Removed workspace extends from tsconfig.json');
+  }
+}
+
 console.log('✅ Ready for deployment!');
