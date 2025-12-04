@@ -6,7 +6,7 @@ services:
     region: singapore
     plan: free
     rootDirectory: apps/api
-    buildCommand: chmod +x build.sh && ./build.sh
+    buildCommand: npm install --legacy-peer-deps && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
