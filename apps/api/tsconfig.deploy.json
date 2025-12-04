@@ -25,7 +25,7 @@
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "isolatedModules": false,
+    "isolatedModules": true,
     "allowJs": true,
     "checkJs": false,
     "types": ["node"]

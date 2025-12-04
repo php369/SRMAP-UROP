@@ -7,8 +7,8 @@ services:
     plan: free
     buildCommand: |
       npm install -g pnpm &&
-      pnpm install --no-frozen-lockfile &&
-      pnpm --filter @srm-portal/api build:deploy
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @srm-portal/api build:prod
     startCommand: cd apps/api && npm start
     healthCheckPath: /health
     envVars:
