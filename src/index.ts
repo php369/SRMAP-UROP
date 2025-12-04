@@ -7,7 +7,7 @@ process.on('warning', (warning) => {
   console.warn(warning.name, warning.message);
 });
 
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -155,6 +155,11 @@ async function startServer() {
     
     // Setup routes
     setupRoutes(app);
+    
+    // Compatibility route for frontend URL duplication issue
+    // Import auth routes and mount them at the duplicated path
+    const authRoutes = require('./routes/auth').default;
+    app.use('/api/v1/api/v1/auth', authRoutes);
     
     // Error handling middleware (must be last)
     app.use(errorHandler);
