@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -16,14 +16,14 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState<AuthError | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
     // Prevent double execution in React StrictMode
-    if (isProcessing) return;
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
     
     const handleCallback = async () => {
-      setIsProcessing(true);
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const urlError = searchParams.get('error');
