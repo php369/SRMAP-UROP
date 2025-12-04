@@ -24,9 +24,21 @@ try {
     stdio: 'inherit',
     cwd: __dirname 
   });
+  
+  // Verify the compiled output is valid
+  const indexPath = path.join(distDir, 'index.js');
+  if (fs.existsSync(indexPath)) {
+    const content = fs.readFileSync(indexPath, 'utf8');
+    // Check for common syntax issues that would cause runtime errors
+    if (content.includes('credentials);') || content.includes('SyntaxError') || content.length < 1000) {
+      throw new Error('Compiled output appears to have syntax errors');
+    }
+    console.log('✅ Compiled output validation passed');
+  }
+  
   console.log('✅ TypeScript compilation successful!');
 } catch (error) {
-  console.log('⚠️ TypeScript compilation failed, creating minimal working server...');
+  console.log('⚠️ TypeScript compilation failed or produced invalid output, creating minimal working server...');
   
   // Create a fully functional minimal API server
   const minimalServer = `
@@ -42,8 +54,10 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:5173'],
-  credentials: true
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://srmap-urop-web.vercel.app', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
@@ -171,12 +185,24 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(\`🚀 SRM Portal API (Minimal Mode) running on port \${PORT}\`);
   console.log(\`📊 Health check: http://localhost:\${PORT}/health\`);
   console.log(\`📚 API docs: http://localhost:\${PORT}/docs\`);
   console.log(\`⚠️ Running in minimal mode - some features may be limited\`);
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+  });
 });
 `;
   
