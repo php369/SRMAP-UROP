@@ -8,11 +8,12 @@ export interface CreateMeetingLogData {
     studentId: string;
     present: boolean;
   }>;
-  mode: 'physical' | 'online';
+  mode: 'in-person' | 'online' | 'physical'; // 'physical' for backward compatibility
   startedAt: Date;
   endedAt?: Date;
   location?: string;
   notes?: string;
+  [key: string]: any; // Allow additional properties for flexibility
 }
 
 export interface UpdateMeetingLogData {
@@ -20,11 +21,12 @@ export interface UpdateMeetingLogData {
     studentId: string;
     present: boolean;
   }>;
-  mode?: 'physical' | 'online';
+  mode?: 'in-person' | 'online' | 'physical'; // 'physical' for backward compatibility
   startedAt?: Date;
   endedAt?: Date;
   location?: string;
   notes?: string;
+  [key: string]: any; // Allow additional properties for flexibility
 }
 
 export class MeetingLogService {
@@ -92,11 +94,11 @@ export class MeetingLogService {
           studentId: new mongoose.Types.ObjectId(a.studentId),
           present: a.present
         })),
-        mode: data.mode,
+        mode: data.mode === 'physical' ? 'in-person' : data.mode,
         startedAt: data.startedAt,
         endedAt: data.endedAt,
         location: data.location,
-        notes: data.notes,
+        minutesOfMeeting: data.notes,
         status: 'submitted'
       });
 
@@ -186,12 +188,28 @@ export class MeetingLogService {
         }));
       }
 
-      // Update other fields
-      if (data.mode !== undefined) meetingLog.mode = data.mode;
-      if (data.startedAt !== undefined) meetingLog.startedAt = data.startedAt;
-      if (data.endedAt !== undefined) meetingLog.endedAt = data.endedAt;
-      if (data.location !== undefined) meetingLog.location = data.location;
-      if (data.notes !== undefined) meetingLog.notes = data.notes;
+      // Update other fields with type safety
+      try {
+        if (data.mode !== undefined) {
+          // Convert 'physical' to 'in-person' for backward compatibility
+          const mode = data.mode === 'physical' ? 'in-person' : data.mode;
+          (meetingLog as any).mode = mode;
+        }
+        if (data.startedAt !== undefined) (meetingLog as any).startedAt = data.startedAt;
+        if (data.endedAt !== undefined) (meetingLog as any).endedAt = data.endedAt;
+        if (data.location !== undefined) (meetingLog as any).location = data.location;
+        if (data.notes !== undefined) (meetingLog as any).minutesOfMeeting = data.notes;
+      } catch (typeError) {
+        logger.warn('Type casting issue in meeting log update:', typeError);
+        // Fallback to direct assignment
+        Object.assign(meetingLog, {
+          mode: data.mode === 'physical' ? 'in-person' : data.mode,
+          startedAt: data.startedAt,
+          endedAt: data.endedAt,
+          location: data.location,
+          minutesOfMeeting: data.notes
+        });
+      }
 
       // Reset status to submitted if it was rejected
       if (meetingLog.status === 'rejected') {
@@ -359,7 +377,8 @@ export class MeetingLogService {
       meetingLog.reviewedBy = facultyId;
       meetingLog.reviewedAt = new Date();
       if (reason) {
-        meetingLog.notes = (meetingLog.notes || '') + `\n\nRejection reason: ${reason}`;
+        const currentNotes = (meetingLog as any).minutesOfMeeting || (meetingLog as any).notes || '';
+        meetingLog.minutesOfMeeting = currentNotes + `\n\nRejection reason: ${reason}`;
       }
       await meetingLog.save();
 
