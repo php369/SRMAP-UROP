@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @srm-portal/web build --noEmit false",
+  "buildCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile && pnpm --filter @srm-portal/web build:prod",
   "outputDirectory": "dist",
-  "installCommand": "npm install -g pnpm && pnpm install --frozen-lockfile",
+  "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
   "framework": "vite",
   "rewrites": [
     {
@@ -45,18 +45,5 @@
       ]
     }
   ],
-  "env": {
-    "VITE_API_URL": "@vite_api_url",
-    "VITE_API_BASE_URL": "@vite_api_base_url",
-    "VITE_GOOGLE_CLIENT_ID": "@vite_google_client_id",
-    "VITE_APP_NAME": "SRM-AP Project Portal",
-    "VITE_APP_VERSION": "1.0.0"
-  },
-  "build": {
-    "env": {
-      "VITE_API_URL": "@vite_api_url",
-      "VITE_API_BASE_URL": "@vite_api_base_url",
-      "VITE_GOOGLE_CLIENT_ID": "@vite_google_client_id"
-    }
-  }
+
 }
