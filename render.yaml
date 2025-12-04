@@ -2,11 +2,12 @@ services:
   - type: web
     name: srm-portal-api
     env: node
+    runtime: node
     region: singapore
     plan: free
     buildCommand: |
       npm install -g pnpm &&
-      pnpm install --frozen-lockfile &&
+      pnpm install --no-frozen-lockfile &&
       pnpm --filter @srm-portal/api build:deploy
     startCommand: cd apps/api && npm start
     healthCheckPath: /health

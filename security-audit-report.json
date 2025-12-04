@@ -1,0 +1,169 @@
+{
+  "timestamp": "2025-12-04T11:30:52.690Z",
+  "summary": {
+    "passed": 9,
+    "warnings": 9,
+    "failed": 6,
+    "info": 1
+  },
+  "results": {
+    "passed": [
+      {
+        "check": "JWT Configuration",
+        "message": "JWT secrets are properly configured",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.532Z"
+      },
+      {
+        "check": "CORS Configuration",
+        "message": "CORS is configured",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Rate Limiting",
+        "message": "Rate limiting is implemented",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "HTTPS",
+        "message": "HTTPS configuration detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Input Validation",
+        "message": "Input validation library detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.580Z"
+      },
+      {
+        "check": "Input Sanitization",
+        "message": "Input sanitization detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.580Z"
+      },
+      {
+        "check": "Database ORM",
+        "message": "Mongoose ORM detected for MongoDB",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.600Z"
+      },
+      {
+        "check": "SQL Injection Protection",
+        "message": "Parameterized queries/ORM usage detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.600Z"
+      },
+      {
+        "check": "File Upload Validation",
+        "message": "File validation detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.623Z"
+      }
+    ],
+    "warnings": [
+      {
+        "check": "Dependencies",
+        "message": "apps/web: Could not run npm audit",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:46.490Z"
+      },
+      {
+        "check": "Dependencies",
+        "message": "apps/api: Could not run npm audit",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.532Z"
+      },
+      {
+        "check": "Security Headers",
+        "message": "X-Content-Type-Options not found in configuration",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Security Headers",
+        "message": "X-Frame-Options not found in configuration",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Security Headers",
+        "message": "X-XSS-Protection not found in configuration",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Security Headers",
+        "message": "Referrer-Policy not found in configuration",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Security Headers",
+        "message": "Content-Security-Policy not found in configuration",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.556Z"
+      },
+      {
+        "check": "Security Anti-patterns",
+        "message": "innerHTML usage found in apps\\web\\src\\utils\\sanitize.ts",
+        "details": "Found 1 occurrence(s)",
+        "timestamp": "2025-12-04T11:30:52.668Z"
+      },
+      {
+        "check": "Security Documentation",
+        "message": "No security documentation found",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.684Z"
+      }
+    ],
+    "failed": [
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\web\\src\\utils\\socketReconnection.ts",
+        "details": "token: 'your-token'...",
+        "timestamp": "2025-12-04T11:30:36.440Z"
+      },
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\web\\src\\utils\\themeInitializer.ts",
+        "details": "KEY = '${STORAGE_KEYS.THEME}'...",
+        "timestamp": "2025-12-04T11:30:36.442Z"
+      },
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\api\\src\\config\\swaggerExamples.ts",
+        "details": "token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c...",
+        "timestamp": "2025-12-04T11:30:36.445Z"
+      },
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\api\\src\\config\\swaggerExamples.ts",
+        "details": "Token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c...",
+        "timestamp": "2025-12-04T11:30:36.445Z"
+      },
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\api\\src\\config\\swaggerExamples.ts",
+        "details": "Token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c...",
+        "timestamp": "2025-12-04T11:30:36.445Z"
+      },
+      {
+        "check": "Hardcoded Secrets",
+        "message": "Potential hardcoded secret found in apps\\api\\src\\scripts\\test-notifications.ts",
+        "details": "Key: 'testValue'...",
+        "timestamp": "2025-12-04T11:30:36.474Z"
+      }
+    ],
+    "info": [
+      {
+        "check": "File Upload",
+        "message": "File upload functionality detected",
+        "details": null,
+        "timestamp": "2025-12-04T11:30:52.623Z"
+      }
+    ]
+  }
+}
