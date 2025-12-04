@@ -11,24 +11,11 @@ const path = require('path');
 
 console.log('🚀 Starting Render build process...\n');
 
-// Step 1: Remove workspace indicators from parent
-console.log('📁 Step 1: Isolating from workspace...');
-const parentDir = path.join(__dirname, '../..');
-const workspaceFile = path.join(parentDir, 'pnpm-workspace.yaml');
-const rootPackageJson = path.join(parentDir, 'package.json');
-
-// Temporarily rename workspace files to prevent npm from detecting them
-if (fs.existsSync(workspaceFile)) {
-  console.log('   Hiding pnpm-workspace.yaml');
-  fs.renameSync(workspaceFile, workspaceFile + '.bak');
-}
-
-if (fs.existsSync(rootPackageJson)) {
-  console.log('   Hiding root package.json');
-  fs.renameSync(rootPackageJson, rootPackageJson + '.bak');
-}
-
-console.log('✅ Workspace isolation complete\n');
+// Step 1: Ensure we're in the right directory
+console.log('📁 Step 1: Verifying directory...');
+console.log(`   Current directory: ${__dirname}`);
+console.log(`   Package: ${require('./package.json').name}`);
+console.log('✅ Directory verified\n');
 
 // Step 2: Clean previous builds
 console.log('📁 Step 2: Cleaning previous builds...');
@@ -50,12 +37,35 @@ try {
 }
 console.log('✅ Clean complete\n');
 
-// Step 3: Install dependencies
+// Step 3: Install dependencies with explicit npm config
 console.log('📦 Step 3: Installing dependencies...');
+
+// Set npm config to ignore workspaces
+const npmConfig = {
+  'legacy-peer-deps': 'true',
+  'workspaces': 'false',
+  'include-workspace-root': 'false'
+};
+
+console.log('   Configuring npm...');
+Object.entries(npmConfig).forEach(([key, value]) => {
+  try {
+    execSync(`npm config set ${key} ${value}`, { cwd: __dirname });
+  } catch (e) {
+    // Ignore errors for unsupported config options
+  }
+});
+
 try {
-  execSync('npm install --legacy-peer-deps --no-package-lock', {
+  console.log('   Installing dependencies...');
+  execSync('npm install --legacy-peer-deps', {
     stdio: 'inherit',
-    cwd: __dirname
+    cwd: __dirname,
+    env: {
+      ...process.env,
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true',
+      NPM_CONFIG_WORKSPACES: 'false'
+    }
   });
   console.log('✅ Dependencies installed\n');
 } catch (error) {
