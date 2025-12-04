@@ -16,9 +16,14 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState<AuthError | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
+    // Prevent double execution in React StrictMode
+    if (isProcessing) return;
+    
     const handleCallback = async () => {
+      setIsProcessing(true);
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const urlError = searchParams.get('error');
