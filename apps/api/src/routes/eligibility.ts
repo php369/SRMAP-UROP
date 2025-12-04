@@ -100,8 +100,7 @@ router.get('/', authenticate, authorize('admin', 'coordinator'), async (req, res
         const eligibilityList = await getEligibilityList({
             projectType: projectType as any,
             year: year ? parseInt(year as string) : undefined,
-            semester: semester ? parseInt(semester as string) : undefined,
-            isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined
+            semester: semester ? parseInt(semester as string) : undefined
         });
 
         res.json({

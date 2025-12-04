@@ -6,6 +6,7 @@ import { Project } from '../models/Project';
 import { Application } from '../models/Application';
 import { Group } from '../models/Group';
 import { User } from '../models/User';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -84,7 +85,7 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
       assessmentType,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      createdBy: req.user!._id
+      createdBy: new mongoose.Types.ObjectId(req.user!.id)
     });
 
     await window.save();

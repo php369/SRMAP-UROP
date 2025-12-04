@@ -17,6 +17,11 @@ export interface IGroup extends Document {
   assignedProjectId?: mongoose.Types.ObjectId;
   assignedFacultyId?: mongoose.Types.ObjectId;
   externalEvaluatorId?: mongoose.Types.ObjectId;
+  // Aliases for compatibility
+  projectId?: mongoose.Types.ObjectId;
+  facultyId?: mongoose.Types.ObjectId;
+  code?: string;
+  memberIds?: mongoose.Types.ObjectId[];
   meetUrl?: string;
   calendarEventId?: string;
   createdAt: Date;
@@ -141,6 +146,23 @@ GroupSchema.pre('save', function (next) {
   } else {
     next();
   }
+});
+
+// Virtual properties for compatibility
+GroupSchema.virtual('projectId').get(function() {
+  return this.assignedProjectId;
+});
+
+GroupSchema.virtual('facultyId').get(function() {
+  return this.assignedFacultyId;
+});
+
+GroupSchema.virtual('code').get(function() {
+  return this.groupCode;
+});
+
+GroupSchema.virtual('memberIds').get(function() {
+  return this.members;
 });
 
 // Unique index on groupCode (already defined in schema)
