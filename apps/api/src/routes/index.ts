@@ -212,9 +212,5 @@ export function setupRoutes(app: Express): void {
     });
   });
 
-  // Compatibility route for frontend URL duplication issue
-  // Handle /api/v1/api/v1/auth/google -> redirect to auth routes
-  app.use(`${API_PREFIX}${API_PREFIX}/auth`, authRoutes);
-
   logger.info('✅ Routes configured successfully');
 }
