@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IGroup extends Document {
   _id: mongoose.Types.ObjectId;
   groupId: string; // Unique identifier
+  groupNumber?: number; // Sequential group number assigned when approved
   groupCode: string; // 6-char alphanumeric
   groupName?: string;
   description?: string; // Group description
@@ -28,6 +29,11 @@ const GroupSchema = new Schema<IGroup>({
     required: true,
     unique: true,
     trim: true
+  },
+  groupNumber: {
+    type: Number,
+    sparse: true, // Allow multiple null values but unique non-null values
+    unique: true
   },
   groupCode: {
     type: String,

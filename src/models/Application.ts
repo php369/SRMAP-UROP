@@ -5,7 +5,7 @@ export interface IApplication extends Document {
   studentId?: mongoose.Types.ObjectId; // For solo applications
   groupId?: mongoose.Types.ObjectId; // For group applications
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  projectPreferences: mongoose.Types.ObjectId[]; // Up to 3 projects in order
+  projectId: mongoose.Types.ObjectId; // Single project per application
   department: string;
   stream: string;
   specialization?: string; // Required if semester >= 6
@@ -14,8 +14,6 @@ export interface IApplication extends Document {
   status: 'pending' | 'approved' | 'rejected' | 'released';
   reviewedBy?: mongoose.Types.ObjectId; // Faculty who reviewed
   reviewedAt?: Date;
-  selectedProjectId?: mongoose.Types.ObjectId;
-  assignedProject?: mongoose.Types.ObjectId;
   isFrozen: boolean;
   submittedAt?: Date;
   notes?: string;
@@ -38,11 +36,11 @@ const ApplicationSchema = new Schema<IApplication>({
     enum: ['IDP', 'UROP', 'CAPSTONE'],
     required: true
   },
-  projectPreferences: [{
+  projectId: {
     type: Schema.Types.ObjectId,
     ref: 'Project',
     required: true
-  }],
+  },
   department: {
     type: String,
     required: true,
@@ -134,14 +132,9 @@ ApplicationSchema.pre('save', function (next) {
   next();
 });
 
-// Validation for project preferences count (1-3 projects)
-ApplicationSchema.pre('save', function (next) {
-  if (this.projectPreferences.length < 1 || this.projectPreferences.length > 3) {
-    next(new Error('Application must have between 1 and 3 project preferences'));
-  } else {
-    next();
-  }
-});
+// Indexes for performance (not unique to allow reapplication after rejection)
+ApplicationSchema.index({ studentId: 1, projectId: 1, status: 1 });
+ApplicationSchema.index({ groupId: 1, projectId: 1, status: 1 });
 
 // Set reviewedAt when status changes to approved/rejected
 ApplicationSchema.pre('save', function (next) {

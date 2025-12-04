@@ -892,4 +892,47 @@ router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
   }
 });
 
+/**
+ * GET /api/groups/faculty
+ * Get groups assigned to faculty's projects
+ * Accessible by: faculty, coordinator
+ */
+router.get('/faculty', authenticate, authorize('faculty', 'coordinator'), async (req, res) => {
+  try {
+    const { Group } = await import('../models/Group');
+    const { Project } = await import('../models/Project');
+
+    const facultyId = new mongoose.Types.ObjectId(req.user!.id);
+
+    // Get faculty's projects
+    const projects = await Project.find({ facultyId, status: 'assigned' }).select('_id');
+    const projectIds = projects.map(p => p._id);
+
+    // Get groups assigned to these projects
+    const groups = await Group.find({
+      assignedProjectId: { $in: projectIds },
+      status: 'approved'
+    })
+      .populate('assignedProjectId', 'title')
+      .populate('members', 'name email studentId')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: groups,
+      count: groups.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching faculty groups:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_GROUPS_FAILED',
+        message: 'Failed to fetch groups',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
 export default router;

@@ -14,6 +14,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "seed": "tsx src/scripts/seed.ts",
     "clear-data": "tsx src/scripts/clear-data.ts",
+    "clear-projects": "tsx src/scripts/clearProjectsAndApplications.ts",
     "check-data": "tsx src/scripts/check-data.ts",
     "clean": "rm -rf dist"
   },

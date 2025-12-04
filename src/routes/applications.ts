@@ -2,9 +2,9 @@ import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { requireApplicationWindow } from '../middleware/windowEnforcement';
 import {
-  createApplication,
+  createApplications,
   getApplicationById,
-  getUserApplication,
+  getUserApplications,
   getFacultyApplications,
   acceptApplication,
   rejectApplication,
@@ -101,7 +101,7 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
       groupId = group._id;
     }
 
-    const application = await createApplication({
+    const applications = await createApplications({
       studentId: isGroupApplication ? undefined : userId,
       groupId,
       projectType,
@@ -115,8 +115,8 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: application,
-      message: 'Application submitted successfully',
+      data: applications,
+      message: `${applications.length} application(s) submitted successfully`,
     });
   } catch (error: any) {
     logger.error('Error creating application:', error);
@@ -180,14 +180,14 @@ router.get('/my-application', authenticate, authorize('student'), async (req, re
     // Check if user is in a group
     const group = await getUserGroup(userId);
 
-    const application = await getUserApplication(
+    const applications = await getUserApplications(
       group ? undefined : userId,
       group ? group._id : undefined
     );
 
     res.json({
       success: true,
-      data: application,
+      data: applications,
     });
   } catch (error) {
     logger.error('Error getting user application:', error);
