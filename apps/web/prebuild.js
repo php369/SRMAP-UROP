@@ -21,4 +21,35 @@ if (fs.existsSync(workspaceYaml)) {
   console.log('✅ Removed pnpm-workspace.yaml');
 }
 
+// Remove pnpm-lock.yaml to prevent pnpm detection
+const pnpmLock = path.join(__dirname, '../../pnpm-lock.yaml');
+if (fs.existsSync(pnpmLock)) {
+  fs.unlinkSync(pnpmLock);
+  console.log('✅ Removed pnpm-lock.yaml');
+}
+
+// Ensure local package.json has no workspace dependencies
+const localPkg = path.join(__dirname, 'package.json');
+if (fs.existsSync(localPkg)) {
+  const pkg = JSON.parse(fs.readFileSync(localPkg, 'utf8'));
+  let modified = false;
+  
+  ['dependencies', 'devDependencies'].forEach(depType => {
+    if (pkg[depType]) {
+      Object.keys(pkg[depType]).forEach(dep => {
+        if (pkg[depType][dep].startsWith('workspace:')) {
+          console.log(`⚠️  Found workspace dependency: ${dep}`);
+          delete pkg[depType][dep];
+          modified = true;
+        }
+      });
+    }
+  });
+  
+  if (modified) {
+    fs.writeFileSync(localPkg, JSON.stringify(pkg, null, 2));
+    console.log('✅ Cleaned workspace dependencies from package.json');
+  }
+}
+
 console.log('✅ Ready for deployment!');
