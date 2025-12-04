@@ -63,4 +63,27 @@ if (fs.existsSync(tsconfig)) {
   }
 }
 
+// Fix tailwind.config.js to remove workspace imports
+const tailwindConfig = path.join(__dirname, 'tailwind.config.js');
+if (fs.existsSync(tailwindConfig)) {
+  let content = fs.readFileSync(tailwindConfig, 'utf8');
+  if (content.includes('@srm-portal/config')) {
+    // Replace the workspace import with a standalone config
+    content = `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}'
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+`;
+    fs.writeFileSync(tailwindConfig, content);
+    console.log('✅ Removed workspace imports from tailwind.config.js');
+  }
+}
+
 console.log('✅ Ready for deployment!');
