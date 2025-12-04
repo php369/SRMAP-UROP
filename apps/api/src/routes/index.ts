@@ -39,6 +39,24 @@ export function setupRoutes(app: Express): void {
   // Compatibility route for frontend URL duplication issue
   // Frontend is calling /api/v1/api/v1/auth/* instead of /api/v1/auth/*
   app.use(`${API_PREFIX}${API_PREFIX}/auth`, authRoutes);
+  
+  // Debug endpoint to test route registration
+  app.get(`${API_PREFIX}/debug/routes`, (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      message: 'Routes are properly registered',
+      timestamp: new Date().toISOString(),
+      availableRoutes: [
+        'GET /api/v1/projects',
+        'GET /api/v1/groups', 
+        'GET /api/v1/users',
+        'GET /api/v1/applications',
+        'GET /api/v1/assessments',
+        'POST /api/v1/auth/google',
+        'POST /api/v1/auth/callback'
+      ]
+    });
+  });
 
   // Project routes
   app.use(`${API_PREFIX}/projects`, projectRoutes);

@@ -23,6 +23,93 @@ const updateProjectSchema = createProjectSchema.partial();
 
 /**
  * @swagger
+ * /api/v1/projects:
+ *   get:
+ *     summary: Get projects based on user role
+ *     description: Returns projects accessible to the authenticated user based on their role
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, published, frozen, assigned]
+ *         description: Filter by project status
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [IDP, UROP, CAPSTONE]
+ *         description: Filter by project type
+ *     responses:
+ *       200:
+ *         description: Projects retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Server error
+ */
+router.get('/', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { status, type } = req.query;
+    const userRole = req.user!.role;
+    const userId = req.user!.id;
+
+    let query: any = {};
+
+    // Build query based on user role
+    if (userRole === 'faculty' || userRole === 'coordinator') {
+      // Faculty can see their own projects
+      query.facultyId = new mongoose.Types.ObjectId(userId);
+    } else if (userRole === 'student') {
+      // Students can see published projects
+      query.status = 'published';
+    } else if (userRole === 'admin') {
+      // Admin can see all projects
+      // No additional query restrictions
+    }
+
+    // Apply filters
+    if (status && typeof status === 'string') {
+      query.status = status;
+    }
+
+    if (type && typeof type === 'string') {
+      query.type = type;
+    }
+
+    const projects = await Project.find(query)
+      .populate('facultyId', 'name email')
+      .sort({ updatedAt: -1 });
+
+    logger.info(`Retrieved ${projects.length} projects for ${userRole} ${req.user!.email}`);
+
+    res.json({
+      success: true,
+      data: {
+        projects,
+        count: projects.length,
+        userRole,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Error retrieving projects:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'PROJECTS_FETCH_ERROR',
+        message: 'Failed to retrieve projects',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/v1/projects/public:
  *   get:
  *     summary: Get published projects for public viewing
