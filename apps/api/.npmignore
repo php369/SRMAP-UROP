@@ -1,0 +1,16 @@
+# Ignore parent directory files
+../../*
+!../../node_modules
+
+# Test files
+**/*.test.ts
+**/*.test.js
+**/__tests__/**
+
+# Development files
+.env.development
+.env.local
+
+# Documentation
+*.md
+!README.md
