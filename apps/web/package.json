@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node prebuild.js",
+    "prebuild": "node prebuild.cjs",
     "build": "tsc --project tsconfig.build.json && vite build",
     "build:prod": "vite build",
     "preview": "vite preview",
