@@ -8,6 +8,66 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 /**
+ * GET /api/users
+ * Get user information based on role and permissions
+ */
+router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) => {
+    const userRole = req.user!.role;
+    const userId = req.user!.id;
+
+    try {
+        if (userRole === 'admin' || userRole === 'coordinator') {
+            // Admin and coordinators can see all users
+            const users = await User.find({})
+                .select('-googleId -__v')
+                .sort({ createdAt: -1 });
+
+            res.json({
+                success: true,
+                data: {
+                    users,
+                    count: users.length,
+                    userRole,
+                },
+            });
+        } else {
+            // Regular users can only see their own information
+            const user = await User.findById(userId)
+                .select('-googleId -__v');
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        code: 'USER_NOT_FOUND',
+                        message: 'User not found',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    user,
+                    userRole,
+                },
+            });
+        }
+    } catch (error) {
+        logger.error('Error retrieving users:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'USERS_FETCH_ERROR',
+                message: 'Failed to retrieve user information',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+}));
+
+/**
  * GET /api/users/eligibility
  * Get current user's eligibility information
  */
