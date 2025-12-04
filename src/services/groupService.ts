@@ -212,12 +212,12 @@ export async function joinGroup(
       const { createNotification } = await import('./notificationService');
       const user = await User.findById(userId);
       await createNotification({
-        userId: group.leaderId,
-        type: 'group_member_joined',
+        userId: group.leaderId.toString(),
+        role: 'student',
+        type: 'SYSTEM',
         title: 'New Member Joined',
         message: `${user?.name || 'A student'} has joined your group ${group.groupCode}`,
-        relatedId: group._id,
-        relatedModel: 'Group'
+        targetGroupId: group._id.toString()
       });
     } catch (error) {
       logger.error('Error creating join notification:', error);

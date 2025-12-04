@@ -212,7 +212,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
         googleId: googleUser.googleId,
         name: googleUser.name,
         email: googleUser.email,
-        avatarUrl: googleUser.avatarUrl,
+        avatar: googleUser.avatarUrl,
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
         profile: {
           department: authResult.facultyInfo?.dept,
@@ -241,7 +241,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
     } else {
       // Update existing user info and role
       user.name = googleUser.name;
-      user.avatarUrl = googleUser.avatarUrl;
+      user.avatar = googleUser.avatarUrl;
       user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
       user.googleId = googleUser.googleId; // Update Google ID if it was missing
       
@@ -276,7 +276,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: authResult.role, // Return the actual role including coordinator
-          avatarUrl: user.avatarUrl,
+          avatarUrl: user.avatar,
           profile: user.profile,
           preferences: user.preferences,
           eligibility: authResult.eligibility ? {
@@ -459,7 +459,7 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: authResult.role, // Use current role from authorization check
-          avatarUrl: user.avatarUrl,
+          avatarUrl: user.avatar,
           profile: user.profile,
           preferences: user.preferences,
           eligibility: authResult.eligibility ? {

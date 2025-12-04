@@ -13,7 +13,7 @@ export interface IProject extends Document {
   facultyName: string; // Denormalized for performance
   facultyIdNumber: string; // Faculty ID for display
   capacity?: number;
-  status: 'draft' | 'published' | 'frozen' | 'assigned';
+  status: 'draft' | 'published' | 'frozen' | 'assigned' | 'pending' | 'archived';
   assignedTo?: mongoose.Types.ObjectId; // Group or Student ID
   isFrozen: boolean;
   semester: string; // e.g., "Fall 2025"
@@ -93,7 +93,7 @@ const ProjectSchema = new Schema<IProject>({
   },
   status: {
     type: String,
-    enum: ['draft', 'published', 'frozen', 'assigned'],
+    enum: ['draft', 'published', 'frozen', 'assigned', 'pending', 'archived'],
     required: true,
     default: 'draft'
   },
