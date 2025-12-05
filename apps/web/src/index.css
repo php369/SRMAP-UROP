@@ -18,8 +18,8 @@
   --color-background: var(--satin-linen, #e6e5d4);
   --color-surface: var(--chino, #cbc6a4);
   --color-glass: rgba(203, 198, 164, 0.7);
-  --color-text: var(--lisbon-brown, #494623);
-  --color-textSecondary: var(--crocodile, #787659);
+  --color-text: #2d2b1a;
+  --color-textSecondary: #4a4724;
   --color-border: var(--green-smoke, #afa76f);
   --color-success: var(--sycamore, #928b42);
   --color-warning: var(--tussock, #ca9a4a);
