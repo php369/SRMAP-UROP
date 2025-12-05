@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { formatDisplayName } from '../../utils/formatName';
 
 interface UserProfile {
   _id: string;
@@ -671,7 +672,9 @@ export function ProfilePage() {
               </button>
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-text mb-2">{profile.name}</h2>
+              <h2 className="text-2xl font-bold text-text mb-2">
+                {formatDisplayName(profile.name, profile.email)}
+              </h2>
               <div className="flex items-center gap-3 flex-wrap">
                 {getRoleBadge(profile.role, profile.isCoordinator, profile.isExternalEvaluator)}
                 {profile.studentId && (
