@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "SRM University-AP Project Management Portal",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "pnpm run --parallel dev",
     "build": "pnpm run --recursive build",
