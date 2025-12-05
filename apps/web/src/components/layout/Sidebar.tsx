@@ -6,7 +6,6 @@ import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
 import { GlassCard } from '../ui/GlassCard';
 import { Badge } from '../ui/Badge';
-import { SessionStatus } from '../auth/SessionStatus';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 
 // Icon components for navigation
@@ -411,7 +410,6 @@ export function Sidebar() {
                   {user?.role || 'user'}
                 </Badge>
               </div>
-              <SessionStatus className="mt-1" />
             </div>
           )}
         </div>
