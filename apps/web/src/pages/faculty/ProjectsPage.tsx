@@ -42,7 +42,7 @@ export function FacultyProjectsPage() {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/projects/faculty`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -71,9 +71,10 @@ export function FacultyProjectsPage() {
 
     setLoading(true);
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
       const url = editingProject
-        ? `http://localhost:3001/api/v1/projects/${editingProject._id}`
-        : 'http://localhost:3001/api/v1/projects';
+        ? `${baseUrl}/api/v1/projects/${editingProject._id}`
+        : `${baseUrl}/api/v1/projects`;
 
       const response = await fetch(url, {
         method: editingProject ? 'PUT' : 'POST',
@@ -124,7 +125,7 @@ export function FacultyProjectsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/projects/${projectId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/${projectId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
