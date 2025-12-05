@@ -581,15 +581,16 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-text">Profile</h1>
-          <p className="text-textSecondary mt-1">
-            Manage your personal information and preferences
-          </p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="space-y-6 max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+            <p className="text-gray-600 mt-1">
+              Manage your personal information and preferences
+            </p>
+          </div>
         <div className="flex gap-2">
           {!editing ? (
             <>
@@ -724,8 +725,8 @@ export function ProfilePage() {
         {/* Profile Information */}
         <div className="p-6 space-y-6">
           {/* Bio Section */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="pt-2">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
               <User className="w-5 h-5 text-primary" />
               About Me
             </h3>
@@ -760,8 +761,8 @@ export function ProfilePage() {
           )}
 
           {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
               <Mail className="w-5 h-5 text-primary" />
               Contact Information
             </h3>
@@ -825,8 +826,8 @@ export function ProfilePage() {
           </div>
 
           {/* Social Links */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
               <Globe className="w-5 h-5 text-primary" />
               Social Links
             </h3>
@@ -1019,8 +1020,8 @@ export function ProfilePage() {
           )}
 
           {/* Preferences */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
               <Settings className="w-5 h-5 text-primary" />
               Preferences
             </h3>
@@ -1083,8 +1084,8 @@ export function ProfilePage() {
           </div>
 
           {/* Account Information */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
               <CheckCircle className="w-5 h-5 text-primary" />
               Account Information
             </h3>
@@ -1185,6 +1186,7 @@ export function ProfilePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
