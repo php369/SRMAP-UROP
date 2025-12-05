@@ -55,7 +55,7 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/faculty/${user?._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/faculty/${user?.id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -120,61 +120,44 @@ export function FacultyAssessmentPage() {
         }
       });
       const result = await response.json();
-      console.log('Meeting logs response:', result);
 
       if (result.success && result.data) {
-        // Get unique project IDs
-        const projectIds = [...new Set(result.data.map((log: any) => log.projectId?._id || log.projectId).filter(Boolean))];
-
-        // Fetch project details
-        const projectDetailsMap: Record<string, any> = {};
-        console.log('Fetching details for projects:', projectIds);
-        await Promise.all(
-          projectIds.map(async (projectId) => {
-            try {
-              const projectResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/${projectId}`, {
-                headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-                }
-              });
-              const projectResult = await projectResponse.json();
-              console.log(`Project ${projectId} fetch result:`, projectResult);
-              if (projectResult.success && projectResult.data) {
-                projectDetailsMap[projectId as string] = projectResult.data;
-              }
-            } catch (err) {
-              console.error('Failed to fetch project:', projectId, err);
-            }
-          })
-        );
-        console.log('Project details map:', projectDetailsMap);
-
-        // Group logs by project ID and attach project details
+        // Group logs by project ID - projectId should already be populated by backend
         const logsByProject: Record<string, any[]> = {};
-        result.data.forEach((log: any) => {
-          const projectId = log.projectId?._id || log.projectId;
-          console.log('Processing log:', { logId: log._id, projectId, hasMinutes: !!(log.minutesOfMeeting || log.mom) });
 
-          if (projectId) {
+        result.data.forEach((log: any) => {
+          // Handle both populated and non-populated projectId
+          const projectId = typeof log.projectId === 'object' && log.projectId !== null
+            ? log.projectId._id
+            : log.projectId;
+
+          const projectTitle = typeof log.projectId === 'object' && log.projectId !== null
+            ? log.projectId.title
+            : 'Unknown Project';
+
+          // Only include logs with minutes and approved/completed status
+          if ((log.minutesOfMeeting || log.mom) && (log.status === 'approved' || log.status === 'completed')) {
             if (!logsByProject[projectId]) {
               logsByProject[projectId] = [];
             }
-            // Only include logs with minutes and approved/completed status
-            if ((log.minutesOfMeeting || log.mom) && (log.status === 'approved' || log.status === 'completed')) {
-              // Attach project details to the log
-              const enrichedLog = {
-                ...log,
-                projectId: projectDetailsMap[projectId] || { _id: projectId, title: projectId }
-              };
-              logsByProject[projectId].push(enrichedLog);
-            }
+
+            // Ensure projectId is properly structured
+            const enrichedLog = {
+              ...log,
+              projectId: typeof log.projectId === 'object' && log.projectId !== null
+                ? log.projectId
+                : { _id: projectId, title: projectTitle }
+            };
+
+            logsByProject[projectId].push(enrichedLog);
           }
         });
-        console.log('Grouped logs by project:', logsByProject);
+
         setMeetingLogs(logsByProject);
       }
     } catch (error) {
       console.error('Failed to fetch meeting logs:', error);
+      toast.error('Failed to fetch meeting logs');
     }
   };
 
@@ -275,13 +258,8 @@ export function FacultyAssessmentPage() {
                       const isExpanded = selectedProjectLogs === logs;
                       const firstLog = logs[0];
 
-                      // Get project title - check enriched data first, then use the key
-                      let projectTitle = projectIdKey; // Default to the map key (project ID)
-
-                      // Check if the log has enriched project data
-                      if (firstLog?.projectId && typeof firstLog.projectId === 'object' && firstLog.projectId !== null) {
-                        projectTitle = firstLog.projectId.title || firstLog.projectId.projectId || projectIdKey;
-                      }
+                      // Get project title from the populated projectId
+                      const projectTitle = firstLog?.projectId?.title || 'Unknown Project';
 
                       // Calculate total grade
                       const totalGrade = logs.reduce((sum, log) => sum + (log.grade || 0), 0);
