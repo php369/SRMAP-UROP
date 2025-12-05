@@ -132,7 +132,15 @@ export const authorize = (...allowedRoles: Array<'student' | 'faculty' | 'coordi
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    // Check if user's role is in allowed roles
+    let hasAccess = allowedRoles.includes(req.user.role);
+
+    // If coordinator is in allowed roles and user has isCoordinator flag, grant access
+    if (!hasAccess && allowedRoles.includes('coordinator') && req.user.isCoordinator) {
+      hasAccess = true;
+    }
+
+    if (!hasAccess) {
       logger.warn(`Unauthorized access attempt by ${req.user.email} (${req.user.role}) to ${req.path}`);
 
       res.status(403).json({
