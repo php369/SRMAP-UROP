@@ -17,8 +17,8 @@
   /* These variables provide semantic meaning and can be overridden for themes */
   --color-bg: var(--satin-linen);
   --color-surface: var(--coral-reef);
-  --color-text-primary: var(--woodland);
-  --color-text-secondary: var(--flax-smoke);
+  --color-text-primary: #2d2b1a;
+  --color-text-secondary: var(--woodland);
   --color-accent: var(--tussock);
   --color-highlight: var(--sycamore);
   --color-border: var(--green-smoke);
