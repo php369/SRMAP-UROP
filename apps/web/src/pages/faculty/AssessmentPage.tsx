@@ -55,7 +55,7 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/submissions/faculty/${user?._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/faculty/${user?._id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -81,7 +81,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/meetings/logs/${logId}/grade`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/meetings/logs/${logId}/grade`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export function FacultyAssessmentPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/v1/meetings/faculty', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/meetings/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -132,7 +132,7 @@ export function FacultyAssessmentPage() {
         await Promise.all(
           projectIds.map(async (projectId) => {
             try {
-              const projectResponse = await fetch(`http://localhost:3001/api/v1/projects/${projectId}`, {
+              const projectResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/${projectId}`, {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
                 }
@@ -188,7 +188,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/submissions/${selectedSubmission._id}/grade`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/${selectedSubmission._id}/grade`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
