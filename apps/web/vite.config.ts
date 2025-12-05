@@ -54,7 +54,6 @@ export default defineConfig({
           'router-vendor': ['react-router-dom'],
           'query-vendor': ['@tanstack/react-query'],
           'ui-vendor': ['framer-motion', 'lucide-react'],
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
           
           // Utility chunks
           'utils': ['clsx', 'tailwind-merge'],
@@ -123,9 +122,6 @@ export default defineConfig({
       'react-router-dom',
       '@tanstack/react-query',
       'framer-motion',
-      'three',
-      '@react-three/fiber',
-      '@react-three/drei',
     ],
     exclude: [
       // Exclude large dependencies that should be loaded dynamically
