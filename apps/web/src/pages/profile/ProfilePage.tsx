@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   User, Mail, Building2, GraduationCap, Calendar, BookOpen, Shield,
   Edit2, Save, X, Camera, CheckCircle, AlertCircle, Loader, Award,
   TrendingUp, Target, Zap, Clock, Activity, Bell, Eye, EyeOff,
@@ -129,7 +129,7 @@ const ProfileCompletion = ({ profile }: { profile: UserProfile }) => {
 
   const completion = calculateCompletion();
   const missingFields = [];
-  
+
   if (!profile.avatar) missingFields.push('Avatar');
   if (!profile.profile.department) missingFields.push('Department');
   if (!profile.profile.bio) missingFields.push('Bio');
@@ -149,7 +149,7 @@ const ProfileCompletion = ({ profile }: { profile: UserProfile }) => {
         </h3>
         <span className="text-2xl font-bold text-primary">{completion}%</span>
       </div>
-      
+
       <div className="w-full bg-background rounded-full h-3 mb-4 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
@@ -254,13 +254,13 @@ const AchievementsBadges = ({ achievements }: { achievements: UserProfile['achie
 };
 
 // Skills Component
-const SkillsSection = ({ 
-  skills, 
-  editing, 
-  onSkillsChange 
-}: { 
-  skills: string[]; 
-  editing: boolean; 
+const SkillsSection = ({
+  skills,
+  editing,
+  onSkillsChange
+}: {
+  skills: string[];
+  editing: boolean;
   onSkillsChange: (skills: string[]) => void;
 }) => {
   const [newSkill, setNewSkill] = useState('');
@@ -309,7 +309,7 @@ const SkillsSection = ({
           <p className="text-textSecondary text-sm">No skills added yet</p>
         )}
       </div>
-      
+
       {editing && (
         <div className="relative">
           <div className="flex gap-2">
@@ -331,7 +331,7 @@ const SkillsSection = ({
               Add
             </button>
           </div>
-          
+
           {showSuggestions && filteredSuggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
               {filteredSuggestions.map((suggestion) => (
@@ -360,6 +360,8 @@ export function ProfilePage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
 
   const [editForm, setEditForm] = useState({
     department: '',
@@ -477,7 +479,7 @@ export function ProfilePage() {
         return false;
       }
     }
-    
+
     // Validate URLs
     const urlFields = ['github', 'linkedin', 'portfolio'];
     for (const field of urlFields) {
@@ -535,7 +537,7 @@ export function ProfilePage() {
   const handleAvatarChange = async (avatar: string) => {
     try {
       const response = await api.put('/users/avatar', { avatar });
-      
+
       if (response.success) {
         toast.success('Avatar updated successfully');
         setShowAvatarPicker(false);
@@ -545,6 +547,32 @@ export function ProfilePage() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update avatar');
+    }
+  };
+
+  const handleNameChange = async () => {
+    if (!newName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+
+    if (newName.trim().length < 2) {
+      toast.error('Name must be at least 2 characters');
+      return;
+    }
+
+    try {
+      const response = await api.put('/users/name', { name: newName.trim() });
+
+      if (response.success) {
+        toast.success('Name updated successfully');
+        setEditingName(false);
+        fetchProfile();
+      } else {
+        toast.error(response.error?.message || 'Failed to update name');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update name');
     }
   };
 
@@ -591,601 +619,640 @@ export function ProfilePage() {
               Manage your personal information and preferences
             </p>
           </div>
-        <div className="flex gap-2">
-          {!editing ? (
-            <>
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit Profile
-              </button>
-              <button
-                onClick={() => toast.info('Export feature coming soon')}
-                className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
-                title="Export profile data"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => toast.info('Share feature coming soon')}
-                className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
-                title="Share profile"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleCancel}
-                className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {saving ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Save Changes
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Profile Completion */}
-      {profile.role === 'student' && <ProfileCompletion profile={profile} />}
-
-      {/* Activity Statistics */}
-      {profile.stats && <ActivityStats stats={profile.stats} />}
-
-      {/* Achievements */}
-      {profile.achievements && <AchievementsBadges achievements={profile.achievements} />}
-
-      {/* Main Profile Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-surface rounded-lg border border-border overflow-hidden"
-      >
-        {/* Header Section with Avatar */}
-        <div className="bg-gradient-to-r from-primary/20 to-primary/10 p-8">
-          <div className="flex items-center gap-6 flex-wrap">
-            <div className="relative">
-              <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center text-5xl border-4 border-white/20">
-                {profile.avatar || '👤'}
-              </div>
-              <button
-                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-lg"
-                title="Change avatar"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-text mb-2">
-                {formatDisplayName(profile.name, profile.email)}
-              </h2>
-              <div className="flex items-center gap-3 flex-wrap">
-                {getRoleBadge(profile.role, profile.isCoordinator, profile.isExternalEvaluator)}
-                {profile.studentId && (
-                  <span className="px-3 py-1 bg-surface/50 text-textSecondary rounded-full text-sm font-mono">
-                    {profile.studentId}
-                  </span>
-                )}
-                {profile.facultyId && (
-                  <span className="px-3 py-1 bg-surface/50 text-textSecondary rounded-full text-sm font-mono">
-                    {profile.facultyId}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Avatar Picker */}
-        <AnimatePresence>
-          {showAvatarPicker && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="border-b border-border p-6 bg-surface/50"
-            >
-              <h3 className="text-lg font-semibold mb-4">Choose Your Avatar</h3>
-              <div className="grid grid-cols-6 md:grid-cols-12 gap-3">
-                {AVATAR_OPTIONS.map((avatar, index) => (
-                  <motion.button
-                    key={index}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleAvatarChange(avatar)}
-                    className={`w-12 h-12 text-3xl rounded-lg hover:bg-primary/20 transition-colors flex items-center justify-center ${
-                      profile.avatar === avatar ? 'bg-primary/30 ring-2 ring-primary' : 'bg-surface'
-                    }`}
-                  >
-                    {avatar}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Profile Information */}
-        <div className="p-6 space-y-6">
-          {/* Bio Section */}
-          <div className="pt-2">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-              <User className="w-5 h-5 text-primary" />
-              About Me
-            </h3>
-            {editing ? (
-              <textarea
-                value={editForm.bio}
-                onChange={(e) => handleFormChange({ bio: e.target.value })}
-                placeholder="Tell us about yourself, your interests, and goals..."
-                rows={4}
-                maxLength={500}
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              />
+          <div className="flex gap-2">
+            {!editing ? (
+              <>
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => toast.info('Export feature coming soon')}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
+                  title="Export profile data"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => toast.info('Share feature coming soon')}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
+                  title="Share profile"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </>
             ) : (
-              <p className="text-textSecondary">
-                {profile.profile.bio || 'No bio added yet. Click Edit Profile to add one.'}
-              </p>
-            )}
-            {editing && (
-              <p className="text-xs text-textSecondary mt-1">
-                {editForm.bio.length}/500 characters
-              </p>
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save Changes
+                </button>
+              </>
             )}
           </div>
+        </div>
 
-          {/* Skills Section */}
-          {profile.role === 'student' && (
-            <SkillsSection
-              skills={editForm.skills}
-              editing={editing}
-              onSkillsChange={(skills) => handleFormChange({ skills })}
-            />
-          )}
+        {/* Profile Completion */}
+        {profile.role === 'student' && <ProfileCompletion profile={profile} />}
 
-          {/* Basic Information */}
-          <div className="border-t border-border pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-              <Mail className="w-5 h-5 text-primary" />
-              Contact Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Mail className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary">Email</p>
-                  <p className="text-text font-medium">{profile.email}</p>
+        {/* Activity Statistics */}
+        {profile.stats && <ActivityStats stats={profile.stats} />}
+
+        {/* Achievements */}
+        {profile.achievements && <AchievementsBadges achievements={profile.achievements} />}
+
+        {/* Main Profile Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-surface rounded-lg border border-border overflow-hidden"
+        >
+          {/* Header Section with Avatar */}
+          <div className="bg-gradient-to-r from-primary/20 to-primary/10 p-8">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="relative">
+                <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center text-5xl border-4 border-white/20">
+                  {profile.avatar || '👤'}
                 </div>
+                <button
+                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                  className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-lg"
+                  title="Change avatar"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
-              
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Phone className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary mb-1">Phone</p>
-                  {editing ? (
-                    <input
-                      type="tel"
-                      value={editForm.phone}
-                      onChange={(e) => handleFormChange({ phone: e.target.value })}
-                      placeholder="+91 1234567890"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  ) : (
-                    <p className="text-text font-medium">
-                      {profile.profile.phone || 'Not specified'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary mb-1">Location</p>
-                  {editing ? (
+              <div className="flex-1">
+                {editingName ? (
+                  <div className="flex items-center gap-2 mb-2">
                     <input
                       type="text"
-                      value={editForm.location}
-                      onChange={(e) => handleFormChange({ location: e.target.value })}
-                      placeholder="City, State"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleNameChange()}
+                      placeholder="Enter your name"
+                      className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-text text-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                      autoFocus
                     />
-                  ) : (
-                    <p className="text-text font-medium">
-                      {profile.profile.location || 'Not specified'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Shield className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="text-sm text-textSecondary">Role</p>
-                  <p className="text-text font-medium capitalize">{profile.role}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="border-t border-border pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-              <Globe className="w-5 h-5 text-primary" />
-              Social Links
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Github className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary mb-1">GitHub</p>
-                  {editing ? (
-                    <input
-                      type="url"
-                      value={editForm.github}
-                      onChange={(e) => handleFormChange({ github: e.target.value })}
-                      placeholder="https://github.com/username"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    />
-                  ) : profile.profile.github ? (
-                    <a
-                      href={profile.profile.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline text-sm"
+                    <button
+                      onClick={handleNameChange}
+                      className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                      title="Save name"
                     >
-                      View Profile
-                    </a>
-                  ) : (
-                    <p className="text-textSecondary text-sm">Not added</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Linkedin className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary mb-1">LinkedIn</p>
-                  {editing ? (
-                    <input
-                      type="url"
-                      value={editForm.linkedin}
-                      onChange={(e) => handleFormChange({ linkedin: e.target.value })}
-                      placeholder="https://linkedin.com/in/username"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    />
-                  ) : profile.profile.linkedin ? (
-                    <a
-                      href={profile.profile.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline text-sm"
+                      <CheckCircle className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingName(false);
+                        setNewName('');
+                      }}
+                      className="p-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
+                      title="Cancel"
                     >
-                      View Profile
-                    </a>
-                  ) : (
-                    <p className="text-textSecondary text-sm">Not added</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Globe className="w-5 h-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-textSecondary mb-1">Portfolio</p>
-                  {editing ? (
-                    <input
-                      type="url"
-                      value={editForm.portfolio}
-                      onChange={(e) => handleFormChange({ portfolio: e.target.value })}
-                      placeholder="https://yourportfolio.com"
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    />
-                  ) : profile.profile.portfolio ? (
-                    <a
-                      href={profile.profile.portfolio}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline text-sm"
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-2xl font-bold text-text">
+                      {formatDisplayName(profile.name, profile.email)}
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setEditingName(true);
+                        setNewName(profile.name);
+                      }}
+                      className="p-1 hover:bg-surface/50 rounded transition-colors"
+                      title="Edit name"
                     >
-                      Visit Website
-                    </a>
-                  ) : (
-                    <p className="text-textSecondary text-sm">Not added</p>
+                      <Edit2 className="w-4 h-4 text-textSecondary hover:text-primary" />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {getRoleBadge(profile.role, profile.isCoordinator, profile.isExternalEvaluator)}
+                  {profile.studentId && (
+                    <span className="px-3 py-1 bg-surface/50 text-textSecondary rounded-full text-sm font-mono">
+                      {profile.studentId}
+                    </span>
+                  )}
+                  {profile.facultyId && (
+                    <span className="px-3 py-1 bg-surface/50 text-textSecondary rounded-full text-sm font-mono">
+                      {profile.facultyId}
+                    </span>
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Academic Information (Students Only) */}
-          {profile.role === 'student' && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-primary" />
-                Academic Information
+          {/* Avatar Picker */}
+          <AnimatePresence>
+            {showAvatarPicker && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="border-b border-border p-6 bg-surface/50"
+              >
+                <h3 className="text-lg font-semibold mb-4">Choose Your Avatar</h3>
+                <div className="grid grid-cols-6 md:grid-cols-12 gap-3">
+                  {AVATAR_OPTIONS.map((avatar, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleAvatarChange(avatar)}
+                      className={`w-12 h-12 text-3xl rounded-lg hover:bg-primary/20 transition-colors flex items-center justify-center ${profile.avatar === avatar ? 'bg-primary/30 ring-2 ring-primary' : 'bg-surface'
+                        }`}
+                    >
+                      {avatar}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Profile Information */}
+          <div className="p-6 space-y-6">
+            {/* Bio Section */}
+            <div className="pt-2">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <User className="w-5 h-5 text-primary" />
+                About Me
+              </h3>
+              {editing ? (
+                <textarea
+                  value={editForm.bio}
+                  onChange={(e) => handleFormChange({ bio: e.target.value })}
+                  placeholder="Tell us about yourself, your interests, and goals..."
+                  rows={4}
+                  maxLength={500}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              ) : (
+                <p className="text-textSecondary">
+                  {profile.profile.bio || 'No bio added yet. Click Edit Profile to add one.'}
+                </p>
+              )}
+              {editing && (
+                <p className="text-xs text-textSecondary mt-1">
+                  {editForm.bio.length}/500 characters
+                </p>
+              )}
+            </div>
+
+            {/* Skills Section */}
+            {profile.role === 'student' && (
+              <SkillsSection
+                skills={editForm.skills}
+                editing={editing}
+                onSkillsChange={(skills) => handleFormChange({ skills })}
+              />
+            )}
+
+            {/* Basic Information */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <Mail className="w-5 h-5 text-primary" />
+                Contact Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                  <Building2 className="w-5 h-5 text-primary mt-0.5" />
+                  <Mail className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm text-textSecondary mb-1">Department</p>
+                    <p className="text-sm text-textSecondary">Email</p>
+                    <p className="text-text font-medium">{profile.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Phone className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-textSecondary mb-1">Phone</p>
                     {editing ? (
-                      <select
-                        value={editForm.department}
-                        onChange={(e) => handleFormChange({ department: e.target.value })}
+                      <input
+                        type="tel"
+                        value={editForm.phone}
+                        onChange={(e) => handleFormChange({ phone: e.target.value })}
+                        placeholder="+91 1234567890"
                         className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Select Department</option>
-                        {DEPARTMENTS.map((dept) => (
-                          <option key={dept} value={dept}>{dept}</option>
-                        ))}
-                      </select>
+                      />
                     ) : (
                       <p className="text-text font-medium">
-                        {profile.profile.department || 'Not specified'}
+                        {profile.profile.phone || 'Not specified'}
                       </p>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                  <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                  <MapPin className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm text-textSecondary mb-1">Year</p>
+                    <p className="text-sm text-textSecondary mb-1">Location</p>
                     {editing ? (
-                      <select
-                        value={editForm.year}
-                        onChange={(e) => handleFormChange({ year: parseInt(e.target.value) })}
+                      <input
+                        type="text"
+                        value={editForm.location}
+                        onChange={(e) => handleFormChange({ location: e.target.value })}
+                        placeholder="City, State"
                         className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value={1}>1st Year</option>
-                        <option value={2}>2nd Year</option>
-                        <option value={3}>3rd Year</option>
-                        <option value={4}>4th Year</option>
-                      </select>
+                      />
                     ) : (
                       <p className="text-text font-medium">
-                        {profile.profile.year ? `${profile.profile.year}${profile.profile.year === 1 ? 'st' : profile.profile.year === 2 ? 'nd' : profile.profile.year === 3 ? 'rd' : 'th'} Year` : 'Not specified'}
+                        {profile.profile.location || 'Not specified'}
                       </p>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                  <BookOpen className="w-5 h-5 text-primary mt-0.5" />
+                  <Shield className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="text-sm text-textSecondary">Role</p>
+                    <p className="text-text font-medium capitalize">{profile.role}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <Globe className="w-5 h-5 text-primary" />
+                Social Links
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Github className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm text-textSecondary mb-1">Semester</p>
+                    <p className="text-sm text-textSecondary mb-1">GitHub</p>
                     {editing ? (
-                      <select
-                        value={editForm.semester}
-                        onChange={(e) => handleFormChange({ semester: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                      <input
+                        type="url"
+                        value={editForm.github}
+                        onChange={(e) => handleFormChange({ github: e.target.value })}
+                        placeholder="https://github.com/username"
+                        className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      />
+                    ) : profile.profile.github ? (
+                      <a
+                        href={profile.profile.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm"
                       >
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                          <option key={sem} value={sem}>Semester {sem}</option>
-                        ))}
-                      </select>
+                        View Profile
+                      </a>
                     ) : (
-                      <p className="text-text font-medium">
-                        {profile.profile.semester ? `Semester ${profile.profile.semester}` : 'Not specified'}
-                      </p>
+                      <p className="text-textSecondary text-sm">Not added</p>
                     )}
                   </div>
                 </div>
 
-                {(editing ? editForm.semester >= 6 : (profile.profile.semester || 0) >= 6) && (
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Linkedin className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-textSecondary mb-1">LinkedIn</p>
+                    {editing ? (
+                      <input
+                        type="url"
+                        value={editForm.linkedin}
+                        onChange={(e) => handleFormChange({ linkedin: e.target.value })}
+                        placeholder="https://linkedin.com/in/username"
+                        className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      />
+                    ) : profile.profile.linkedin ? (
+                      <a
+                        href={profile.profile.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm"
+                      >
+                        View Profile
+                      </a>
+                    ) : (
+                      <p className="text-textSecondary text-sm">Not added</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Globe className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-textSecondary mb-1">Portfolio</p>
+                    {editing ? (
+                      <input
+                        type="url"
+                        value={editForm.portfolio}
+                        onChange={(e) => handleFormChange({ portfolio: e.target.value })}
+                        placeholder="https://yourportfolio.com"
+                        className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      />
+                    ) : profile.profile.portfolio ? (
+                      <a
+                        href={profile.profile.portfolio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm"
+                      >
+                        Visit Website
+                      </a>
+                    ) : (
+                      <p className="text-textSecondary text-sm">Not added</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Information (Students Only) */}
+            {profile.role === 'student' && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  Academic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                    <GraduationCap className="w-5 h-5 text-primary mt-0.5" />
+                    <Building2 className="w-5 h-5 text-primary mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm text-textSecondary mb-1">Specialization</p>
+                      <p className="text-sm text-textSecondary mb-1">Department</p>
                       {editing ? (
                         <select
-                          value={editForm.specialization}
-                          onChange={(e) => handleFormChange({ specialization: e.target.value })}
+                          value={editForm.department}
+                          onChange={(e) => handleFormChange({ department: e.target.value })}
                           className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          <option value="">Select Specialization</option>
-                          {SPECIALIZATIONS.map((spec) => (
-                            <option key={spec} value={spec}>{spec}</option>
+                          <option value="">Select Department</option>
+                          {DEPARTMENTS.map((dept) => (
+                            <option key={dept} value={dept}>{dept}</option>
                           ))}
                         </select>
                       ) : (
                         <p className="text-text font-medium">
-                          {profile.profile.specialization || 'Not specified'}
+                          {profile.profile.department || 'Not specified'}
                         </p>
                       )}
                     </div>
                   </div>
-                )}
+
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-textSecondary mb-1">Year</p>
+                      {editing ? (
+                        <select
+                          value={editForm.year}
+                          onChange={(e) => handleFormChange({ year: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value={1}>1st Year</option>
+                          <option value={2}>2nd Year</option>
+                          <option value={3}>3rd Year</option>
+                          <option value={4}>4th Year</option>
+                        </select>
+                      ) : (
+                        <p className="text-text font-medium">
+                          {profile.profile.year ? `${profile.profile.year}${profile.profile.year === 1 ? 'st' : profile.profile.year === 2 ? 'nd' : profile.profile.year === 3 ? 'rd' : 'th'} Year` : 'Not specified'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <BookOpen className="w-5 h-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-textSecondary mb-1">Semester</p>
+                      {editing ? (
+                        <select
+                          value={editForm.semester}
+                          onChange={(e) => handleFormChange({ semester: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                            <option key={sem} value={sem}>Semester {sem}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-text font-medium">
+                          {profile.profile.semester ? `Semester ${profile.profile.semester}` : 'Not specified'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {(editing ? editForm.semester >= 6 : (profile.profile.semester || 0) >= 6) && (
+                    <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                      <GraduationCap className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-textSecondary mb-1">Specialization</p>
+                        {editing ? (
+                          <select
+                            value={editForm.specialization}
+                            onChange={(e) => handleFormChange({ specialization: e.target.value })}
+                            className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="">Select Specialization</option>
+                            {SPECIALIZATIONS.map((spec) => (
+                              <option key={spec} value={spec}>{spec}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-text font-medium">
+                            {profile.profile.specialization || 'Not specified'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Preferences */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <Settings className="w-5 h-5 text-primary" />
+                Preferences
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-background rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Bell className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-text font-medium">Email Notifications</p>
+                      <p className="text-sm text-textSecondary">Receive updates via email</p>
+                    </div>
+                  </div>
+                  {editing ? (
+                    <button
+                      onClick={() => handleFormChange({ emailNotifications: !editForm.emailNotifications })}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.emailNotifications ? 'bg-primary' : 'bg-gray-300'
+                        }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                      />
+                    </button>
+                  ) : (
+                    <span className={`px-3 py-1 rounded-full text-sm ${profile.preferences.emailNotifications ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                      }`}>
+                      {profile.preferences.emailNotifications ? 'Enabled' : 'Disabled'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-background rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {editForm.profileVisibility === 'public' ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-primary" />}
+                    <div>
+                      <p className="text-text font-medium">Profile Visibility</p>
+                      <p className="text-sm text-textSecondary">Control who can see your profile</p>
+                    </div>
+                  </div>
+                  {editing ? (
+                    <select
+                      value={editForm.profileVisibility}
+                      onChange={(e) => handleFormChange({ profileVisibility: e.target.value as any })}
+                      className="px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="public">Public</option>
+                      <option value="connections">Connections Only</option>
+                      <option value="private">Private</option>
+                    </select>
+                  ) : (
+                    <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm capitalize">
+                      {profile.preferences.profileVisibility || 'Public'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Preferences */}
-          <div className="border-t border-border pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-              <Settings className="w-5 h-5 text-primary" />
-              Preferences
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-background rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-primary" />
+            {/* Account Information */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <CheckCircle className="w-5 h-5 text-primary" />
+                Account Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Calendar className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <p className="text-text font-medium">Email Notifications</p>
-                    <p className="text-sm text-textSecondary">Receive updates via email</p>
+                    <p className="text-sm text-textSecondary">Member Since</p>
+                    <p className="text-text font-medium">
+                      {new Date(profile.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
                   </div>
                 </div>
-                {editing ? (
-                  <button
-                    onClick={() => handleFormChange({ emailNotifications: !editForm.emailNotifications })}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      editForm.emailNotifications ? 'bg-primary' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        editForm.emailNotifications ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                ) : (
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    profile.preferences.emailNotifications ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {profile.preferences.emailNotifications ? 'Enabled' : 'Disabled'}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-background rounded-lg">
-                <div className="flex items-center gap-3">
-                  {editForm.profileVisibility === 'public' ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-primary" />}
+                <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                  <Clock className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <p className="text-text font-medium">Profile Visibility</p>
-                    <p className="text-sm text-textSecondary">Control who can see your profile</p>
+                    <p className="text-sm text-textSecondary">Last Active</p>
+                    <p className="text-text font-medium">
+                      {new Date(profile.lastSeen).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
                   </div>
                 </div>
-                {editing ? (
-                  <select
-                    value={editForm.profileVisibility}
-                    onChange={(e) => handleFormChange({ profileVisibility: e.target.value as any })}
-                    className="px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="public">Public</option>
-                    <option value="connections">Connections Only</option>
-                    <option value="private">Private</option>
-                  </select>
-                ) : (
-                  <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm capitalize">
-                    {profile.preferences.profileVisibility || 'Public'}
-                  </span>
-                )}
               </div>
             </div>
           </div>
+        </motion.div>
 
-          {/* Account Information */}
-          <div className="border-t border-border pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              Account Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Calendar className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="text-sm text-textSecondary">Member Since</p>
-                  <p className="text-text font-medium">
-                    {new Date(profile.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
-                <Clock className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="text-sm text-textSecondary">Last Active</p>
-                  <p className="text-text font-medium">
-                    {new Date(profile.lastSeen).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
+        {/* Info Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6"
+        >
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-semibold text-blue-400 mb-1">Profile Tips</h4>
+              <ul className="text-sm text-textSecondary space-y-1">
+                <li>• Complete your profile to increase visibility</li>
+                <li>• Add skills to help faculty match you with relevant projects</li>
+                <li>• Keep your contact information up to date</li>
+                <li>• Your email and role are linked to your Google account and cannot be changed</li>
+              </ul>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Info Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6"
-      >
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-semibold text-blue-400 mb-1">Profile Tips</h4>
-            <ul className="text-sm text-textSecondary space-y-1">
-              <li>• Complete your profile to increase visibility</li>
-              <li>• Add skills to help faculty match you with relevant projects</li>
-              <li>• Keep your contact information up to date</li>
-              <li>• Your email and role are linked to your Google account and cannot be changed</li>
-            </ul>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Confirmation Dialog */}
-      <AnimatePresence>
-        {showConfirmDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowConfirmDialog(false)}
-          >
+        {/* Confirmation Dialog */}
+        <AnimatePresence>
+          {showConfirmDialog && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-surface rounded-lg border border-border p-6 max-w-md w-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowConfirmDialog(false)}
             >
-              <div className="flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-text mb-2">Unsaved Changes</h3>
-                  <p className="text-textSecondary mb-4">
-                    You have unsaved changes. Are you sure you want to discard them?
-                  </p>
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      onClick={() => setShowConfirmDialog(false)}
-                      className="px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
-                    >
-                      Keep Editing
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      Discard Changes
-                    </button>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-surface rounded-lg border border-border p-6 max-w-md w-full"
+              >
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-text mb-2">Unsaved Changes</h3>
+                    <p className="text-textSecondary mb-4">
+                      You have unsaved changes. Are you sure you want to discard them?
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => setShowConfirmDialog(false)}
+                        className="px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-surface/80 transition-colors"
+                      >
+                        Keep Editing
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Discard Changes
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

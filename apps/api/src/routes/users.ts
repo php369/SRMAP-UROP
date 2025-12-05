@@ -304,4 +304,84 @@ router.put('/avatar', authenticate, asyncHandler(async (req: Request, res: Respo
     }
 }));
 
+/**
+ * PUT /api/users/name
+ * Update user's display name
+ */
+router.put('/name', authenticate, asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { name } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                message: 'Valid name is required',
+            },
+        });
+    }
+
+    // Validate name format (only letters, spaces, and common punctuation)
+    const nameRegex = /^[a-zA-Z\s.'-]+$/;
+    if (!nameRegex.test(name.trim())) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                message: 'Name can only contain letters, spaces, and common punctuation (. \' -)',
+            },
+        });
+    }
+
+    // Validate name length
+    if (name.trim().length < 2 || name.trim().length > 100) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                message: 'Name must be between 2 and 100 characters',
+            },
+        });
+    }
+
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found',
+                },
+            });
+        }
+
+        const oldName = user.name;
+        user.name = name.trim();
+        await user.save();
+
+        logger.info(`Name updated for user: ${user.email} (${oldName} -> ${user.name})`);
+
+        res.json({
+            success: true,
+            data: {
+                message: 'Name updated successfully',
+                name: user.name,
+            },
+        });
+
+    } catch (error) {
+        logger.error('Error updating name:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'NAME_UPDATE_FAILED',
+                message: 'Failed to update name',
+            },
+        });
+    }
+}));
+
 export default router;
