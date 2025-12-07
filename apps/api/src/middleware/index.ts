@@ -26,8 +26,6 @@ export {
   canApproveApplications,
   canPublishGrades,
   canManageWindows,
-  canImportEligibility,
-  canManageFaculty,
   isEligibleForProjectType,
   getEligibleProjectTypes,
   canAccessProjectType,

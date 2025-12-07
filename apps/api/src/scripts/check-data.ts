@@ -5,7 +5,7 @@ import { config } from '../config/environment';
 import { logger } from '../utils/logger';
 
 // Import models
-import { Eligibility } from '../models/Eligibility';
+// Eligibility model removed - collection dropped from database
 
 async function connectToDatabase(): Promise<void> {
   try {
@@ -21,12 +21,9 @@ async function checkData(): Promise<void> {
   logger.info('🔍 Checking current data...');
   
   try {
-    const eligibilities = await Eligibility.find({});
-    
-    logger.info(`📊 Found ${eligibilities.length} eligibility entries:`);
-    eligibilities.forEach((eligibility, index) => {
-      logger.info(`   ${index + 1}. ${eligibility.studentEmail} - ${eligibility.type} (Year ${eligibility.year}, Semester ${eligibility.semester})`);
-    });
+    // Note: Eligibility collection has been dropped from database
+    // Authorization now based on User model fields: role, isCoordinator, isExternalEvaluator, department
+    logger.info('📊 Eligibility collection has been removed - authorization now uses User model');
     
   } catch (error) {
     logger.error('Failed to check data:', error);

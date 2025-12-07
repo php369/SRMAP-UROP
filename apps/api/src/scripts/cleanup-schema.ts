@@ -11,9 +11,10 @@
 
 import mongoose from 'mongoose';
 import { User } from '../models/User';
-import { Eligibility } from '../models/Eligibility';
-import { AvatarPool } from '../models/AvatarPool';
-import { FacultyRoster } from '../models/FacultyRoster';
+// Models removed - collections dropped from database
+// import { Eligibility } from '../models/Eligibility';
+// import { AvatarPool } from '../models/AvatarPool';
+// import { FacultyRoster } from '../models/FacultyRoster';
 import { logger } from '../utils/logger';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/srm-portal';

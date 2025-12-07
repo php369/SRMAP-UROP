@@ -212,11 +212,9 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
         googleId: googleUser.googleId,
         name: googleUser.name,
         email: googleUser.email,
-        avatar: googleUser.avatarUrl,
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
-        profile: {
-          department: authResult.facultyInfo?.dept,
-        },
+        isCoordinator: authResult.role === 'coordinator',
+        department: authResult.user?.department,
         preferences: {
           theme: 'light',
           notifications: true,
@@ -241,13 +239,13 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
     } else {
       // Update existing user info and role
       user.name = googleUser.name;
-      user.avatar = googleUser.avatarUrl;
       user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
       user.googleId = googleUser.googleId; // Update Google ID if it was missing
+      user.isCoordinator = authResult.role === 'coordinator';
       
-      // Update profile with faculty info if available
-      if (authResult.facultyInfo) {
-        user.profile.department = authResult.facultyInfo.dept;
+      // Update department if available
+      if (authResult.user?.department) {
+        user.department = authResult.user.department;
       }
       
       await user.save();
@@ -276,19 +274,10 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: authResult.role, // Return the actual role including coordinator
-          avatarUrl: user.avatar,
-          profile: user.profile,
+          department: user.department,
+          isCoordinator: user.isCoordinator,
+          isExternalEvaluator: user.isExternalEvaluator,
           preferences: user.preferences,
-          eligibility: authResult.eligibility ? {
-            type: authResult.eligibility.type,
-            year: authResult.eligibility.year,
-            semester: authResult.eligibility.semester,
-            termKind: authResult.eligibility.termKind,
-          } : undefined,
-          facultyInfo: authResult.facultyInfo ? {
-            department: authResult.facultyInfo.dept,
-            isCoordinator: authResult.facultyInfo.isCoordinator,
-          } : undefined,
         },
       },
     });
@@ -459,19 +448,10 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: authResult.role, // Use current role from authorization check
-          avatarUrl: user.avatar,
-          profile: user.profile,
+          department: user.department,
+          isCoordinator: user.isCoordinator,
+          isExternalEvaluator: user.isExternalEvaluator,
           preferences: user.preferences,
-          eligibility: authResult.eligibility ? {
-            type: authResult.eligibility.type,
-            year: authResult.eligibility.year,
-            semester: authResult.eligibility.semester,
-            termKind: authResult.eligibility.termKind,
-          } : undefined,
-          facultyInfo: authResult.facultyInfo ? {
-            department: authResult.facultyInfo.dept,
-            isCoordinator: authResult.facultyInfo.isCoordinator,
-          } : undefined,
         },
         permissions: getUserPermissions(authResult.role),
       },
@@ -865,13 +845,9 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
         googleId: googleUser.googleId,
         name: googleUser.name,
         email: googleUser.email,
-        avatar: googleUser.avatarUrl,
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
-        profile: {
-          department: authResult.facultyInfo?.dept || (authResult.eligibility as any)?.department,
-          year: authResult.eligibility?.year,
-          semester: authResult.eligibility?.semester,
-        },
+        isCoordinator: authResult.role === 'coordinator',
+        department: authResult.user?.department,
         preferences: {
           theme: 'light',
           notifications: true,
@@ -884,20 +860,13 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
     } else {
       // Update existing user info and role
       user.name = googleUser.name;
-      user.avatar = googleUser.avatarUrl;
       user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
       user.googleId = googleUser.googleId; // Update Google ID if it was missing
+      user.isCoordinator = authResult.role === 'coordinator';
       
-      // Update profile with faculty info if available
-      if (authResult.facultyInfo) {
-        user.profile.department = authResult.facultyInfo.dept;
-      }
-      
-      // Update profile with eligibility info if available
-      if (authResult.eligibility) {
-        user.profile.department = (authResult.eligibility as any).department;
-        user.profile.year = authResult.eligibility.year;
-        user.profile.semester = authResult.eligibility.semester;
+      // Update department if available
+      if (authResult.user?.department) {
+        user.department = authResult.user.department;
       }
       
       user.lastSeen = new Date();
@@ -925,21 +894,10 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: authResult.role, // Return the actual role including coordinator
-          avatarUrl: user.avatar,
-          profile: user.profile,
+          department: user.department,
+          isCoordinator: user.isCoordinator,
+          isExternalEvaluator: user.isExternalEvaluator,
           preferences: user.preferences,
-          eligibility: authResult.eligibility ? {
-            type: authResult.eligibility.type,
-            year: authResult.eligibility.year,
-            semester: authResult.eligibility.semester,
-            department: (authResult.eligibility as any).department,
-            isActive: (authResult.eligibility as any).isActive,
-          } : undefined,
-          facultyInfo: authResult.facultyInfo ? {
-            dept: authResult.facultyInfo.dept,
-            designation: (authResult.facultyInfo as any).designation,
-            isCoordinator: authResult.role === 'coordinator',
-          } : undefined,
           permissions: getUserPermissions(authResult.role),
         },
         tokens: {

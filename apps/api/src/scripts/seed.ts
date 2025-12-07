@@ -6,9 +6,8 @@ import { logger } from '../utils/logger';
 
 // Import models
 import { User, IUser } from '../models/User';
-import { Eligibility, IEligibility } from '../models/Eligibility';
+// Eligibility and FacultyRoster models removed - collections dropped from database
 import { Project, IProject } from '../models/Project';
-import { FacultyRoster, IFacultyRoster } from '../models/FacultyRoster';
 import { Group, IGroup } from '../models/Group';
 import { Application, IApplication } from '../models/Application';
 import { GroupSubmission, IGroupSubmission } from '../models/GroupSubmission';
@@ -57,8 +56,6 @@ async function clearExistingData(): Promise<void> {
       Application.deleteMany({}),
       Group.deleteMany({}),
       Project.deleteMany({}),
-      Eligibility.deleteMany({}),
-      FacultyRoster.deleteMany({}),
       User.deleteMany({}),
       Window.deleteMany({}),
     ]);
