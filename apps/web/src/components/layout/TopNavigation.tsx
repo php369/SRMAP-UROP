@@ -1,21 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeActions, useThemeMode } from '../../stores/themeStore';
-import { useCommandPalette } from '../../hooks/ui/useCommandPalette';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassCard } from '../ui/GlassCard';
 import { Badge } from '../ui/Badge';
-import { CommandPalette } from '../ui/CommandPalette';
 import { Breadcrumb } from '../ui/Breadcrumb';
 
 export function TopNavigation() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const themeMode = useThemeMode();
   const { toggleTheme } = useThemeActions();
-  const { isOpen: isCommandPaletteOpen, openCommandPalette, closeCommandPalette } = useCommandPalette();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -76,35 +72,10 @@ export function TopNavigation() {
                 <h1 className="text-xl font-semibold text-text">{getPageTitle()}</h1>
                 <Breadcrumb className="mt-1" />
               </div>
-
-              {/* Command palette trigger */}
-              <button
-                onClick={openCommandPalette}
-                className="hidden md:flex items-center space-x-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-200 text-textSecondary hover:text-text"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span className="text-sm">Search...</span>
-                <Badge variant="glass" size="sm">⌘K</Badge>
-              </button>
             </div>
 
             {/* Right side - actions and user menu */}
             <div className="flex items-center space-x-4">
-              {/* Command palette button (mobile) */}
-              <GlowButton
-                onClick={openCommandPalette}
-                variant="ghost"
-                size="sm"
-                className="md:hidden"
-                aria-label="Open command palette"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </GlowButton>
-
               {/* Theme toggle */}
               <GlowButton
                 onClick={toggleTheme}
@@ -289,12 +260,6 @@ export function TopNavigation() {
           </div>
         </GlassCard>
       </div>
-
-      {/* Command Palette */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={closeCommandPalette}
-      />
     </motion.header>
   );
 }

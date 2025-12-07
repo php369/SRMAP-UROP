@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'faculty' | 'admin';
+  role: 'student' | 'faculty' | 'coordinator' | 'admin';
   avatarUrl?: string;
   profile: {
     department?: string;
