@@ -85,12 +85,18 @@ export async function getEnhancedUserRole(userId: string | mongoose.Types.Object
         // Admin users should have coordinator privileges
         const isCoordinatorRole = user.role === 'admin' || coordinator;
 
+        // Determine effective role: admin stays admin, otherwise use coordinator if applicable
+        let effectiveRole = user.role;
+        if (user.role !== 'admin' && isCoordinatorRole) {
+            effectiveRole = 'coordinator';
+        }
+
         return {
             baseRole: user.role,
             isGroupLeader: groupLeader,
             isCoordinator: isCoordinatorRole,
             isExternalEvaluator: externalEvaluator,
-            effectiveRole: isCoordinatorRole ? 'coordinator' : user.role
+            effectiveRole: effectiveRole
         };
     } catch (error) {
         logger.error('Error getting enhanced user role:', error);
