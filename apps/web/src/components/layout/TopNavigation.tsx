@@ -43,10 +43,10 @@ export function TopNavigation() {
 
   return (
     <motion.header
-      className="sticky top-0 z-30"
+      className="fixed top-0 left-0 right-0 z-30"
       initial={{ y: 0 }}
       animate={{
-        y: isScrolled ? -10 : 0,
+        y: isScrolled ? 0 : 0,
       }}
       transition={{
         duration: 0.3,
@@ -55,10 +55,10 @@ export function TopNavigation() {
       style={{
         backgroundColor: isScrolled
           ? themeMode === 'dark'
-            ? 'rgba(31, 30, 23, 0.95)'
-            : 'rgba(229, 228, 211, 0.95)'
+            ? 'rgba(31, 30, 23, 0.98)'
+            : 'rgba(229, 228, 211, 0.98)'
           : 'transparent',
-        backdropFilter: isScrolled ? 'blur(12px)' : 'none',
+        backdropFilter: isScrolled ? 'blur(16px)' : 'none',
         boxShadow: isScrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
       }}
     >
@@ -236,7 +236,14 @@ export function TopNavigation() {
                 {/* User dropdown menu - render on top of backdrop */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-4 w-56 z-50">
-                    <div className="bg-surface/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl py-2">
+                    <div 
+                      className="border border-border rounded-2xl shadow-2xl py-2 backdrop-blur-xl"
+                      style={{
+                        backgroundColor: themeMode === 'dark' 
+                          ? 'rgb(43, 42, 34)' 
+                          : 'rgb(200, 195, 163)'
+                      }}
+                    >
                       <div className="px-4 py-3 border-b border-border">
                         <p className="text-sm font-medium text-text">{user?.name}</p>
                         <p className="text-xs text-textSecondary truncate">{user?.email}</p>
