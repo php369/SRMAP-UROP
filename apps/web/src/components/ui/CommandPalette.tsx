@@ -61,16 +61,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       keywords: ['submissions', 'uploads', 'files'],
       shortcut: 'Ctrl+S',
     },
-    {
-      id: 'nav-profile',
-      label: 'Go to Profile',
-      description: 'Manage your profile',
-      icon: <UserIcon />,
-      action: () => navigate('/dashboard/profile'),
-      category: 'navigation',
-      keywords: ['profile', 'account', 'settings'],
-      shortcut: 'Ctrl+P',
-    },
     // Admin commands (only for admin users)
     ...(user?.role === 'admin' ? [
       {

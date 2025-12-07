@@ -53,33 +53,6 @@ const AssessmentsSkeleton = () => (
   </div>
 );
 
-const ProfileSkeleton = () => (
-  <div className="space-y-6 p-6">
-    <div className="bg-surface p-6 rounded-lg shadow-sm border">
-      <div className="flex items-center space-x-6 mb-6">
-        <div className="w-24 h-24 bg-gray-200 rounded-full animate-pulse"></div>
-        <div className="space-y-2">
-          <div className="h-6 bg-gray-200 rounded animate-pulse w-48"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-40"></div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
-        </div>
-        <div className="space-y-4">
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 // Lazy loaded components with proper error boundaries
 const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
@@ -157,19 +130,9 @@ export const LazyAssessmentDetail = lazy(
   LoadingSpinner
 );
 
-export const LazyProfile = lazy(
-  () => import('../pages/profile/UserProfilePage'),
-  () => <ProfileSkeleton />
-);
-
 export const LazyAdminDashboard = lazy(
   () => import('../pages/admin/AdminDashboard'),
   () => <DashboardSkeleton />
-);
-
-export const LazyUserManagement = lazy(
-  () => import('../pages/admin/UserManagement'),
-  LoadingSpinner
 );
 
 export const LazyCohortManagement = lazy(
@@ -276,9 +239,6 @@ export const preloadCriticalComponents = () => {
   
   // Preload assessments page
   preloadComponent(() => import('../pages/AssessmentsPage'));
-  
-  // Preload profile page
-  preloadComponent(() => import('../pages/profile/UserProfilePage'));
 };
 
 // Component for managing lazy loading state

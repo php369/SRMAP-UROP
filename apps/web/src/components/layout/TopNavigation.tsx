@@ -41,7 +41,6 @@ export function TopNavigation() {
     if (path === '/dashboard') return 'Dashboard';
     if (path === '/assessments') return 'Assessments';
     if (path === '/submissions') return 'Submissions';
-    if (path === '/profile') return 'Profile';
     if (path.startsWith('/admin')) return 'Admin Panel';
     return 'SRM Portal';
   };
@@ -269,18 +268,6 @@ export function TopNavigation() {
                       </div>
 
                       <div className="py-1">
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            navigate('/dashboard/profile');
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-text hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          Profile
-                        </button>
                         <button
                           onClick={() => {
                             setShowUserMenu(false);

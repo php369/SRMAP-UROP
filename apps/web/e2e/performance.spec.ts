@@ -5,8 +5,7 @@ test.describe('Performance Tests', () => {
     const pages = [
       { path: '/', name: 'Home' },
       { path: '/dashboard', name: 'Dashboard' },
-      { path: '/assessments', name: 'Assessments' },
-      { path: '/profile', name: 'Profile' }
+      { path: '/assessments', name: 'Assessments' }
     ];
 
     for (const pageInfo of pages) {
@@ -233,7 +232,7 @@ test.describe('Performance Tests', () => {
       console.log(`Initial memory usage: ${(initialMemory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`);
       
       // Navigate through several pages
-      const pages = ['/dashboard', '/assessments', '/profile', '/'];
+      const pages = ['/dashboard', '/assessments', '/'];
       
       for (const pagePath of pages) {
         try {

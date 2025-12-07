@@ -25,8 +25,6 @@ import { AssessmentsPage } from './pages/assessments/AssessmentsPage';
 import { AssessmentDetailPage } from './pages/assessments/AssessmentDetailPage';
 import { SubmissionsPage } from './pages/submissions/SubmissionsPage';
 import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
-import { ProfilePage } from './pages/profile/ProfilePage';
-import { PreferencesPage } from './pages/profile/PreferencesPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
 
 // Lazy loaded pages
@@ -41,7 +39,6 @@ const FacultyProjectsPage = lazy(() => import('./pages/faculty/ProjectsPage').th
 const FacultyApplicationsPage = lazy(() => import('./pages/faculty/ApplicationsPage').then(m => ({ default: m.FacultyApplicationsPage })));
 const FacultyAssessmentPage = lazy(() => import('./pages/faculty/AssessmentPage').then(m => ({ default: m.FacultyAssessmentPage })));
 const FacultyMeetingsPage = lazy(() => import('./pages/faculty/MeetingsPage').then(m => ({ default: m.FacultyMeetingsPage })));
-const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const EligibilityUpload = lazy(() => import('./pages/admin/EligibilityUpload').then(m => ({ default: m.EligibilityUpload })));
 const WindowManagement = lazy(() => import('./pages/admin/WindowManagement').then(m => ({ default: m.WindowManagement })));
 
@@ -103,8 +100,6 @@ function App() {
                                 <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
                                 <Route path="/submissions" element={<SubmissionsPage />} />
                                 <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
-                                <Route path="/profile" element={<ProfilePage />} />
-                                <Route path="/preferences" element={<PreferencesPage />} />
                                 <Route path="/help" element={<HelpSupportPage />} />
                                 <Route path="/application" element={
                                   <AuthGuard requiredRole="student">
@@ -162,11 +157,6 @@ function App() {
                                 } />
 
                                 {/* Admin routes */}
-                                <Route path="/admin/users" element={
-                                  <AuthGuard requiredRole="admin">
-                                    <AdminUsersPage />
-                                  </AuthGuard>
-                                } />
                                 <Route path="/admin/eligibility" element={
                                   <AuthGuard requiredRole="admin">
                                     <EligibilityUpload />
