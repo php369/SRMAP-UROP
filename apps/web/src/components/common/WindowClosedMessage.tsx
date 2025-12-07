@@ -37,8 +37,7 @@ export function WindowClosedMessage({
         </div>
         <h2 className="text-2xl font-bold text-text mb-2">Window Closed</h2>
         <p className="text-textSecondary mb-4">
-          The {windowTypeLabels[windowType] || windowType} window is not currently open
-          {projectType && ` for ${projectType}`}.
+          The {windowTypeLabels[windowType] || windowType} window is not currently open.
         </p>
         {window ? (
           <div className="bg-surface/50 rounded-lg p-4 text-sm space-y-2">
