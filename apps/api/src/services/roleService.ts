@@ -77,7 +77,7 @@ export async function getEnhancedUserRole(userId: string | mongoose.Types.Object
         }
 
         const [groupLeader, coordinator, externalEvaluator] = await Promise.all([
-            user.role === 'student' ? isGroupLeader(userId) : Promise.resolve(false),
+            user.role.endsWith('-student') ? isGroupLeader(userId) : Promise.resolve(false),
             user.role === 'faculty' ? isCoordinator(userId) : Promise.resolve(false),
             user.role === 'faculty' ? isExternalEvaluator(userId) : Promise.resolve(false)
         ]);

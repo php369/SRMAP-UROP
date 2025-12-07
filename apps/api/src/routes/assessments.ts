@@ -295,7 +295,7 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
         limit,
         skip,
       });
-    } else if (user.role === 'student') {
+    } else if (user.role.endsWith('-student')) {
       // Students can see assessments assigned to their cohorts
       assessments = await getStudentAssessments(user.id, {
         courseId,
@@ -384,7 +384,7 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
     }
 
     // Check permissions
-    if (user.role === 'student') {
+    if (user.role.endsWith('-student')) {
       // Students can only see published assessments assigned to their cohorts
       // This would require checking cohort membership - simplified for now
       if (assessment.status !== 'published') {

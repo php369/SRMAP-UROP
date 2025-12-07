@@ -505,7 +505,7 @@ export function getSocketServer(): Server | null {
 
 export interface CreateNotificationData {
   userId: string;
-  role: 'student' | 'faculty' | 'coordinator' | 'admin';
+  role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
   type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' | 
         'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' | 
         'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |

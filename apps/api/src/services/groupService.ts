@@ -213,7 +213,7 @@ export async function joinGroup(
       const user = await User.findById(userId);
       await createNotification({
         userId: group.leaderId.toString(),
-        role: 'student',
+        role: 'idp-student',
         type: 'SYSTEM',
         title: 'New Member Joined',
         message: `${user?.name || 'A student'} has joined your group ${group.groupCode}`,

@@ -451,9 +451,9 @@ export class EvaluationService {
           
           await notifyExternalEvaluatorAssignedPersistent(
             allRecipients,
-            group.code,
+            group.code || 'Unknown',
             project.title,
-            group.meetUrl,
+            group.meetUrl || '',
             evaluation._id.toString(),
             _assignedBy.toString()
           );
@@ -576,7 +576,7 @@ export class EvaluationService {
           // Notify removed external evaluator
           notifyExternalEvaluatorRemoved(
             externalFaculty._id.toString(),
-            group.code,
+            group.code || 'Unknown',
             project.title,
             evaluation._id.toString()
           );
@@ -585,7 +585,7 @@ export class EvaluationService {
           const memberIds = groupMembers.map(member => member._id.toString());
           notifyExternalEvaluatorRemoved(
             memberIds,
-            group.code,
+            group.code || 'Unknown',
             project.title,
             evaluation._id.toString()
           );
@@ -739,8 +739,8 @@ export class EvaluationService {
       }
 
       // Check if user is a member of the group (for students)
-      if (userRole === 'student') {
-        const isMember = group.memberIds.some(
+      if (userRole.endsWith('-student')) {
+        const isMember = group.memberIds && group.memberIds.some(
           memberId => memberId.toString() === userId
         );
         if (!isMember) {
@@ -759,7 +759,7 @@ export class EvaluationService {
       });
 
       // Only show published evaluations to students, faculty/coordinators can see all
-      const visibleEvaluation = (userRole === 'student' && evaluation && !evaluation.isPublished) 
+      const visibleEvaluation = (userRole.endsWith('-student') && evaluation && !evaluation.isPublished) 
         ? null 
         : evaluation;
 
@@ -822,13 +822,13 @@ export class EvaluationService {
           
           for (const evaluation of updatedEvaluations) {
             const group = await Group.findById(evaluation.groupId);
-            if (group) {
+            if (group && group.memberIds) {
               const groupMembers = await User.find({ _id: { $in: group.memberIds } });
               const memberIds = groupMembers.map(member => member._id.toString());
               
               await notifyGradesPublishedPersistent(
                 memberIds,
-                group.code,
+                group.code || 'Unknown',
                 evaluation._id.toString(),
                 publishedBy.toString()
               );

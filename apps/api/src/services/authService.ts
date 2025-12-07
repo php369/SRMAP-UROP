@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 
 export interface AuthResult {
   isAuthorized: boolean;
-  role: 'student' | 'faculty' | 'coordinator' | 'admin';
+  role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
   error?: {
     code: string;
     message: string;
@@ -34,7 +34,7 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
 
     if (user) {
       // Determine role based on User model fields
-      let role: 'student' | 'faculty' | 'coordinator' | 'admin' = user.role;
+      let role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin' = user.role;
       
       // Override role to coordinator if isCoordinator flag is set
       if (user.isCoordinator) {
@@ -55,7 +55,7 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
     logger.warn(`Access denied for: ${email} - user not found in database`);
     return {
       isAuthorized: false,
-      role: 'student', // Default role for error response
+      role: 'idp-student', // Default role for error response
       error: {
         code: 'NOT_ELIGIBLE',
         message: 'You are currently not eligible to access the portal',
@@ -67,7 +67,7 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
     logger.error('Authorization check failed:', error);
     return {
       isAuthorized: false,
-      role: 'student',
+      role: 'idp-student',
       error: {
         code: 'AUTHORIZATION_ERROR',
         message: 'Failed to check user authorization'

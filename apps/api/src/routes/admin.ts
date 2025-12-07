@@ -21,7 +21,7 @@ const router = Router();
 
 // Validation schemas
 const userSearchSchema = z.object({
-  role: z.enum(['student', 'faculty', 'admin']).optional(),
+  role: z.enum(['idp-student', 'urop-student', 'capstone-student', 'faculty', 'admin']).optional(),
   department: z.string().optional(),
   year: z.string().transform(Number).optional(),
   search: z.string().optional(),
@@ -30,7 +30,7 @@ const userSearchSchema = z.object({
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['student', 'faculty', 'admin']),
+  role: z.enum(['idp-student', 'urop-student', 'capstone-student', 'faculty', 'admin']),
 });
 
 const createCohortSchema = z.object({

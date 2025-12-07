@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  role: 'student' | 'faculty' | 'coordinator' | 'admin';
+  role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
   type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' | 
         'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' | 
         'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |
@@ -26,7 +26,7 @@ const NotificationSchema = new Schema<INotification>({
   },
   role: {
     type: String,
-    enum: ['student', 'faculty', 'coordinator', 'admin'],
+    enum: ['idp-student', 'urop-student', 'capstone-student', 'faculty', 'coordinator', 'admin'],
     required: true
   },
   type: {
