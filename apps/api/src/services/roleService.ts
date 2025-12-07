@@ -86,7 +86,7 @@ export async function getEnhancedUserRole(userId: string | mongoose.Types.Object
         const isCoordinatorRole = user.role === 'admin' || coordinator;
 
         // Determine effective role: admin stays admin, otherwise use coordinator if applicable
-        let effectiveRole = user.role;
+        let effectiveRole: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin' = user.role;
         if (user.role !== 'admin' && isCoordinatorRole) {
             effectiveRole = 'coordinator';
         }
