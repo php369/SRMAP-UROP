@@ -156,10 +156,7 @@ ApplicationSchema.pre('save', function (next) {
   next();
 });
 
-// Indexes for performance
-ApplicationSchema.index({ groupId: 1, status: 1 });
-ApplicationSchema.index({ studentId: 1, status: 1 });
-ApplicationSchema.index({ status: 1, createdAt: -1 });
+// Additional indexes for performance
 ApplicationSchema.index({ reviewedBy: 1 });
 
 export const Application = mongoose.model<IApplication>('Application', ApplicationSchema);
