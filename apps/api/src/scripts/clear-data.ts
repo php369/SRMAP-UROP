@@ -74,34 +74,8 @@ async function clearAllData(): Promise<void> {
   }
 }
 
-async function addEligibleStudent(): Promise<void> {
-  logger.info('🎯 Adding eligible student entry...');
-
-  // Set validity period (6 months from now)
-  const validFrom = new Date();
-  const validTo = new Date();
-  validTo.setMonth(validTo.getMonth() + 6);
-
-  const eligibilityData = {
-    studentEmail: 'poojan_patel@srmap.edu.in',
-    regNo: 'AP21110010001', // Sample registration number
-    year: 3,
-    semester: 7, // 7th semester (odd term) - valid enum value
-    termKind: 'odd',
-    type: 'UROP', // Making eligible for UROP projects
-    validFrom,
-    validTo,
-  };
-
-  const eligibility = new Eligibility(eligibilityData);
-  await eligibility.save();
-
-  logger.info('✅ Created eligibility entry for poojan_patel@srmap.edu.in');
-  logger.info(`   - Type: ${eligibilityData.type}`);
-  logger.info(`   - Year: ${eligibilityData.year}, Semester: ${eligibilityData.semester}`);
-  logger.info(`   - Valid from: ${validFrom.toDateString()}`);
-  logger.info(`   - Valid to: ${validTo.toDateString()}`);
-}
+// addEligibleStudent function removed - Eligibility collection dropped
+// Authorization now based on User model fields: role, isCoordinator, isExternalEvaluator, department
 
 async function main(): Promise<void> {
   try {
@@ -109,9 +83,9 @@ async function main(): Promise<void> {
     
     await connectToDatabase();
     await clearAllData();
-    await addEligibleStudent();
+    // addEligibleStudent removed - Eligibility collection dropped
     
-    logger.info('✅ Data clearing and minimal setup completed successfully!');
+    logger.info('✅ Data clearing completed successfully!');
     logger.info('📊 Current state:');
     logger.info('   - All demo data removed');
     logger.info('   - Collections preserved');
