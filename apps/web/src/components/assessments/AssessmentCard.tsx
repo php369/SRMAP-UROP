@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { Badge, GlassCard } from '../ui';
 import { cn } from '../../utils/cn';
+import { isStudentRole } from '../../utils/constants';
 
 interface Assessment {
   id: string;
@@ -21,7 +22,7 @@ interface Assessment {
 
 interface AssessmentCardProps {
   assessment: Assessment;
-  userRole: 'student' | 'faculty' | 'admin';
+  userRole: 'student' | 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin' | 'coordinator';
   onClick?: () => void;
   onJoinMeeting?: () => void;
   onEdit?: () => void;
@@ -221,7 +222,7 @@ export function AssessmentCard({
             <span>Due: {formatDate(assessment.dueDate)}</span>
           </div>
           
-          {userRole === 'student' && assessment.status === 'published' && (
+          {isStudentRole(userRole) && assessment.status === 'published' && (
             <Badge variant="glass" size="sm" className="bg-primary">
               Submit Work
             </Badge>

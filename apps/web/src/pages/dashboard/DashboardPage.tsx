@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { isStudentRole } from '../../utils/constants';
 
 // Configure axios base URL (only once)
 if (!axios.defaults.baseURL) {
@@ -69,7 +70,7 @@ export function DashboardPage() {
         setLoading(true);
 
         // Only fetch eligibility for students
-        if (user?.role === 'student') {
+        if (isStudentRole(user?.role)) {
           try {
             const eligibilityRes = await axios.get('/api/v1/users/eligibility');
             if (eligibilityRes.data?.success && eligibilityRes.data.data) {
@@ -84,7 +85,7 @@ export function DashboardPage() {
         }
 
         // Fetch group if student
-        if (user?.role === 'student') {
+        if (isStudentRole(user?.role)) {
           try {
             const groupRes = await axios.get('/api/v1/groups/my-group');
             if (groupRes.data?.success && groupRes.data.data) {
@@ -197,7 +198,7 @@ export function DashboardPage() {
             Welcome back, {user?.name}! 👋
           </h1>
           <p className="text-textSecondary mt-2">
-            {user?.role === 'student' && 'Track your project progress, manage applications, and collaborate with your team.'}
+            {isStudentRole(user?.role) && 'Track your project progress, manage applications, and collaborate with your team.'}
             {user?.role === 'faculty' && 'Manage your projects, review applications, and guide your students.'}
             {user?.role === 'coordinator' && 'Oversee project approvals, manage applications, and coordinate activities.'}
             {user?.role === 'admin' && 'Manage system-wide settings, user eligibility, and application windows.'}
@@ -216,7 +217,7 @@ export function DashboardPage() {
       </div>
 
       {/* Student Dashboard Content */}
-      {user?.role === 'student' && (
+      {isStudentRole(user?.role) && (
         <div className="space-y-6">
           {/* Quick Navigation and Application Status - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

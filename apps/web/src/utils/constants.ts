@@ -91,14 +91,19 @@ export const THEMES = {
 } as const;
 
 // Role-based Navigation
+const studentNavigation = [
+  { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
+  { label: 'Application', path: ROUTES.APPLICATION, icon: 'Users' },
+  { label: 'Submission', path: ROUTES.SUBMISSION, icon: 'Upload' },
+  { label: 'Assessment', path: ROUTES.ASSESSMENT, icon: 'FileText' },
+  { label: 'Meetings', path: ROUTES.MEETINGS, icon: 'Calendar' },
+];
+
 export const ROLE_NAVIGATION = {
-  student: [
-    { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
-    { label: 'Application', path: ROUTES.APPLICATION, icon: 'Users' },
-    { label: 'Submission', path: ROUTES.SUBMISSION, icon: 'Upload' },
-    { label: 'Assessment', path: ROUTES.ASSESSMENT, icon: 'FileText' },
-    { label: 'Meetings', path: ROUTES.MEETINGS, icon: 'Calendar' },
-  ],
+  student: studentNavigation,
+  'idp-student': studentNavigation,
+  'urop-student': studentNavigation,
+  'capstone-student': studentNavigation,
   faculty: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
     { label: 'My Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen' },
@@ -120,6 +125,12 @@ export const ROLE_NAVIGATION = {
     { label: 'Windows', path: '/dashboard/admin/windows', icon: 'Calendar' },
   ],
 } as const;
+
+// Helper function to check if user is a student
+export const isStudentRole = (role: string | undefined): boolean => {
+  if (!role) return false;
+  return role === 'student' || role === 'idp-student' || role === 'urop-student' || role === 'capstone-student';
+};
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
