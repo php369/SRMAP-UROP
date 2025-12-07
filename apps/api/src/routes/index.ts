@@ -31,6 +31,18 @@ export function setupRoutes(app: Express): void {
   // API version prefix
   const API_PREFIX = '/api/v1';
 
+  // Root route handler
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      message: 'SRM Project Portal API',
+      version: '1.0.0',
+      status: 'running',
+      documentation: '/docs',
+      health: '/health',
+      api: API_PREFIX
+    });
+  });
+
   // Health check (already defined in main server file)
 
   // Authentication routes

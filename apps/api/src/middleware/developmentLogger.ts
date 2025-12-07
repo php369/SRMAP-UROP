@@ -36,7 +36,7 @@ const responseLogs: Map<string, ResponseLog> = new Map();
  * Generate unique request ID for tracing
  */
 function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
@@ -92,7 +92,7 @@ export function developmentLogger(req: Request, res: Response, next: NextFunctio
     headers: sanitizeData(req.headers),
     query: req.query,
     body: sanitizeData(req.body),
-    ip: req.ip || req.connection.remoteAddress || 'unknown',
+    ip: req.ip || req.socket.remoteAddress || 'unknown',
     userAgent: req.get('User-Agent') || 'unknown',
     timestamp: new Date().toISOString(),
     requestId,
@@ -131,8 +131,8 @@ export function developmentLogger(req: Request, res: Response, next: NextFunctio
     // Store response log
     responseLogs.set(requestId, responseLog);
 
-    // Log response
-    const logLevel = res.statusCode >= 400 ? 'error' : res.statusCode >= 300 ? 'warn' : 'info';
+    // Log response (404s are info level, not errors)
+    const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 && res.statusCode !== 404 ? 'warn' : 'info';
     logger[logLevel]('📤 Outgoing Response', {
       requestId,
       method: req.method,
@@ -153,8 +153,8 @@ export function developmentLogger(req: Request, res: Response, next: NextFunctio
       });
     }
 
-    // Log errors with more detail
-    if (res.statusCode >= 400) {
+    // Log errors with more detail (but not 404s)
+    if (res.statusCode >= 500) {
       logger.error('❌ Error Response', {
         requestId,
         method: req.method,
@@ -164,6 +164,14 @@ export function developmentLogger(req: Request, res: Response, next: NextFunctio
         requestHeaders: requestLog.headers,
         requestBody: requestLog.body,
         responseHeaders: responseLog.headers,
+      });
+    } else if (res.statusCode >= 400 && res.statusCode !== 404) {
+      logger.warn('⚠️ Client Error Response', {
+        requestId,
+        method: req.method,
+        url: req.originalUrl || req.url,
+        statusCode: res.statusCode,
+        responseTime: `${responseTime}ms`,
       });
     }
 

@@ -43,7 +43,7 @@ export function performanceMonitoring(req: Request, res: Response, next: NextFun
       memoryUsage: process.memoryUsage(),
       timestamp: new Date(),
       userAgent: req.get('User-Agent'),
-      ip: req.ip || req.connection.remoteAddress,
+      ip: req.ip || req.socket.remoteAddress,
     };
 
     // Store metrics
@@ -59,9 +59,15 @@ export function performanceMonitoring(req: Request, res: Response, next: NextFun
       });
     }
 
-    // Log errors
-    if (res.statusCode >= 400) {
-      logger.error(`Error response: ${req.method} ${req.url} - ${res.statusCode}`, {
+    // Log errors (but not 404s which are expected)
+    if (res.statusCode >= 500) {
+      logger.error(`Server error: ${req.method} ${req.url} - ${res.statusCode}`, {
+        requestId,
+        responseTime,
+        statusCode: res.statusCode,
+      });
+    } else if (res.statusCode >= 400 && res.statusCode !== 404) {
+      logger.warn(`Client error: ${req.method} ${req.url} - ${res.statusCode}`, {
         requestId,
         responseTime,
         statusCode: res.statusCode,
@@ -91,7 +97,7 @@ function storeMetrics(metrics: PerformanceMetrics): void {
  * Generate unique request ID
  */
 function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
