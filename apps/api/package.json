@@ -21,6 +21,7 @@
     "clear-data": "tsx src/scripts/clear-data.ts",
     "clear-projects": "tsx src/scripts/clearProjectsAndApplications.ts",
     "check-data": "tsx src/scripts/check-data.ts",
+    "cleanup-schema": "node --import tsx src/scripts/cleanup-schema.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

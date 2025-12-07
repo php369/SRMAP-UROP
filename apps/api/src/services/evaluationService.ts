@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { IEvaluation, Evaluation } from '../models/Evaluation';
 import { Group } from '../models/Group';
-import { FacultyRoster } from '../models/FacultyRoster';
 import { logger } from '../utils/logger';
 
 export class EvaluationService {
@@ -340,14 +339,15 @@ export class EvaluationService {
         throw new Error('Group must be assigned to a project before external evaluator assignment');
       }
 
-      // Validate external faculty exists and is active
-      const externalFaculty = await FacultyRoster.findById(externalFacultyId);
+      // Validate external faculty exists
+      const { User } = await import('../models/User');
+      const externalFaculty = await User.findById(externalFacultyId);
       if (!externalFaculty) {
         throw new Error('External faculty not found');
       }
 
-      if (!externalFaculty.active) {
-        throw new Error('External faculty is not active');
+      if (externalFaculty.role !== 'faculty' && !externalFaculty.isExternalEvaluator) {
+        throw new Error('User is not a faculty member or external evaluator');
       }
 
       // Check if external faculty is different from internal faculty
@@ -396,7 +396,7 @@ export class EvaluationService {
           const { User } = await import('../models/User');
           
           // Get internal faculty details for calendar access
-          const internalFaculty = await FacultyRoster.findById(group.facultyId);
+          const internalFaculty = await User.findById(group.facultyId);
           if (internalFaculty) {
             // Get all group members for attendees list
             const groupMembers = await User.find({ _id: { $in: group.memberIds } });
@@ -509,7 +509,8 @@ export class EvaluationService {
       }
 
       // Store external faculty info for notifications before removal
-      const externalFaculty = await FacultyRoster.findById(evaluation.externalFacultyId);
+      const { User } = await import('../models/User');
+      const externalFaculty = await User.findById(evaluation.externalFacultyId);
 
       // Remove external faculty assignment
       evaluation.externalFacultyId = undefined;
@@ -528,7 +529,7 @@ export class EvaluationService {
           const { User } = await import('../models/User');
           
           // Get internal faculty details for calendar access
-          const internalFaculty = await FacultyRoster.findById(group.facultyId);
+          const internalFaculty = await User.findById(group.facultyId);
           if (internalFaculty) {
             // Get all group members for attendees list
             const groupMembers = await User.find({ _id: { $in: group.memberIds } });

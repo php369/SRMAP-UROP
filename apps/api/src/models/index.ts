@@ -2,8 +2,6 @@
 export { User } from './User';
 export { TokenStore } from './TokenStore';
 export { Project } from './Project';
-export { Eligibility } from './Eligibility';
-export { FacultyRoster } from './FacultyRoster';
 export { Group } from './Group';
 export { GroupSubmission } from './GroupSubmission';
 export { Application } from './Application';
@@ -16,15 +14,12 @@ export { Course } from './Course';
 export { MeetingLog } from './MeetingLog';
 export { StudentMeta } from './StudentMeta';
 export { OnlineStatus } from './OnlineStatus';
-export { AvatarPool } from './AvatarPool';
 export { Submission } from './Submission';
 
 // Export types separately
 export type { IUser } from './User';
 export type { ITokenStore } from './TokenStore';
 export type { IProject } from './Project';
-export type { IEligibility } from './Eligibility';
-export type { IFacultyRoster } from './FacultyRoster';
 export type { IGroup } from './Group';
 export type { IGroupSubmission } from './GroupSubmission';
 export type { IApplication } from './Application';
@@ -37,7 +32,6 @@ export type { ICourse } from './Course';
 export type { IMeetingLog } from './MeetingLog';
 export type { IStudentMeta } from './StudentMeta';
 export type { IOnlineStatus } from './OnlineStatus';
-export type { IAvatarPool } from './AvatarPool';
 export type { ISubmission } from './Submission';
 
 // Re-export mongoose types for convenience

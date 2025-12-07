@@ -1,6 +1,5 @@
 import { Group } from '../models/Group';
 import { User } from '../models/User';
-import { FacultyRoster } from '../models/FacultyRoster';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
 
@@ -33,23 +32,12 @@ export async function isGroupLeader(userId: string | mongoose.Types.ObjectId): P
 export async function isCoordinator(userId: string | mongoose.Types.ObjectId): Promise<boolean> {
     try {
         const user = await User.findById(userId);
-        if (!user || user.role !== 'faculty') {
+        if (!user) {
             return false;
         }
 
-        // Check if user has isCoordinator flag
-        if (user.isCoordinator) {
-            return true;
-        }
-
-        // Also check FacultyRoster
-        const facultyRoster = await FacultyRoster.findOne({
-            email: user.email.toLowerCase(),
-            isCoordinator: true,
-            active: true
-        });
-
-        return !!facultyRoster;
+        // Check if user has isCoordinator flag or is admin
+        return user.isCoordinator || user.role === 'admin';
     } catch (error) {
         logger.error('Error checking coordinator status:', error);
         return false;
