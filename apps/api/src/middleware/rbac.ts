@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
  * Enhanced RBAC middleware that checks current authorization status
  * This middleware re-validates user authorization on each request
  */
-export const rbacGuard = (...allowedRoles: Array<'student' | 'faculty' | 'coordinator' | 'admin'>) => {
+export const rbacGuard = (...allowedRoles: Array<'student' | 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin'>) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
       res.status(401).json({
@@ -39,7 +39,14 @@ export const rbacGuard = (...allowedRoles: Array<'student' | 'faculty' | 'coordi
       }
 
       // Check if user's current role is in allowed roles
-      if (!allowedRoles.includes(authResult.role)) {
+      let hasAccess = allowedRoles.includes(authResult.role as any);
+      
+      // Special handling for generic 'student' role - matches any student type
+      if (!hasAccess && allowedRoles.includes('student' as any) && authResult.role.endsWith('-student')) {
+        hasAccess = true;
+      }
+      
+      if (!hasAccess) {
         logger.warn(`RBAC: Insufficient permissions for ${req.user.email} (${authResult.role}) to access ${req.path}`);
         
         res.status(403).json({
@@ -119,7 +126,7 @@ export const studentGuard = (requiredProjectType?: 'IDP' | 'UROP' | 'CAPSTONE') 
 
       // Note: Project type eligibility check removed - all students can access all project types now
 
-      req.user.role = 'student';
+      req.user.role = authResult.role;
       (req as any).authContext = {
         user: authResult.user,
         projectType: requiredProjectType,
