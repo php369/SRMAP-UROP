@@ -23,10 +23,14 @@ export function useWindowStatus(): WindowStatus {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/api/v1/windows');
+      const response = await api.get('/windows');
       
-      if (response.data?.success && response.data.data) {
-        setWindows(response.data.data);
+      console.log('Windows fetched:', response);
+      
+      if (response.success && response.data) {
+        setWindows(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setWindows([]);
       }
     } catch (err: any) {
       console.error('Error fetching windows:', err);
@@ -44,7 +48,15 @@ export function useWindowStatus(): WindowStatus {
     const window = windows.find(
       w => w.windowType === 'proposal' && w.projectType === projectType
     );
-    return window ? isWindowActive(window) : false;
+    const isActive = window ? isWindowActive(window) : false;
+    console.log(`Proposal window check for ${projectType}:`, {
+      window,
+      isActive,
+      now: new Date(),
+      start: window?.startDate,
+      end: window?.endDate
+    });
+    return isActive;
   };
 
   const isApplicationOpen = (projectType: string): boolean => {

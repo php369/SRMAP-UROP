@@ -62,14 +62,21 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
+      // Convert datetime-local values to ISO strings (preserves local timezone)
+      const startDate = new Date(windowForm.startDate).toISOString();
+      const endDate = new Date(windowForm.endDate).toISOString();
+      
       const payload = {
-        ...windowForm,
-        assessmentType: windowForm.assessmentType || undefined
+        windowType: windowForm.windowType,
+        projectType: windowForm.projectType,
+        assessmentType: windowForm.assessmentType || undefined,
+        startDate,
+        endDate
       };
       
       console.log('Creating window with payload:', payload);
-      console.log('Start date parsed:', new Date(windowForm.startDate));
-      console.log('End date parsed:', new Date(windowForm.endDate));
+      console.log('Start date local:', windowForm.startDate, '-> UTC:', startDate);
+      console.log('End date local:', windowForm.endDate, '-> UTC:', endDate);
       
       const response = await api.post('/control/windows', payload);
 
@@ -395,8 +402,16 @@ export function ControlPanel() {
                       )}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <p>Start: {new Date(window.startDate).toLocaleString()}</p>
-                      <p>End: {new Date(window.endDate).toLocaleString()}</p>
+                      <p>Start: {new Date(window.startDate).toLocaleString('en-IN', { 
+                        dateStyle: 'medium', 
+                        timeStyle: 'short',
+                        hour12: true 
+                      })}</p>
+                      <p>End: {new Date(window.endDate).toLocaleString('en-IN', { 
+                        dateStyle: 'medium', 
+                        timeStyle: 'short',
+                        hour12: true 
+                      })}</p>
                     </div>
                   </div>
                   <button
