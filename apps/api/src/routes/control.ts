@@ -39,10 +39,19 @@ router.get('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request, 
       .populate('createdBy', 'name email')
       .sort({ startDate: -1 });
 
-    res.json(windows);
+    res.json({
+      success: true,
+      data: windows
+    });
   } catch (error: any) {
     console.error('Get windows error:', error);
-    res.status(500).json({ message: 'Failed to get windows' });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_WINDOWS_FAILED',
+        message: 'Failed to get windows'
+      }
+    });
   }
 });
 
@@ -53,16 +62,33 @@ router.get('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request, 
  */
 router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
+    console.log('=== CREATE WINDOW REQUEST ===');
+    console.log('User:', req.user);
+    console.log('Body:', req.body);
+    
     const { windowType, projectType, assessmentType, startDate, endDate } = req.body;
 
     // Validate required fields
     if (!windowType || !projectType || !startDate || !endDate) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      console.log('Missing required fields');
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_REQUIRED_FIELDS',
+          message: 'Missing required fields'
+        }
+      });
     }
 
     // Validate dates
     if (new Date(endDate) <= new Date(startDate)) {
-      return res.status(400).json({ message: 'End date must be after start date' });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DATES',
+          message: 'End date must be after start date'
+        }
+      });
     }
 
     // Check for overlapping windows
@@ -85,8 +111,24 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
     const overlapping = await Window.findOne(query);
 
     if (overlapping) {
-      return res.status(400).json({ message: 'Window overlaps with existing window' });
+      console.log('Overlapping window found:', overlapping);
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'WINDOW_OVERLAP',
+          message: 'Window overlaps with existing window'
+        }
+      });
     }
+
+    console.log('Creating window with data:', {
+      windowType,
+      projectType,
+      assessmentType,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      userId: req.user!.id
+    });
 
     const window = new Window({
       windowType,
@@ -100,12 +142,24 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
     await window.save();
 
     res.status(201).json({
+      success: true,
       message: 'Window created successfully',
-      window
+      data: window
     });
   } catch (error: any) {
     console.error('Create window error:', error);
-    res.status(400).json({ message: error.message || 'Failed to create window' });
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'CREATE_WINDOW_FAILED',
+        message: error.message || 'Failed to create window'
+      }
+    });
   }
 });
 
@@ -120,12 +174,24 @@ router.put('/windows/:id', authenticate, isCoordinatorOrAdmin, async (req: Reque
 
     const window = await Window.findById(req.params.id);
     if (!window) {
-      return res.status(404).json({ message: 'Window not found' });
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'WINDOW_NOT_FOUND',
+          message: 'Window not found'
+        }
+      });
     }
 
     // Validate dates if provided
     if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-      return res.status(400).json({ message: 'End date must be after start date' });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DATES',
+          message: 'End date must be after start date'
+        }
+      });
     }
 
     if (startDate) window.startDate = new Date(startDate);
@@ -134,12 +200,19 @@ router.put('/windows/:id', authenticate, isCoordinatorOrAdmin, async (req: Reque
     await window.save();
 
     res.json({
+      success: true,
       message: 'Window updated successfully',
-      window
+      data: window
     });
   } catch (error: any) {
     console.error('Update window error:', error);
-    res.status(400).json({ message: error.message || 'Failed to update window' });
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'UPDATE_WINDOW_FAILED',
+        message: error.message || 'Failed to update window'
+      }
+    });
   }
 });
 
@@ -153,13 +226,28 @@ router.delete('/windows/:id', authenticate, isCoordinatorOrAdmin, async (req: Re
     const window = await Window.findByIdAndDelete(req.params.id);
     
     if (!window) {
-      return res.status(404).json({ message: 'Window not found' });
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'WINDOW_NOT_FOUND',
+          message: 'Window not found'
+        }
+      });
     }
 
-    res.json({ message: 'Window deleted successfully' });
+    res.json({
+      success: true,
+      message: 'Window deleted successfully'
+    });
   } catch (error: any) {
     console.error('Delete window error:', error);
-    res.status(500).json({ message: 'Failed to delete window' });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_WINDOW_FAILED',
+        message: 'Failed to delete window'
+      }
+    });
   }
 });
 
@@ -189,12 +277,19 @@ router.post('/grades/release', authenticate, isCoordinatorOrAdmin, async (req: R
     const result = await Submission.updateMany(query, { isGradeReleased: true });
 
     res.json({
+      success: true,
       message: `Released grades for ${result.modifiedCount} submissions`,
-      count: result.modifiedCount
+      data: { count: result.modifiedCount }
     });
   } catch (error: any) {
     console.error('Release grades error:', error);
-    res.status(500).json({ message: 'Failed to release grades' });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'RELEASE_GRADES_FAILED',
+        message: 'Failed to release grades'
+      }
+    });
   }
 });
 
@@ -245,25 +340,34 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
     ]);
 
     res.json({
-      overview: {
-        totalProjects,
-        totalGroups,
-        totalApplications,
-        totalSubmissions,
-        pendingApplications,
-        gradedSubmissions,
-        releasedGrades,
-        activeWindows
-      },
-      breakdown: {
-        projectsByType,
-        applicationsByStatus,
-        submissionsByAssessment
+      success: true,
+      data: {
+        overview: {
+          totalProjects,
+          totalGroups,
+          totalApplications,
+          totalSubmissions,
+          pendingApplications,
+          gradedSubmissions,
+          releasedGrades,
+          activeWindows
+        },
+        breakdown: {
+          projectsByType,
+          applicationsByStatus,
+          submissionsByAssessment
+        }
       }
     });
   } catch (error: any) {
     console.error('Get stats error:', error);
-    res.status(500).json({ message: 'Failed to get statistics' });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_STATS_FAILED',
+        message: 'Failed to get statistics'
+      }
+    });
   }
 });
 

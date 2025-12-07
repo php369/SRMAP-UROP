@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Award, TrendingUp, Users, FileText, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { api } from '../../utils/api';
 
 type WindowType = 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
@@ -28,9 +29,10 @@ export function ControlPanel() {
 
   const fetchWindows = async () => {
     try {
-      const response = await fetch('/api/v1/control/windows');
-      const data = await response.json();
-      setWindows(data);
+      const response = await api.get('/control/windows');
+      if (response.success) {
+        setWindows(response.data || []);
+      }
     } catch (error) {
       console.error('Error fetching windows:', error);
     }
@@ -38,9 +40,10 @@ export function ControlPanel() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/v1/control/stats');
-      const data = await response.json();
-      setStats(data);
+      const response = await api.get('/control/stats');
+      if (response.success) {
+        setStats(response.data);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -59,16 +62,20 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/control/windows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...windowForm,
-          assessmentType: windowForm.assessmentType || undefined
-        })
-      });
+      const payload = {
+        ...windowForm,
+        assessmentType: windowForm.assessmentType || undefined
+      };
+      
+      console.log('Creating window with payload:', payload);
+      console.log('Start date parsed:', new Date(windowForm.startDate));
+      console.log('End date parsed:', new Date(windowForm.endDate));
+      
+      const response = await api.post('/control/windows', payload);
 
-      if (response.ok) {
+      console.log('Response:', response);
+      
+      if (response.success) {
         toast.success('Window created successfully');
         setShowWindowForm(false);
         fetchWindows();
@@ -81,11 +88,12 @@ export function ControlPanel() {
           endDate: ''
         });
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to create window');
+        console.error('Server error:', response.error);
+        toast.error(response.error?.message || 'Failed to create window');
       }
-    } catch (error) {
-      toast.error('Failed to create window');
+    } catch (error: any) {
+      console.error('Request error:', error);
+      toast.error(error.message || 'Failed to create window');
     } finally {
       setLoading(false);
     }
@@ -97,18 +105,16 @@ export function ControlPanel() {
     }
 
     try {
-      const response = await fetch(`/api/v1/control/windows/${windowId}`, {
-        method: 'DELETE'
-      });
+      const response = await api.delete(`/control/windows/${windowId}`);
 
-      if (response.ok) {
+      if (response.success) {
         toast.success('Window deleted successfully');
         fetchWindows();
       } else {
-        toast.error('Failed to delete window');
+        toast.error(response.error?.message || 'Failed to delete window');
       }
-    } catch (error) {
-      toast.error('Failed to delete window');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete window');
     }
   };
 
@@ -118,21 +124,16 @@ export function ControlPanel() {
     }
 
     try {
-      const response = await fetch('/api/v1/control/grades/release', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectType, assessmentType })
-      });
+      const response = await api.post('/control/grades/release', { projectType, assessmentType });
 
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(data.message);
+      if (response.success) {
+        toast.success(response.message || 'Grades released successfully');
         fetchStats();
       } else {
-        toast.error('Failed to release grades');
+        toast.error(response.error?.message || 'Failed to release grades');
       }
-    } catch (error) {
-      toast.error('Failed to release grades');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to release grades');
     }
   };
 
