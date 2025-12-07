@@ -100,17 +100,26 @@ export async function createWindow(windowData: {
 }): Promise<IWindow> {
     try {
         // Check for overlapping windows
-        const overlapping = await Window.findOne({
+        const query: any = {
             windowType: windowData.windowType,
             projectType: windowData.projectType,
-            assessmentType: windowData.assessmentType,
             $or: [
                 {
                     startDate: { $lte: windowData.endDate },
                     endDate: { $gte: windowData.startDate }
                 }
             ]
-        });
+        };
+        
+        // Only add assessmentType to query if it's provided
+        if (windowData.assessmentType) {
+            query.assessmentType = windowData.assessmentType;
+        } else {
+            // For windows without assessmentType, check for documents where assessmentType is null or undefined
+            query.assessmentType = { $in: [null, undefined] };
+        }
+        
+        const overlapping = await Window.findOne(query);
 
         if (overlapping) {
             throw new Error('Window overlaps with existing window');
