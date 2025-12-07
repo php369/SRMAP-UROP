@@ -4,6 +4,7 @@ import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye } from 'lucide-
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 
 interface Meeting {
   _id: string;
@@ -39,10 +40,13 @@ interface MeetingLog {
     name: string;
   };
   attendees?: any[];
+  participants?: any[];
   minutesOfMeeting?: string;
   mom?: string;
   status: 'submitted' | 'completed' | 'approved' | 'rejected';
   rejectionReason?: string;
+  facultyNotes?: string;
+  facultyApproved?: boolean;
   createdAt: string;
 }
 
@@ -59,7 +63,7 @@ interface Project {
 }
 
 export function FacultyMeetingsPage() {
-  const { user } = useAuth();
+  useAuth(); // Keep for authentication check
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<MeetingLog[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -67,6 +71,7 @@ export function FacultyMeetingsPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedLog, setSelectedLog] = useState<MeetingLog | null>(null);
   const [activeTab, setActiveTab] = useState<'meetings' | 'logs'>('meetings');
+  const [hasAssignments, setHasAssignments] = useState<boolean | null>(null);
 
   const [scheduleData, setScheduleData] = useState({
     projectId: '',
@@ -80,10 +85,28 @@ export function FacultyMeetingsPage() {
   });
 
   useEffect(() => {
+    checkAssignments();
     fetchMeetings();
     fetchMeetingLogs();
     fetchProjects();
   }, []);
+
+  const checkAssignments = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/projects/faculty`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
+        }
+      });
+      const result = await response.json();
+      // Check if any project has been assigned to students
+      const assignedProjects = result.data?.filter((p: any) => p.status === 'assigned') || [];
+      setHasAssignments(assignedProjects.length > 0);
+    } catch (error) {
+      console.error('Error checking assignments:', error);
+      setHasAssignments(false);
+    }
+  };
 
   const fetchMeetings = async () => {
     setLoading(true);
@@ -240,6 +263,20 @@ export function FacultyMeetingsPage() {
     }
     return null;
   };
+
+  // Show loading while checking assignments
+  if (hasAssignments === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show message if no assignments
+  if (hasAssignments === false) {
+    return <NoAssignmentMessage userType="faculty" />;
+  }
 
   return (
     <div className="min-h-screen p-6">
@@ -627,10 +664,10 @@ export function FacultyMeetingsPage() {
 
                   <div>
                     <label className="text-sm font-medium text-gray-600">Status</label>
-                    <div className="mt-1">{getStatusBadge(selectedLog.facultyApproved)}</div>
+                    <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
                   </div>
 
-                  {!selectedLog.facultyApproved && (
+                  {selectedLog.status !== 'approved' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Faculty Notes (Optional)
@@ -665,7 +702,7 @@ export function FacultyMeetingsPage() {
                   >
                     Close
                   </button>
-                  {!selectedLog.facultyApproved && (
+                  {selectedLog.status !== 'approved' && (
                     <>
                       <button
                         onClick={() => handleApproveLog(selectedLog._id, false)}

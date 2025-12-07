@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
 
 interface Project {
   _id: string;
@@ -22,6 +23,7 @@ interface Project {
 
 export function FacultyProjectsPage() {
   const { user } = useAuth();
+  const { isProposalOpen, loading: windowLoading, windows } = useWindowStatus();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -34,6 +36,12 @@ export function FacultyProjectsPage() {
     department: user?.profile?.department || '',
     projectType: 'IDP' as 'IDP' | 'UROP' | 'CAPSTONE'
   });
+
+  // Check if proposal window is open for current project type
+  const canCreateProject = isProposalOpen(formData.projectType);
+  const proposalWindow = windows.find(
+    w => w.windowType === 'proposal' && w.projectType === formData.projectType
+  );
 
   useEffect(() => {
     fetchProjects();
@@ -199,14 +207,43 @@ export function FacultyProjectsPage() {
               resetForm();
               setShowModal(true);
             }}
-            disabled={projects.length >= 5}
+            disabled={projects.length >= 5 || !canCreateProject || windowLoading}
             variant="primary"
             glow
+            title={!canCreateProject ? 'Proposal window is not open' : projects.length >= 5 ? 'Maximum projects reached' : 'Create new project'}
           >
             <Plus className="w-4 h-4 mr-2" />
             New Project
           </GlowButton>
         </div>
+
+        {/* Window Status Alert */}
+        {!windowLoading && !canCreateProject && (
+          <GlassCard className="p-4 border-l-4 border-warning">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-text mb-1">
+                  Project Proposal Window Closed
+                </h3>
+                <p className="text-sm text-textSecondary mb-2">
+                  The proposal window for {formData.projectType} projects is not currently open.
+                  You cannot create new projects at this time.
+                </p>
+                {proposalWindow ? (
+                  <div className="text-xs text-textSecondary space-y-1">
+                    <p>Opens: {new Date(proposalWindow.startDate).toLocaleString()}</p>
+                    <p>Closes: {new Date(proposalWindow.endDate).toLocaleString()}</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-textSecondary">
+                    No proposal window has been scheduled yet. Contact your coordinator.
+                  </p>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        )}
 
         {/* Projects List */}
         {loading && projects.length === 0 ? (
@@ -228,11 +265,17 @@ export function FacultyProjectsPage() {
                   resetForm();
                   setShowModal(true);
                 }}
+                disabled={!canCreateProject || windowLoading}
                 variant="primary"
                 glow
               >
                 Create Project
               </GlowButton>
+              {!canCreateProject && (
+                <p className="text-sm text-warning mt-2">
+                  Proposal window is not open
+                </p>
+              )}
             </div>
           </GlassCard>
         ) : (
@@ -320,6 +363,17 @@ export function FacultyProjectsPage() {
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Window Status Warning in Modal */}
+                  {!editingProject && !canCreateProject && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-yellow-800">
+                        <p className="font-medium">Proposal window is closed for {formData.projectType}</p>
+                        <p className="text-xs mt-1">You can still draft the project, but it cannot be published until the window opens.</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Type
@@ -330,7 +384,8 @@ export function FacultyProjectsPage() {
                           key={type}
                           type="button"
                           onClick={() => setFormData({ ...formData, projectType: type })}
-                          className={`px-4 py-2 rounded-lg transition-all border-2 ${formData.projectType === type
+                          disabled={editingProject !== null}
+                          className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.projectType === type
                             ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
                             : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                             }`}
