@@ -3,9 +3,12 @@
  * @param role - User role
  * @returns Dashboard route path
  */
-export function getDashboardRouteForRole(role: 'student' | 'faculty' | 'coordinator' | 'admin'): string {
+export function getDashboardRouteForRole(role: 'student' | 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin'): string {
     const dashboardRoutes: Record<string, string> = {
         student: '/dashboard',
+        'idp-student': '/dashboard',
+        'urop-student': '/dashboard',
+        'capstone-student': '/dashboard',
         faculty: '/dashboard/faculty',
         coordinator: '/dashboard/coordinator',
         admin: '/dashboard/admin'
@@ -21,7 +24,7 @@ export function getDashboardRouteForRole(role: 'student' | 'faculty' | 'coordina
  * @returns true if the redirect URL is correct for the role
  */
 export function validateRoleBasedRedirect(
-    role: 'student' | 'faculty' | 'coordinator' | 'admin',
+    role: 'student' | 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin',
     redirectUrl: string
 ): boolean {
     const expectedRoute = getDashboardRouteForRole(role);
