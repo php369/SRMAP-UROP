@@ -274,7 +274,7 @@ router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (req: Reque
       totalAdmins
     ] = await Promise.all([
       User.countDocuments(),
-      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: { $in: ['idp-student', 'urop-student', 'capstone-student'] } }),
       User.countDocuments({ role: 'faculty' }),
       User.countDocuments({ isCoordinator: true }),
       User.countDocuments({ isExternalEvaluator: true }),

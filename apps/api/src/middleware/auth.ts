@@ -11,7 +11,7 @@ declare global {
         id: string;
         email: string;
         name: string;
-        role: 'student' | 'faculty' | 'coordinator' | 'admin';
+        role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
         isGroupLeader?: boolean;
         isCoordinator?: boolean;
         isExternalEvaluator?: boolean;
@@ -66,7 +66,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       id: user._id.toString(),
       email: user.email,
       name: user.name,
-      role: (roleInfo?.effectiveRole || user.role) as 'student' | 'faculty' | 'admin' | 'coordinator',
+      role: (roleInfo?.effectiveRole || user.role) as 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin' | 'coordinator',
       isGroupLeader: roleInfo?.isGroupLeader || false,
       isCoordinator: roleInfo?.isCoordinator || false,
       isExternalEvaluator: roleInfo?.isExternalEvaluator || false,
@@ -118,7 +118,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
  * Authorization middleware factory
  * Creates middleware that checks if user has required role(s)
  */
-export const authorize = (...allowedRoles: Array<'student' | 'faculty' | 'coordinator' | 'admin'>) => {
+export const authorize = (...allowedRoles: Array<'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin'>) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -231,7 +231,7 @@ export const optionalAuth = async (req: Request, _res: Response, next: NextFunct
         id: user._id.toString(),
         email: user.email,
         name: user.name,
-        role: (roleInfo?.effectiveRole || user.role) as 'student' | 'faculty' | 'admin' | 'coordinator',
+        role: (roleInfo?.effectiveRole || user.role) as 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin' | 'coordinator',
         isGroupLeader: roleInfo?.isGroupLeader || false,
         isCoordinator: roleInfo?.isCoordinator || false,
         isExternalEvaluator: roleInfo?.isExternalEvaluator || false,

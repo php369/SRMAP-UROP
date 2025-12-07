@@ -104,7 +104,7 @@ export const studentGuard = (requiredProjectType?: 'IDP' | 'UROP' | 'CAPSTONE') 
     try {
       const authResult = await checkUserAuthorization(req.user.email);
       
-      if (!authResult.isAuthorized || authResult.role !== 'student') {
+      if (!authResult.isAuthorized || !authResult.role.endsWith('-student')) {
         res.status(403).json({
           success: false,
           error: {

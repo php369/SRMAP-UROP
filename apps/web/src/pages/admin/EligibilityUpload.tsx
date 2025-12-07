@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, GlowButton, Badge } from '../../components/ui';
+import { GlassCard, GlowButton } from '../../components/ui';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/animations';
 import { apiClient } from '../../utils/api';
-import { useAuth } from '../../contexts/AuthContext';
 
 type UserType = 'student' | 'faculty';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
@@ -24,7 +23,6 @@ interface ValidationResult {
 }
 
 export function EligibilityUpload() {
-    const { user } = useAuth();
     const [userType, setUserType] = useState<UserType>('student');
     const [projectType, setProjectType] = useState<ProjectType>('IDP');
     const [csvData, setCsvData] = useState('');
@@ -482,9 +480,9 @@ faculty3@srmap.edu.in`;
                                 <GlowButton
                                     onClick={handleUpload}
                                     loading={uploading}
-                                    disabled={!csvData || uploading || (validationResult && !validationResult.valid)}
+                                    disabled={!csvData || uploading || (validationResult ? !validationResult.valid : false)}
                                     variant="primary"
-                                    glow
+                                    glow={true}
                                     className="flex-1"
                                 >
                                     {uploading ? 'Uploading...' : `Upload ${validationResult?.validRows || 0} Records`}

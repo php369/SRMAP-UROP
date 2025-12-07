@@ -37,7 +37,7 @@ router.get('/group/:groupId', authenticate, async (req, res) => {
 
       if (canAccess) {
         // Students can only see approved meeting logs (unless they created it)
-        if (userRole === 'student') {
+        if (userRole.endsWith('-student')) {
           if (log.status === 'approved' || log.createdBy._id.toString() === userId) {
             accessibleLogs.push(log);
           }
@@ -73,7 +73,7 @@ router.post('/', authenticate, async (req, res) => {
     const { groupId, ...meetingLogData }: { groupId: string } & CreateMeetingLogData = req.body;
 
     // Only students can create meeting logs
-    if (userRole !== 'student') {
+    if (!userRole.endsWith('-student')) {
       return res.status(403).json({ error: 'Only students can create meeting logs' });
     }
 
@@ -132,7 +132,7 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     // Only students can update meeting logs
-    if (userRole !== 'student') {
+    if (!userRole.endsWith('-student')) {
       return res.status(403).json({ error: 'Only students can update meeting logs' });
     }
 
@@ -203,7 +203,7 @@ router.get('/:id', authenticate, async (req, res) => {
     }
 
     // Students can only see approved meeting logs (unless they created it)
-    if (userRole === 'student' && meetingLog.status !== 'approved' && meetingLog.createdBy._id.toString() !== userId) {
+    if (userRole.endsWith('-student') && meetingLog.status !== 'approved' && meetingLog.createdBy._id.toString() !== userId) {
       return res.status(403).json({ error: 'Meeting log is not yet approved' });
     }
 

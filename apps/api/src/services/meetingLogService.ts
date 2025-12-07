@@ -59,7 +59,7 @@ export class MeetingLogService {
       }
 
       // Check if user is a member of the group
-      if (!group.memberIds.some(id => id.equals(createdBy))) {
+      if (!group.memberIds || !group.memberIds.some(id => id.equals(createdBy))) {
         throw new Error('User is not a member of this group');
       }
 
@@ -71,7 +71,7 @@ export class MeetingLogService {
       // Validate attendees are group members
       const attendeeIds = data.attendees.map(a => a.studentId);
       const validAttendees = attendeeIds.every(id => 
-        group.memberIds.some(memberId => memberId.toString() === id)
+        group.memberIds && group.memberIds.some(memberId => memberId.toString() === id)
       );
 
       if (!validAttendees) {
@@ -111,8 +111,8 @@ export class MeetingLogService {
         const { notifyMeetingLogSubmittedPersistent } = await import('./notificationService');
         await notifyMeetingLogSubmittedPersistent(
           meetingLog._id.toString(),
-          group.code,
-          group.facultyId.toString(),
+          group.code || 'Unknown',
+          group.facultyId?.toString() || '',
           createdBy.toString()
         );
       } catch (notificationError) {
@@ -152,7 +152,7 @@ export class MeetingLogService {
       const group = meetingLog.groupId as unknown as IGroup;
 
       // Check if user is a member of the group
-      if (!group.memberIds.some(id => id.equals(userId))) {
+      if (!group.memberIds || !group.memberIds.some(id => id.equals(userId))) {
         throw new Error('User is not a member of this group');
       }
 
@@ -169,7 +169,7 @@ export class MeetingLogService {
 
         const attendeeIds = data.attendees.map(a => a.studentId);
         const validAttendees = attendeeIds.every(id => 
-          group.memberIds.some(memberId => memberId.toString() === id)
+          group.memberIds && group.memberIds.some(memberId => memberId.toString() === id)
         );
 
         if (!validAttendees) {
@@ -321,12 +321,12 @@ export class MeetingLogService {
       try {
         const { notifyMeetingLogApprovedPersistent } = await import('./notificationService');
         const group = meetingLog.groupId as unknown as IGroup;
-        const memberIds = group.memberIds.map(id => id.toString());
+        const memberIds = group.memberIds ? group.memberIds.map(id => id.toString()) : [];
         
         await notifyMeetingLogApprovedPersistent(
           meetingLog._id.toString(),
           memberIds,
-          group.code,
+          group.code || 'Unknown',
           facultyId.toString()
         );
       } catch (notificationError) {
@@ -388,12 +388,12 @@ export class MeetingLogService {
       try {
         const { notifyMeetingLogRejectedPersistent } = await import('./notificationService');
         const group = meetingLog.groupId as unknown as IGroup;
-        const memberIds = group.memberIds.map(id => id.toString());
+        const memberIds = group.memberIds ? group.memberIds.map(id => id.toString()) : [];
         
         await notifyMeetingLogRejectedPersistent(
           meetingLog._id.toString(),
           memberIds,
-          group.code,
+          group.code || 'Unknown',
           reason,
           facultyId.toString()
         );
@@ -447,7 +447,7 @@ export class MeetingLogService {
       }
 
       // Students can access meeting logs for their groups
-      if (userRole === 'student' && group.memberIds.some(id => id.equals(userId))) {
+      if (userRole.endsWith('-student') && group.memberIds && group.memberIds.some(id => id.equals(userId))) {
         return { canAccess: true, meetingLog };
       }
 

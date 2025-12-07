@@ -63,7 +63,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     if (userRole === 'faculty' || userRole === 'coordinator') {
       // Faculty can see their own projects
       query.facultyId = new mongoose.Types.ObjectId(userId);
-    } else if (userRole === 'student') {
+    } else if (userRole.endsWith('-student')) {
       // Students can see published projects
       query.status = 'published';
     } else if (userRole === 'admin') {

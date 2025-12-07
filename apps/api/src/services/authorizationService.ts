@@ -7,7 +7,7 @@ export interface AuthorizationContext {
     id: string;
     email: string;
     name: string;
-    role: 'student' | 'faculty' | 'coordinator' | 'admin';
+    role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
     isCoordinator?: boolean;
     isExternalEvaluator?: boolean;
     department?: string;

@@ -2,7 +2,7 @@ import { User, IUser } from '../models/User';
 import { logger } from '../utils/logger';
 
 export interface UserSearchFilters {
-  role?: 'student' | 'faculty' | 'admin';
+  role?: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin';
   department?: string;
   year?: number;
   search?: string; // Search by name or email
@@ -54,7 +54,7 @@ export async function getUsers(filters: UserSearchFilters = {}): Promise<IUser[]
  */
 export async function updateUserRole(
   userId: string,
-  newRole: 'student' | 'faculty' | 'admin',
+  newRole: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin',
   adminId: string
 ): Promise<IUser> {
   try {
