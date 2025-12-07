@@ -236,7 +236,7 @@ export function TopNavigation() {
                 {/* User dropdown menu - render on top of backdrop */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-4 w-56 z-50">
-                    <GlassCard variant="elevated" className="py-2 shadow-xl">
+                    <div className="bg-surface/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl py-2">
                       <div className="px-4 py-3 border-b border-border">
                         <p className="text-sm font-medium text-text">{user?.name}</p>
                         <p className="text-xs text-textSecondary truncate">{user?.email}</p>
@@ -256,7 +256,7 @@ export function TopNavigation() {
                           Sign Out
                         </button>
                       </div>
-                    </GlassCard>
+                    </div>
                   </div>
                 )}
               </div>
