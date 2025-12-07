@@ -16,9 +16,9 @@ const router = express.Router();
 /**
  * GET /api/windows
  * Get all windows (optionally filtered by project type)
- * Accessible by: coordinator, admin
+ * Accessible by: all authenticated users
  */
-router.get('/', authenticate, authorize('coordinator', 'admin'), async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
     try {
         const { projectType } = req.query;
 
