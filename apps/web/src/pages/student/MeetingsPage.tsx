@@ -4,6 +4,7 @@ import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin }
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 
 export function MeetingsPage() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [hasProject, setHasProject] = useState<boolean | null>(null);
 
   const [logForm, setLogForm] = useState({
     minutesOfMeeting: '',
@@ -19,19 +21,37 @@ export function MeetingsPage() {
   });
 
   useEffect(() => {
+    checkProjectAssignment();
     checkUserRole();
     fetchMeetings();
   }, []);
+
+  const checkProjectAssignment = async () => {
+    try {
+      const response = await api.get('/applications/my-application');
+      if (response.success && response.data) {
+        // Check if application is approved
+        const appData = response.data as any;
+        setHasProject(appData.status === 'approved');
+      } else {
+        setHasProject(false);
+      }
+    } catch (error) {
+      console.error('Error checking project assignment:', error);
+      setHasProject(false);
+    }
+  };
 
   const checkUserRole = async () => {
     try {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
         const groupData = response.data as any;
-        const userIsLeader = groupData.leaderId === user?._id || groupData.leaderId?._id === user?._id;
+        const userId = (user as any)?._id || (user as any)?.id;
+        const userIsLeader = groupData.leaderId === userId || groupData.leaderId?._id === userId;
         setIsLeader(userIsLeader);
         setGroupMembers(groupData.members || []);
-        console.log('Group data:', { groupData, userIsLeader, userId: user?._id });
+        console.log('Group data:', { groupData, userIsLeader, userId });
       } else {
         // Solo student - always a leader
         console.log('No group found - treating as solo student (leader)');
@@ -70,7 +90,7 @@ export function MeetingsPage() {
 
     // Allow resubmission if rejected, otherwise check if already logged and approved/completed
     if ((meeting.minutesOfMeeting || meeting.mom) && meeting.status !== 'rejected') {
-      toast.info('This meeting has already been logged');
+      toast('This meeting has already been logged', { icon: 'ℹ️' });
       return;
     }
 
@@ -86,9 +106,12 @@ export function MeetingsPage() {
     } else if (groupMembers.length > 0) {
       // Group - pre-select all members
       initialAttendees = groupMembers.map((m: any) => m._id);
-    } else if (user?._id) {
+    } else {
       // Solo student - use current user ID
-      initialAttendees = [user._id];
+      const userId = (user as any)?._id || (user as any)?.id;
+      if (userId) {
+        initialAttendees = [userId];
+      }
     }
 
     setLogForm({
@@ -195,6 +218,20 @@ export function MeetingsPage() {
 
     return names;
   };
+
+  // Show loading while checking project assignment
+  if (hasProject === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show message if no project assigned
+  if (hasProject === false) {
+    return <NoAssignmentMessage userType="student" />;
+  }
 
   return (
     <div className="min-h-screen p-6">
@@ -414,8 +451,8 @@ export function MeetingsPage() {
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={logForm.attendees.includes(user?._id || '')}
-                        onChange={() => handleAttendeeToggle(user?._id || '')}
+                        checked={logForm.attendees.includes((user as any)?._id || (user as any)?.id || '')}
+                        onChange={() => handleAttendeeToggle((user as any)?._id || (user as any)?.id || '')}
                         className="w-4 h-4"
                       />
                       <span>{user?.name} (You)</span>

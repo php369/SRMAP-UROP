@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
+import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 
 interface Application {
   _id: string;
@@ -51,14 +53,19 @@ interface Application {
 
 export function FacultyApplicationsPage() {
   const { user } = useAuth();
+  const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [projectType, setProjectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
 
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  // Check if application window is open
+  const canReviewApplications = isApplicationOpen(projectType);
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -140,6 +147,11 @@ export function FacultyApplicationsPage() {
       </span>
     );
   };
+
+  // Show window closed message if application window is not open
+  if (!windowLoading && !canReviewApplications) {
+    return <WindowClosedMessage windowType="application" projectType={projectType} />;
+  }
 
   return (
     <div className="min-h-screen p-6">

@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { generateGroupCode, formatGroupCode } from '../../utils/codeGenerator';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
+import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 
 interface Project {
   _id: string;
@@ -19,13 +21,14 @@ interface Project {
 
 export function ApplicationPage() {
   const { user } = useAuth();
+  const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
   const [step, setStep] = useState<'choice' | 'group-formation' | 'application'>('choice');
   const [applicationType, setApplicationType] = useState<'solo' | 'group' | null>(null);
   const [groupAction, setGroupAction] = useState<'create' | 'join' | null>(null);
   const [groupCode, setGroupCode] = useState('');
   const [groupId, setGroupId] = useState('');
   const [inputCode, setInputCode] = useState('');
-  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [, setGroupMembers] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,10 +36,15 @@ export function ApplicationPage() {
   const [existingApplications, setExistingApplications] = useState<any[]>([]);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
+  // Check if application window is open
+  const canApply = eligibleProjectType ? isApplicationOpen(eligibleProjectType) : false;
+
   // Form data
   const [formData, setFormData] = useState({
     department: user?.profile?.department || '',
-    specialization: user?.profile?.specialization || ''
+    specialization: '',
+    cgpa: 0,
+    semester: 1
   });
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export function ApplicationPage() {
       const types = ['IDP', 'UROP', 'CAPSTONE'];
       for (const type of types) {
         const response = await api.get('/eligibility/check', { projectType: type });
-        if (response.success && response.isEligible) {
+        if (response.success && (response.data as any)?.isEligible) {
           setEligibleProjectType(type);
           return;
         }
@@ -285,8 +293,8 @@ export function ApplicationPage() {
         department: formData.department,
         stream: formData.department, // Use department as stream
         specialization: formData.specialization || '',
-        cgpa: user?.profile?.cgpa || 0,
-        semester: user?.profile?.semester || 1, // Use actual semester number
+        cgpa: formData.cgpa || 0,
+        semester: formData.semester || 1, // Use actual semester number
         isGroupApplication: applicationType === 'group'
       });
 
@@ -423,6 +431,11 @@ export function ApplicationPage() {
         </div>
       </div>
     );
+  }
+
+  // Check if window is open
+  if (!windowLoading && eligibleProjectType && !canApply) {
+    return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
   }
 
   if (!applicationWindow) {

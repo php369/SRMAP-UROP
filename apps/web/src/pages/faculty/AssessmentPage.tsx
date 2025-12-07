@@ -4,6 +4,8 @@ import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users } fro
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
+import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 
 interface Submission {
   _id: string;
@@ -36,16 +38,22 @@ interface Submission {
 
 export function FacultyAssessmentPage() {
   const { user } = useAuth();
+  const { isAssessmentOpen, loading: windowLoading } = useWindowStatus();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [selectedProjectLogs, setSelectedProjectLogs] = useState<any[] | null>(null);
+  const [projectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
+  const [assessmentType] = useState<'A1' | 'A2' | 'A3' | 'External'>('A1');
   const [gradeData, setGradeData] = useState({
     grade: '',
     comments: '',
     meetUrl: ''
   });
+
+  // Check if assessment window is open
+  const canGrade = isAssessmentOpen(projectType, assessmentType);
 
   useEffect(() => {
     fetchSubmissions();
@@ -212,6 +220,11 @@ export function FacultyAssessmentPage() {
       </span>
     );
   };
+
+  // Show window closed message if assessment window is not open
+  if (!windowLoading && !canGrade) {
+    return <WindowClosedMessage windowType="assessment" projectType={projectType} assessmentType={assessmentType} />;
+  }
 
   return (
     <div className="min-h-screen p-6">
