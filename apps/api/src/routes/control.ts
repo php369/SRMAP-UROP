@@ -66,14 +66,23 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
     }
 
     // Check for overlapping windows
-    const overlapping = await Window.findOne({
+    const query: any = {
       windowType,
       projectType,
-      assessmentType: assessmentType || null,
       $or: [
         { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } }
       ]
-    });
+    };
+    
+    // Only add assessmentType to query if it's provided
+    if (assessmentType) {
+      query.assessmentType = assessmentType;
+    } else {
+      // For windows without assessmentType, check for documents where assessmentType is null or undefined
+      query.assessmentType = { $in: [null, undefined] };
+    }
+    
+    const overlapping = await Window.findOne(query);
 
     if (overlapping) {
       return res.status(400).json({ message: 'Window overlaps with existing window' });
