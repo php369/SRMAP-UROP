@@ -69,7 +69,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         <TopNavigation />
 
         {/* Page content */}
-        <main className="relative z-10 py-4 sm:py-6 px-4 sm:px-6 pt-32 transition-all duration-300">
+        <main className={`relative z-10 py-4 sm:py-6 px-4 sm:px-6 transition-all duration-300 ${isMobile ? 'pt-20' : 'lg:pt-6'
+          }`}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
