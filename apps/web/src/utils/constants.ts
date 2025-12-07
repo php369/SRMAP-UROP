@@ -98,7 +98,6 @@ export const ROLE_NAVIGATION = {
     { label: 'Submission', path: ROUTES.SUBMISSION, icon: 'Upload' },
     { label: 'Assessment', path: ROUTES.ASSESSMENT, icon: 'FileText' },
     { label: 'Meetings', path: ROUTES.MEETINGS, icon: 'Calendar' },
-    { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   faculty: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
@@ -106,7 +105,6 @@ export const ROLE_NAVIGATION = {
     { label: 'Applications', path: '/dashboard/faculty/applications', icon: 'Users' },
     { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award' },
     { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar' },
-    { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   coordinator: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
@@ -115,14 +113,11 @@ export const ROLE_NAVIGATION = {
     { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award' },
     { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar' },
     { label: 'Control Panel', path: '/dashboard/control', icon: 'Settings' },
-    { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
   admin: [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
     { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload' },
-    { label: 'Users', path: ROUTES.ADMIN_USERS, icon: 'Users' },
     { label: 'Windows', path: '/dashboard/admin/windows', icon: 'Calendar' },
-    { label: 'Profile', path: ROUTES.PROFILE, icon: 'User' },
   ],
 } as const;
 

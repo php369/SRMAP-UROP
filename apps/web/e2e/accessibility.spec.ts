@@ -60,7 +60,7 @@ test.describe('Accessibility Tests', () => {
   });
 
   test('should have proper form labels', async ({ page }) => {
-    const pages = ['/assessments/create', '/profile', '/'];
+    const pages = ['/assessments/create', '/'];
     
     for (const pagePath of pages) {
       try {
