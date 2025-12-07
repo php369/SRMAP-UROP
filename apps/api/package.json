@@ -23,6 +23,7 @@
     "check-data": "tsx src/scripts/check-data.ts",
     "cleanup-schema": "node --import tsx src/scripts/cleanup-schema.ts",
     "final-cleanup": "tsx src/scripts/final-db-cleanup.ts",
+    "reset-db": "tsx src/scripts/reset-database.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
