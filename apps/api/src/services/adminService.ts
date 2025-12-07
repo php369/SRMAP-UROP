@@ -321,9 +321,5 @@ export async function generateReports(
   }
 }
 
-/**
- * 
-Get eligibility records with optional filtering
- * @param filters - Search and filter criteria
- * @returns List of eligibility records
- */
+// All eligibility and faculty roster functions removed
+// Authorization is now based on User model fields: role, isCoordinator, isExternalEvaluator, department
