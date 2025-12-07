@@ -5,7 +5,7 @@ export interface IUser extends Document {
   googleId: string;
   name: string;
   email: string;
-  role: 'student' | 'faculty' | 'admin';
+  role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin';
   studentId?: string; // Unique identifier for students
   facultyId?: string; // Unique identifier for faculty
   department?: string; // Department for all users
@@ -45,9 +45,9 @@ const UserSchema = new Schema<IUser>({
   },
   role: {
     type: String,
-    enum: ['student', 'faculty', 'admin'],
+    enum: ['idp-student', 'urop-student', 'capstone-student', 'faculty', 'admin'],
     required: true,
-    default: 'student'
+    default: 'idp-student'
   },
   studentId: {
     type: String,

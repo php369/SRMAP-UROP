@@ -36,7 +36,7 @@ export function EligibilityUpload() {
 
     const validateCSV = (csvContent: string): ValidationResult => {
         const lines = csvContent.trim().split('\n');
-        if (lines.length < 2) {
+        if (lines.length < 1) {
             return {
                 valid: false,
                 rows: [],
@@ -46,66 +46,28 @@ export function EligibilityUpload() {
             };
         }
 
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const expectedHeaders = userType === 'student'
-            ? ['email', 'regno', 'year', 'semester']
-            : ['email', 'name', 'department'];
-
         const rows: ParsedRow[] = [];
         let validCount = 0;
         let invalidCount = 0;
 
-        // Validate headers
-        const headerErrors: string[] = [];
-        expectedHeaders.forEach(expected => {
-            if (!headers.includes(expected)) {
-                headerErrors.push(`Missing column: ${expected}`);
-            }
-        });
+        // Skip header row if it exists (check if first line contains "email")
+        const startIndex = lines[0].toLowerCase().includes('email') ? 1 : 0;
 
-        // Validate each data row
-        for (let i = 1; i < lines.length; i++) {
+        // Validate each email
+        for (let i = startIndex; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
 
-            const values = line.split(',').map(v => v.trim());
-            const rowData: Record<string, string> = {};
-            const rowErrors: string[] = [...headerErrors];
-
-            headers.forEach((header, index) => {
-                rowData[header] = values[index] || '';
-            });
+            // Extract email (first column or the whole line if no commas)
+            const email = line.split(',')[0].trim();
+            const rowData: Record<string, string> = { email };
+            const rowErrors: string[] = [];
 
             // Validate email
-            if (!rowData.email || !rowData.email.endsWith('@srmap.edu.in')) {
-                rowErrors.push('Invalid email (must end with @srmap.edu.in)');
-            }
-
-            if (userType === 'student') {
-                // Validate year
-                const year = parseInt(rowData.year);
-                if (!year || ![2, 3, 4].includes(year)) {
-                    rowErrors.push('Year must be 2, 3, or 4');
-                }
-
-                // Validate semester
-                const semester = parseInt(rowData.semester);
-                if (!semester || ![3, 4, 7, 8].includes(semester)) {
-                    rowErrors.push('Semester must be 3, 4, 7, or 8');
-                }
-
-                // Validate regno
-                if (!rowData.regno) {
-                    rowErrors.push('Registration number is required');
-                }
-            } else {
-                // Validate faculty
-                if (!rowData.name) {
-                    rowErrors.push('Name is required');
-                }
-                if (!rowData.department) {
-                    rowErrors.push('Department is required');
-                }
+            if (!email || !email.includes('@')) {
+                rowErrors.push('Invalid email format');
+            } else if (!email.endsWith('@srmap.edu.in')) {
+                rowErrors.push('Email must end with @srmap.edu.in');
             }
 
             const isValid = rowErrors.length === 0;
@@ -113,7 +75,7 @@ export function EligibilityUpload() {
             else invalidCount++;
 
             rows.push({
-                rowNumber: i,
+                rowNumber: i + 1,
                 data: rowData,
                 valid: isValid,
                 errors: rowErrors
@@ -199,15 +161,15 @@ export function EligibilityUpload() {
 
     const getCSVFormatExample = () => {
         if (userType === 'student') {
-            return `email,regno,year,semester
-student1@srmap.edu.in,AP12345,2,3
-student2@srmap.edu.in,AP12346,3,7
-student3@srmap.edu.in,AP12347,4,7`;
+            return `email
+student1@srmap.edu.in
+student2@srmap.edu.in
+student3@srmap.edu.in`;
         } else {
-            return `email,name,department,isCoordinator
-faculty1@srmap.edu.in,Dr. John Doe,Computer Science,false
-faculty2@srmap.edu.in,Dr. Jane Smith,Electronics,true
-faculty3@srmap.edu.in,Prof. Bob Wilson,Mechanical,false`;
+            return `email
+faculty1@srmap.edu.in
+faculty2@srmap.edu.in
+faculty3@srmap.edu.in`;
         }
     };
 
@@ -215,32 +177,39 @@ faculty3@srmap.edu.in,Prof. Bob Wilson,Mechanical,false`;
         if (userType === 'student') {
             return (
                 <>
-                    <strong>⚠️ IMPORTANT: Column headers must be EXACTLY: email,regno,year,semester</strong>
+                    <strong>📧 Simple Format: Just list the emails!</strong>
                     <br />
+                    <br />
+                    • CSV file should contain one email per line
                     <br />
                     • All emails must end with @srmap.edu.in
                     <br />
-                    • Registration numbers (regno) typically start with "AP" (optional)
-                    <br />
-                    • Year: Must be 2, 3, or 4 (second, third, or fourth year)
-                    <br />
-                    • Semester: Must be 3, 4, 7, or 8
-                    <br />
-                    • Odd semesters (3, 7): Jan-May term
-                    <br />
-                    • Even semesters (4, 8): Aug-Dec term
+                    • Optional: You can include a header row with "email"
                     <br />
                     • Select the Project Type (IDP/UROP/CAPSTONE) before uploading
+                    <br />
+                    • Students will be assigned the role based on project type:
+                    <br />
+                    &nbsp;&nbsp;- IDP → idp-student
+                    <br />
+                    &nbsp;&nbsp;- UROP → urop-student
+                    <br />
+                    &nbsp;&nbsp;- CAPSTONE → capstone-student
                 </>
             );
         } else {
             return (
                 <>
+                    <strong>📧 Simple Format: Just list the emails!</strong>
+                    <br />
+                    <br />
+                    • CSV file should contain one email per line
+                    <br />
                     • All emails must end with @srmap.edu.in
                     <br />
-                    • Faculty ID is required (e.g., FAC001)
+                    • Optional: You can include a header row with "email"
                     <br />
-                    • Department name is required
+                    • Faculty members will be created with faculty role
                 </>
             );
         }
@@ -448,20 +417,7 @@ faculty3@srmap.edu.in,Prof. Bob Wilson,Mechanical,false`;
                                                             <tr>
                                                                 <th className="px-3 py-2 text-left text-xs font-semibold text-text">Row</th>
                                                                 <th className="px-3 py-2 text-left text-xs font-semibold text-text">Status</th>
-                                                                {userType === 'student' ? (
-                                                                    <>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Reg No</th>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Year</th>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Semester</th>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Faculty ID</th>
-                                                                        <th className="px-3 py-2 text-left text-xs font-semibold text-text">Department</th>
-                                                                    </>
-                                                                )}
+                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
                                                                 <th className="px-3 py-2 text-left text-xs font-semibold text-text">Errors</th>
                                                             </tr>
                                                         </thead>
@@ -490,20 +446,7 @@ faculty3@srmap.edu.in,Prof. Bob Wilson,Mechanical,false`;
                                                                             </span>
                                                                         )}
                                                                     </td>
-                                                                    {userType === 'student' ? (
-                                                                        <>
-                                                                            <td className="px-3 py-2 text-text">{row.data.email}</td>
-                                                                            <td className="px-3 py-2 text-text">{row.data.regno}</td>
-                                                                            <td className="px-3 py-2 text-text">{row.data.year}</td>
-                                                                            <td className="px-3 py-2 text-text">{row.data.semester}</td>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <td className="px-3 py-2 text-text">{row.data.email}</td>
-                                                                            <td className="px-3 py-2 text-text">{row.data.facultyid}</td>
-                                                                            <td className="px-3 py-2 text-text">{row.data.department}</td>
-                                                                        </>
-                                                                    )}
+                                                                    <td className="px-3 py-2 text-text">{row.data.email}</td>
                                                                     <td className="px-3 py-2">
                                                                         {row.errors.length > 0 && (
                                                                             <div className="space-y-1">
