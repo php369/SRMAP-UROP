@@ -148,7 +148,6 @@ SubmissionSchema.index({ facultyId: 1, isGraded: 1 }); // Faculty grading queue
 SubmissionSchema.index({ externalEvaluatorId: 1 }); // External evaluator queue
 SubmissionSchema.index({ projectId: 1 }); // Project submissions
 SubmissionSchema.index({ submittedAt: -1 }); // Recent submissions
-SubmissionSchema.index({ submissionId: 1 }); // Unique submission lookup
 
 // Validation: Must have either groupId OR studentId (not both, not neither)
 SubmissionSchema.pre('save', function (next) {
