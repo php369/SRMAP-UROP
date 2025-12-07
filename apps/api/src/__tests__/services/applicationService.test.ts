@@ -6,8 +6,6 @@ import { Application } from '../../models/Application';
 import { Group } from '../../models/Group';
 import { Project } from '../../models/Project';
 import { User } from '../../models/User';
-import { FacultyRoster } from '../../models/FacultyRoster';
-import { beforeEach } from 'node:test';
 import { beforeEach } from 'node:test';
 
 describe('ApplicationService', () => {
@@ -35,12 +33,14 @@ describe('ApplicationService', () => {
     testUserId2 = users[1]._id;
 
     // Create test faculty
-    const faculty = await FacultyRoster.create({
+    const faculty = await User.create({
+      googleId: 'google-faculty',
       email: 'faculty@srmap.edu.in',
       name: 'Test Faculty',
-      dept: 'CSE',
+      role: 'faculty',
+      department: 'CSE',
       isCoordinator: false,
-      active: true
+      preferences: { theme: 'light', notifications: true }
     });
 
     testFacultyId = faculty._id;
@@ -462,12 +462,14 @@ describe('ApplicationService', () => {
 
     test('should prevent faculty from deciding on other faculty projects', async () => {
       // Create another faculty
-      const otherFaculty = await FacultyRoster.create({
+      const otherFaculty = await User.create({
+        googleId: 'google-other-faculty',
         email: 'other@srmap.edu.in',
         name: 'Other Faculty',
-        dept: 'ECE',
+        role: 'faculty',
+        department: 'ECE',
         isCoordinator: false,
-        active: true
+        preferences: { theme: 'light', notifications: true }
       });
 
       const application = await ApplicationService.createApplication(
@@ -520,12 +522,14 @@ describe('ApplicationService', () => {
     });
 
     test('should return empty array for faculty with no applications', async () => {
-      const otherFaculty = await FacultyRoster.create({
+      const otherFaculty = await User.create({
+        googleId: 'google-other-faculty-2',
         email: 'other2@srmap.edu.in',
         name: 'Other Faculty 2',
-        dept: 'ECE',
+        role: 'faculty',
+        department: 'ECE',
         isCoordinator: false,
-        active: true
+        preferences: { theme: 'light', notifications: true }
       });
 
       const applications = await ApplicationService.getFacultyApplications(otherFaculty._id);
