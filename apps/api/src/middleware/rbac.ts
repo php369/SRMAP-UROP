@@ -196,6 +196,7 @@ export const facultyGuard = (requireCoordinator: boolean = false) => {
       req.user.role = authResult.role;
       (req as any).authContext = {
         user: authResult.user,
+        facultyInfo: authResult.user, // Add facultyInfo for backward compatibility
         isCoordinator: authResult.role === 'coordinator' || authResult.role === 'admin',
         department: authResult.user?.department,
       };
