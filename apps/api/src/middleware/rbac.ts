@@ -62,9 +62,8 @@ export const rbacGuard = (...allowedRoles: Array<'student' | 'faculty' | 'coordi
       
       // Attach additional context for downstream middleware
       (req as any).authContext = {
-        eligibility: authResult.eligibility,
-        facultyInfo: authResult.facultyInfo,
-        isCoordinator: authResult.role === 'coordinator',
+        user: authResult.user,
+        isCoordinator: authResult.role === 'coordinator' || authResult.role === 'admin',
         isAdmin: authResult.role === 'admin',
       };
 
@@ -118,29 +117,12 @@ export const studentGuard = (requiredProjectType?: 'IDP' | 'UROP' | 'CAPSTONE') 
         return;
       }
 
-      // Check project type eligibility if specified
-      if (requiredProjectType && authResult.eligibility) {
-        if (authResult.eligibility.type !== requiredProjectType) {
-          res.status(403).json({
-            success: false,
-            error: {
-              code: 'PROJECT_TYPE_NOT_ELIGIBLE',
-              message: `Student not eligible for ${requiredProjectType} projects`,
-              details: {
-                studentType: authResult.eligibility.type,
-                requiredType: requiredProjectType,
-              },
-              timestamp: new Date().toISOString(),
-            },
-          });
-          return;
-        }
-      }
+      // Note: Project type eligibility check removed - all students can access all project types now
 
       req.user.role = 'student';
       (req as any).authContext = {
-        eligibility: authResult.eligibility,
-        projectType: authResult.eligibility?.type,
+        user: authResult.user,
+        projectType: requiredProjectType,
       };
 
       next();
@@ -206,9 +188,9 @@ export const facultyGuard = (requireCoordinator: boolean = false) => {
 
       req.user.role = authResult.role;
       (req as any).authContext = {
-        facultyInfo: authResult.facultyInfo,
-        isCoordinator: authResult.role === 'coordinator',
-        department: authResult.facultyInfo?.dept,
+        user: authResult.user,
+        isCoordinator: authResult.role === 'coordinator' || authResult.role === 'admin',
+        department: authResult.user?.department,
       };
 
       next();

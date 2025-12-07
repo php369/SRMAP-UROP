@@ -9,9 +9,8 @@ import '../models';
 
 // Import specific models
 import { User } from '../models/User';
-import { Eligibility } from '../models/Eligibility';
+// Eligibility and FacultyRoster models removed - collections dropped from database
 import { Project } from '../models/Project';
-import { FacultyRoster } from '../models/FacultyRoster';
 import { Group } from '../models/Group';
 import { Application } from '../models/Application';
 import { GroupSubmission } from '../models/GroupSubmission';
@@ -44,14 +43,13 @@ async function clearAllData(): Promise<void> {
   
   try {
     // Clear all collections by deleting documents (not dropping collections)
+    // Note: Eligibility, FacultyRoster, and AvatarPool collections have been dropped
     const clearPromises = [
       Evaluation.deleteMany({}),
       GroupSubmission.deleteMany({}),
       Application.deleteMany({}),
       Group.deleteMany({}),
       Project.deleteMany({}),
-      Eligibility.deleteMany({}),
-      FacultyRoster.deleteMany({}),
       User.deleteMany({}),
       Window.deleteMany({}),
       Notification.deleteMany({}),
