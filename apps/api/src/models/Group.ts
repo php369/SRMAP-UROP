@@ -166,7 +166,6 @@ GroupSchema.virtual('memberIds').get(function() {
 
 // Additional indexes for performance
 GroupSchema.index({ status: 1, projectType: 1 });
-GroupSchema.index({ groupId: 1 });
 
 export const Group = mongoose.model<IGroup>('Group', GroupSchema);
 export default Group;

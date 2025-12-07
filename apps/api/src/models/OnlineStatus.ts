@@ -41,7 +41,6 @@ const OnlineStatusSchema = new Schema<IOnlineStatus>({
 });
 
 // Indexes for performance
-OnlineStatusSchema.index({ userId: 1 });
 OnlineStatusSchema.index({ isOnline: 1, lastSeen: -1 });
 
 export const OnlineStatus = mongoose.model<IOnlineStatus>('OnlineStatus', OnlineStatusSchema);
