@@ -36,8 +36,8 @@ export async function checkUserAuthorization(email: string): Promise<AuthResult>
       // Determine role based on User model fields
       let role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin' = user.role;
       
-      // Override role to coordinator if isCoordinator flag is set
-      if (user.isCoordinator) {
+      // Override role to coordinator if isCoordinator flag is set (but not for admins)
+      if (user.isCoordinator && user.role !== 'admin') {
         role = 'coordinator';
       }
       
