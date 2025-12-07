@@ -227,7 +227,7 @@ export function FacultyProjectsPage() {
                   Project Proposal Window Closed
                 </h3>
                 <p className="text-sm text-textSecondary mb-2">
-                  The proposal window for {formData.projectType} projects is not currently open.
+                  The proposal window is not currently open.
                   You cannot create new projects at this time.
                 </p>
                 {proposalWindow ? (
@@ -237,7 +237,7 @@ export function FacultyProjectsPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-textSecondary">
-                    No proposal window has been scheduled yet. Contact your coordinator.
+                    No proposal window has been scheduled yet. Please check back later.
                   </p>
                 )}
               </div>
@@ -368,7 +368,7 @@ export function FacultyProjectsPage() {
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-yellow-800">
-                        <p className="font-medium">Proposal window is closed for {formData.projectType}</p>
+                        <p className="font-medium">Proposal window is currently closed</p>
                         <p className="text-xs mt-1">You can still draft the project, but it cannot be published until the window opens.</p>
                       </div>
                     </div>

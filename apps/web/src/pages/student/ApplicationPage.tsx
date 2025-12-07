@@ -435,7 +435,7 @@ export function ApplicationPage() {
 
   // Check if window is open
   if (!windowLoading && eligibleProjectType && !canApply) {
-    return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
+    return <WindowClosedMessage windowType="application" />;
   }
 
   if (!applicationWindow) {
