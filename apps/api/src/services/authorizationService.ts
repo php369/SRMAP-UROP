@@ -1,6 +1,4 @@
 import { Request } from 'express';
-import { IEligibility } from '../models/Eligibility';
-import { IFacultyRoster } from '../models/FacultyRoster';
 import { getWindowStatus } from '../middleware/windowEnforcement';
 import { logger } from '../utils/logger';
 
@@ -10,9 +8,10 @@ export interface AuthorizationContext {
     email: string;
     name: string;
     role: 'student' | 'faculty' | 'coordinator' | 'admin';
+    isCoordinator?: boolean;
+    isExternalEvaluator?: boolean;
+    department?: string;
   };
-  eligibility?: IEligibility;
-  facultyInfo?: IFacultyRoster;
   isCoordinator: boolean;
   isAdmin: boolean;
   projectType?: 'IDP' | 'UROP' | 'CAPSTONE';
@@ -30,11 +29,9 @@ export function getAuthContext(req: Request): AuthorizationContext | null {
   
   return {
     user: req.user,
-    eligibility: authContext.eligibility,
-    facultyInfo: authContext.facultyInfo,
-    isCoordinator: authContext.isCoordinator || req.user.role === 'coordinator',
-    isAdmin: authContext.isAdmin || req.user.role === 'admin',
-    projectType: authContext.eligibility?.type || authContext.projectType,
+    isCoordinator: req.user.isCoordinator || req.user.role === 'coordinator' || req.user.role === 'admin',
+    isAdmin: req.user.role === 'admin',
+    projectType: authContext.projectType,
   };
 }
 
@@ -91,45 +88,26 @@ export function canManageWindows(authContext: AuthorizationContext): boolean {
   return authContext.isCoordinator || authContext.isAdmin;
 }
 
-/**
- * Check if user can import eligibility data
- */
-export function canImportEligibility(authContext: AuthorizationContext): boolean {
-  return authContext.isAdmin;
-}
-
-/**
- * Check if user can manage faculty roster
- */
-export function canManageFaculty(authContext: AuthorizationContext): boolean {
-  return authContext.isAdmin;
-}
+// Eligibility and Faculty Roster management functions removed - collections dropped from database
 
 /**
  * Check if user is eligible for specific project type
+ * Note: With eligibility removed, all students can access all project types
  */
 export function isEligibleForProjectType(
   authContext: AuthorizationContext,
   projectType: 'IDP' | 'UROP' | 'CAPSTONE'
 ): boolean {
-  // Non-students are not subject to project type eligibility
-  if (authContext.user.role !== 'student') {
-    return true;
-  }
-
-  // Students must have matching eligibility
-  return authContext.eligibility?.type === projectType;
+  // All users can access all project types now
+  return true;
 }
 
 /**
  * Get user's eligible project types
  */
 export function getEligibleProjectTypes(authContext: AuthorizationContext): string[] {
-  if (authContext.user.role !== 'student') {
-    return ['IDP', 'UROP', 'CAPSTONE']; // Faculty/admin can work with all types
-  }
-
-  return authContext.eligibility ? [authContext.eligibility.type] : [];
+  // All users can work with all project types
+  return ['IDP', 'UROP', 'CAPSTONE'];
 }
 
 /**

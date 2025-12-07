@@ -6,30 +6,15 @@ export interface IUser extends Document {
   name: string;
   email: string;
   role: 'student' | 'faculty' | 'admin';
-  avatar?: string; // Selected from predefined pool
   studentId?: string; // Unique identifier for students
   facultyId?: string; // Unique identifier for faculty
+  department?: string; // Department for all users
   isCoordinator?: boolean; // For faculty members (coordinator is also a faculty)
   isExternalEvaluator?: boolean; // For faculty members serving as external evaluators
-  profile: {
-    department?: string;
-    year?: number;
-    semester?: number; // Current semester (1-8)
-    specialization?: string; // For 6th sem onwards
-    bio?: string;
-    skills?: string[];
-    interests?: string[];
-    phone?: string;
-    location?: string;
-    github?: string;
-    linkedin?: string;
-    portfolio?: string;
-  };
   preferences: {
     theme: 'light' | 'dark';
     notifications: boolean;
     emailNotifications?: boolean;
-    profileVisibility?: 'public' | 'private' | 'connections';
   };
   lastSeen: Date;
   createdAt: Date;
@@ -64,10 +49,6 @@ const UserSchema = new Schema<IUser>({
     required: true,
     default: 'student'
   },
-  avatar: {
-    type: String,
-    default: null
-  },
   studentId: {
     type: String,
     sparse: true,
@@ -80,6 +61,10 @@ const UserSchema = new Schema<IUser>({
     unique: true,
     trim: true
   },
+  department: {
+    type: String,
+    trim: true
+  },
   isCoordinator: {
     type: Boolean,
     default: false
@@ -87,59 +72,6 @@ const UserSchema = new Schema<IUser>({
   isExternalEvaluator: {
     type: Boolean,
     default: false
-  },
-  profile: {
-    department: {
-      type: String,
-      trim: true
-    },
-    year: {
-      type: Number,
-      min: 1,
-      max: 4
-    },
-    semester: {
-      type: Number,
-      min: 1,
-      max: 8
-    },
-    specialization: {
-      type: String,
-      trim: true
-    },
-    bio: {
-      type: String,
-      trim: true,
-      maxlength: 500
-    },
-    skills: [{
-      type: String,
-      trim: true
-    }],
-    interests: [{
-      type: String,
-      trim: true
-    }],
-    phone: {
-      type: String,
-      trim: true
-    },
-    location: {
-      type: String,
-      trim: true
-    },
-    github: {
-      type: String,
-      trim: true
-    },
-    linkedin: {
-      type: String,
-      trim: true
-    },
-    portfolio: {
-      type: String,
-      trim: true
-    }
   },
   preferences: {
     theme: {
@@ -154,11 +86,6 @@ const UserSchema = new Schema<IUser>({
     emailNotifications: {
       type: Boolean,
       default: true
-    },
-    profileVisibility: {
-      type: String,
-      enum: ['public', 'private', 'connections'],
-      default: 'public'
     }
   },
   lastSeen: {
@@ -177,7 +104,7 @@ const UserSchema = new Schema<IUser>({
 
 // Indexes for performance (email already has unique index)
 UserSchema.index({ role: 1, isCoordinator: 1 });
-UserSchema.index({ 'profile.department': 1 });
+UserSchema.index({ department: 1 });
 UserSchema.index({ lastSeen: -1 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

@@ -21,7 +21,6 @@ import meetingLogRoutes from './meetingLogs';
 import meetingRoutes from './meetings';
 import studentMetaRoutes from './studentMeta';
 import windowRoutes from './windows';
-import eligibilityRoutes from './eligibility';
 import { createDebugRoutes } from '../middleware/developmentLogger';
 import userRoutes from './users';
 import cohortRoutes from './cohorts';
@@ -105,9 +104,6 @@ export function setupRoutes(app: Express): void {
 
   // Window routes
   app.use(`${API_PREFIX}/windows`, windowRoutes);
-
-  // Eligibility routes
-  app.use(`${API_PREFIX}/eligibility`, eligibilityRoutes);
 
   // Development debug routes (only in development)
   if (process.env.NODE_ENV === 'development') {

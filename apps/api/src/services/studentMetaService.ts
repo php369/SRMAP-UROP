@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { StudentMeta, IStudentMeta } from '../models/StudentMeta';
-import { Eligibility } from '../models/Eligibility';
 import { logger } from '../utils/logger';
 
 export interface CreateStudentMetaData {
@@ -124,31 +123,6 @@ export class StudentMetaService {
     data: CreateStudentMetaData | UpdateStudentMetaData
   ): Promise<void> {
     try {
-      // Get student's eligibility to check semester
-      const eligibility = await Eligibility.findOne({ 
-        studentEmail: { $exists: true } 
-      }).populate({
-        path: 'studentEmail',
-        match: { _id: userId }
-      });
-
-      // If we can't find eligibility by population, try direct email lookup
-      let studentEligibility = eligibility;
-      if (!studentEligibility) {
-        // Get user email first
-        const { User } = await import('../models/User');
-        const user = await User.findById(userId);
-        if (user) {
-          studentEligibility = await Eligibility.findOne({ studentEmail: user.email });
-        }
-      }
-
-      if (studentEligibility && studentEligibility.semester >= 6) {
-        if (!data.specialization || data.specialization.trim() === '') {
-          throw new Error('Specialization is required for students in semester 6 or higher');
-        }
-      }
-
       // Validate stream is provided
       if (!data.stream || data.stream.trim() === '') {
         throw new Error('Stream is required');
@@ -160,6 +134,9 @@ export class StudentMetaService {
           throw new Error('CGPA must be between 0 and 10');
         }
       }
+
+      // Note: Specialization requirement check removed since Eligibility collection was dropped
+      // Specialization is now optional for all students
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -174,23 +151,17 @@ export class StudentMetaService {
    */
   static async canEditStudentMeta(userId: mongoose.Types.ObjectId): Promise<{ canEdit: boolean; reason?: string }> {
     try {
-      // Get student's eligibility to determine project type
       const { User } = await import('../models/User');
       const user = await User.findById(userId);
       if (!user) {
         return { canEdit: false, reason: 'User not found' };
       }
 
-      const eligibility = await Eligibility.findOne({ studentEmail: user.email });
-      if (!eligibility) {
-        return { canEdit: false, reason: 'Student eligibility not found' };
-      }
-
-      // Check if application window is active for the student's project type
+      // Note: With Eligibility removed, we allow editing during any active application window
+      // Check if any application window is active
       const { Window } = await import('../models/Window');
       const activeWindow = await Window.findOne({
         kind: 'application',
-        type: eligibility.type,
         start: { $lte: new Date() },
         end: { $gte: new Date() }
       });
@@ -212,7 +183,6 @@ export class StudentMetaService {
   static async getStudentMetaWithUser(userId: mongoose.Types.ObjectId): Promise<{
     studentMeta: IStudentMeta | null;
     user: any;
-    eligibility: any;
   }> {
     try {
       const { User } = await import('../models/User');
@@ -222,15 +192,9 @@ export class StudentMetaService {
         User.findById(userId)
       ]);
 
-      let eligibility = null;
-      if (user) {
-        eligibility = await Eligibility.findOne({ studentEmail: user.email });
-      }
-
       return {
         studentMeta,
-        user,
-        eligibility
+        user
       };
     } catch (error) {
       logger.error('Error getting StudentMeta with user info:', error);
@@ -245,7 +209,6 @@ export class StudentMetaService {
     [userId: string]: {
       studentMeta: IStudentMeta | null;
       user: any;
-      eligibility: any;
     }
   }> {
     try {
@@ -256,14 +219,9 @@ export class StudentMetaService {
         User.find({ _id: { $in: userIds } })
       ]);
 
-      // Get eligibilities for all users
-      const userEmails = users.map(user => user.email);
-      const eligibilities = await Eligibility.find({ studentEmail: { $in: userEmails } });
-
       // Create lookup maps
       const studentMetaMap = new Map(studentMetas.map(meta => [meta.userId.toString(), meta]));
       const userMap = new Map(users.map(user => [user._id.toString(), user]));
-      const eligibilityMap = new Map(eligibilities.map(elig => [elig.studentEmail, elig]));
 
       // Build result object
       const result: { [userId: string]: any } = {};
@@ -272,12 +230,10 @@ export class StudentMetaService {
         const userIdStr = userId.toString();
         const user = userMap.get(userIdStr);
         const studentMeta = studentMetaMap.get(userIdStr);
-        const eligibility = user ? eligibilityMap.get(user.email) : null;
 
         result[userIdStr] = {
           studentMeta: studentMeta || null,
-          user: user || null,
-          eligibility: eligibility || null
+          user: user || null
         };
       }
 
@@ -297,14 +253,14 @@ export class StudentMetaService {
     studentMeta: IStudentMeta | null;
   }> {
     try {
-      const { studentMeta, eligibility } = await this.getStudentMetaWithUser(userId);
+      const { studentMeta } = await this.getStudentMetaWithUser(userId);
       
       const missingFields: string[] = [];
 
       if (!studentMeta) {
         return {
           isValid: false,
-          missingFields: ['stream', 'specialization (if semester >= 6)'],
+          missingFields: ['stream'],
           studentMeta: null
         };
       }
@@ -314,12 +270,7 @@ export class StudentMetaService {
         missingFields.push('stream');
       }
 
-      // Check specialization requirement for semester >= 6
-      if (eligibility && eligibility.semester >= 6) {
-        if (!studentMeta.specialization || studentMeta.specialization.trim() === '') {
-          missingFields.push('specialization');
-        }
-      }
+      // Note: Specialization is now optional since Eligibility collection was dropped
 
       return {
         isValid: missingFields.length === 0,
