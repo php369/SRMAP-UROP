@@ -118,7 +118,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
  * Authorization middleware factory
  * Creates middleware that checks if user has required role(s)
  */
-export const authorize = (...allowedRoles: Array<'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin'>) => {
+export const authorize = (...allowedRoles: Array<'student' | 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin'>) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -133,7 +133,12 @@ export const authorize = (...allowedRoles: Array<'idp-student' | 'urop-student' 
     }
 
     // Check if user's role is in allowed roles
-    let hasAccess = allowedRoles.includes(req.user.role);
+    let hasAccess = allowedRoles.includes(req.user.role as any);
+
+    // Special handling for generic 'student' role - matches any student type
+    if (!hasAccess && allowedRoles.includes('student' as any) && req.user.role.endsWith('-student')) {
+      hasAccess = true;
+    }
 
     // If coordinator is in allowed roles and user has isCoordinator flag, grant access
     if (!hasAccess && allowedRoles.includes('coordinator') && req.user.isCoordinator) {

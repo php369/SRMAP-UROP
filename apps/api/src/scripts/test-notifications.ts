@@ -26,7 +26,7 @@ async function testNotificationSystem() {
     console.log('\n🧪 Test 1: Creating notification...');
     const notification = await createNotification({
       userId: testUserId,
-      role: 'student',
+      role: 'idp-student',
       type: 'APPLICATION_APPROVED',
       title: 'Test Notification',
       message: 'This is a test notification for the persistent notification system',
@@ -71,7 +71,7 @@ async function testNotificationSystem() {
     for (let i = 1; i <= 5; i++) {
       notificationPromises.push(createNotification({
         userId: testUserId,
-        role: 'student',
+        role: 'idp-student',
         type: 'GRADES_PUBLISHED',
         title: `Test Notification ${i}`,
         message: `This is test notification number ${i}`,
