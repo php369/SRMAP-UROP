@@ -52,11 +52,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const hasRole = (role: string | string[]): boolean => {
     if (!user) return false;
     
+    // Helper to check if a role matches (including student role variants)
+    const roleMatches = (requiredRole: string, userRole: string): boolean => {
+      if (requiredRole === userRole) return true;
+      
+      // If checking for 'student', also match specific student roles
+      if (requiredRole === 'student') {
+        return userRole === 'idp-student' || 
+               userRole === 'urop-student' || 
+               userRole === 'capstone-student';
+      }
+      
+      return false;
+    };
+    
     if (Array.isArray(role)) {
-      return role.includes(user.role);
+      return role.some(r => roleMatches(r, user.role));
     }
     
-    return user.role === role;
+    return roleMatches(role, user.role);
   };
 
   // Permission-based access control
