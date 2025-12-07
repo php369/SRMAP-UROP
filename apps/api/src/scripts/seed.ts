@@ -24,8 +24,7 @@ interface SeedData {
     admin: IUser;
     students: IUser[];
   };
-  facultyRoster: IFacultyRoster[];
-  eligibilities: IEligibility[];
+  // facultyRoster and eligibilities removed - collections dropped
   projects: IProject[];
   groups: IGroup[];
   applications: IApplication[];
@@ -84,27 +83,8 @@ async function createUsers(): Promise<void> {
   logger.info(`✅ Created 1 admin user`);
 }
 
-async function createFacultyRoster(): Promise<void> {
-  logger.info('👨‍🏫 Creating faculty roster...');
-
-  // Only create admin as coordinator
-  const facultyData = [
-    {
-      email: 'poojan_patel@srmap.edu.in',
-      name: 'Poojan Patel',
-      dept: 'Administration',
-      isCoordinator: true,
-      active: true,
-    },
-  ];
-
-  const facultyRoster = await Promise.all(
-    facultyData.map(f => new FacultyRoster(f).save())
-  );
-
-  seedData.facultyRoster = facultyRoster;
-  logger.info(`✅ Created ${facultyRoster.length} faculty member (admin)`);
-}
+// createFacultyRoster function removed - FacultyRoster collection dropped
+// Coordinator status now managed via isCoordinator flag on User model
 
 async function createWindows(): Promise<void> {
   logger.info('🪟 Creating time windows...');
@@ -146,13 +126,8 @@ async function createProjects(): Promise<void> {
   logger.info(`✅ No projects created (faculty will create projects)`);
 }
 
-async function createEligibilities(): Promise<void> {
-  logger.info('🎯 Creating eligibility entries...');
-
-  // No eligibilities created - admin will upload eligibility data
-  seedData.eligibilities = [];
-  logger.info(`✅ No eligibility entries created (admin will upload)`);
-}
+// createEligibilities function removed - Eligibility collection dropped
+// Authorization now based on User model fields: role, isCoordinator, isExternalEvaluator
 
 async function createEvaluations(): Promise<void> {
   logger.info('📊 Creating evaluations...');
@@ -171,8 +146,6 @@ async function displaySeedSummary(): Promise<void> {
       admin: 1,
       students: seedData.users!.students.length,
     },
-    facultyRoster: seedData.facultyRoster!.length,
-    eligibilities: seedData.eligibilities!.length,
     projects: seedData.projects!.length,
     windows: seedData.windows!.length,
     groups: seedData.groups!.length,
@@ -182,9 +155,7 @@ async function displaySeedSummary(): Promise<void> {
   };
 
   console.log('\n📊 Summary:');
-  console.log(`👤 Users: ${summary.users.admin} admin only`);
-  console.log(`👨‍🏫 Faculty Roster: ${summary.facultyRoster} (admin as coordinator)`);
-  console.log(`🎯 Eligibilities: ${summary.eligibilities} (admin will upload)`);
+  console.log(`👤 Users: ${summary.users.admin} admin only (with isCoordinator flag)`);
   console.log(`🚀 Projects: ${summary.projects} (faculty will create)`);
   console.log(`🪟 Windows: ${summary.windows} (admin will configure)`);
   console.log(`👥 Groups: ${summary.groups} (students will create)`);
@@ -210,8 +181,7 @@ async function main(): Promise<void> {
 
     // Create data in dependency order
     await createUsers();
-    await createFacultyRoster();
-    await createEligibilities();
+    // createFacultyRoster and createEligibilities removed - collections dropped
     await createProjects();
     await createWindows();
     await createGroups();
