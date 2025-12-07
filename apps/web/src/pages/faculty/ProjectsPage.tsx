@@ -43,9 +43,33 @@ export function FacultyProjectsPage() {
     w => w.windowType === 'proposal' && w.projectType === formData.projectType
   );
 
+  // Get all active proposal windows to determine which project types are available
+  const activeProposalWindows = windows.filter(
+    w => w.windowType === 'proposal' && isProposalOpen(w.projectType)
+  );
+  
+  // Helper to check if a project type has an active proposal window
+  const isProjectTypeAvailable = (type: 'IDP' | 'UROP' | 'CAPSTONE') => {
+    return activeProposalWindows.some(w => w.projectType === type);
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Auto-select first available project type when windows load
+  useEffect(() => {
+    if (!windowLoading && activeProposalWindows.length > 0) {
+      const currentTypeAvailable = isProjectTypeAvailable(formData.projectType);
+      if (!currentTypeAvailable) {
+        // Set to first available type
+        const firstAvailable = activeProposalWindows[0]?.projectType;
+        if (firstAvailable) {
+          setFormData(prev => ({ ...prev, projectType: firstAvailable }));
+        }
+      }
+    }
+  }, [windowLoading, activeProposalWindows.length]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -379,20 +403,30 @@ export function FacultyProjectsPage() {
                       Project Type
                     </label>
                     <div className="grid grid-cols-3 gap-3">
-                      {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, projectType: type })}
-                          disabled={editingProject !== null}
-                          className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.projectType === type
-                            ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
-                            : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                      {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => {
+                        const isAvailable = isProjectTypeAvailable(type);
+                        const isDisabled = editingProject !== null || !isAvailable;
+                        
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => isAvailable && setFormData({ ...formData, projectType: type })}
+                            disabled={isDisabled}
+                            title={!isAvailable ? `${type} proposal window is not open` : ''}
+                            className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              formData.projectType === type
+                                ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
+                                : isAvailable
+                                ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-50 border-gray-200 text-gray-400'
                             }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
+                          >
+                            {type}
+                            {!isAvailable && <span className="ml-1 text-xs">🔒</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
