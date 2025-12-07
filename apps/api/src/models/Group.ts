@@ -133,7 +133,6 @@ const GroupSchema = new Schema<IGroup>({
 });
 
 // Indexes for performance optimization
-GroupSchema.index({ groupCode: 1 }); // Find group by code (already unique)
 GroupSchema.index({ leaderId: 1 }); // Find groups by leader
 GroupSchema.index({ members: 1 }); // Find groups by member
 GroupSchema.index({ projectType: 1, semester: 1 }); // Groups by type and semester
@@ -165,12 +164,8 @@ GroupSchema.virtual('memberIds').get(function() {
   return this.members;
 });
 
-// Unique index on groupCode (already defined in schema)
 // Additional indexes for performance
-GroupSchema.index({ projectType: 1 });
 GroupSchema.index({ status: 1, projectType: 1 });
-GroupSchema.index({ members: 1 });
-GroupSchema.index({ leaderId: 1 });
 GroupSchema.index({ groupId: 1 });
 
 export const Group = mongoose.model<IGroup>('Group', GroupSchema);

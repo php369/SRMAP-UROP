@@ -122,10 +122,7 @@ ProjectSchema.index({ facultyId: 1, type: 1 }); // Faculty's projects by type
 ProjectSchema.index({ status: 1, createdAt: -1 }); // Recent projects by status
 ProjectSchema.index({ type: 1, semester: 1, year: 1 }); // Projects by semester
 ProjectSchema.index({ assignedTo: 1 }); // Find project by assigned group/student
-ProjectSchema.index({ facultyId: 1, status: 1 });
-ProjectSchema.index({ type: 1 });
 ProjectSchema.index({ projectId: 1 });
-ProjectSchema.index({ assignedTo: 1 });
 
 export const Project = mongoose.model<IProject>('Project', ProjectSchema);
 export default Project;
