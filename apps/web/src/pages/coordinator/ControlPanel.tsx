@@ -94,9 +94,30 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
-      // Convert datetime-local values to ISO strings (preserves local timezone)
-      const startDate = new Date(windowForm.startDate).toISOString();
-      const endDate = new Date(windowForm.endDate).toISOString();
+      // Log the raw input values
+      console.log('Raw form values:', {
+        startDate: windowForm.startDate,
+        endDate: windowForm.endDate
+      });
+      
+      // Convert datetime-local values to ISO strings
+      // datetime-local format: "2025-12-08T06:01" (no timezone info)
+      // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
+      const startDateObj = new Date(windowForm.startDate);
+      const endDateObj = new Date(windowForm.endDate);
+      
+      console.log('Parsed as Date objects:', {
+        start: startDateObj.toString(),
+        end: endDateObj.toString()
+      });
+      
+      const startDate = startDateObj.toISOString();
+      const endDate = endDateObj.toISOString();
+      
+      console.log('Converted to ISO (UTC):', {
+        startDate,
+        endDate
+      });
       
       const payload = {
         windowType: windowForm.windowType,
