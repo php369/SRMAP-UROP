@@ -55,16 +55,28 @@ export function ControlPanel() {
 
   const handleEditWindow = (window: any) => {
     setEditingWindow(window);
-    // Convert ISO dates to datetime-local format
-    const startLocal = new Date(window.startDate).toISOString().slice(0, 16);
-    const endLocal = new Date(window.endDate).toISOString().slice(0, 16);
+    
+    // Convert UTC dates to local datetime-local format
+    // datetime-local expects format: YYYY-MM-DDTHH:mm
+    const startDate = new Date(window.startDate);
+    const endDate = new Date(window.endDate);
+    
+    // Format to local time for datetime-local input
+    const formatToLocalDateTime = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
     
     setWindowForm({
       windowType: window.windowType,
       projectType: window.projectType,
       assessmentType: window.assessmentType || '',
-      startDate: startLocal,
-      endDate: endLocal
+      startDate: formatToLocalDateTime(startDate),
+      endDate: formatToLocalDateTime(endDate)
     });
     setShowWindowForm(true);
   };
@@ -104,9 +116,11 @@ export function ControlPanel() {
       
       if (response.success) {
         toast.success(editingWindow ? 'Window updated successfully' : 'Window created successfully');
+        console.log('Window saved, updated data:', response.data);
         setShowWindowForm(false);
         setEditingWindow(null);
-        fetchWindows();
+        // Refresh windows list
+        await fetchWindows();
         // Reset form
         setWindowForm({
           windowType: 'proposal',

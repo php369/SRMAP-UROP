@@ -23,7 +23,7 @@ interface Project {
 
 export function FacultyProjectsPage() {
   const { user } = useAuth();
-  const { isProposalOpen, loading: windowLoading, windows } = useWindowStatus();
+  const { isProposalOpen, loading: windowLoading, windows, refresh: refreshWindows } = useWindowStatus();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);

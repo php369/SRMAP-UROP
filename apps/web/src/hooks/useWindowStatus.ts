@@ -42,20 +42,43 @@ export function useWindowStatus(): WindowStatus {
 
   useEffect(() => {
     fetchWindows();
+    
+    // Refresh windows every 30 seconds to keep status up to date
+    const interval = setInterval(() => {
+      fetchWindows();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const isProposalOpen = (projectType: string): boolean => {
     const window = windows.find(
       w => w.windowType === 'proposal' && w.projectType === projectType
     );
-    const isActive = window ? isWindowActive(window) : false;
+    
+    if (!window) {
+      console.log(`No proposal window found for ${projectType}`);
+      return false;
+    }
+    
+    const now = new Date();
+    const start = new Date(window.startDate);
+    const end = new Date(window.endDate);
+    const isActive = now >= start && now <= end;
+    
     console.log(`Proposal window check for ${projectType}:`, {
       window,
       isActive,
-      now: new Date(),
-      start: window?.startDate,
-      end: window?.endDate
+      now: now.toISOString(),
+      start: start.toISOString(),
+      end: end.toISOString(),
+      nowTime: now.getTime(),
+      startTime: start.getTime(),
+      endTime: end.getTime(),
+      isAfterStart: now >= start,
+      isBeforeEnd: now <= end
     });
+    
     return isActive;
   };
 
