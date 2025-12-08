@@ -52,68 +52,73 @@ export function useWindowStatus(): WindowStatus {
   }, []);
 
   const isProposalOpen = (projectType: string): boolean => {
-    const window = windows.find(
+    // Find ALL proposal windows for this project type
+    const proposalWindows = windows.filter(
       w => w.windowType === 'proposal' && w.projectType === projectType
     );
     
-    if (!window) {
+    if (proposalWindows.length === 0) {
       console.log(`No proposal window found for ${projectType}`);
       return false;
     }
     
     const now = new Date();
-    const start = new Date(window.startDate);
-    const end = new Date(window.endDate);
-    const isActive = now >= start && now <= end;
+    
+    // Check if ANY of the windows is currently active
+    const activeWindow = proposalWindows.find(w => {
+      const start = new Date(w.startDate);
+      const end = new Date(w.endDate);
+      return now >= start && now <= end;
+    });
+    
+    const isActive = !!activeWindow;
     
     console.log(`Proposal window check for ${projectType}:`, {
-      window,
+      totalWindows: proposalWindows.length,
+      activeWindow: activeWindow ? {
+        id: activeWindow._id,
+        start: activeWindow.startDate,
+        end: activeWindow.endDate
+      } : null,
       isActive,
-      now: now.toISOString(),
-      start: start.toISOString(),
-      end: end.toISOString(),
-      nowTime: now.getTime(),
-      startTime: start.getTime(),
-      endTime: end.getTime(),
-      isAfterStart: now >= start,
-      isBeforeEnd: now <= end
+      now: now.toISOString()
     });
     
     return isActive;
   };
 
   const isApplicationOpen = (projectType: string): boolean => {
-    const window = windows.find(
+    const applicationWindows = windows.filter(
       w => w.windowType === 'application' && w.projectType === projectType
     );
-    return window ? isWindowActive(window) : false;
+    return applicationWindows.some(w => isWindowActive(w));
   };
 
   const isSubmissionOpen = (projectType: string, assessmentType?: string): boolean => {
-    const window = windows.find(
+    const submissionWindows = windows.filter(
       w => w.windowType === 'submission' && 
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return window ? isWindowActive(window) : false;
+    return submissionWindows.some(w => isWindowActive(w));
   };
 
   const isAssessmentOpen = (projectType: string, assessmentType?: string): boolean => {
-    const window = windows.find(
+    const assessmentWindows = windows.filter(
       w => w.windowType === 'assessment' && 
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return window ? isWindowActive(window) : false;
+    return assessmentWindows.some(w => isWindowActive(w));
   };
 
   const isGradeReleaseOpen = (projectType: string, assessmentType?: string): boolean => {
-    const window = windows.find(
+    const gradeReleaseWindows = windows.filter(
       w => w.windowType === 'grade_release' && 
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return window ? isWindowActive(window) : false;
+    return gradeReleaseWindows.some(w => isWindowActive(w));
   };
 
   return {
