@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
+import { api } from '../../utils/api';
 
 interface Project {
   _id: string;
@@ -78,19 +79,21 @@ export function FacultyProjectsPage() {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
-      if (result.success && result.data) {
-        setProjects(result.data);
+      const response = await api.get('/projects/faculty');
+      if (response.success && response.data) {
+        const projectsData = Array.isArray(response.data) ? response.data : [];
+        setProjects(projectsData);
+        console.log('Projects fetched:', projectsData.length);
       } else {
         setProjects([]);
+        console.log('No projects found');
       }
-    } catch (error) {
-      toast.error('Failed to fetch projects');
+    } catch (error: any) {
+      console.error('Failed to fetch projects:', error);
+      // Don't show error toast for rate limiting
+      if (!error.message?.includes('Too many requests')) {
+        toast.error('Failed to fetch projects');
+      }
       setProjects([]);
     } finally {
       setLoading(false);
@@ -107,37 +110,29 @@ export function FacultyProjectsPage() {
 
     setLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      const url = editingProject
-        ? `${baseUrl}/api/v1/projects/${editingProject._id}`
-        : `${baseUrl}/api/v1/projects`;
+      const payload = {
+        title: formData.title,
+        brief: formData.brief,
+        prerequisites: formData.prerequisites,
+        type: formData.projectType,
+        department: formData.department
+      };
 
-      const response = await fetch(url, {
-        method: editingProject ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          brief: formData.brief,
-          prerequisites: formData.prerequisites,
-          type: formData.projectType,
-          department: formData.department
-        })
-      });
+      const response = editingProject
+        ? await api.put(`/projects/${editingProject._id}`, payload)
+        : await api.post('/projects', payload);
 
-      if (response.ok) {
+      if (response.success) {
         toast.success(editingProject ? 'Project updated successfully' : 'Project created successfully');
         setShowModal(false);
         resetForm();
         fetchProjects();
       } else {
-        const error = await response.json();
-        toast.error(error.error?.message || 'Failed to save project');
+        toast.error(response.error?.message || 'Failed to save project');
       }
-    } catch (error) {
-      toast.error('Failed to save project');
+    } catch (error: any) {
+      console.error('Failed to save project:', error);
+      toast.error(error.message || 'Failed to save project');
     } finally {
       setLoading(false);
     }
@@ -161,21 +156,17 @@ export function FacultyProjectsPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/projects/${projectId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
+      const response = await api.delete(`/projects/${projectId}`);
 
-      if (response.ok) {
+      if (response.success) {
         toast.success('Project deleted successfully');
         fetchProjects();
       } else {
-        toast.error('Failed to delete project');
+        toast.error(response.error?.message || 'Failed to delete project');
       }
-    } catch (error) {
-      toast.error('Failed to delete project');
+    } catch (error: any) {
+      console.error('Failed to delete project:', error);
+      toast.error(error.message || 'Failed to delete project');
     }
   };
 
