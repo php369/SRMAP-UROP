@@ -22,13 +22,13 @@ interface Project {
 export function ApplicationPage() {
   const { user } = useAuth();
   const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
-  const [step, setStep] = useState<'choice' | 'group-formation' | 'application'>('choice');
+  const [step, setStep] = useState<'choice' | 'group-formation' | 'application' | 'verify-members'>('choice');
   const [applicationType, setApplicationType] = useState<'solo' | 'group' | null>(null);
   const [groupAction, setGroupAction] = useState<'create' | 'join' | null>(null);
   const [groupCode, setGroupCode] = useState('');
   const [groupId, setGroupId] = useState('');
   const [inputCode, setInputCode] = useState('');
-  const [, setGroupMembers] = useState<any[]>([]);
+  const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,7 +96,10 @@ export function ApplicationPage() {
         const group = response.data as any;
         setGroupCode(group.groupCode);
         setGroupId(group._id);
-        setGroupMembers(group.members || []);
+        // Ensure members are properly set - the API should populate this
+        const members = group.members || [];
+        setGroupMembers(members);
+        console.log('Group fetched:', { groupCode: group.groupCode, memberCount: members.length });
       }
     } catch (error) {
       // No existing group, that's fine
@@ -124,6 +127,17 @@ export function ApplicationPage() {
       fetchExistingApplication();
     }
   }, [groupId]);
+
+  // Auto-refresh group data when on group formation or verification step
+  useEffect(() => {
+    if ((step === 'group-formation' || step === 'verify-members') && groupId) {
+      const interval = setInterval(() => {
+        fetchExistingGroup();
+      }, 3000); // Refresh every 3 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [step, groupId]);
 
   const checkApplicationWindow = async () => {
     if (!eligibleProjectType) return;
@@ -186,11 +200,14 @@ export function ApplicationPage() {
       });
 
       if (response.success && response.data) {
-        setGroupCode((response.data as any).groupCode);
-        setGroupId((response.data as any)._id);
-        setGroupMembers([user]);
+        const createdGroup = response.data as any;
+        setGroupCode(createdGroup.groupCode);
+        setGroupId(createdGroup._id);
+        setGroupMembers(createdGroup.members || [user]);
         toast.success('Group created successfully!');
-        setStep('application');
+        
+        // Refetch the group to ensure we have the latest data
+        await fetchExistingGroup();
       } else {
         toast.error(response.error?.message || 'Failed to create group');
       }
@@ -249,6 +266,8 @@ export function ApplicationPage() {
 
       if (response.success) {
         toast.success('Joined group successfully!');
+        // Refetch group data to get updated members
+        await fetchExistingGroup();
         // Fetch the group's application if it exists
         await fetchExistingApplication();
         setStep('application');
@@ -272,7 +291,7 @@ export function ApplicationPage() {
     }
   };
 
-  const handleSubmitApplication = async () => {
+  const handleProceedToVerification = () => {
     if (selectedProjects.length === 0) {
       toast.error('Please select at least one project');
       return;
@@ -283,6 +302,16 @@ export function ApplicationPage() {
       return;
     }
 
+    // For group applications, go to verification step
+    if (applicationType === 'group') {
+      setStep('verify-members');
+    } else {
+      // For solo applications, submit directly
+      handleSubmitApplication();
+    }
+  };
+
+  const handleSubmitApplication = async () => {
     setLoading(true);
     try {
       if (!eligibleProjectType) {
@@ -695,13 +724,134 @@ export function ApplicationPage() {
             )}
 
             <button
-              onClick={handleSubmitApplication}
+              onClick={handleProceedToVerification}
               disabled={loading || selectedProjects.length === 0}
               className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              title={selectedProjects.length === 0 ? 'Please select at least one project' : 'Submit your application'}
+              title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Proceed to verify group members' : 'Submit your application'}
             >
-              {loading ? <Loader className="animate-spin mx-auto" /> : 'Submit Application'}
+              {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
             </button>
+          </motion.div>
+        )}
+
+        {/* Step 4: Verify Group Members (Group Applications Only) */}
+        {step === 'verify-members' && applicationType === 'group' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white rounded-xl shadow-lg p-8"
+          >
+            <h2 className="text-2xl font-bold mb-6">Verify Group Members</h2>
+            
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-blue-900 mb-2">Important: Verify Your Team</h3>
+                  <p className="text-sm text-blue-800">
+                    Please confirm that all group members listed below are correct before submitting your application. 
+                    Once submitted, you cannot modify the group composition.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {groupCode && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
+                <div className="text-2xl font-bold text-blue-500">
+                  {formatGroupCode(groupCode)}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-4">Group Members ({groupMembers.length})</h3>
+              
+              {groupMembers.length === 0 ? (
+                <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">Loading group members...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {groupMembers.map((member: any, index: number) => (
+                    <div
+                      key={member._id || index}
+                      className="p-4 border-2 border-gray-200 rounded-lg flex items-center justify-between"
+                    >
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
+                          {member.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-medium">{member.name || 'Unknown'}</p>
+                          <p className="text-sm text-gray-600">{member.email || 'No email'}</p>
+                          {member.studentId && (
+                            <p className="text-xs text-gray-500">ID: {member.studentId}</p>
+                          )}
+                        </div>
+                      </div>
+                      {member._id === user?.id && (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                          You
+                        </span>
+                      )}
+                      {groupId && member._id?.toString() === groupMembers[0]?._id?.toString() && (
+                        <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                          Leader
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {groupMembers.length < 2 && (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    ⚠️ Your group needs at least 2 members to submit an application. 
+                    Share your group code with team members to have them join.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-3">Selected Projects</h3>
+              <div className="space-y-2">
+                {selectedProjects.map((projectId, index) => {
+                  const project = projects.find(p => p._id === projectId);
+                  return project ? (
+                    <div key={projectId} className="p-3 bg-gray-50 rounded-lg flex items-start">
+                      <span className="font-bold text-blue-500 mr-3">{index + 1}.</span>
+                      <div>
+                        <p className="font-medium">{project.title}</p>
+                        <p className="text-sm text-gray-600">{project.facultyName}</p>
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep('application')}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-all"
+              >
+                Back to Edit
+              </button>
+              <button
+                onClick={handleSubmitApplication}
+                disabled={loading || groupMembers.length < 2}
+                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                title={groupMembers.length < 2 ? 'Group needs at least 2 members' : 'Confirm and submit application'}
+              >
+                {loading ? <Loader className="animate-spin mx-auto" /> : 'Confirm & Submit Application'}
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
