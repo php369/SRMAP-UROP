@@ -271,6 +271,10 @@ export function FacultyProjectsPage() {
                         <p>Opened: {start.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
                         <p>Closed: {end.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
                         <p className="mt-2"><strong>Current Time:</strong> {now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
+                        <p className="mt-2 text-xs opacity-60">Window ID: {proposalWindow._id}</p>
+                        <p className="text-xs opacity-60">Raw UTC times:</p>
+                        <p className="text-xs opacity-60">Start: {String(proposalWindow.startDate)}</p>
+                        <p className="text-xs opacity-60">End: {String(proposalWindow.endDate)}</p>
                         {hasEnded && <p className="text-warning mt-2">⚠️ This window ended {Math.floor((now.getTime() - end.getTime()) / (1000 * 60))} minutes ago</p>}
                         {isUpcoming && <p className="text-blue-600 mt-2">⏰ This window opens in {Math.floor((start.getTime() - now.getTime()) / (1000 * 60))} minutes</p>}
                       </div>
