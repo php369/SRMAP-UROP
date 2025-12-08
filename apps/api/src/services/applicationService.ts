@@ -265,21 +265,34 @@ export async function acceptApplication(
       logger.info(`Assigned group number ${nextGroupNumber} to group ${application.groupId}`);
     }
 
-    // Reject other applications for this project
-    await Application.updateMany(
-      {
-        _id: { $ne: applicationId },
-        projectPreferences: projectId,
-        status: 'pending'
-      },
+    // Reject ALL other applications from the same student/group
+    // This includes applications to other projects and other faculty
+    const rejectionQuery: any = {
+      _id: { $ne: applicationId },
+      status: 'pending'
+    };
+
+    // Match by student or group
+    if (application.groupId) {
+      rejectionQuery.groupId = application.groupId;
+    } else if (application.studentId) {
+      rejectionQuery.studentId = application.studentId;
+    }
+
+    const rejectedCount = await Application.updateMany(
+      rejectionQuery,
       {
         status: 'rejected',
         reviewedBy: facultyId,
-        reviewedAt: new Date()
+        reviewedAt: new Date(),
+        $set: {
+          'metadata.autoRejected': true,
+          'metadata.rejectionReason': 'Student/group accepted to another project'
+        }
       }
     );
 
-    logger.info(`Application ${applicationId} accepted for project ${projectId}`);
+    logger.info(`Application ${applicationId} accepted for project ${projectId}. Auto-rejected ${rejectedCount.modifiedCount} other applications from the same student/group.`);
     return application;
   } catch (error) {
     logger.error('Error accepting application:', error);
