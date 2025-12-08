@@ -54,6 +54,10 @@ class ApiClient {
           data: response as any, // For file downloads
         };
       } else {
+        // Special handling for 429 rate limit
+        if (response.status === 429) {
+          throw new Error('Too many requests. Please wait a moment and try again.');
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     }
@@ -61,6 +65,10 @@ class ApiClient {
     const data: ApiResponse<T> = await response.json();
 
     if (!response.ok) {
+      // Special handling for 429 rate limit
+      if (response.status === 429) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
+      }
       throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
@@ -84,10 +92,8 @@ class ApiClient {
       return true;
     }
     
-    // 429 Too Many Requests
-    if (error.status === 429) {
-      return true;
-    }
+    // DO NOT retry 429 - rate limit errors need time to reset
+    // Retrying immediately makes the problem worse
     
     return false;
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, TrendingUp, Users, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 
@@ -36,8 +36,11 @@ export function ControlPanel() {
       } else {
         setWindows([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching windows:', error);
+      if (error.message?.includes('Too many requests')) {
+        toast.error('Rate limit reached. Please wait a moment before refreshing.');
+      }
       setWindows([]);
     }
   };
@@ -48,8 +51,11 @@ export function ControlPanel() {
       if (response.success) {
         setStats(response.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
+      if (error.message?.includes('Too many requests')) {
+        toast.error('Rate limit reached. Please wait a moment before refreshing.');
+      }
     }
   };
 
