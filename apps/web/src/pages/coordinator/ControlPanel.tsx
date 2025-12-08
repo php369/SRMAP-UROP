@@ -324,7 +324,13 @@ export function ControlPanel() {
           {/* Window Form */}
           {showWindowForm && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-bold mb-4">{editingWindow ? 'Edit Window' : 'Create New Window'}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">{editingWindow ? 'Edit Window' : 'Create New Window'}</h3>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Current Time: </span>
+                  <span>{new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</span>
+                </div>
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium">Window Type *</label>
