@@ -247,22 +247,44 @@ export function FacultyProjectsPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-text mb-1">
-                  Project Proposal Window Closed
-                </h3>
-                <p className="text-sm text-textSecondary mb-2">
-                  The proposal window is not currently open.
-                  You cannot create new projects at this time.
-                </p>
-                {proposalWindow ? (
-                  <div className="text-xs text-textSecondary space-y-1">
-                    <p>Opens: {new Date(proposalWindow.startDate).toLocaleString()}</p>
-                    <p>Closes: {new Date(proposalWindow.endDate).toLocaleString()}</p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-textSecondary">
-                    No proposal window has been scheduled yet. Please check back later.
-                  </p>
+                {proposalWindow ? (() => {
+                  const now = new Date();
+                  const start = new Date(proposalWindow.startDate);
+                  const end = new Date(proposalWindow.endDate);
+                  const hasEnded = now > end;
+                  const isUpcoming = now < start;
+                  
+                  return (
+                    <>
+                      <h3 className="text-sm font-semibold text-text mb-1">
+                        {hasEnded ? 'Project Proposal Window Has Ended' : isUpcoming ? 'Project Proposal Window Not Yet Open' : 'Project Proposal Window Closed'}
+                      </h3>
+                      <p className="text-sm text-textSecondary mb-2">
+                        {hasEnded 
+                          ? 'The proposal window has ended. You cannot create new projects at this time.' 
+                          : isUpcoming 
+                          ? 'The proposal window has not started yet. Please wait until it opens.'
+                          : 'The proposal window is not currently open. You cannot create new projects at this time.'}
+                      </p>
+                      <div className="text-xs text-textSecondary space-y-1 bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                        <p><strong>Window Period:</strong></p>
+                        <p>Opened: {start.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
+                        <p>Closed: {end.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
+                        <p className="mt-2"><strong>Current Time:</strong> {now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</p>
+                        {hasEnded && <p className="text-warning mt-2">⚠️ This window ended {Math.floor((now.getTime() - end.getTime()) / (1000 * 60))} minutes ago</p>}
+                        {isUpcoming && <p className="text-blue-600 mt-2">⏰ This window opens in {Math.floor((start.getTime() - now.getTime()) / (1000 * 60))} minutes</p>}
+                      </div>
+                    </>
+                  );
+                })() : (
+                  <>
+                    <h3 className="text-sm font-semibold text-text mb-1">
+                      No Proposal Window Scheduled
+                    </h3>
+                    <p className="text-xs text-textSecondary">
+                      No proposal window has been scheduled yet. Please contact the coordinator or check back later.
+                    </p>
+                  </>
                 )}
               </div>
             </div>
