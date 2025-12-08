@@ -285,46 +285,35 @@ export function ApplicationPage() {
 
     setLoading(true);
     try {
-      // Manually construct array to ensure proper serialization
-      const projectIds = selectedProjects.map(id => id);
-
-      console.log('Selected projects:', selectedProjects);
-      console.log('Project IDs:', projectIds);
-
       if (!eligibleProjectType) {
         toast.error('Unable to determine your project eligibility');
         setLoading(false);
         return;
       }
 
-      // Use fetch directly with pre-stringified JSON to avoid any conversion issues
-      const requestBody = JSON.stringify({
+      console.log('Submitting application:', {
         projectType: eligibleProjectType,
-        selectedProjects: projectIds,
+        selectedProjects,
+        department: formData.department,
+        isGroupApplication: applicationType === 'group'
+      });
+
+      // Use the api utility which handles base URL correctly
+      const response = await api.post('/applications', {
+        projectType: eligibleProjectType,
+        selectedProjects: selectedProjects,
         department: formData.department,
         stream: formData.department, // Use department as stream
         specialization: formData.specialization || '',
         cgpa: formData.cgpa || 0,
-        semester: formData.semester || 1, // Use actual semester number
+        semester: formData.semester || 1,
         isGroupApplication: applicationType === 'group'
       });
 
-      console.log('Request body:', requestBody);
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/applications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: requestBody
-      });
-
-      const response = await res.json();
-
       if (response.success) {
-        toast.success(`${response.data.length} application(s) submitted successfully!`);
-        setExistingApplications(response.data);
+        const applications = Array.isArray(response.data) ? response.data : [response.data];
+        toast.success(`${applications.length} application(s) submitted successfully!`);
+        setExistingApplications(applications);
       } else {
         const errorMessage = response.error?.message || 'Failed to submit application';
         if (errorMessage.includes('already exists')) {
@@ -335,6 +324,7 @@ export function ApplicationPage() {
         }
       }
     } catch (error: any) {
+      console.error('Application submission error:', error);
       toast.error(error.message || 'Failed to submit application');
     } finally {
       setLoading(false);
