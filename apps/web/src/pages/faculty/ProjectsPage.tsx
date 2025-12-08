@@ -188,10 +188,10 @@ export function FacultyProjectsPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      draft: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-      published: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      frozen: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      assigned: 'bg-green-500/20 text-green-300 border-green-500/30'
+      draft: 'bg-gray-500/20 dark:bg-gray-500/30 text-gray-700 dark:text-gray-300 border-gray-500/40 dark:border-gray-500/30',
+      published: 'bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 border-blue-500/40 dark:border-blue-500/30',
+      frozen: 'bg-yellow-500/20 dark:bg-yellow-500/30 text-yellow-700 dark:text-yellow-300 border-yellow-500/40 dark:border-yellow-500/30',
+      assigned: 'bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-300 border-green-500/40 dark:border-green-500/30'
     };
 
     const icons = {
@@ -316,7 +316,7 @@ export function FacultyProjectsPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold text-text">{project.title}</h3>
                         {getStatusBadge(project.status)}
-                        <span className="px-2 py-1 bg-secondary/20 text-secondary text-xs font-medium rounded-lg border border-secondary/30">
+                        <span className="px-2 py-1 bg-secondary/20 dark:bg-secondary/30 text-secondary-dark dark:text-secondary text-xs font-medium rounded-lg border border-secondary/40 dark:border-secondary/30">
                           {project.type}
                         </span>
                       </div>
@@ -338,17 +338,17 @@ export function FacultyProjectsPage() {
                     <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => handleEdit(project)}
-                        disabled={project.status === 'assigned'}
+                        disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
                         className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Edit project"
+                        title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot edit assigned project' : 'Edit project'}
                       >
                         <Edit2 className="w-4 h-4 text-text" />
                       </button>
                       <button
                         onClick={() => handleDelete(project._id)}
-                        disabled={project.status === 'assigned'}
+                        disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
                         className="p-2 hover:bg-error/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete project"
+                        title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot delete assigned project' : 'Delete project'}
                       >
                         <Trash2 className="w-4 h-4 text-error" />
                       </button>

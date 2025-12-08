@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, TrendingUp, Users, FileText, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Award, TrendingUp, Users, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 
@@ -13,6 +13,7 @@ export function ControlPanel() {
   const [stats, setStats] = useState<any>(null);
   const [showWindowForm, setShowWindowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingWindow, setEditingWindow] = useState<any>(null);
 
   const [windowForm, setWindowForm] = useState({
     windowType: 'proposal' as WindowType,
@@ -30,11 +31,14 @@ export function ControlPanel() {
   const fetchWindows = async () => {
     try {
       const response = await api.get('/control/windows');
-      if (response.success) {
-        setWindows(response.data || []);
+      if (response.success && response.data) {
+        setWindows(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setWindows([]);
       }
     } catch (error) {
       console.error('Error fetching windows:', error);
+      setWindows([]);
     }
   };
 
@@ -47,6 +51,22 @@ export function ControlPanel() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
+  };
+
+  const handleEditWindow = (window: any) => {
+    setEditingWindow(window);
+    // Convert ISO dates to datetime-local format
+    const startLocal = new Date(window.startDate).toISOString().slice(0, 16);
+    const endLocal = new Date(window.endDate).toISOString().slice(0, 16);
+    
+    setWindowForm({
+      windowType: window.windowType,
+      projectType: window.projectType,
+      assessmentType: window.assessmentType || '',
+      startDate: startLocal,
+      endDate: endLocal
+    });
+    setShowWindowForm(true);
   };
 
   const handleCreateWindow = async () => {
@@ -74,17 +94,18 @@ export function ControlPanel() {
         endDate
       };
       
-      console.log('Creating window with payload:', payload);
-      console.log('Start date local:', windowForm.startDate, '-> UTC:', startDate);
-      console.log('End date local:', windowForm.endDate, '-> UTC:', endDate);
+      console.log(editingWindow ? 'Updating window' : 'Creating window', 'with payload:', payload);
       
-      const response = await api.post('/control/windows', payload);
+      const response = editingWindow
+        ? await api.put(`/control/windows/${editingWindow._id}`, payload)
+        : await api.post('/control/windows', payload);
 
       console.log('Response:', response);
       
       if (response.success) {
-        toast.success('Window created successfully');
+        toast.success(editingWindow ? 'Window updated successfully' : 'Window created successfully');
         setShowWindowForm(false);
+        setEditingWindow(null);
         fetchWindows();
         // Reset form
         setWindowForm({
@@ -96,7 +117,7 @@ export function ControlPanel() {
         });
       } else {
         console.error('Server error:', response.error);
-        toast.error(response.error?.message || 'Failed to create window');
+        toast.error(response.error?.message || `Failed to ${editingWindow ? 'update' : 'create'} window`);
       }
     } catch (error: any) {
       console.error('Request error:', error);
@@ -134,7 +155,7 @@ export function ControlPanel() {
       const response = await api.post('/control/grades/release', { projectType, assessmentType });
 
       if (response.success) {
-        toast.success(response.message || 'Grades released successfully');
+        toast.success((response as any).message || 'Grades released successfully');
         fetchStats();
       } else {
         toast.error(response.error?.message || 'Failed to release grades');
@@ -289,7 +310,7 @@ export function ControlPanel() {
           {/* Window Form */}
           {showWindowForm && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-bold mb-4">Create New Window</h3>
+              <h3 className="font-bold mb-4">{editingWindow ? 'Edit Window' : 'Create New Window'}</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium">Window Type *</label>
@@ -363,10 +384,20 @@ export function ControlPanel() {
                   disabled={loading}
                   className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
                 >
-                  {loading ? 'Creating...' : 'Create Window'}
+                  {loading ? (editingWindow ? 'Updating...' : 'Creating...') : (editingWindow ? 'Update Window' : 'Create Window')}
                 </button>
                 <button
-                  onClick={() => setShowWindowForm(false)}
+                  onClick={() => {
+                    setShowWindowForm(false);
+                    setEditingWindow(null);
+                    setWindowForm({
+                      windowType: 'proposal',
+                      projectType: 'IDP',
+                      assessmentType: '',
+                      startDate: '',
+                      endDate: ''
+                    });
+                  }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
                   Cancel
@@ -377,52 +408,87 @@ export function ControlPanel() {
 
           {/* Windows List */}
           <div className="space-y-4">
-            {windows.map((window) => (
-              <div
-                key={window._id}
-                className={`p-4 border-2 rounded-lg ${
-                  window.isActive ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold capitalize">
-                        {window.windowType.replace('_', ' ')} - {window.projectType}
-                      </h3>
-                      {window.assessmentType && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
-                          {window.assessmentType}
-                        </span>
-                      )}
-                      {window.isActive && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
-                          Active
-                        </span>
-                      )}
+            {windows.map((window) => {
+              const now = new Date();
+              const start = new Date(window.startDate);
+              const end = new Date(window.endDate);
+              const isActive = now >= start && now <= end;
+              const hasEnded = now > end;
+              const isUpcoming = now < start;
+              
+              return (
+                <div
+                  key={window._id}
+                  className={`p-4 border-2 rounded-lg ${
+                    isActive 
+                      ? 'border-green-500 bg-green-50' 
+                      : hasEnded 
+                      ? 'border-gray-300 bg-gray-50' 
+                      : 'border-blue-300 bg-blue-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-bold capitalize">
+                          {window.windowType.replace('_', ' ')} - {window.projectType}
+                        </h3>
+                        {window.assessmentType && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                            {window.assessmentType}
+                          </span>
+                        )}
+                        {isActive && (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            Active
+                          </span>
+                        )}
+                        {hasEnded && (
+                          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm font-medium">
+                            Inactive
+                          </span>
+                        )}
+                        {isUpcoming && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                            Upcoming
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <p>Start: {new Date(window.startDate).toLocaleString('en-IN', { 
+                          dateStyle: 'medium', 
+                          timeStyle: 'short',
+                          hour12: true 
+                        })}</p>
+                        <p>End: {new Date(window.endDate).toLocaleString('en-IN', { 
+                          dateStyle: 'medium', 
+                          timeStyle: 'short',
+                          hour12: true 
+                        })}</p>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <p>Start: {new Date(window.startDate).toLocaleString('en-IN', { 
-                        dateStyle: 'medium', 
-                        timeStyle: 'short',
-                        hour12: true 
-                      })}</p>
-                      <p>End: {new Date(window.endDate).toLocaleString('en-IN', { 
-                        dateStyle: 'medium', 
-                        timeStyle: 'short',
-                        hour12: true 
-                      })}</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditWindow(window)}
+                        disabled={hasEnded}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={hasEnded ? 'Cannot edit ended window' : 'Edit window'}
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteWindow(window._id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete window"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteWindow(window._id)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {windows.length === 0 && (
               <p className="text-center text-gray-500 py-8">
