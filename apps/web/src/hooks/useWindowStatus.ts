@@ -52,7 +52,6 @@ export function useWindowStatus(): WindowStatus {
   }, []);
 
   const isProposalOpen = (projectType: string): boolean => {
-    // Find ALL proposal windows for this project type
     const proposalWindows = windows.filter(
       w => w.windowType === 'proposal' && w.projectType === projectType
     );
@@ -62,26 +61,13 @@ export function useWindowStatus(): WindowStatus {
       return false;
     }
     
-    const now = new Date();
-    
-    // Check if ANY of the windows is currently active
-    const activeWindow = proposalWindows.find(w => {
-      const start = new Date(w.startDate);
-      const end = new Date(w.endDate);
-      return now >= start && now <= end;
-    });
-    
-    const isActive = !!activeWindow;
+    // Use the same isWindowActive function for consistency
+    const isActive = proposalWindows.some(w => isWindowActive(w));
     
     console.log(`Proposal window check for ${projectType}:`, {
       totalWindows: proposalWindows.length,
-      activeWindow: activeWindow ? {
-        id: activeWindow._id,
-        start: activeWindow.startDate,
-        end: activeWindow.endDate
-      } : null,
       isActive,
-      now: now.toISOString()
+      now: new Date().toISOString()
     });
     
     return isActive;
@@ -91,7 +77,27 @@ export function useWindowStatus(): WindowStatus {
     const applicationWindows = windows.filter(
       w => w.windowType === 'application' && w.projectType === projectType
     );
-    return applicationWindows.some(w => isWindowActive(w));
+    
+    if (applicationWindows.length === 0) {
+      console.log(`No application window found for ${projectType}`);
+      return false;
+    }
+    
+    const isActive = applicationWindows.some(w => isWindowActive(w));
+    
+    console.log(`Application window check for ${projectType}:`, {
+      totalWindows: applicationWindows.length,
+      windows: applicationWindows.map(w => ({
+        id: w._id,
+        start: w.startDate,
+        end: w.endDate,
+        isActive: isWindowActive(w)
+      })),
+      isActive,
+      now: new Date().toISOString()
+    });
+    
+    return isActive;
   };
 
   const isSubmissionOpen = (projectType: string, assessmentType?: string): boolean => {
@@ -100,7 +106,20 @@ export function useWindowStatus(): WindowStatus {
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return submissionWindows.some(w => isWindowActive(w));
+    
+    if (submissionWindows.length === 0) {
+      console.log(`No submission window found for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}`);
+      return false;
+    }
+    
+    const isActive = submissionWindows.some(w => isWindowActive(w));
+    console.log(`Submission window check for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}:`, {
+      totalWindows: submissionWindows.length,
+      isActive,
+      now: new Date().toISOString()
+    });
+    
+    return isActive;
   };
 
   const isAssessmentOpen = (projectType: string, assessmentType?: string): boolean => {
@@ -109,7 +128,20 @@ export function useWindowStatus(): WindowStatus {
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return assessmentWindows.some(w => isWindowActive(w));
+    
+    if (assessmentWindows.length === 0) {
+      console.log(`No assessment window found for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}`);
+      return false;
+    }
+    
+    const isActive = assessmentWindows.some(w => isWindowActive(w));
+    console.log(`Assessment window check for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}:`, {
+      totalWindows: assessmentWindows.length,
+      isActive,
+      now: new Date().toISOString()
+    });
+    
+    return isActive;
   };
 
   const isGradeReleaseOpen = (projectType: string, assessmentType?: string): boolean => {
@@ -118,7 +150,20 @@ export function useWindowStatus(): WindowStatus {
            w.projectType === projectType &&
            (!assessmentType || w.assessmentType === assessmentType)
     );
-    return gradeReleaseWindows.some(w => isWindowActive(w));
+    
+    if (gradeReleaseWindows.length === 0) {
+      console.log(`No grade release window found for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}`);
+      return false;
+    }
+    
+    const isActive = gradeReleaseWindows.some(w => isWindowActive(w));
+    console.log(`Grade release window check for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}:`, {
+      totalWindows: gradeReleaseWindows.length,
+      isActive,
+      now: new Date().toISOString()
+    });
+    
+    return isActive;
   };
 
   return {
