@@ -10,8 +10,8 @@ import { logger } from '../utils/logger';
  * Rate limiter for authentication endpoints (very strict)
  */
 export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  windowMs: 5 * 60 * 1000, // 5 minutes (shorter window for better UX)
+  max: 30, // 30 requests per 5 minutes (allows OAuth retries and multiple flows)
   message: {
     success: false,
     error: {
@@ -43,7 +43,7 @@ export const authRateLimiter = rateLimit({
  */
 export const writeRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute
+  max: 100, // 100 requests per minute (allows rapid form submissions and edits)
   message: {
     success: false,
     error: {
@@ -65,7 +65,7 @@ export const writeRateLimiter = rateLimit({
  */
 export const readRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
+  max: 300, // 300 requests per minute (allows 5 requests/second for data fetching)
   message: {
     success: false,
     error: {
@@ -85,7 +85,7 @@ export const readRateLimiter = rateLimit({
  */
 export const expensiveRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 5, // 5 requests per minute
+  max: 20, // 20 requests per minute (still strict but allows retries)
   message: {
     success: false,
     error: {
@@ -121,7 +121,7 @@ export const expensiveRateLimiter = rateLimit({
  */
 export const uploadRateLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // 10 uploads per 5 minutes
+  max: 30, // 30 uploads per 5 minutes (allows multiple file uploads)
   message: {
     success: false,
     error: {
@@ -142,7 +142,7 @@ export const uploadRateLimiter = rateLimit({
  */
 export const searchRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 20, // 20 searches per minute
+  max: 60, // 60 searches per minute (allows rapid searching)
   message: {
     success: false,
     error: {

@@ -7,8 +7,8 @@ import { logger } from '../utils/logger';
  * This prevents abuse per user account
  */
 export const userRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each user to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute (shorter window for better UX)
+  max: 200, // 200 requests per minute (allows ~3 requests/second)
   
   // Use user ID as key, fallback to IP
   keyGenerator: (req: Request) => {
@@ -68,8 +68,8 @@ export const userRateLimiter = rateLimit({
  * Use for login, password reset, etc.
  */
 export const strictRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Only 5 requests per 15 minutes
+  windowMs: 5 * 60 * 1000, // 5 minutes (shorter window)
+  max: 20, // 20 requests per 5 minutes (allows retries and multiple auth flows)
   
   keyGenerator: (req: Request) => {
     // For auth endpoints, use email or IP
@@ -107,7 +107,7 @@ export const strictRateLimiter = rateLimit({
  */
 export const apiRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute
+  max: 50, // 50 requests per minute (for expensive operations)
   
   keyGenerator: (req: Request) => {
     return req.user?.id ? `user:${req.user.id}` : `ip:${req.ip}`;

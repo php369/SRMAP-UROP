@@ -67,7 +67,9 @@ class ApiClient {
     if (!response.ok) {
       // Special handling for 429 rate limit
       if (response.status === 429) {
-        throw new Error('Too many requests. Please wait a moment and try again.');
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? `${retryAfter} seconds` : 'a moment';
+        throw new Error(`Rate limit reached. Please wait ${waitTime} and try again.`);
       }
       throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
     }
