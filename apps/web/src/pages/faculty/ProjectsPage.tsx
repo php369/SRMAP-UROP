@@ -24,7 +24,7 @@ interface Project {
 
 export function FacultyProjectsPage() {
   const { user } = useAuth();
-  const { isProposalOpen, loading: windowLoading, windows, refresh: refreshWindows } = useWindowStatus();
+  const { isProposalOpen, loading: windowLoading, windows } = useWindowStatus();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -40,13 +40,6 @@ export function FacultyProjectsPage() {
 
   // Check if proposal window is open for current project type
   const canCreateProject = isProposalOpen(formData.projectType);
-  
-  // Find the ACTIVE proposal window first, fallback to any proposal window
-  const proposalWindow = windows.find(
-    w => w.windowType === 'proposal' && w.projectType === formData.projectType && isProposalOpen(w.projectType)
-  ) || windows.find(
-    w => w.windowType === 'proposal' && w.projectType === formData.projectType
-  );
 
   // Get all active proposal windows to determine which project types are available
   const activeProposalWindows = windows.filter(
@@ -171,12 +164,15 @@ export function FacultyProjectsPage() {
   };
 
   const resetForm = () => {
+    // Default to first available open project type, fallback to IDP
+    const firstAvailableType = activeProposalWindows[0]?.projectType || 'IDP';
+    
     setFormData({
       title: '',
       brief: '',
       prerequisites: '',
       department: user?.profile?.department || '',
-      projectType: 'IDP'
+      projectType: firstAvailableType
     });
     setEditingProject(null);
   };
