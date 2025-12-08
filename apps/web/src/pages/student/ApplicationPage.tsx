@@ -62,17 +62,28 @@ export function ApplicationPage() {
 
   const checkEligibility = async () => {
     try {
-      // Check eligibility for each project type
-      const types = ['IDP', 'UROP', 'CAPSTONE'];
-      for (const type of types) {
-        const response = await api.get('/eligibility/check', { projectType: type });
-        if (response.success && (response.data as any)?.isEligible) {
-          setEligibleProjectType(type);
-          return;
-        }
+      // Determine eligibility from user role
+      if (!user?.role) {
+        toast.error('Unable to determine your role. Please contact admin.');
+        return;
       }
-      // If no eligibility found, show error
-      toast.error('You are not eligible for any project type. Please contact admin.');
+
+      // Map role to project type
+      const roleToProjectType: Record<string, string> = {
+        'idp-student': 'IDP',
+        'urop-student': 'UROP',
+        'capstone-student': 'CAPSTONE'
+      };
+
+      const projectType = roleToProjectType[user.role];
+      
+      if (projectType) {
+        setEligibleProjectType(projectType);
+        console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
+      } else {
+        toast.error('You are not eligible for any project type. Please contact admin.');
+        console.error(`❌ Unknown role: ${user.role}`);
+      }
     } catch (error) {
       console.error('Error checking eligibility:', error);
     }

@@ -69,18 +69,29 @@ export function DashboardPage() {
       try {
         setLoading(true);
 
-        // Only fetch eligibility for students
-        if (isStudentRole(user?.role)) {
+        // Determine eligibility from user role for students
+        if (user && isStudentRole(user.role)) {
           try {
-            const eligibilityRes = await axios.get('/api/v1/users/eligibility');
-            if (eligibilityRes.data?.success && eligibilityRes.data.data) {
-              setEligibility(eligibilityRes.data.data);
+            // Map role to project type
+            const roleToProjectType: Record<string, 'IDP' | 'UROP' | 'CAPSTONE'> = {
+              'idp-student': 'IDP',
+              'urop-student': 'UROP',
+              'capstone-student': 'CAPSTONE'
+            };
+
+            const projectType = roleToProjectType[user.role];
+            
+            if (projectType) {
+              // Set eligibility based on role
+              setEligibility({
+                type: projectType,
+                year: new Date().getFullYear(),
+                semester: Math.ceil((new Date().getMonth() + 1) / 6) // 1 for Jan-Jun, 2 for Jul-Dec
+              });
+              console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
             }
           } catch (err: any) {
-            // Eligibility not found is okay
-            if (err.response?.status !== 404) {
-              console.error('Error fetching eligibility:', err);
-            }
+            console.error('Error determining eligibility:', err);
           }
         }
 
