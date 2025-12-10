@@ -24,12 +24,6 @@ if (!interceptorAdded) {
   interceptorAdded = true;
 }
 
-interface EligibilityData {
-  type: 'IDP' | 'UROP' | 'CAPSTONE';
-  year: number;
-  semester: number;
-}
-
 interface GroupData {
   _id: string;
   groupCode: string;
@@ -42,59 +36,18 @@ interface GroupData {
   year: number;
 }
 
-interface ApplicationData {
-  status: 'pending' | 'approved' | 'rejected' | 'released';
-  selectedProjectId?: string;
-}
-
-interface ProjectData {
-  facultyName: string;
-  facultyId: string;
-}
-
 export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [eligibility, setEligibility] = useState<EligibilityData | null>(null);
   const [group, setGroup] = useState<GroupData | null>(null);
-  const [application, setApplication] = useState<ApplicationData | null>(null);
-  const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
-
-
 
   // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-
-        // Determine eligibility from user role for students
-        if (user && isStudentRole(user.role)) {
-          try {
-            // Map role to project type
-            const roleToProjectType: Record<string, 'IDP' | 'UROP' | 'CAPSTONE'> = {
-              'idp-student': 'IDP',
-              'urop-student': 'UROP',
-              'capstone-student': 'CAPSTONE'
-            };
-
-            const projectType = roleToProjectType[user.role];
-            
-            if (projectType) {
-              // Set eligibility based on role
-              setEligibility({
-                type: projectType,
-                year: new Date().getFullYear(),
-                semester: Math.ceil((new Date().getMonth() + 1) / 6) // 1 for Jan-Jun, 2 for Jul-Dec
-              });
-              console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
-            }
-          } catch (err: any) {
-            console.error('Error determining eligibility:', err);
-          }
-        }
 
         // Fetch group if student
         if (isStudentRole(user?.role)) {
@@ -107,42 +60,6 @@ export function DashboardPage() {
             // No group found is okay
             if (err.response?.status !== 404) {
               console.error('Error fetching group:', err);
-            }
-          }
-
-          // Fetch application
-          try {
-            const appRes = await api.get('/applications/my-application');
-            if (appRes.success && appRes.data) {
-              let appData;
-              if (Array.isArray(appRes.data)) {
-                appData = appRes.data.length > 0 ? appRes.data[0] : null;
-              } else {
-                appData = appRes.data;
-              }
-              
-              console.log('✅ Dashboard: Setting application data:', appData);
-              
-              if (appData) {
-                setApplication(appData);
-
-                // If approved, fetch project details
-                if (appData.status === 'approved' && appData.selectedProjectId) {
-                  console.log('🎯 Dashboard: Application approved, fetching project details...');
-                  const projectRes = await api.get(`/projects/${appData.selectedProjectId}`);
-                  if (projectRes.success && projectRes.data) {
-                    setProject(projectRes.data as any);
-                  }
-                }
-              } else {
-                console.log('⚠️ Dashboard: No application data found');
-                setApplication(null);
-              }
-            }
-          } catch (err: any) {
-            // No application found is okay
-            if (err.response?.status !== 404) {
-              console.error('Error fetching application:', err);
             }
           }
         }
@@ -159,15 +76,6 @@ export function DashboardPage() {
       setLoading(false);
     }
   }, [user]);
-
-  // Get application status display text
-  const getApplicationStatus = () => {
-    if (!application) return 'Not Applied';
-    if (application.status === 'approved') return 'Approved';
-    if (application.status === 'pending') return 'Pending';
-    if (application.status === 'rejected') return 'Rejected';
-    return 'Frozen';
-  };
 
   // Check if user is group leader
   // leaderId might be populated (object) or just an ID (string)
@@ -246,189 +154,127 @@ export function DashboardPage() {
       {/* Student Dashboard Content */}
       {isStudentRole(user?.role) && (
         <div className="space-y-6">
-          {/* Quick Navigation and Application Status - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Quick Navigation - Takes 2 columns */}
-            <div className="lg:col-span-2 bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
-              <h3 className="text-lg font-semibold text-text mb-4">Quick Navigation</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
-                >
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  <span className="text-sm font-medium text-text">Dashboard</span>
-                </button>
+          {/* Quick Navigation */}
+          <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
+            <h3 className="text-lg font-semibold text-text mb-4">Quick Navigation</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
+              >
+                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="text-sm font-medium text-text">Dashboard</span>
+              </button>
 
-                <button
-                  onClick={() => navigate('/dashboard/application')}
-                  className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
-                >
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="text-sm font-medium text-text">Application</span>
-                </button>
+              <button
+                onClick={() => navigate('/dashboard/application')}
+                className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
+              >
+                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-sm font-medium text-text">Application</span>
+              </button>
 
-                <button
-                  onClick={() => navigate('/dashboard/submission')}
-                  className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
-                >
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <span className="text-sm font-medium text-text">Submission</span>
-                </button>
+              <button
+                onClick={() => navigate('/dashboard/submission')}
+                className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
+              >
+                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span className="text-sm font-medium text-text">Submission</span>
+              </button>
 
-                <button
-                  onClick={() => navigate('/dashboard/assessment')}
-                  className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
-                >
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  <span className="text-sm font-medium text-text">Assessment</span>
-                </button>
+              <button
+                onClick={() => navigate('/dashboard/assessment')}
+                className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
+              >
+                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <span className="text-sm font-medium text-text">Assessment</span>
+              </button>
 
-                <button
-                  onClick={() => navigate('/dashboard/meetings')}
-                  className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
-                >
-                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-sm font-medium text-text">Meetings</span>
-                </button>
-              </div>
+              <button
+                onClick={() => navigate('/dashboard/meetings')}
+                className="flex flex-col items-center gap-2 p-4 bg-surface/80 rounded-lg hover:bg-hover transition-all duration-200 border border-border hover:border-primary/50 hover:shadow-md"
+              >
+                <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-medium text-text">Meetings</span>
+              </button>
             </div>
+          </div>
 
-            {/* Application Status - Takes 1 column */}
+          {/* Group Information Card */}
+          {group && (
             <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
-              <h3 className="text-lg font-semibold text-text mb-4">Application Status</h3>
-              <div className="flex items-center gap-2 mb-4">
-                <div className={`w-3 h-3 rounded-full ${!application ? 'bg-gray-400' :
-                  application.status === 'approved' ? 'bg-success' :
-                    application.status === 'pending' ? 'bg-warning' :
-                      application.status === 'rejected' ? 'bg-error' :
-                        'bg-gray-400'
-                  }`}></div>
-                <p className="text-xl font-bold text-text">{getApplicationStatus()}</p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text">Group Information</h3>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  group.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                  group.status === 'applied' ? 'bg-blue-500/20 text-blue-400' :
+                  group.status === 'complete' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {group.status === 'forming' ? '🔄 Forming' :
+                   group.status === 'complete' ? '✓ Complete' :
+                   group.status === 'applied' ? '📝 Applied' :
+                   group.status === 'approved' ? '✅ Approved' :
+                   group.status === 'frozen' ? '❄️ Frozen' : group.status}
+                </span>
               </div>
-              {!application && (
-                <button
-                  onClick={() => navigate('/dashboard/application')}
-                  className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
-                >
-                  Apply Now
-                </button>
-              )}
-              {application && (
-                <p className="text-sm text-textSecondary mt-2">
-                  {application.status === 'approved' && 'Your application has been approved! Check your mentor information below.'}
-                  {application.status === 'pending' && 'Your application is under review. We\'ll notify you once it\'s processed.'}
-                  {application.status === 'rejected' && 'Your application was not approved. Please contact your coordinator.'}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* Project Information Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Project Type Card */}
-            {eligibility && (
-              <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
-                <h3 className="text-lg font-semibold text-text mb-2">Project Type</h3>
-                <p className="text-2xl font-bold text-primary">{eligibility.type}</p>
-                <p className="text-sm text-textSecondary mt-1">
-                  Year {eligibility.year}, Semester {eligibility.semester}
-                </p>
-              </div>
-            )}
-
-            {/* Group Information Card */}
-            {group && (
-              <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-text">Group Information</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${group.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                      group.status === 'applied' ? 'bg-blue-500/20 text-blue-400' :
-                        group.status === 'complete' ? 'bg-purple-500/20 text-purple-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                    {group.status === 'forming' ? '🔄 Forming' :
-                      group.status === 'complete' ? '✓ Complete' :
-                        group.status === 'applied' ? '📝 Applied' :
-                          group.status === 'approved' ? '✅ Approved' :
-                            group.status === 'frozen' ? '❄️ Frozen' : group.status}
-                  </span>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-textSecondary">Group Code</p>
+                  <p className="text-xl font-bold text-primary font-mono">{group.groupCode}</p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-textSecondary">Group Code</p>
-                    <p className="text-xl font-bold text-primary font-mono">{group.groupCode}</p>
-                  </div>
+                <div>
+                  <p className="text-sm text-textSecondary">Your Role</p>
+                  <p className="text-md font-semibold text-text">
+                    {isGroupLeader ? '👑 Group Leader' : '👤 Member'}
+                  </p>
+                </div>
 
-                  <div>
-                    <p className="text-sm text-textSecondary">Your Role</p>
-                    <p className="text-md font-semibold text-text">
-                      {isGroupLeader ? '👑 Group Leader' : '👤 Member'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-textSecondary mb-2">Members ({group.members.length} / 4)</p>
-                    <div className="space-y-2">
-                      {group.members && group.members.map((member: any, index: number) => (
-                        <div key={member._id || index} className="flex items-center justify-between p-2 bg-surface/80 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-                              {member.name ? member.name.charAt(0).toUpperCase() : '?'}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-text">
-                                {member.name || 'Unknown'}
-                                {member._id === getLeaderId(group.leaderId) && ' 👑'}
-                              </p>
-                              <p className="text-xs text-textSecondary">{member.email || member.studentId || 'No email'}</p>
-                            </div>
+                <div>
+                  <p className="text-sm text-textSecondary mb-2">Members ({group.members.length} / 4)</p>
+                  <div className="space-y-2">
+                    {group.members && group.members.map((member: any, index: number) => (
+                      <div key={member._id || index} className="flex items-center justify-between p-2 bg-surface/80 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+                            {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                           </div>
-                          {isGroupLeader && member._id !== getLeaderId(group.leaderId) && (
-                            <button
-                              onClick={() => handleRemoveMember(member._id)}
-                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
-                              title="Remove member"
-                            >
-                              Remove
-                            </button>
-                          )}
+                          <div>
+                            <p className="text-sm font-medium text-text">
+                              {member.name || 'Unknown'}
+                              {member._id === getLeaderId(group.leaderId) && ' 👑'}
+                            </p>
+                            <p className="text-xs text-textSecondary">{member.email || member.studentId || 'No email'}</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                        {isGroupLeader && member._id !== getLeaderId(group.leaderId) && (
+                          <button
+                            onClick={() => handleRemoveMember(member._id)}
+                            className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
+                            title="Remove member"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Mentor Information Card (only if approved) */}
-            {application?.status === 'approved' && project && (
-              <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
-                <h3 className="text-lg font-semibold text-text mb-4">Mentor Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-textSecondary">Mentor Name</p>
-                    <p className="text-xl font-bold text-primary">{project.facultyName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-textSecondary">Faculty ID</p>
-                    <p className="text-xl font-bold text-text font-mono">{project.facultyId}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
