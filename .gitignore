@@ -92,6 +92,8 @@ temp/
 *.sln
 *.sw?
 
+*.md
+
 # OS generated files
 Thumbs.db
 .kiro
