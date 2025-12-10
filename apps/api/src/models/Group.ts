@@ -1,12 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IMemberDetails {
-  userId: mongoose.Types.ObjectId;
-  department?: string;
-  specialization?: string;
-  submittedAt?: Date;
-}
-
 export interface IGroup extends Document {
   _id: mongoose.Types.ObjectId;
   groupId: string; // Unique identifier
@@ -17,8 +10,6 @@ export interface IGroup extends Document {
   avatarUrl?: string; // Group avatar/image URL
   leaderId: mongoose.Types.ObjectId; // Student who created the group
   members: mongoose.Types.ObjectId[]; // 2-4 students
-  memberDetails?: IMemberDetails[]; // Member-specific information (department, specialization)
-  selectedProjects?: mongoose.Types.ObjectId[]; // Projects selected by leader (before application submission)
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
   semester: string;
   year: number;
@@ -87,28 +78,6 @@ const GroupSchema = new Schema<IGroup>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  }],
-  memberDetails: [{
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    department: {
-      type: String,
-      trim: true
-    },
-    specialization: {
-      type: String,
-      trim: true
-    },
-    submittedAt: {
-      type: Date
-    }
-  }],
-  selectedProjects: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Project'
   }],
   projectType: {
     type: String,
