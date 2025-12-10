@@ -59,9 +59,21 @@ export function FacultyApplicationsPage() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [projectType, setProjectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    fetchApplications();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await fetchApplications();
+      } catch (error) {
+        console.error('Error initializing applications data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   // Check if application window is open
@@ -148,8 +160,17 @@ export function FacultyApplicationsPage() {
     );
   };
 
+  // Show loading while initializing
+  if (initializing || windowLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   // Show window closed message if application window is not open
-  if (!windowLoading && !canReviewApplications) {
+  if (!canReviewApplications) {
     return <WindowClosedMessage windowType="application" />;
   }
 

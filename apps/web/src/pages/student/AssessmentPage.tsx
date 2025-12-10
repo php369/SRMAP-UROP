@@ -11,11 +11,25 @@ export function AssessmentPage() {
   const [meetingLogs, setMeetingLogs] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'submissions' | 'meetings'>('submissions');
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    checkAssessmentWindow();
-    fetchSubmissions();
-    fetchMeetingLogs();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await Promise.all([
+          checkAssessmentWindow(),
+          fetchSubmissions(),
+          fetchMeetingLogs()
+        ]);
+      } catch (error) {
+        console.error('Error initializing assessment data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   const checkAssessmentWindow = async () => {
@@ -63,6 +77,15 @@ export function AssessmentPage() {
       console.error('Error fetching meeting logs:', error);
     }
   };
+
+  // Show loading while initializing
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!assessmentWindow) {
     return (

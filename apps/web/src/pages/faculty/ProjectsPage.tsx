@@ -29,6 +29,7 @@ export function FacultyProjectsPage() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -52,7 +53,18 @@ export function FacultyProjectsPage() {
   };
 
   useEffect(() => {
-    fetchProjects();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await fetchProjects();
+      } catch (error) {
+        console.error('Error initializing projects data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   // Auto-select first available project type when windows load
@@ -250,7 +262,7 @@ export function FacultyProjectsPage() {
         )}
 
         {/* Projects List */}
-        {loading && projects.length === 0 ? (
+        {(initializing || windowLoading) ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
