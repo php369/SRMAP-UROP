@@ -321,23 +321,39 @@ export function ApplicationPage() {
 
   const fetchExistingApplication = async () => {
     try {
+      console.log('🔍 Fetching existing applications...');
       const response = await api.get('/applications/my-application');
+      console.log('📋 Application response:', response);
+      
       if (response.success && response.data) {
         const apps = Array.isArray(response.data) ? response.data : [response.data];
+        console.log('📝 Raw applications:', apps);
+        
         // Show pending, approved, and rejected applications so students can see all statuses
         const allApps = apps.filter((app: any) => ['pending', 'approved', 'rejected'].includes(app.status));
+        console.log('✅ Filtered applications:', allApps);
+        
         setExistingApplications(allApps);
+        
+        if (allApps.length > 0) {
+          console.log('🎯 Found existing applications, showing application status view');
+        }
+      } else {
+        console.log('❌ No application data in response');
+        setExistingApplications([]);
       }
-    } catch (error) {
-      console.log('No existing applications found');
+    } catch (error: any) {
+      console.log('⚠️ Error fetching applications:', error);
+      if (error.response?.status !== 404) {
+        console.error('Unexpected error:', error);
+      }
+      setExistingApplications([]);
     }
   };
 
-  // Refetch application when group changes
+  // Refetch application when group changes or on initial load
   useEffect(() => {
-    if (groupId) {
-      fetchExistingApplication();
-    }
+    fetchExistingApplication();
   }, [groupId]);
 
   // Periodically refresh application status to catch updates from faculty
@@ -654,7 +670,9 @@ export function ApplicationPage() {
   };
 
   // Show existing applications if they exist
+  console.log('🔍 ApplicationPage: Checking existing applications:', existingApplications);
   if (existingApplications.length > 0) {
+    console.log('✅ ApplicationPage: Showing existing applications view');
     return (
       <div className="min-h-screen p-6">
         <div className="max-w-6xl mx-auto">
@@ -757,7 +775,10 @@ export function ApplicationPage() {
   }
 
   // Show loading state while initializing
+  console.log('🔄 ApplicationPage: Loading state check:', { initializing, windowLoading, eligibleProjectType, existingApplicationsLength: existingApplications.length });
+  
   if (initializing || windowLoading || !eligibleProjectType) {
+    console.log('⏳ ApplicationPage: Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -776,9 +797,13 @@ export function ApplicationPage() {
   }
 
   // Check if window is open
+  console.log('🪟 ApplicationPage: Window check:', { eligibleProjectType, canApply });
   if (eligibleProjectType && !canApply) {
+    console.log('🚫 ApplicationPage: Window closed, showing closed message');
     return <WindowClosedMessage windowType="application" />;
   }
+
+  console.log('🎯 ApplicationPage: Showing main application interface');
 
   return (
     <div className="min-h-screen p-6">
