@@ -17,6 +17,7 @@ export function SubmissionPage() {
   const [currentSubmission, setCurrentSubmission] = useState<any>(null);
   const [userGroup, setUserGroup] = useState<any>(null);
   const [initializing, setInitializing] = useState(true);
+  const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     githubLink: '',
@@ -31,22 +32,58 @@ export function SubmissionPage() {
   });
 
   useEffect(() => {
-    const initializeData = async () => {
-      setInitializing(true);
+    const checkEligibility = async () => {
       try {
-        await Promise.all([
-          checkSubmissionWindow(),
-          checkUserRole()
-        ]);
+        // Wait for user data to be available
+        if (!user?.role) {
+          console.log('Waiting for user data...');
+          return;
+        }
+
+        // Map role to project type
+        const roleToProjectType: Record<string, string> = {
+          'idp-student': 'IDP',
+          'urop-student': 'UROP',
+          'capstone-student': 'CAPSTONE'
+        };
+
+        const projectType = roleToProjectType[user.role];
+        
+        if (projectType) {
+          setEligibleProjectType(projectType);
+          console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
+        } else {
+          toast.error('You are not eligible for any project type. Please contact admin.');
+          console.error(`❌ Unknown role: ${user.role}`);
+          setInitializing(false); // Stop loading if user is not eligible
+        }
       } catch (error) {
-        console.error('Error initializing submission data:', error);
-      } finally {
+        console.error('Error checking eligibility:', error);
         setInitializing(false);
       }
     };
-    
-    initializeData();
-  }, []);
+    checkEligibility();
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (eligibleProjectType) {
+      const initializeData = async () => {
+        setInitializing(true);
+        try {
+          await Promise.all([
+            checkSubmissionWindow(),
+            checkUserRole()
+          ]);
+        } catch (error) {
+          console.error('Error initializing submission data:', error);
+        } finally {
+          setInitializing(false);
+        }
+      };
+      
+      initializeData();
+    }
+  }, [eligibleProjectType]);
 
   // Check for existing submission when userGroup is loaded
   useEffect(() => {
@@ -58,10 +95,12 @@ export function SubmissionPage() {
   }, [userGroup]);
 
   const checkSubmissionWindow = async () => {
+    if (!eligibleProjectType) return;
+    
     try {
       const response = await api.get('/windows/active', { 
         windowType: 'submission',
-        projectType: 'IDP'
+        projectType: eligibleProjectType
       });
       if (response.success && response.data) {
         setSubmissionWindow(response.data as any);
@@ -235,7 +274,7 @@ export function SubmissionPage() {
   };
 
   // Show loading while initializing
-  if (initializing) {
+  if (initializing || !eligibleProjectType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

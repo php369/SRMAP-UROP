@@ -44,7 +44,6 @@ export function FacultyAssessmentPage() {
   const [loading, setLoading] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [selectedProjectLogs, setSelectedProjectLogs] = useState<any[] | null>(null);
-  const [projectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
   const [assessmentType] = useState<'A1' | 'A2' | 'A3' | 'External'>('A1');
   const [initializing, setInitializing] = useState(true);
   const [gradeData, setGradeData] = useState({
@@ -53,8 +52,8 @@ export function FacultyAssessmentPage() {
     meetUrl: ''
   });
 
-  // Check if assessment window is open
-  const canGrade = isAssessmentOpen(projectType, assessmentType);
+  // Check if any assessment window is open (for any project type)
+  const canGrade = ['IDP', 'UROP', 'CAPSTONE'].some(type => isAssessmentOpen(type, assessmentType));
 
   useEffect(() => {
     const initializeData = async () => {

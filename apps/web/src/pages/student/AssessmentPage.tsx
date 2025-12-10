@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Video, FileText, Github, Award, Clock, CheckCircle, AlertCircle, Calendar, Users, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
+import toast from 'react-hot-toast';
 
 export function AssessmentPage() {
   const { user } = useAuth();
@@ -12,31 +13,70 @@ export function AssessmentPage() {
   const [activeTab, setActiveTab] = useState<'submissions' | 'meetings'>('submissions');
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
+  const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
   useEffect(() => {
-    const initializeData = async () => {
-      setInitializing(true);
+    const checkEligibility = async () => {
       try {
-        await Promise.all([
-          checkAssessmentWindow(),
-          fetchSubmissions(),
-          fetchMeetingLogs()
-        ]);
+        // Wait for user data to be available
+        if (!user?.role) {
+          console.log('Waiting for user data...');
+          return;
+        }
+
+        // Map role to project type
+        const roleToProjectType: Record<string, string> = {
+          'idp-student': 'IDP',
+          'urop-student': 'UROP',
+          'capstone-student': 'CAPSTONE'
+        };
+
+        const projectType = roleToProjectType[user.role];
+        
+        if (projectType) {
+          setEligibleProjectType(projectType);
+          console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
+        } else {
+          toast.error('You are not eligible for any project type. Please contact admin.');
+          console.error(`❌ Unknown role: ${user.role}`);
+          setInitializing(false); // Stop loading if user is not eligible
+        }
       } catch (error) {
-        console.error('Error initializing assessment data:', error);
-      } finally {
+        console.error('Error checking eligibility:', error);
         setInitializing(false);
       }
     };
-    
-    initializeData();
-  }, []);
+    checkEligibility();
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (eligibleProjectType) {
+      const initializeData = async () => {
+        setInitializing(true);
+        try {
+          await Promise.all([
+            checkAssessmentWindow(),
+            fetchSubmissions(),
+            fetchMeetingLogs()
+          ]);
+        } catch (error) {
+          console.error('Error initializing assessment data:', error);
+        } finally {
+          setInitializing(false);
+        }
+      };
+      
+      initializeData();
+    }
+  }, [eligibleProjectType]);
 
   const checkAssessmentWindow = async () => {
+    if (!eligibleProjectType) return;
+    
     try {
       const response = await api.get('/windows/active', { 
         windowType: 'assessment',
-        projectType: 'IDP'
+        projectType: eligibleProjectType
       });
       if (response.success && response.data) {
         setAssessmentWindow(response.data as any);
@@ -79,7 +119,7 @@ export function AssessmentPage() {
   };
 
   // Show loading while initializing
-  if (initializing) {
+  if (initializing || !eligibleProjectType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
