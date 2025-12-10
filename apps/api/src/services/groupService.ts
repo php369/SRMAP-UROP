@@ -351,7 +351,9 @@ export async function getUserGroup(
   userId: mongoose.Types.ObjectId
 ): Promise<IGroup | null> {
   try {
-    return await Group.findOne({
+    logger.info('Looking for group for user:', { userId: userId.toString() });
+    
+    const group = await Group.findOne({
       members: userId,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
     })
@@ -359,6 +361,15 @@ export async function getUserGroup(
       .populate('members', 'name email studentId')
       .populate('assignedFacultyId', 'name email facultyId')
       .populate('externalEvaluatorId', 'name email facultyId');
+
+    logger.info('Group query result:', { 
+      found: !!group,
+      groupId: group?._id?.toString(),
+      status: group?.status,
+      memberCount: group?.members?.length
+    });
+
+    return group;
   } catch (error) {
     logger.error('Error getting user group:', error);
     return null;

@@ -177,13 +177,45 @@ router.get('/my-application', authenticate, authorize('student'), async (req, re
   try {
     const userId = new mongoose.Types.ObjectId(req.user!.id);
 
+    logger.info('Fetching applications for user:', { userId: userId.toString() });
+
     // Check if user is in a group
     const group = await getUserGroup(userId);
+    logger.info('User group status:', { 
+      hasGroup: !!group, 
+      groupId: group?._id?.toString(),
+      groupStatus: group?.status 
+    });
 
-    const applications = await getUserApplications(
-      group ? undefined : userId,
-      group ? group._id : undefined
-    );
+    // Try to get applications both ways to ensure we don't miss any
+    let applications: any[] = [];
+    
+    if (group) {
+      // User is in a group - get group applications
+      const groupApplications = await getUserApplications(undefined, group._id);
+      applications = groupApplications;
+      logger.info('Found group applications:', { count: groupApplications.length });
+    } else {
+      // User is not in a group - get solo applications
+      const soloApplications = await getUserApplications(userId, undefined);
+      applications = soloApplications;
+      logger.info('Found solo applications:', { count: soloApplications.length });
+    }
+
+    // If no applications found and user is in a group, also check for any solo applications
+    // This handles cases where user might have applied solo before joining a group
+    if (applications.length === 0 && group) {
+      const soloApplications = await getUserApplications(userId, undefined);
+      if (soloApplications.length > 0) {
+        applications = soloApplications;
+        logger.info('Found fallback solo applications:', { count: soloApplications.length });
+      }
+    }
+
+    logger.info('Final applications result:', { 
+      count: applications.length,
+      applicationIds: applications.map(app => app._id?.toString())
+    });
 
     res.json({
       success: true,
