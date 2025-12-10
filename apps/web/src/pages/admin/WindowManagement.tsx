@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { GlassCard, GlowButton, Badge } from '../../components/ui';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/animations';
 import { apiClient } from '../../utils/api';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
 import toast from 'react-hot-toast';
 
-interface Window {
+interface WindowData {
     _id: string;
     windowType: 'application' | 'proposal' | 'submission';
     projectType: 'IDP' | 'UROP' | 'CAPSTONE';
@@ -17,10 +18,11 @@ interface Window {
 }
 
 export function WindowManagement() {
-    const [windows, setWindows] = useState<Window[]>([]);
+    const { windows, loading: windowsLoading, refresh } = useWindowStatus();
     const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [editingWindow, setEditingWindow] = useState<Window | null>(null);
+    const [editingWindow, setEditingWindow] = useState<WindowData | null>(null);
+    const [lastRefresh, setLastRefresh] = useState(new Date());
     const [formData, setFormData] = useState({
         windowType: 'application' as 'application' | 'proposal' | 'submission',
         projectType: 'IDP' as 'IDP' | 'UROP' | 'CAPSTONE',
@@ -29,22 +31,20 @@ export function WindowManagement() {
         isActive: true
     });
 
+    // Auto-refresh every 30 seconds and update last refresh time
     useEffect(() => {
-        fetchWindows();
-    }, []);
+        const interval = setInterval(() => {
+            refresh();
+            setLastRefresh(new Date());
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, [refresh]);
 
-    const fetchWindows = async () => {
-        setLoading(true);
-        try {
-            const response = await apiClient.get('/windows');
-            if (response.success && response.data) {
-                setWindows(response.data);
-            }
-        } catch (error) {
-            toast.error('Failed to fetch windows');
-        } finally {
-            setLoading(false);
-        }
+    const handleManualRefresh = async () => {
+        await refresh();
+        setLastRefresh(new Date());
+        toast.success('Window status refreshed');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +56,8 @@ export function WindowManagement() {
                 const response = await apiClient.put(`/windows/${editingWindow._id}`, formData);
                 if (response.success) {
                     toast.success('Window updated successfully');
-                    fetchWindows();
+                    await refresh();
+                    setLastRefresh(new Date());
                     handleCloseModal();
                 } else {
                     toast.error(response.error?.message || 'Failed to update window');
@@ -65,7 +66,8 @@ export function WindowManagement() {
                 const response = await apiClient.post('/windows', formData);
                 if (response.success) {
                     toast.success('Window created successfully');
-                    fetchWindows();
+                    await refresh();
+                    setLastRefresh(new Date());
                     handleCloseModal();
                 } else {
                     toast.error(response.error?.message || 'Failed to create window');
@@ -85,7 +87,8 @@ export function WindowManagement() {
             const response = await apiClient.delete(`/windows/${id}`);
             if (response.success) {
                 toast.success('Window deleted successfully');
-                fetchWindows();
+                await refresh();
+                setLastRefresh(new Date());
             } else {
                 toast.error(response.error?.message || 'Failed to delete window');
             }
@@ -94,7 +97,7 @@ export function WindowManagement() {
         }
     };
 
-    const handleEdit = (window: Window) => {
+    const handleEdit = (window: WindowData) => {
         setEditingWindow(window);
         setFormData({
             windowType: window.windowType,
@@ -141,18 +144,35 @@ export function WindowManagement() {
                         <h1 className="text-3xl font-bold text-text mb-2">
                             Window Management
                         </h1>
-                        <p className="text-textSecondary">
-                            Manage application, proposal, and submission windows
-                        </p>
+                        <div className="flex items-center gap-4">
+                            <p className="text-textSecondary">
+                                Manage application, proposal, and submission windows
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-textSecondary">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+                            </div>
+                        </div>
                     </div>
-                    <GlowButton
-                        variant="primary"
-                        glow
-                        onClick={() => setShowModal(true)}
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Window
-                    </GlowButton>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleManualRefresh}
+                            disabled={windowsLoading}
+                            className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all flex items-center gap-2 disabled:opacity-50"
+                            title="Refresh window status"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${windowsLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                        <GlowButton
+                            variant="primary"
+                            glow
+                            onClick={() => setShowModal(true)}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Window
+                        </GlowButton>
+                    </div>
                 </motion.div>
 
                 {/* Windows Grid */}
@@ -164,11 +184,22 @@ export function WindowManagement() {
                                     <Calendar className="w-6 h-6" />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {window.isActive ? (
-                                        <Badge variant="success" size="sm">Active</Badge>
-                                    ) : (
-                                        <Badge variant="error" size="sm">Inactive</Badge>
-                                    )}
+                                    {(() => {
+                                        const now = new Date();
+                                        const start = new Date(window.startDate);
+                                        const end = new Date(window.endDate);
+                                        const isCurrentlyActive = window.isActive && now >= start && now <= end;
+                                        
+                                        if (isCurrentlyActive) {
+                                            return <Badge variant="success" size="sm">Active</Badge>;
+                                        } else if (window.isActive && now < start) {
+                                            return <Badge variant="warning" size="sm">Scheduled</Badge>;
+                                        } else if (window.isActive && now > end) {
+                                            return <Badge variant="error" size="sm">Expired</Badge>;
+                                        } else {
+                                            return <Badge variant="error" size="sm">Inactive</Badge>;
+                                        }
+                                    })()}
                                 </div>
                             </div>
 
@@ -196,7 +227,7 @@ export function WindowManagement() {
 
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => handleEdit(window)}
+                                    onClick={() => handleEdit(window as WindowData)}
                                     className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all flex items-center justify-center gap-2"
                                 >
                                     <Edit2 className="w-4 h-4" />

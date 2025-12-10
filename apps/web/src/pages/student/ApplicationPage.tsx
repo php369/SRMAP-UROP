@@ -148,7 +148,10 @@ export function ApplicationPage() {
 
   const fetchMemberDetails = async (groupId: string) => {
     try {
+      console.log('Fetching member details for group:', groupId);
       const response = await api.get(`/groups/${groupId}/member-details`);
+      console.log('Member details fetch response:', response);
+      
       if (response.success && response.data) {
         const details = response.data as any[];
         setMemberDetails(details);
@@ -159,11 +162,15 @@ export function ApplicationPage() {
         
         console.log('Member details fetched:', { 
           detailsCount: details.length,
-          hasSubmittedDetails: !!userDetails 
+          hasSubmittedDetails: !!userDetails,
+          details: details,
+          userId: user?.id
         });
+      } else {
+        console.log('No member details in response or unsuccessful response');
       }
     } catch (error) {
-      console.log('No member details found or error fetching');
+      console.error('Error fetching member details:', error);
     }
   };
 
@@ -175,10 +182,14 @@ export function ApplicationPage() {
 
     setLoading(true);
     try {
+      console.log('Submitting member details:', { groupId, department, specialization });
+      
       const response = await api.post(`/groups/${groupId}/member-details`, {
         department: department.trim(),
         specialization: specialization?.trim() || ''
       });
+
+      console.log('Member details response:', response);
 
       if (response.success) {
         toast.success('Details submitted successfully!');
@@ -186,10 +197,12 @@ export function ApplicationPage() {
         await fetchMemberDetails(groupId);
         return true;
       } else {
+        console.error('Failed to submit details:', response.error);
         toast.error(response.error?.message || 'Failed to submit details');
         return false;
       }
     } catch (error: any) {
+      console.error('Error submitting member details:', error);
       toast.error(error.message || 'Failed to submit details');
       return false;
     } finally {
@@ -365,8 +378,8 @@ export function ApplicationPage() {
         // Refetch the group to ensure we have the latest data
         await fetchExistingGroup();
         
-        // Leader goes directly to application form
-        setStep('application');
+        // Don't automatically redirect - let leader see the code first
+        // They can manually click "Continue to Application"
       } else {
         toast.error(response.error?.message || 'Failed to create group');
       }
@@ -1097,17 +1110,36 @@ export function ApplicationPage() {
             {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
               <>
                 {applicationType === 'group' && (
-                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-start">
-                      <Users className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-bold text-blue-900 mb-2">Group Application</h3>
-                        <p className="text-sm text-blue-800">
-                          You are filling this application on behalf of your entire group. Make sure all members have submitted their details before proceeding.
-                        </p>
+                  <>
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start">
+                        <Users className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                        <div>
+                          <h3 className="font-bold text-blue-900 mb-2">Group Application</h3>
+                          <p className="text-sm text-blue-800">
+                            You are filling this application on behalf of your entire group. Make sure all members have submitted their details before proceeding.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                    
+                    {groupCode && (
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Your Group Code:</p>
+                            <div className="text-xl font-bold text-blue-500">
+                              {formatGroupCode(groupCode)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">Share with team members</p>
+                            <p className="text-xs text-gray-500">Members: {groupMembers.length}/4</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
             {/* Form Fields */}
