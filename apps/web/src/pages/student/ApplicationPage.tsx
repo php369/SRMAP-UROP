@@ -73,13 +73,15 @@ export function ApplicationPage() {
           setApplicationType('group');
         }
       } else {
-        // Member needs to submit details first
-        if (!hasSubmittedDetails && step === 'choice') {
-          setStep('member-details');
-          setApplicationType('group');
-        } else if (hasSubmittedDetails && step === 'choice') {
-          setStep('member-waiting');
-          setApplicationType('group');
+        // Member logic - check if they have submitted details
+        if (step === 'choice' || step === 'member-details') {
+          if (hasSubmittedDetails) {
+            setStep('member-waiting');
+            setApplicationType('group');
+          } else {
+            setStep('member-details');
+            setApplicationType('group');
+          }
         }
       }
     }
@@ -194,15 +196,23 @@ export function ApplicationPage() {
     }
   };
 
-  const submitMemberDetails = async (department: string, specialization?: string) => {
+  const submitMemberDetails = async (department: string, specialization?: string, isLeaderSubmission = false) => {
     if (!groupId) {
       toast.error('No group found');
       return false;
     }
 
-    setLoading(true);
+    const wasLoading = loading;
+    if (!wasLoading) setLoading(true);
+    
     try {
-      console.log('Submitting member details:', { groupId, department, specialization });
+      console.log('Submitting member details:', { 
+        groupId, 
+        department, 
+        specialization, 
+        isLeaderSubmission,
+        userId: user?.id 
+      });
       
       const response = await api.post(`/groups/${groupId}/member-details`, {
         department: department.trim(),
@@ -212,21 +222,27 @@ export function ApplicationPage() {
       console.log('Member details response:', response);
 
       if (response.success) {
-        toast.success('Details submitted successfully!');
+        if (!isLeaderSubmission) {
+          toast.success('Details submitted successfully!');
+        }
         setHasSubmittedDetails(true);
         await fetchMemberDetails(groupId);
         return true;
       } else {
         console.error('Failed to submit details:', response.error);
-        toast.error(response.error?.message || 'Failed to submit details');
+        if (!isLeaderSubmission) {
+          toast.error(response.error?.message || 'Failed to submit details');
+        }
         return false;
       }
     } catch (error: any) {
       console.error('Error submitting member details:', error);
-      toast.error(error.message || 'Failed to submit details');
+      if (!isLeaderSubmission) {
+        toast.error(error.message || 'Failed to submit details');
+      }
       return false;
     } finally {
-      setLoading(false);
+      if (!wasLoading) setLoading(false);
     }
   };
 
@@ -325,6 +341,14 @@ export function ApplicationPage() {
       }, 5000); // Refresh every 5 seconds
 
       return () => clearInterval(interval);
+    }
+  }, [step, groupId]);
+
+  // Fetch member details immediately when entering verification step
+  useEffect(() => {
+    if (step === 'verify-members' && groupId) {
+      console.log('Entering verification step, fetching member details...');
+      fetchMemberDetails(groupId);
     }
   }, [step, groupId]);
 
@@ -503,7 +527,7 @@ export function ApplicationPage() {
     }
   };
 
-  const handleProceedToVerification = () => {
+  const handleProceedToVerification = async () => {
     if (selectedProjects.length === 0) {
       toast.error('Please select at least one project');
       return;
@@ -515,9 +539,32 @@ export function ApplicationPage() {
     }
 
     // For group applications, go to verification step
-    if (applicationType === 'group') {
-      // Allow proceeding to verification even if not all members have submitted details
-      // The verification step will show which members haven't submitted and prevent final submission
+    if (applicationType === 'group' && isGroupLeader) {
+      // First, save the leader's details as member details
+      setLoading(true);
+      try {
+        console.log('Saving leader details before verification:', {
+          department: formData.department,
+          specialization: formData.specialization
+        });
+
+        const success = await submitMemberDetails(formData.department, formData.specialization, true);
+        if (success) {
+          console.log('Leader details saved successfully');
+          // Refresh member details to include the leader's data
+          await fetchMemberDetails(groupId);
+          setStep('verify-members');
+        } else {
+          toast.error('Failed to save your details. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error saving leader details:', error);
+        toast.error('Failed to save your details. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (applicationType === 'group') {
+      // For non-leaders in group applications
       setStep('verify-members');
     } else {
       // For solo applications, submit directly
@@ -1146,7 +1193,7 @@ export function ApplicationPage() {
                         <div>
                           <h3 className="font-bold text-blue-900 mb-2">Group Application</h3>
                           <p className="text-sm text-blue-800">
-                            You are filling this application on behalf of your entire group. Make sure all members have submitted their details before proceeding.
+                            You are filling this application on behalf of your entire group. Your department and specialization details will be automatically saved when you proceed to verification.
                           </p>
                         </div>
                       </div>
@@ -1266,7 +1313,7 @@ export function ApplicationPage() {
                   onClick={handleProceedToVerification}
                   disabled={loading || selectedProjects.length === 0}
                   className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Proceed to verify group members' : 'Submit your application'}
+                  title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Save details and proceed to verify group members' : 'Submit your application'}
                 >
                   {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
                 </button>
