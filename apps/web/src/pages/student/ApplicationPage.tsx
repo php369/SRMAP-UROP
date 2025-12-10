@@ -35,7 +35,7 @@ export function ApplicationPage() {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
-  const [applicationWindow, setApplicationWindow] = useState<any>(null);
+
   const [existingApplications, setExistingApplications] = useState<any[]>([]);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
@@ -64,7 +64,6 @@ export function ApplicationPage() {
         setInitializing(true);
         try {
           await Promise.all([
-            checkApplicationWindow(),
             fetchProjects(),
             fetchExistingGroup(),
             fetchExistingApplication()
@@ -329,7 +328,7 @@ export function ApplicationPage() {
         const apps = Array.isArray(response.data) ? response.data : [response.data];
         console.log('📝 Raw applications:', apps);
         
-        // Show pending, approved, and rejected applications so students can see all statuses
+        // Show all applications (pending, approved, rejected) so students can see all statuses
         const allApps = apps.filter((app: any) => ['pending', 'approved', 'rejected'].includes(app.status));
         console.log('✅ Filtered applications:', allApps);
         
@@ -359,14 +358,12 @@ export function ApplicationPage() {
   // Periodically refresh application status to catch updates from faculty
   useEffect(() => {
     const interval = setInterval(() => {
-      if (existingApplications.length > 0) {
-        console.log('Auto-refreshing application status...');
-        fetchExistingApplication();
-      }
-    }, 30000); // Refresh every 30 seconds
+      console.log('Auto-refreshing application status...');
+      fetchExistingApplication();
+    }, 15000); // Refresh every 15 seconds to catch status updates faster
 
     return () => clearInterval(interval);
-  }, [existingApplications.length]);
+  }, []);
 
   // Auto-refresh group data when on group formation or verification step
   useEffect(() => {
@@ -399,24 +396,7 @@ export function ApplicationPage() {
     }
   }, [step, groupId]);
 
-  const checkApplicationWindow = async () => {
-    if (!eligibleProjectType) return;
 
-    try {
-      const response = await api.get('/windows/active', {
-        windowType: 'application',
-        projectType: eligibleProjectType
-      });
-      if (response.success && response.data) {
-        setApplicationWindow(response.data as any);
-      } else {
-        setApplicationWindow(null);
-      }
-    } catch (error) {
-      console.error('Error checking application window:', error);
-      setApplicationWindow(null);
-    }
-  };
 
   const fetchProjects = async () => {
     if (!eligibleProjectType) return;
@@ -690,21 +670,32 @@ export function ApplicationPage() {
                     : 'Showing approved applications (application window is closed)'}
                 </p>
               </div>
-              {eligibleProjectType && (
-                <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
-                  <p className="text-sm text-gray-600">Eligible for</p>
-                  <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    console.log('Manual refresh triggered');
+                    fetchExistingApplication();
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm"
+                >
+                  Refresh Status
+                </button>
+                {eligibleProjectType && (
+                  <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
+                    <p className="text-sm text-gray-600">Eligible for</p>
+                    <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {existingApplications
               .filter((application: any) => {
-                // If window is open, show all applications
+                // If window is open, show all applications (pending, approved, rejected)
                 if (canApply) return true;
-                // If window is closed, show only approved applications
+                // If window is closed, show approved applications (so students can see their approved projects)
                 return application.status === 'approved';
               })
               .map((application: any) => (
@@ -762,6 +753,12 @@ export function ApplicationPage() {
                       </span>
                     </div>
                   )}
+                  {application.status === 'approved' && application.projectId?.facultyName && (
+                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-xs text-green-800 font-medium">Assigned Faculty:</p>
+                      <p className="text-sm text-green-900">{application.projectId.facultyName}</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -807,8 +804,15 @@ export function ApplicationPage() {
     );
   }
 
-  // Check if window is open - but only show closed message if no existing applications
-  console.log('🪟 ApplicationPage: Window check:', { eligibleProjectType, canApply, existingApplicationsLength: existingApplications.length });
+  // Check if window is open - but only show closed message if no existing applications OR no approved applications
+  const hasApprovedApplications = existingApplications.some((app: any) => app.status === 'approved');
+  console.log('🪟 ApplicationPage: Window check:', { 
+    eligibleProjectType, 
+    canApply, 
+    existingApplicationsLength: existingApplications.length,
+    hasApprovedApplications 
+  });
+  
   if (eligibleProjectType && !canApply && existingApplications.length === 0) {
     console.log('🚫 ApplicationPage: Window closed and no existing applications, showing closed message');
     return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
