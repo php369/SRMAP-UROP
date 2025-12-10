@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, User, CheckCircle, XCircle, Eye, Filter, Edit2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, GlowButton } from '../../components/ui';
+import { Users, User, CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
+
+import { GlassCard } from '../../components/ui';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
@@ -52,13 +52,11 @@ interface Application {
 }
 
 export function FacultyApplicationsPage() {
-  const { user } = useAuth();
   const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [projectType, setProjectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -76,15 +74,15 @@ export function FacultyApplicationsPage() {
     initializeData();
   }, []);
 
-  // Check if application window is open
-  const canReviewApplications = isApplicationOpen(projectType);
+  // Check if any application window is open (for any project type)
+  const canReviewApplications = ['IDP', 'UROP', 'CAPSTONE'].some(type => isApplicationOpen(type));
 
   const fetchApplications = async () => {
     setLoading(true);
     try {
       const response = await api.get('/applications/faculty');
       if (response.success && response.data) {
-        setApplications(response.data);
+        setApplications(response.data as Application[]);
       } else {
         setApplications([]);
       }
@@ -359,7 +357,7 @@ export function FacultyApplicationsPage() {
                   {selectedApplication.groupId && (
                     <div>
                       <label className="text-sm font-medium text-gray-600">
-                        Group Members {selectedApplication.groupId.groupNumber ? `(Group #${selectedApplication.groupId.groupNumber})` : `(${selectedApplication.groupId.groupCode})`}
+                        Group Members {selectedApplication.groupId?.groupNumber ? `(Group #${selectedApplication.groupId.groupNumber})` : `(${selectedApplication.groupId?.groupCode})`}
                       </label>
                       <div className="mt-2 space-y-2">
                         {selectedApplication.groupId.members.map((member) => (
@@ -370,7 +368,7 @@ export function FacultyApplicationsPage() {
                               <p className="text-xs text-gray-600">{member.email}</p>
                               <p className="text-xs text-gray-500">ID: {member.studentId}</p>
                             </div>
-                            {member._id === selectedApplication.groupId.leaderId._id && (
+                            {member._id === selectedApplication.groupId?.leaderId._id && (
                               <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
                                 Leader
                               </span>
