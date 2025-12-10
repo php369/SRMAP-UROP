@@ -156,21 +156,41 @@ export function ApplicationPage() {
         const details = response.data as any[];
         setMemberDetails(details);
         
-        // Check if current user has submitted details
-        const userDetails = details.find(d => d.userId._id === user?.id || d.userId === user?.id);
+        // Check if current user has submitted details - try multiple ID comparison methods
+        const currentUserId = user?.id;
+        console.log('Current user ID:', currentUserId);
+        console.log('Details user IDs:', details.map(d => ({ 
+          userId: d.userId, 
+          userIdId: d.userId?._id,
+          userIdString: d.userId?.toString?.(),
+          department: d.department 
+        })));
+        
+        const userDetails = details.find(d => {
+          const detailUserId = d.userId?._id || d.userId;
+          const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+          const currentUserIdString = typeof currentUserId === 'string' ? currentUserId : (currentUserId as any)?.toString?.();
+          
+          return detailUserIdString === currentUserIdString;
+        });
+        
         setHasSubmittedDetails(!!userDetails);
         
         console.log('Member details fetched:', { 
           detailsCount: details.length,
           hasSubmittedDetails: !!userDetails,
-          details: details,
-          userId: user?.id
+          userDetails: userDetails,
+          currentUserId: currentUserId
         });
       } else {
         console.log('No member details in response or unsuccessful response');
+        setMemberDetails([]);
+        setHasSubmittedDetails(false);
       }
     } catch (error) {
       console.error('Error fetching member details:', error);
+      setMemberDetails([]);
+      setHasSubmittedDetails(false);
     }
   };
 
@@ -296,6 +316,18 @@ export function ApplicationPage() {
     }
   }, [step, groupId]);
 
+  // Auto-refresh member details when on member waiting or verification step
+  useEffect(() => {
+    if ((step === 'member-waiting' || step === 'verify-members') && groupId) {
+      const interval = setInterval(() => {
+        console.log('Auto-refreshing member details...');
+        fetchMemberDetails(groupId);
+      }, 5000); // Refresh every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [step, groupId]);
+
   const checkApplicationWindow = async () => {
     if (!eligibleProjectType) return;
 
@@ -393,7 +425,7 @@ export function ApplicationPage() {
   const handleDeleteGroup = async () => {
     if (!groupId) return;
 
-    if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this group? This action cannot be undone. All members will be removed from the group.')) {
       return;
     }
 
@@ -401,11 +433,18 @@ export function ApplicationPage() {
     try {
       const response = await api.delete(`/groups/${groupId}`);
       if (response.success) {
+        // Reset all group-related state
         setGroupCode('');
         setGroupId('');
         setGroupMembers([]);
-        toast.success('Group deleted successfully!');
-        setStep('group-formation');
+        setMemberDetails([]);
+        setIsGroupLeader(false);
+        setHasSubmittedDetails(false);
+        setApplicationType(null);
+        setSelectedProjects([]);
+        
+        toast.success('Group deleted successfully! All members have been removed.');
+        setStep('choice');
       } else {
         toast.error(response.error?.message || 'Failed to delete group');
       }
@@ -477,18 +516,8 @@ export function ApplicationPage() {
 
     // For group applications, go to verification step
     if (applicationType === 'group') {
-      // Check if all members have submitted their details
-      const allMembersSubmitted = groupMembers.every(member => 
-        memberDetails.some(detail => 
-          (detail.userId._id || detail.userId) === (member._id || member.id)
-        )
-      );
-
-      if (!allMembersSubmitted) {
-        toast.error('All group members must submit their details before proceeding');
-        return;
-      }
-
+      // Allow proceeding to verification even if not all members have submitted details
+      // The verification step will show which members haven't submitted and prevent final submission
       setStep('verify-members');
     } else {
       // For solo applications, submit directly
@@ -1135,6 +1164,16 @@ export function ApplicationPage() {
                           <div className="text-right">
                             <p className="text-xs text-gray-500">Share with team members</p>
                             <p className="text-xs text-gray-500">Members: {groupMembers.length}/4</p>
+                            {isGroupLeader && (
+                              <button
+                                onClick={handleDeleteGroup}
+                                disabled={loading}
+                                className="mt-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:opacity-50 transition-all"
+                                title="Delete group and remove all members"
+                              >
+                                Delete Group
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1296,9 +1335,13 @@ export function ApplicationPage() {
               ) : (
                 <div className="space-y-3">
                   {groupMembers.map((member: any, index: number) => {
-                    const memberDetail = memberDetails.find(detail => 
-                      (detail.userId._id || detail.userId) === (member._id || member.id)
-                    );
+                    const memberDetail = memberDetails.find(detail => {
+                      const detailUserId = detail.userId?._id || detail.userId;
+                      const memberUserId = member._id || member.id;
+                      const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                      const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                      return detailUserIdString === memberUserIdString;
+                    });
                     const hasSubmittedDetails = !!memberDetail;
                     
                     return (
@@ -1375,11 +1418,16 @@ export function ApplicationPage() {
               {/* Check if all members have submitted details */}
               {groupMembers.length >= 2 && (
                 (() => {
-                  const membersWithoutDetails = groupMembers.filter(member => 
-                    !memberDetails.some(detail => 
-                      (detail.userId._id || detail.userId) === (member._id || member.id)
-                    )
-                  );
+                  const membersWithoutDetails = groupMembers.filter(member => {
+                    const memberUserId = member._id || member.id;
+                    const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                    
+                    return !memberDetails.some(detail => {
+                      const detailUserId = detail.userId?._id || detail.userId;
+                      const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                      return detailUserIdString === memberUserIdString;
+                    });
+                  });
                   
                   return membersWithoutDetails.length > 0 && (
                     <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -1421,20 +1469,30 @@ export function ApplicationPage() {
               </button>
               <button
                 onClick={handleSubmitApplication}
-                disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => 
-                  memberDetails.some(detail => 
-                    (detail.userId._id || detail.userId) === (member._id || member.id)
-                  )
-                )}
+                disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => {
+                  const memberUserId = member._id || member.id;
+                  const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                  
+                  return memberDetails.some(detail => {
+                    const detailUserId = detail.userId?._id || detail.userId;
+                    const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                    return detailUserIdString === memberUserIdString;
+                  });
+                })}
                 className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 title={
                   groupMembers.length < 2 
                     ? 'Group needs at least 2 members' 
-                    : !groupMembers.every(member => 
-                        memberDetails.some(detail => 
-                          (detail.userId._id || detail.userId) === (member._id || member.id)
-                        )
-                      )
+                    : !groupMembers.every(member => {
+                        const memberUserId = member._id || member.id;
+                        const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                        
+                        return memberDetails.some(detail => {
+                          const detailUserId = detail.userId?._id || detail.userId;
+                          const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                          return detailUserIdString === memberUserIdString;
+                        });
+                      })
                     ? 'All members must submit their details'
                     : 'Confirm and submit application'
                 }
