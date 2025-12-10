@@ -169,7 +169,7 @@ export function FacultyApplicationsPage() {
 
   // Show window closed message if application window is not open
   if (!canReviewApplications) {
-    return <WindowClosedMessage windowType="application" />;
+    return <WindowClosedMessage windowType="application" showAllProjectTypes={true} />;
   }
 
   return (

@@ -245,7 +245,7 @@ export function FacultyAssessmentPage() {
 
   // Show window closed message if assessment window is not open
   if (!canGrade) {
-    return <WindowClosedMessage windowType="assessment" />;
+    return <WindowClosedMessage windowType="assessment" showAllProjectTypes={true} />;
   }
 
   return (
