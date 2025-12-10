@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Github, Presentation, CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 
-type AssessmentType = 'A1' | 'A2' | 'A3' | 'External';
+
 
 export function SubmissionPage() {
   const { user } = useAuth();
@@ -16,6 +16,7 @@ export function SubmissionPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [currentSubmission, setCurrentSubmission] = useState<any>(null);
   const [userGroup, setUserGroup] = useState<any>(null);
+  const [initializing, setInitializing] = useState(true);
 
   const [formData, setFormData] = useState({
     githubLink: '',
@@ -30,8 +31,21 @@ export function SubmissionPage() {
   });
 
   useEffect(() => {
-    checkSubmissionWindow();
-    checkUserRole();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await Promise.all([
+          checkSubmissionWindow(),
+          checkUserRole()
+        ]);
+      } catch (error) {
+        console.error('Error initializing submission data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   // Check for existing submission when userGroup is loaded
@@ -64,8 +78,8 @@ export function SubmissionPage() {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
         setUserGroup(response.data);
-        const groupLeaderId = response.data.leaderId?._id || response.data.leaderId;
-        const userId = user?.id || user?._id; // Use user.id (not user._id)
+        const groupLeaderId = (response.data as any)?.leaderId?._id || (response.data as any)?.leaderId;
+        const userId = user?.id || (user as any)?._id; // Use user.id (not user._id)
         console.log('Group Leader ID:', groupLeaderId);
         console.log('Current User ID:', userId);
         console.log('Is Leader:', groupLeaderId === userId || String(groupLeaderId) === String(userId));
@@ -219,6 +233,15 @@ export function SubmissionPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while initializing
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!submissionWindow) {
     return (

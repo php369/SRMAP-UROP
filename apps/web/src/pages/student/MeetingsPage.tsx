@@ -14,6 +14,7 @@ export function MeetingsPage() {
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [hasProject, setHasProject] = useState<boolean | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   const [logForm, setLogForm] = useState({
     minutesOfMeeting: '',
@@ -21,9 +22,22 @@ export function MeetingsPage() {
   });
 
   useEffect(() => {
-    checkProjectAssignment();
-    checkUserRole();
-    fetchMeetings();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await Promise.all([
+          checkProjectAssignment(),
+          checkUserRole(),
+          fetchMeetings()
+        ]);
+      } catch (error) {
+        console.error('Error initializing meetings data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   const checkProjectAssignment = async () => {
@@ -219,8 +233,8 @@ export function MeetingsPage() {
     return names;
   };
 
-  // Show loading while checking project assignment
-  if (hasProject === null) {
+  // Show loading while initializing
+  if (initializing || hasProject === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

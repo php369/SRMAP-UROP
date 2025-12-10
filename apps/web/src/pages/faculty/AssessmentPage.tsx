@@ -46,6 +46,7 @@ export function FacultyAssessmentPage() {
   const [selectedProjectLogs, setSelectedProjectLogs] = useState<any[] | null>(null);
   const [projectType] = useState<'IDP' | 'UROP' | 'CAPSTONE'>('IDP');
   const [assessmentType] = useState<'A1' | 'A2' | 'A3' | 'External'>('A1');
+  const [initializing, setInitializing] = useState(true);
   const [gradeData, setGradeData] = useState({
     grade: '',
     comments: '',
@@ -56,8 +57,21 @@ export function FacultyAssessmentPage() {
   const canGrade = isAssessmentOpen(projectType, assessmentType);
 
   useEffect(() => {
-    fetchSubmissions();
-    fetchMeetingLogs();
+    const initializeData = async () => {
+      setInitializing(true);
+      try {
+        await Promise.all([
+          fetchSubmissions(),
+          fetchMeetingLogs()
+        ]);
+      } catch (error) {
+        console.error('Error initializing assessment data:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    
+    initializeData();
   }, []);
 
   const fetchSubmissions = async () => {
@@ -221,8 +235,17 @@ export function FacultyAssessmentPage() {
     );
   };
 
+  // Show loading while initializing
+  if (initializing || windowLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   // Show window closed message if assessment window is not open
-  if (!windowLoading && !canGrade) {
+  if (!canGrade) {
     return <WindowClosedMessage windowType="assessment" />;
   }
 
