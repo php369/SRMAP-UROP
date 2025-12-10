@@ -985,23 +985,48 @@ export function ApplicationPage() {
             {groupAction === 'join' && (
               <div>
                 <label className="block mb-2 font-medium">Enter Group Code</label>
+                <p className="text-sm text-gray-600 mb-3">
+                  Enter the 6-character code (e.g., ABC123) or paste the full code with hyphen (ABC-123)
+                </p>
                 <input
                   type="text"
                   value={inputCode}
                   onChange={(e) => {
                     // Remove hyphens and any non-alphanumeric characters, then convert to uppercase
-                    const cleanValue = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    const rawValue = e.target.value;
+                    const cleanValue = rawValue.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
                     setInputCode(cleanValue);
+                    
+                    // If user typed a hyphen, show a helpful message
+                    if (rawValue.includes('-') && rawValue !== cleanValue) {
+                      console.log('Hyphen removed from typed input');
+                    }
                   }}
                   onPaste={(e) => {
-                    // Handle paste events to remove hyphens
+                    // Handle paste events to remove hyphens and format properly
                     e.preventDefault();
-                    const pastedText = e.clipboardData.getData('text');
+                    const pastedText = e.clipboardData.getData('text').trim();
+                    console.log('Pasted text:', pastedText);
+                    
+                    // Remove all non-alphanumeric characters (including hyphens) and convert to uppercase
                     const cleanValue = pastedText.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
+                    console.log('Cleaned value:', cleanValue);
+                    
                     setInputCode(cleanValue);
+                    
+                    // Show feedback to user
+                    if (pastedText.includes('-') && cleanValue.length === 6) {
+                      toast.success(`Code "${pastedText}" pasted and formatted as "${cleanValue}"`);
+                    } else if (cleanValue.length === 6) {
+                      toast.success('Group code pasted successfully!');
+                    } else if (cleanValue.length > 0) {
+                      toast.error(`Invalid code length. Expected 6 characters, got ${cleanValue.length}.`);
+                    } else {
+                      toast.error('No valid characters found in pasted text.');
+                    }
                   }}
                   maxLength={6}
-                  placeholder="ABC123"
+                  placeholder="ABC123 or ABC-123"
                   className="w-full px-4 py-3 border rounded-lg mb-4 text-center text-2xl font-bold"
                 />
                 <button
