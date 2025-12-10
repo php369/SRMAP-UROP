@@ -239,7 +239,7 @@ export function FacultyMeetingsPage() {
   const getStatusBadge = (status: string) => {
     if (status === 'completed' || status === 'submitted') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30">
           <Clock className="w-3 h-3" />
           Pending
         </span>
@@ -247,7 +247,7 @@ export function FacultyMeetingsPage() {
     }
     if (status === 'approved') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-green-500/20 text-green-300 border-green-500/30">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 border-green-300 dark:border-green-500/30">
           <CheckCircle className="w-3 h-3" />
           Approved
         </span>
@@ -255,7 +255,7 @@ export function FacultyMeetingsPage() {
     }
     if (status === 'rejected') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-red-500/20 text-red-300 border-red-500/30">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border-red-300 dark:border-red-500/30">
           <XCircle className="w-3 h-3" />
           Rejected
         </span>
@@ -371,8 +371,8 @@ export function FacultyMeetingsPage() {
                               : meeting.studentId?.name}
                           </h3>
                           <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${meeting.mode === 'online'
-                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                            : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30'
+                            : 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30'
                             }`}>
                             {meeting.mode === 'online' ? 'Online' : 'In-Person'}
                           </span>

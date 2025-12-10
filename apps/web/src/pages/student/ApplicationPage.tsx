@@ -324,9 +324,9 @@ export function ApplicationPage() {
       const response = await api.get('/applications/my-application');
       if (response.success && response.data) {
         const apps = Array.isArray(response.data) ? response.data : [response.data];
-        // Only show pending or approved applications
-        const activeApps = apps.filter((app: any) => app.status === 'pending' || app.status === 'approved');
-        setExistingApplications(activeApps);
+        // Show pending, approved, and rejected applications so students can see all statuses
+        const allApps = apps.filter((app: any) => ['pending', 'approved', 'rejected'].includes(app.status));
+        setExistingApplications(allApps);
       }
     } catch (error) {
       console.log('No existing applications found');
@@ -339,6 +339,18 @@ export function ApplicationPage() {
       fetchExistingApplication();
     }
   }, [groupId]);
+
+  // Periodically refresh application status to catch updates from faculty
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (existingApplications.length > 0) {
+        console.log('Auto-refreshing application status...');
+        fetchExistingApplication();
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [existingApplications.length]);
 
   // Auto-refresh group data when on group formation or verification step
   useEffect(() => {
