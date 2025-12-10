@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { isStudentRole } from '../../utils/constants';
+import { api } from '../../utils/api';
 
 // Configure axios base URL (only once)
 if (!axios.defaults.baseURL) {
@@ -98,9 +99,9 @@ export function DashboardPage() {
         // Fetch group if student
         if (isStudentRole(user?.role)) {
           try {
-            const groupRes = await axios.get('/api/v1/groups/my-group');
-            if (groupRes.data?.success && groupRes.data.data) {
-              setGroup(groupRes.data.data);
+            const groupRes = await api.get('/groups/my-group');
+            if (groupRes.success && groupRes.data) {
+              setGroup(groupRes.data as any);
             }
           } catch (err: any) {
             // No group found is okay
@@ -111,15 +112,18 @@ export function DashboardPage() {
 
           // Fetch application
           try {
-            const appRes = await axios.get('/api/v1/applications/my-application');
-            if (appRes.data?.success && appRes.data.data) {
-              setApplication(appRes.data.data);
+            const appRes = await api.get('/applications/my-application');
+            if (appRes.success && appRes.data) {
+              const appData = Array.isArray(appRes.data) ? appRes.data[0] : appRes.data;
+              console.log('✅ Dashboard: Setting application data:', appData);
+              setApplication(appData);
 
               // If approved, fetch project details
-              if (appRes.data.data.status === 'approved' && appRes.data.data.selectedProjectId) {
-                const projectRes = await axios.get(`/api/v1/projects/${appRes.data.data.selectedProjectId}`);
-                if (projectRes.data?.success && projectRes.data.data) {
-                  setProject(projectRes.data.data);
+              if (appData.status === 'approved' && appData.selectedProjectId) {
+                console.log('🎯 Dashboard: Application approved, fetching project details...');
+                const projectRes = await api.get(`/projects/${appData.selectedProjectId}`);
+                if (projectRes.success && projectRes.data) {
+                  setProject(projectRes.data as any);
                 }
               }
             }
@@ -180,9 +184,9 @@ export function DashboardPage() {
       if (response.data?.success) {
         toast.success('Member removed successfully');
         // Refresh group data
-        const groupRes = await axios.get('/api/v1/groups/my-group');
-        if (groupRes.data?.success && groupRes.data.data) {
-          setGroup(groupRes.data.data);
+        const groupRes = await api.get('/groups/my-group');
+        if (groupRes.success && groupRes.data) {
+          setGroup(groupRes.data as any);
         }
       } else {
         toast.error(response.data?.error?.message || 'Failed to remove member');
