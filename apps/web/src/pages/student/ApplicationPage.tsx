@@ -684,7 +684,11 @@ export function ApplicationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Your Applications</h1>
-                <p className="text-gray-600">Track the status of your project applications</p>
+                <p className="text-gray-600">
+                  {canApply 
+                    ? 'Track the status of your project applications' 
+                    : 'Showing approved applications (application window is closed)'}
+                </p>
               </div>
               {eligibleProjectType && (
                 <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
@@ -696,7 +700,14 @@ export function ApplicationPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {existingApplications.map((application: any) => (
+            {existingApplications
+              .filter((application: any) => {
+                // If window is open, show all applications
+                if (canApply) return true;
+                // If window is closed, show only approved applications
+                return application.status === 'approved';
+              })
+              .map((application: any) => (
               <motion.div
                 key={application._id}
                 initial={{ opacity: 0, y: 20 }}
@@ -796,11 +807,11 @@ export function ApplicationPage() {
     );
   }
 
-  // Check if window is open
-  console.log('🪟 ApplicationPage: Window check:', { eligibleProjectType, canApply });
-  if (eligibleProjectType && !canApply) {
-    console.log('🚫 ApplicationPage: Window closed, showing closed message');
-    return <WindowClosedMessage windowType="application" />;
+  // Check if window is open - but only show closed message if no existing applications
+  console.log('🪟 ApplicationPage: Window check:', { eligibleProjectType, canApply, existingApplicationsLength: existingApplications.length });
+  if (eligibleProjectType && !canApply && existingApplications.length === 0) {
+    console.log('🚫 ApplicationPage: Window closed and no existing applications, showing closed message');
+    return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
   }
 
   console.log('🎯 ApplicationPage: Showing main application interface');

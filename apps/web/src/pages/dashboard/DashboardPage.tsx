@@ -114,17 +114,29 @@ export function DashboardPage() {
           try {
             const appRes = await api.get('/applications/my-application');
             if (appRes.success && appRes.data) {
-              const appData = Array.isArray(appRes.data) ? appRes.data[0] : appRes.data;
+              let appData;
+              if (Array.isArray(appRes.data)) {
+                appData = appRes.data.length > 0 ? appRes.data[0] : null;
+              } else {
+                appData = appRes.data;
+              }
+              
               console.log('✅ Dashboard: Setting application data:', appData);
-              setApplication(appData);
+              
+              if (appData) {
+                setApplication(appData);
 
-              // If approved, fetch project details
-              if (appData.status === 'approved' && appData.selectedProjectId) {
-                console.log('🎯 Dashboard: Application approved, fetching project details...');
-                const projectRes = await api.get(`/projects/${appData.selectedProjectId}`);
-                if (projectRes.success && projectRes.data) {
-                  setProject(projectRes.data as any);
+                // If approved, fetch project details
+                if (appData.status === 'approved' && appData.selectedProjectId) {
+                  console.log('🎯 Dashboard: Application approved, fetching project details...');
+                  const projectRes = await api.get(`/projects/${appData.selectedProjectId}`);
+                  if (projectRes.success && projectRes.data) {
+                    setProject(projectRes.data as any);
+                  }
                 }
+              } else {
+                console.log('⚠️ Dashboard: No application data found');
+                setApplication(null);
               }
             }
           } catch (err: any) {
