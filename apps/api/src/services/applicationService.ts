@@ -146,9 +146,23 @@ export async function getUserApplications(
     if (studentId) query.studentId = studentId;
     if (groupId) query.groupId = groupId;
 
-    return await Application.find(query)
+    logger.info('Querying applications with:', { 
+      query, 
+      studentId: studentId?.toString(), 
+      groupId: groupId?.toString() 
+    });
+
+    const applications = await Application.find(query)
       .populate('projectId', 'title brief facultyName department')
       .sort({ createdAt: -1 });
+
+    logger.info('Applications query result:', { 
+      count: applications.length,
+      applicationIds: applications.map(app => app._id?.toString()),
+      statuses: applications.map(app => app.status)
+    });
+
+    return applications;
   } catch (error) {
     logger.error('Error getting user applications:', error);
     return [];

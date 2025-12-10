@@ -322,28 +322,54 @@ export function ApplicationPage() {
   const fetchExistingApplication = async () => {
     try {
       console.log('🔍 Fetching existing applications...');
+      console.log('🔍 User info:', { userId: user?.id, role: user?.role, eligibleProjectType });
+      console.log('🔍 API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+      console.log('🔍 Auth token exists:', !!localStorage.getItem('srm_portal_token'));
+      
       const response = await api.get('/applications/my-application');
       console.log('📋 Application response:', response);
+      console.log('📋 Response success:', response.success);
+      console.log('📋 Response data:', response.data);
+      console.log('📋 Response data type:', typeof response.data);
+      console.log('📋 Response data is array:', Array.isArray(response.data));
       
-      if (response.success && response.data) {
-        const apps = Array.isArray(response.data) ? response.data : [response.data];
-        console.log('📝 Raw applications:', apps);
-        
-        // Show pending, approved, and rejected applications so students can see all statuses
-        const allApps = apps.filter((app: any) => ['pending', 'approved', 'rejected'].includes(app.status));
-        console.log('✅ Filtered applications:', allApps);
-        
-        setExistingApplications(allApps);
-        
-        if (allApps.length > 0) {
-          console.log('🎯 Found existing applications, showing application status view');
+      if (response.success) {
+        if (response.data) {
+          const apps = Array.isArray(response.data) ? response.data : [response.data];
+          console.log('📝 Raw applications:', apps);
+          console.log('📝 Raw applications length:', apps.length);
+          
+          if (apps.length > 0) {
+            console.log('📝 First application:', apps[0]);
+            console.log('📝 Application statuses:', apps.map(app => app.status));
+          }
+          
+          // Show pending, approved, and rejected applications so students can see all statuses
+          const allApps = apps.filter((app: any) => app && ['pending', 'approved', 'rejected'].includes(app.status));
+          console.log('✅ Filtered applications:', allApps);
+          console.log('✅ Filtered applications length:', allApps.length);
+          
+          setExistingApplications(allApps);
+          
+          if (allApps.length > 0) {
+            console.log('🎯 Found existing applications, showing application status view');
+          } else {
+            console.log('⚠️ No valid applications found after filtering');
+          }
+        } else {
+          console.log('❌ Response successful but no data');
+          setExistingApplications([]);
         }
       } else {
-        console.log('❌ No application data in response');
+        console.log('❌ Response not successful:', response);
         setExistingApplications([]);
       }
     } catch (error: any) {
       console.log('⚠️ Error fetching applications:', error);
+      console.log('⚠️ Error response:', error.response);
+      console.log('⚠️ Error status:', error.response?.status);
+      console.log('⚠️ Error data:', error.response?.data);
+      
       if (error.response?.status !== 404) {
         console.error('Unexpected error:', error);
       }

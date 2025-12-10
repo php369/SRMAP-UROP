@@ -112,12 +112,23 @@ export function DashboardPage() {
 
           // Fetch application
           try {
+            console.log('📋 Dashboard: Fetching application data...');
+            console.log('📋 Dashboard: User info:', { userId: user?.id, role: user?.role });
+            console.log('📋 Dashboard: API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+            console.log('📋 Dashboard: Auth token exists:', !!localStorage.getItem('srm_portal_token'));
+            
             const appRes = await api.get('/applications/my-application');
+            console.log('📝 Dashboard: Application response:', appRes);
+            console.log('📝 Dashboard: Response success:', appRes.success);
+            console.log('📝 Dashboard: Response data:', appRes.data);
+            
             if (appRes.success && appRes.data) {
               let appData;
               if (Array.isArray(appRes.data)) {
+                console.log('📝 Dashboard: Data is array, length:', appRes.data.length);
                 appData = appRes.data.length > 0 ? appRes.data[0] : null;
               } else {
+                console.log('📝 Dashboard: Data is not array');
                 appData = appRes.data;
               }
               
@@ -135,9 +146,12 @@ export function DashboardPage() {
                   }
                 }
               } else {
-                console.log('⚠️ Dashboard: No application data found');
+                console.log('⚠️ Dashboard: No application data found (appData is null)');
                 setApplication(null);
               }
+            } else {
+              console.log('⚠️ Dashboard: Response not successful or no data');
+              setApplication(null);
             }
           } catch (err: any) {
             // No application found is okay
