@@ -45,6 +45,7 @@ export function useWindowStatus(): WindowStatus {
     
     // Refresh windows every 30 seconds to keep status up to date
     const interval = setInterval(() => {
+      console.log('Auto-refreshing window status...');
       fetchWindows();
     }, 30000);
     
