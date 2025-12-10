@@ -38,6 +38,7 @@ export function ApplicationPage() {
   const [applicationWindow, setApplicationWindow] = useState<any>(null);
   const [existingApplications, setExistingApplications] = useState<any[]>([]);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   // Check if application window is open
   const canApply = eligibleProjectType ? isApplicationOpen(eligibleProjectType) : false;
@@ -51,21 +52,37 @@ export function ApplicationPage() {
   });
 
   useEffect(() => {
-    checkEligibility();
-  }, []);
+    const initializeEligibility = async () => {
+      await checkEligibility();
+    };
+    initializeEligibility();
+  }, [user?.role]); // Re-run when user role becomes available
 
   useEffect(() => {
     if (eligibleProjectType) {
-      checkApplicationWindow();
-      fetchProjects();
-      fetchExistingGroup();
-      fetchExistingApplication();
+      const initializeData = async () => {
+        setInitializing(true);
+        try {
+          await Promise.all([
+            checkApplicationWindow(),
+            fetchProjects(),
+            fetchExistingGroup(),
+            fetchExistingApplication()
+          ]);
+        } catch (error) {
+          console.error('Error initializing application data:', error);
+        } finally {
+          setInitializing(false);
+        }
+      };
+      
+      initializeData();
     }
   }, [eligibleProjectType]);
 
   // Determine initial step based on user's current state
   useEffect(() => {
-    if (groupId && groupMembers.length > 0) {
+    if (!initializing && groupId && groupMembers.length > 0) {
       if (isGroupLeader) {
         // Leader can go to application form
         if (step === 'choice') {
@@ -85,13 +102,13 @@ export function ApplicationPage() {
         }
       }
     }
-  }, [groupId, groupMembers, isGroupLeader, hasSubmittedDetails, step]);
+  }, [initializing, groupId, groupMembers, isGroupLeader, hasSubmittedDetails, step]);
 
   const checkEligibility = async () => {
     try {
-      // Determine eligibility from user role
+      // Wait for user data to be available
       if (!user?.role) {
-        toast.error('Unable to determine your role. Please contact admin.');
+        console.log('Waiting for user data...');
         return;
       }
 
@@ -110,9 +127,11 @@ export function ApplicationPage() {
       } else {
         toast.error('You are not eligible for any project type. Please contact admin.');
         console.error(`❌ Unknown role: ${user.role}`);
+        setInitializing(false); // Stop loading if user is not eligible
       }
     } catch (error) {
       console.error('Error checking eligibility:', error);
+      setInitializing(false);
     }
   };
 
@@ -362,11 +381,12 @@ export function ApplicationPage() {
       });
       if (response.success && response.data) {
         setApplicationWindow(response.data as any);
+      } else {
+        setApplicationWindow(null);
       }
     } catch (error) {
       console.error('Error checking application window:', error);
-      // Set a default window if API fails to allow testing
-      setApplicationWindow({ isActive: true, startDate: new Date(), endDate: new Date() } as any);
+      setApplicationWindow(null);
     }
   };
 
@@ -724,12 +744,8 @@ export function ApplicationPage() {
     );
   }
 
-  // Check if window is open
-  if (!windowLoading && eligibleProjectType && !canApply) {
-    return <WindowClosedMessage windowType="application" />;
-  }
-
-  if (!applicationWindow) {
+  // Show loading state while initializing
+  if (initializing || windowLoading || !eligibleProjectType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -737,14 +753,19 @@ export function ApplicationPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Application Window Closed</h2>
+          <Loader className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-bold mb-2">Loading Application</h2>
           <p className="text-gray-600">
-            The application window is currently closed. Please check back later.
+            Please wait while we load your application data...
           </p>
         </motion.div>
       </div>
     );
+  }
+
+  // Check if window is open
+  if (eligibleProjectType && !canApply) {
+    return <WindowClosedMessage windowType="application" />;
   }
 
   return (
@@ -967,7 +988,18 @@ export function ApplicationPage() {
                 <input
                   type="text"
                   value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    // Remove hyphens and any non-alphanumeric characters, then convert to uppercase
+                    const cleanValue = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    setInputCode(cleanValue);
+                  }}
+                  onPaste={(e) => {
+                    // Handle paste events to remove hyphens
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text');
+                    const cleanValue = pastedText.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
+                    setInputCode(cleanValue);
+                  }}
                   maxLength={6}
                   placeholder="ABC123"
                   className="w-full px-4 py-3 border rounded-lg mb-4 text-center text-2xl font-bold"
