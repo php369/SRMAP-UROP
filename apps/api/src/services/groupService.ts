@@ -249,9 +249,25 @@ export async function leaveGroup(
       throw new Error('Group not found');
     }
 
+    // Clean up member details first
+    try {
+      const { GroupMemberDetails } = await import('../models/GroupMemberDetails');
+      await GroupMemberDetails.findOneAndDelete({ groupId, userId });
+    } catch (error) {
+      logger.error('Error cleaning up member details:', error);
+      // Don't fail the leave operation if cleanup fails
+    }
+
     // Check if user is the leader
     if (group.leaderId.toString() === userId.toString()) {
-      // If leader leaves, delete the group
+      // If leader leaves, delete the group and all member details
+      try {
+        const { GroupMemberDetails } = await import('../models/GroupMemberDetails');
+        await GroupMemberDetails.deleteMany({ groupId });
+      } catch (error) {
+        logger.error('Error cleaning up all member details:', error);
+      }
+      
       await Group.findByIdAndDelete(groupId);
       logger.info(`Group ${group.groupId} deleted as leader left`);
       return null;

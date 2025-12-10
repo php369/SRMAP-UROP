@@ -12,6 +12,7 @@ import {
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 import Group from '../models/Group';
+import GroupMemberDetails from '../models/GroupMemberDetails';
 
 const router = express.Router();
 
@@ -804,8 +805,242 @@ router.get('/', authenticate, authorize('faculty', 'coordinator', 'admin'), asyn
 });
 
 /**
+ * POST /api/groups/:id/member-details
+ * Submit member details (department, specialization)
+ * Accessible by: students (group members only)
+ */
+router.post('/:id/member-details', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { department, specialization } = req.body;
+
+    if (!department) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_DEPARTMENT',
+          message: 'Department is required',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if user is a member of this group
+    const group = await Group.findById(id);
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    const isMember = group.members.some(memberId => memberId.toString() === req.user!.id);
+    if (!isMember) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_MEMBER',
+          message: 'You are not a member of this group',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Create or update member details
+    const memberDetails = await GroupMemberDetails.findOneAndUpdate(
+      { groupId: id, userId: req.user!.id },
+      { 
+        department: department.trim(),
+        specialization: specialization?.trim() || '',
+        submittedAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    logger.info(`Member details submitted for user ${req.user!.id} in group ${group.groupId}`);
+
+    res.json({
+      success: true,
+      data: memberDetails,
+      message: 'Member details submitted successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error submitting member details:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'SUBMIT_DETAILS_FAILED',
+        message: 'Failed to submit member details',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * GET /api/groups/:id/member-details
+ * Get member details for a group
+ * Accessible by: students (group members only)
+ */
+router.get('/:id/member-details', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user is a member of this group
+    const group = await Group.findById(id);
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    const isMember = group.members.some(memberId => memberId.toString() === req.user!.id);
+    if (!isMember) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_MEMBER',
+          message: 'You are not a member of this group',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Get all member details for this group
+    const memberDetails = await GroupMemberDetails.find({ groupId: id })
+      .populate('userId', 'name email studentId')
+      .sort({ submittedAt: 1 });
+
+    res.json({
+      success: true,
+      data: memberDetails,
+    });
+  } catch (error: any) {
+    logger.error('Error fetching member details:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_DETAILS_FAILED',
+        message: 'Failed to fetch member details',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * POST /api/groups/:id/remove-member
+ * Remove a member from group (leader only) - Enhanced version
+ * Accessible by: students (group leaders only)
+ */
+router.post('/:id/remove-member-enhanced', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { memberId } = req.body;
+
+    if (!memberId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_MEMBER_ID',
+          message: 'Member ID is required',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Get the group
+    const group = await Group.findById(id);
+
+    if (!group) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check if requester is the group leader
+    if (group.leaderId.toString() !== req.user!.id) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'NOT_GROUP_LEADER',
+          message: 'Only the group leader can remove members',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Cannot remove the leader
+    if (memberId === group.leaderId.toString()) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CANNOT_REMOVE_LEADER',
+          message: 'Cannot remove the group leader',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Remove member from the group
+    group.members = group.members.filter(m => m.toString() !== memberId);
+
+    // Update status if needed
+    if (group.members.length < 2 && group.status === 'complete') {
+      group.status = 'forming';
+    }
+
+    await group.save();
+
+    // Also remove their member details
+    await GroupMemberDetails.findOneAndDelete({ groupId: id, userId: memberId });
+
+    logger.info(`Member ${memberId} removed from group ${group.groupId} by leader ${req.user!.id}`);
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Member removed successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error removing member:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REMOVE_MEMBER_FAILED',
+        message: 'Failed to remove member',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
  * DELETE /api/groups/:id
- * Delete a group (only if in 'forming' status and leader hasn't applied yet)
+ * Delete a group (enhanced to allow deletion during application period)
  * Accessible by: students (group leaders only)
  */
 router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
@@ -852,18 +1087,21 @@ router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
       return;
     }
 
-    // Only allow deletion if group is in 'forming' status
-    if (group.status !== 'forming') {
+    // Allow deletion if group is in 'forming', 'complete' status (before application submission)
+    if (!['forming', 'complete'].includes(group.status)) {
       res.status(400).json({
         success: false,
         error: {
           code: 'INVALID_GROUP_STATUS',
-          message: `Cannot delete group with status '${group.status}'. Only groups in 'forming' status can be deleted.`,
+          message: `Cannot delete group with status '${group.status}'. Only groups that haven't submitted applications can be deleted.`,
           timestamp: new Date().toISOString(),
         },
       });
       return;
     }
+
+    // Delete all member details for this group
+    await GroupMemberDetails.deleteMany({ groupId: id });
 
     // Delete the group
     await Group.findByIdAndDelete(id);

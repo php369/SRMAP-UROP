@@ -22,13 +22,16 @@ interface Project {
 export function ApplicationPage() {
   const { user } = useAuth();
   const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
-  const [step, setStep] = useState<'choice' | 'group-formation' | 'application' | 'verify-members'>('choice');
+  const [step, setStep] = useState<'choice' | 'group-formation' | 'member-details' | 'member-waiting' | 'application' | 'verify-members'>('choice');
   const [applicationType, setApplicationType] = useState<'solo' | 'group' | null>(null);
   const [groupAction, setGroupAction] = useState<'create' | 'join' | null>(null);
   const [groupCode, setGroupCode] = useState('');
   const [groupId, setGroupId] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [memberDetails, setMemberDetails] = useState<any[]>([]);
+  const [isGroupLeader, setIsGroupLeader] = useState(false);
+  const [hasSubmittedDetails, setHasSubmittedDetails] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,6 +62,28 @@ export function ApplicationPage() {
       fetchExistingApplication();
     }
   }, [eligibleProjectType]);
+
+  // Determine initial step based on user's current state
+  useEffect(() => {
+    if (groupId && groupMembers.length > 0) {
+      if (isGroupLeader) {
+        // Leader can go to application form
+        if (step === 'choice') {
+          setStep('application');
+          setApplicationType('group');
+        }
+      } else {
+        // Member needs to submit details first
+        if (!hasSubmittedDetails && step === 'choice') {
+          setStep('member-details');
+          setApplicationType('group');
+        } else if (hasSubmittedDetails && step === 'choice') {
+          setStep('member-waiting');
+          setApplicationType('group');
+        }
+      }
+    }
+  }, [groupId, groupMembers, isGroupLeader, hasSubmittedDetails, step]);
 
   const checkEligibility = async () => {
     try {
@@ -99,11 +124,130 @@ export function ApplicationPage() {
         // Ensure members are properly set - the API should populate this
         const members = group.members || [];
         setGroupMembers(members);
-        console.log('Group fetched:', { groupCode: group.groupCode, memberCount: members.length });
+        
+        // Check if current user is the group leader
+        const isLeader = group.leaderId?._id === user?.id || group.leaderId === user?.id;
+        setIsGroupLeader(isLeader);
+        
+        console.log('Group fetched:', { 
+          groupCode: group.groupCode, 
+          memberCount: members.length,
+          isLeader 
+        });
+
+        // Fetch member details if in a group
+        if (group._id) {
+          await fetchMemberDetails(group._id);
+        }
       }
     } catch (error) {
       // No existing group, that's fine
       console.log('No existing group found');
+    }
+  };
+
+  const fetchMemberDetails = async (groupId: string) => {
+    try {
+      const response = await api.get(`/groups/${groupId}/member-details`);
+      if (response.success && response.data) {
+        const details = response.data as any[];
+        setMemberDetails(details);
+        
+        // Check if current user has submitted details
+        const userDetails = details.find(d => d.userId._id === user?.id || d.userId === user?.id);
+        setHasSubmittedDetails(!!userDetails);
+        
+        console.log('Member details fetched:', { 
+          detailsCount: details.length,
+          hasSubmittedDetails: !!userDetails 
+        });
+      }
+    } catch (error) {
+      console.log('No member details found or error fetching');
+    }
+  };
+
+  const submitMemberDetails = async (department: string, specialization?: string) => {
+    if (!groupId) {
+      toast.error('No group found');
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post(`/groups/${groupId}/member-details`, {
+        department: department.trim(),
+        specialization: specialization?.trim() || ''
+      });
+
+      if (response.success) {
+        toast.success('Details submitted successfully!');
+        setHasSubmittedDetails(true);
+        await fetchMemberDetails(groupId);
+        return true;
+      } else {
+        toast.error(response.error?.message || 'Failed to submit details');
+        return false;
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to submit details');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!groupId) return;
+
+    if (!confirm('Are you sure you want to leave this group? This action cannot be undone.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post(`/groups/${groupId}/leave`);
+      if (response.success) {
+        setGroupCode('');
+        setGroupId('');
+        setGroupMembers([]);
+        setMemberDetails([]);
+        setIsGroupLeader(false);
+        setHasSubmittedDetails(false);
+        toast.success('Left group successfully!');
+        setStep('choice');
+      } else {
+        toast.error(response.error?.message || 'Failed to leave group');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to leave group');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!groupId) return;
+
+    if (!confirm('Are you sure you want to remove this member from the group?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post(`/groups/${groupId}/remove-member-enhanced`, {
+        memberId
+      });
+      if (response.success) {
+        toast.success('Member removed successfully!');
+        await fetchExistingGroup();
+      } else {
+        toast.error(response.error?.message || 'Failed to remove member');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove member');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -179,7 +323,18 @@ export function ApplicationPage() {
     if (type === 'solo') {
       setStep('application');
     } else {
-      setStep('group-formation');
+      // Check if user is already in a group
+      if (groupId) {
+        if (isGroupLeader) {
+          setStep('application');
+        } else if (hasSubmittedDetails) {
+          setStep('member-waiting');
+        } else {
+          setStep('member-details');
+        }
+      } else {
+        setStep('group-formation');
+      }
     }
   };
 
@@ -204,10 +359,14 @@ export function ApplicationPage() {
         setGroupCode(createdGroup.groupCode);
         setGroupId(createdGroup._id);
         setGroupMembers(createdGroup.members || [user]);
+        setIsGroupLeader(true);
         toast.success('Group created successfully!');
         
         // Refetch the group to ensure we have the latest data
         await fetchExistingGroup();
+        
+        // Leader goes directly to application form
+        setStep('application');
       } else {
         toast.error(response.error?.message || 'Failed to create group');
       }
@@ -270,7 +429,8 @@ export function ApplicationPage() {
         await fetchExistingGroup();
         // Fetch the group's application if it exists
         await fetchExistingApplication();
-        setStep('application');
+        // For members, go to member details submission
+        setStep('member-details');
       } else {
         toast.error(response.error?.message || 'Failed to join group');
       }
@@ -304,6 +464,18 @@ export function ApplicationPage() {
 
     // For group applications, go to verification step
     if (applicationType === 'group') {
+      // Check if all members have submitted their details
+      const allMembersSubmitted = groupMembers.every(member => 
+        memberDetails.some(detail => 
+          (detail.userId._id || detail.userId) === (member._id || member.id)
+        )
+      );
+
+      if (!allMembersSubmitted) {
+        toast.error('All group members must submit their details before proceeding');
+        return;
+      }
+
       setStep('verify-members');
     } else {
       // For solo applications, submit directly
@@ -509,7 +681,7 @@ export function ApplicationPage() {
         </motion.div>
 
         {/* Step 1: Choice */}
-        {step === 'choice' && (
+        {step === 'choice' && !groupId && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -536,6 +708,96 @@ export function ApplicationPage() {
               <h3 className="text-xl font-bold mb-2">Group Application</h3>
               <p className="text-gray-600">Collaborate with 2-4 team members</p>
             </motion.button>
+          </motion.div>
+        )}
+
+        {/* Step 1.5: Landing Page for Existing Group Members */}
+        {step === 'choice' && groupId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white rounded-xl shadow-lg p-8"
+          >
+            <h2 className="text-2xl font-bold mb-6">You're in a Group!</h2>
+            
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center mb-3">
+                <Users className="w-6 h-6 text-blue-500 mr-3" />
+                <div>
+                  <p className="font-medium text-blue-900">Group Code: {formatGroupCode(groupCode)}</p>
+                  <p className="text-sm text-blue-700">
+                    {isGroupLeader ? 'You are the group leader' : 'You are a group member'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-3">Group Members ({groupMembers.length})</h3>
+              <div className="space-y-2">
+                {groupMembers.map((member: any, index: number) => (
+                  <div key={member._id || index} className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3 text-sm">
+                        {member.name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{member.name || 'Unknown'}</p>
+                        <p className="text-xs text-gray-600">{member.email || 'No email'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {member._id === user?.id && (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                          You
+                        </span>
+                      )}
+                      {isGroupLeader && member._id === user?.id && (
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                          Leader
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              {!isGroupLeader && (
+                <button
+                  onClick={handleLeaveGroup}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                >
+                  Leave Group
+                </button>
+              )}
+              {isGroupLeader && (
+                <button
+                  onClick={handleDeleteGroup}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                >
+                  Delete Group
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (isGroupLeader) {
+                    setStep('application');
+                  } else if (hasSubmittedDetails) {
+                    setStep('member-waiting');
+                  } else {
+                    setStep('member-details');
+                  }
+                  setApplicationType('group');
+                }}
+                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+              >
+                Continue Application
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -633,14 +895,220 @@ export function ApplicationPage() {
           </motion.div>
         )}
 
-        {/* Step 3: Application Form */}
+        {/* Step 3: Member Details Submission */}
+        {step === 'member-details' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white rounded-xl shadow-lg p-8"
+          >
+            <h2 className="text-2xl font-bold mb-6">Submit Your Details</h2>
+            
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-blue-900 mb-2">Required Information</h3>
+                  <p className="text-sm text-blue-800">
+                    Please provide your department and specialization details. Your group leader will use this information when submitting the application.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {groupCode && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
+                <div className="text-2xl font-bold text-blue-500">
+                  {formatGroupCode(groupCode)}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const department = formData.get('department') as string;
+              const specialization = formData.get('specialization') as string;
+              
+              if (await submitMemberDetails(department, specialization)) {
+                setStep('member-waiting');
+              }
+            }} className="space-y-4 mb-6">
+              <div>
+                <label className="block mb-2 font-medium text-gray-700">Department *</label>
+                <input
+                  type="text"
+                  name="department"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., Computer Science"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
+                <input
+                  type="text"
+                  name="specialization"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., AI/ML, Data Science"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleLeaveGroup}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                >
+                  Leave Group
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-all"
+                >
+                  {loading ? <Loader className="animate-spin mx-auto" /> : 'Submit Details'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+
+        {/* Step 4: Member Waiting */}
+        {step === 'member-waiting' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white rounded-xl shadow-lg p-8"
+          >
+            <h2 className="text-2xl font-bold mb-6">Waiting for Group Leader</h2>
+            
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-start">
+                <CheckCircle className="w-6 h-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-green-900 mb-2">Details Submitted Successfully</h3>
+                  <p className="text-sm text-green-800">
+                    Your department and specialization details have been submitted. Your group leader is now filling out the application form and selecting projects.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {groupCode && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
+                <div className="text-2xl font-bold text-blue-500">
+                  {formatGroupCode(groupCode)}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-4">Available Projects</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Here are the projects your group leader can choose from:
+              </p>
+
+              {projects.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                  <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">No projects available yet</p>
+                  <p className="text-sm text-gray-500">
+                    Projects will be posted by faculty soon. Check back later!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {projects.map((project) => (
+                    <div
+                      key={project._id}
+                      className="p-4 border-2 border-gray-200 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold mb-1">{project.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-gray-500">
+                              Faculty: {project.facultyName} ({project.facultyIdNumber})
+                            </span>
+                            <span className="text-gray-500">Dept: {project.department}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleLeaveGroup}
+                disabled={loading}
+                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+              >
+                Leave Group
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+              >
+                Refresh Status
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 5: Application Form */}
         {step === 'application' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="bg-white rounded-xl shadow-lg p-8"
           >
-            <h2 className="text-2xl font-bold mb-6">Application Form</h2>
+            <h2 className="text-2xl font-bold mb-6">
+              Application Form
+              {applicationType === 'group' && isGroupLeader && (
+                <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                  Group Leader
+                </span>
+              )}
+            </h2>
+
+            {applicationType === 'group' && !isGroupLeader && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start">
+                  <XCircle className="w-6 h-6 text-red-500 mr-3 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-red-900 mb-2">Access Restricted</h3>
+                    <p className="text-sm text-red-800">
+                      Only the group leader can fill out and submit the application form. Please wait for your leader to complete the application.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
+              <>
+                {applicationType === 'group' && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start">
+                      <Users className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="font-bold text-blue-900 mb-2">Group Application</h3>
+                        <p className="text-sm text-blue-800">
+                          You are filling this application on behalf of your entire group. Make sure all members have submitted their details before proceeding.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
             {/* Form Fields */}
             <div className="space-y-4 mb-6">
@@ -723,14 +1191,34 @@ export function ApplicationPage() {
               </p>
             )}
 
-            <button
-              onClick={handleProceedToVerification}
-              disabled={loading || selectedProjects.length === 0}
-              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Proceed to verify group members' : 'Submit your application'}
-            >
-              {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
-            </button>
+                <button
+                  onClick={handleProceedToVerification}
+                  disabled={loading || selectedProjects.length === 0}
+                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Proceed to verify group members' : 'Submit your application'}
+                >
+                  {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
+                </button>
+              </>
+            )}
+
+            {applicationType === 'group' && !isGroupLeader && (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleLeaveGroup}
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                >
+                  Leave Group
+                </button>
+                <button
+                  onClick={() => setStep('member-waiting')}
+                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                >
+                  Back to Waiting
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -775,35 +1263,71 @@ export function ApplicationPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {groupMembers.map((member: any, index: number) => (
-                    <div
-                      key={member._id || index}
-                      className="p-4 border-2 border-gray-200 rounded-lg flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
-                          {member.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <div>
-                          <p className="font-medium">{member.name || 'Unknown'}</p>
-                          <p className="text-sm text-gray-600">{member.email || 'No email'}</p>
-                          {member.studentId && (
-                            <p className="text-xs text-gray-500">ID: {member.studentId}</p>
-                          )}
+                  {groupMembers.map((member: any, index: number) => {
+                    const memberDetail = memberDetails.find(detail => 
+                      (detail.userId._id || detail.userId) === (member._id || member.id)
+                    );
+                    const hasSubmittedDetails = !!memberDetail;
+                    
+                    return (
+                      <div
+                        key={member._id || index}
+                        className={`p-4 border-2 rounded-lg ${hasSubmittedDetails ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
+                              {member.name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                              <p className="font-medium">{member.name || 'Unknown'}</p>
+                              <p className="text-sm text-gray-600">{member.email || 'No email'}</p>
+                              {member.studentId && (
+                                <p className="text-xs text-gray-500">ID: {member.studentId}</p>
+                              )}
+                              {memberDetail && (
+                                <div className="mt-1">
+                                  <p className="text-xs text-green-700">
+                                    <strong>Dept:</strong> {memberDetail.department}
+                                    {memberDetail.specialization && (
+                                      <span> | <strong>Spec:</strong> {memberDetail.specialization}</span>
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {hasSubmittedDetails ? (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-amber-500" />
+                            )}
+                            {member._id === user?.id && (
+                              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                You
+                              </span>
+                            )}
+                            {isGroupLeader && member._id === user?.id && (
+                              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                Leader
+                              </span>
+                            )}
+                            {isGroupLeader && member._id !== user?.id && (
+                              <button
+                                onClick={() => handleRemoveMember(member._id)}
+                                disabled={loading}
+                                className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:opacity-50"
+                                title="Remove member"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {member._id === user?.id && (
-                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                          You
-                        </span>
-                      )}
-                      {groupId && member._id?.toString() === groupMembers[0]?._id?.toString() && (
-                        <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                          Leader
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -814,6 +1338,26 @@ export function ApplicationPage() {
                     Share your group code with team members to have them join.
                   </p>
                 </div>
+              )}
+
+              {/* Check if all members have submitted details */}
+              {groupMembers.length >= 2 && (
+                (() => {
+                  const membersWithoutDetails = groupMembers.filter(member => 
+                    !memberDetails.some(detail => 
+                      (detail.userId._id || detail.userId) === (member._id || member.id)
+                    )
+                  );
+                  
+                  return membersWithoutDetails.length > 0 && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">
+                        ⚠️ The following members haven't submitted their details yet: {' '}
+                        {membersWithoutDetails.map(m => m.name || 'Unknown').join(', ')}
+                      </p>
+                    </div>
+                  );
+                })()
               )}
             </div>
 
@@ -845,9 +1389,23 @@ export function ApplicationPage() {
               </button>
               <button
                 onClick={handleSubmitApplication}
-                disabled={loading || groupMembers.length < 2}
+                disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => 
+                  memberDetails.some(detail => 
+                    (detail.userId._id || detail.userId) === (member._id || member.id)
+                  )
+                )}
                 className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                title={groupMembers.length < 2 ? 'Group needs at least 2 members' : 'Confirm and submit application'}
+                title={
+                  groupMembers.length < 2 
+                    ? 'Group needs at least 2 members' 
+                    : !groupMembers.every(member => 
+                        memberDetails.some(detail => 
+                          (detail.userId._id || detail.userId) === (member._id || member.id)
+                        )
+                      )
+                    ? 'All members must submit their details'
+                    : 'Confirm and submit application'
+                }
               >
                 {loading ? <Loader className="animate-spin mx-auto" /> : 'Confirm & Submit Application'}
               </button>
