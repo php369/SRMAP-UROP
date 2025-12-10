@@ -854,6 +854,13 @@ router.post('/:id/member-details', authenticate, authorize('student'), async (re
     }
 
     // Create or update member details
+    console.log('Creating/updating member details:', {
+      groupId: id,
+      userId: req.user!.id,
+      department: department.trim(),
+      specialization: specialization?.trim() || ''
+    });
+
     const memberDetails = await GroupMemberDetails.findOneAndUpdate(
       { groupId: id, userId: req.user!.id },
       { 
@@ -863,6 +870,12 @@ router.post('/:id/member-details', authenticate, authorize('student'), async (re
       },
       { upsert: true, new: true }
     );
+
+    console.log('Member details created/updated:', memberDetails);
+
+    // Verify the data was saved by fetching it back
+    const savedDetails = await GroupMemberDetails.findOne({ groupId: id, userId: req.user!.id });
+    console.log('Verification fetch:', savedDetails);
 
     logger.info(`Member details submitted for user ${req.user!.id} in group ${group.groupId}`);
 
@@ -921,9 +934,20 @@ router.get('/:id/member-details', authenticate, authorize('student'), async (req
     }
 
     // Get all member details for this group
+    console.log('Fetching member details for group:', id);
+    console.log('Requesting user:', req.user!.id);
+    
     const memberDetails = await GroupMemberDetails.find({ groupId: id })
       .populate('userId', 'name email studentId')
       .sort({ submittedAt: 1 });
+
+    console.log('Found member details:', memberDetails.map(d => ({
+      id: d._id,
+      groupId: d.groupId,
+      userId: d.userId,
+      department: d.department,
+      specialization: d.specialization
+    })));
 
     res.json({
       success: true,
