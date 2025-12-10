@@ -308,7 +308,7 @@ export function FacultyProjectsPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold text-text">{project.title}</h3>
                         {getStatusBadge(project.status)}
-                        <span className="px-2 py-1 bg-secondary/20 dark:bg-secondary/30 text-secondary-dark dark:text-secondary text-xs font-medium rounded-lg border border-secondary/40 dark:border-secondary/30">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/30 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
                           {project.type}
                         </span>
                       </div>

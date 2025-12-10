@@ -146,9 +146,9 @@ export function FacultyApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      approved: 'bg-green-500/20 text-green-300 border-green-500/30',
-      rejected: 'bg-red-500/20 text-red-300 border-red-500/30'
+      pending: 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30',
+      approved: 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 border-green-300 dark:border-green-500/30',
+      rejected: 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border-red-300 dark:border-red-500/30'
     };
 
     return (
@@ -258,7 +258,7 @@ export function FacultyApplicationsPage() {
                           </span>
                         )}
                         {getStatusBadge(application.status)}
-                        <span className="px-2 py-1 bg-secondary/20 text-secondary text-xs font-medium rounded-lg border border-secondary/30">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
                           {application.projectType}
                         </span>
                       </div>
