@@ -12,9 +12,9 @@ import { Assessment } from '../models/Assessment';
 import { MeetingLog } from '../models/MeetingLog';
 import { Notification } from '../models/Notification';
 import { Window } from '../models/Window';
-import { Cohort } from '../models/Cohort';
+// Cohort model removed - functionality disabled
 import { Course } from '../models/Course';
-import { StudentMeta } from '../models/StudentMeta';
+// StudentMeta model removed - functionality disabled
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
@@ -110,11 +110,9 @@ async function resetDatabase() {
     await Window.deleteMany({});
     console.log(`  ✅ Deleted ${windowCount} windows`);
 
-    // Step 11: Clear all cohorts
-    console.log('\n🎓 Step 11: Clearing Cohorts...');
-    const cohortCount = await Cohort.countDocuments();
-    await Cohort.deleteMany({});
-    console.log(`  ✅ Deleted ${cohortCount} cohorts`);
+    // Step 11: Clear all cohorts (disabled - model removed)
+    console.log('\n🎓 Step 11: Cohorts (skipped - model removed)...');
+    const cohortCount = 0; // Model removed
 
     // Step 12: Clear all courses
     console.log('\n📚 Step 12: Clearing Courses...');
@@ -122,11 +120,9 @@ async function resetDatabase() {
     await Course.deleteMany({});
     console.log(`  ✅ Deleted ${courseCount} courses`);
 
-    // Step 13: Clear all student metadata
-    console.log('\n📋 Step 13: Clearing Student Metadata...');
-    const studentMetaCount = await StudentMeta.countDocuments();
-    await StudentMeta.deleteMany({});
-    console.log(`  ✅ Deleted ${studentMetaCount} student metadata records`);
+    // Step 13: Clear all student metadata (disabled - model removed)
+    console.log('\n📋 Step 13: Student Metadata (skipped - model removed)...');
+    const studentMetaCount = 0; // Model removed
 
     // Final summary
     console.log('\n' + '='.repeat(60));

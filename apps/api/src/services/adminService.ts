@@ -171,10 +171,10 @@ export async function getSystemStats(): Promise<{
 }
 
 /**
- * Create a new cohort
+ * Create a new cohort (DISABLED - model removed)
  * @param cohortData - Cohort data
  * @param adminId - Admin creating the cohort
- * @returns Created cohort
+ * @returns Error - functionality disabled
  */
 export async function createCohort(
   cohortData: {
@@ -186,35 +186,15 @@ export async function createCohort(
   },
   adminId: string
 ): Promise<any> {
-  try {
-    // Import Cohort model dynamically to avoid circular dependencies
-    const { Cohort } = await import('../models/Cohort');
-
-    // For now, create a basic cohort - will be enhanced when full cohort management is implemented
-    const cohort = new Cohort({
-      name: cohortData.name,
-      year: cohortData.year,
-      semester: 1, // Default semester
-      type: 'IDP', // Default type
-      status: 'active'
-    });
-
-    await cohort.save();
-    logger.info(`Cohort created: ${cohort.name} by admin ${adminId}`);
-
-    return cohort;
-  } catch (error) {
-    logger.error('Failed to create cohort:', error);
-    throw error;
-  }
+  throw new Error('Cohort functionality has been disabled - model removed');
 }
 
 /**
- * Update a cohort
+ * Update a cohort (DISABLED - model removed)
  * @param cohortId - Cohort ID
  * @param updates - Updates to apply
  * @param adminId - Admin updating the cohort
- * @returns Updated cohort
+ * @returns Error - functionality disabled
  */
 export async function updateCohort(
   cohortId: string,
@@ -227,25 +207,7 @@ export async function updateCohort(
   },
   adminId: string
 ): Promise<any> {
-  try {
-    const { Cohort } = await import('../models/Cohort');
-
-    const cohort = await Cohort.findByIdAndUpdate(
-      cohortId,
-      updates,
-      { new: true }
-    );
-
-    if (!cohort) {
-      throw new Error('Cohort not found');
-    }
-
-    logger.info(`Cohort updated: ${cohortId} by admin ${adminId}`);
-    return cohort;
-  } catch (error) {
-    logger.error('Failed to update cohort:', error);
-    throw error;
-  }
+  throw new Error('Cohort functionality has been disabled - model removed');
 }
 
 /**

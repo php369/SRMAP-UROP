@@ -5,13 +5,11 @@ import {
   getUsers,
   updateUserRole,
   getSystemStats,
-  createCohort,
-  updateCohort,
   createCourse,
   generateReports,
   deleteUser
 } from '../services/adminService';
-import { Cohort } from '../models/Cohort';
+// Cohort model removed - functionality disabled
 import { Course } from '../models/Course';
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
@@ -33,45 +31,7 @@ const updateRoleSchema = z.object({
   role: z.enum(['idp-student', 'urop-student', 'capstone-student', 'faculty', 'admin']),
 });
 
-const createCohortSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-  year: z.number().min(2020).max(2030),
-  department: z.enum([
-    'Computer Science',
-    'Information Technology',
-    'Electronics and Communication',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Chemical Engineering',
-    'Biotechnology',
-    'Management Studies',
-    'Liberal Arts'
-  ]),
-  studentIds: z.array(z.string()).optional(),
-  facultyIds: z.array(z.string()).optional(),
-});
-
-const updateCohortSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  year: z.number().min(2020).max(2030).optional(),
-  department: z.enum([
-    'Computer Science',
-    'Information Technology',
-    'Electronics and Communication',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Chemical Engineering',
-    'Biotechnology',
-    'Management Studies',
-    'Liberal Arts'
-  ]).optional(),
-  addStudents: z.array(z.string()).optional(),
-  removeStudents: z.array(z.string()).optional(),
-  addFaculty: z.array(z.string()).optional(),
-  removeFaculty: z.array(z.string()).optional(),
-});
+// Cohort schemas removed - functionality disabled
 
 const createCourseSchema = z.object({
   code: z.string().min(1, 'Course code is required').max(20, 'Code too long'),
@@ -314,293 +274,72 @@ router.get('/stats', authenticate, authorize('admin'), asyncHandler(async (_req:
 
 /**
  * GET /admin/cohorts
- * Get all cohorts
+ * Cohorts functionality disabled - model removed
  */
 router.get('/cohorts', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  try {
-    const cohorts = await Cohort.find()
-      .populate('members', 'name email role')
-      .sort({ year: -1, name: 1 });
-
-    res.json({
-      success: true,
-      data: {
-        cohorts,
-        count: cohorts.length,
-      },
-    });
-
-  } catch (error) {
-    logger.error('Failed to get cohorts:', error);
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'COHORTS_FETCH_FAILED',
-        message: 'Failed to retrieve cohorts',
-      },
-    });
-  }
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Cohorts functionality has been disabled',
+    },
+  });
 }));
 
 /**
  * POST /admin/cohorts
- * Create a new cohort
+ * Cohorts functionality disabled - model removed
  */
-router.post('/cohorts', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const adminId = req.user!.id;
-
-  // Validate request body
-  const validationResult = createCohortSchema.safeParse(req.body);
-  if (!validationResult.success) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid cohort data',
-        details: validationResult.error.errors,
-      },
-    });
-  }
-
-  const cohortData = validationResult.data as {
-    name: string;
-    year: number;
-    department: string;
-    studentIds?: string[];
-    facultyIds?: string[];
-  };
-
-  try {
-    const cohort = await createCohort(cohortData, adminId);
-
-    logger.info(`Cohort created: ${cohort.name} by admin ${adminId}`);
-
-    res.status(201).json({
-      success: true,
-      data: {
-        cohort,
-        message: 'Cohort created successfully',
-      },
-    });
-
-  } catch (error) {
-    logger.error('Failed to create cohort:', error);
-
-    if (error instanceof Error && error.message.includes('already exists')) {
-      return res.status(409).json({
-        success: false,
-        error: {
-          code: 'COHORT_EXISTS',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'COHORT_CREATION_FAILED',
-        message: 'Failed to create cohort',
-      },
-    });
-  }
+router.post('/cohorts', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Cohorts functionality has been disabled',
+    },
+  });
 }));
 
 /**
  * PATCH /admin/cohorts/:cohortId
- * Update cohort membership and details
+ * Cohorts functionality disabled - model removed
  */
-router.patch('/cohorts/:cohortId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const { cohortId } = req.params;
-  const adminId = req.user!.id;
-
-  if (!mongoose.Types.ObjectId.isValid(cohortId)) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_ID',
-        message: 'Invalid cohort ID',
-      },
-    });
-  }
-
-  // Validate request body
-  const validationResult = updateCohortSchema.safeParse(req.body);
-  if (!validationResult.success) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid update data',
-        details: validationResult.error.errors,
-      },
-    });
-  }
-
-  const updates = validationResult.data;
-
-  try {
-    const cohort = await updateCohort(cohortId, updates, adminId);
-
-    logger.info(`Cohort updated: ${cohortId} by admin ${adminId}`);
-
-    res.json({
-      success: true,
-      data: {
-        cohort,
-        message: 'Cohort updated successfully',
-      },
-    });
-
-  } catch (error) {
-    logger.error(`Failed to update cohort ${cohortId}:`, error);
-
-    if (error instanceof Error && error.message.includes('not found')) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'COHORT_NOT_FOUND',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'COHORT_UPDATE_FAILED',
-        message: 'Failed to update cohort',
-      },
-    });
-  }
+router.patch('/cohorts/:cohortId', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Cohorts functionality has been disabled',
+    },
+  });
 }));
 
 /**
  * POST /admin/cohorts/:cohortId/members
- * Add members to a cohort
+ * Cohorts functionality disabled - model removed
  */
-router.post('/cohorts/:cohortId/members', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const { cohortId } = req.params;
-  const { userIds } = req.body;
-
-  if (!mongoose.Types.ObjectId.isValid(cohortId)) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_ID',
-        message: 'Invalid cohort ID',
-      },
-    });
-  }
-
-  if (!Array.isArray(userIds) || userIds.length === 0) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_INPUT',
-        message: 'userIds must be a non-empty array',
-      },
-    });
-  }
-
-  try {
-    const cohort = await Cohort.findById(cohortId);
-    if (!cohort) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'COHORT_NOT_FOUND',
-          message: 'Cohort not found',
-        },
-      });
-    }
-
-    // Add members (avoid duplicates)
-    const newMembers = userIds.filter(id => !cohort.members.includes(id));
-    cohort.members.push(...newMembers);
-    await cohort.save();
-
-    const updatedCohort = await Cohort.findById(cohortId).populate('members', 'name email role');
-
-    logger.info(`Added ${newMembers.length} members to cohort ${cohortId}`);
-
-    res.json({
-      success: true,
-      data: {
-        cohort: updatedCohort,
-        addedCount: newMembers.length,
-        message: `Added ${newMembers.length} member(s) to cohort`,
-      },
-    });
-
-  } catch (error) {
-    logger.error(`Failed to add members to cohort ${cohortId}:`, error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'ADD_MEMBERS_FAILED',
-        message: 'Failed to add members to cohort',
-      },
-    });
-  }
+router.post('/cohorts/:cohortId/members', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Cohorts functionality has been disabled',
+    },
+  });
 }));
 
 /**
  * DELETE /admin/cohorts/:cohortId/members/:userId
- * Remove a member from a cohort
+ * Cohorts functionality disabled - model removed
  */
-router.delete('/cohorts/:cohortId/members/:userId', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const { cohortId, userId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(cohortId) || !mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_ID',
-        message: 'Invalid cohort or user ID',
-      },
-    });
-  }
-
-  try {
-    const cohort = await Cohort.findById(cohortId);
-    if (!cohort) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'COHORT_NOT_FOUND',
-          message: 'Cohort not found',
-        },
-      });
-    }
-
-    // Remove member
-    cohort.members = cohort.members.filter(id => id.toString() !== userId);
-    await cohort.save();
-
-    const updatedCohort = await Cohort.findById(cohortId).populate('members', 'name email role');
-
-    logger.info(`Removed member ${userId} from cohort ${cohortId}`);
-
-    res.json({
-      success: true,
-      data: {
-        cohort: updatedCohort,
-        message: 'Member removed from cohort',
-      },
-    });
-
-  } catch (error) {
-    logger.error(`Failed to remove member from cohort ${cohortId}:`, error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'REMOVE_MEMBER_FAILED',
-        message: 'Failed to remove member from cohort',
-      },
-    });
-  }
+router.delete('/cohorts/:cohortId/members/:userId', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Cohorts functionality has been disabled',
+    },
+  });
 }));
 
 /**
