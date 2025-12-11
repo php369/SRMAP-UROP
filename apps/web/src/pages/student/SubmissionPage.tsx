@@ -122,20 +122,29 @@ export function SubmissionPage() {
         const userId = user?.id || (user as any)?._id;
         console.log('Group Leader ID:', groupLeaderId);
         console.log('Current User ID:', userId);
-        console.log('Is Leader:', groupLeaderId === userId || String(groupLeaderId) === String(userId));
-        setIsLeader(groupLeaderId === userId || String(groupLeaderId) === String(userId));
+        const isGroupLeader = groupLeaderId === userId || String(groupLeaderId) === String(userId);
+        console.log('Is Leader:', isGroupLeader);
+        setIsLeader(isGroupLeader);
       } else {
         // Solo student - no group needed
         console.log('User is working solo');
         setUserGroup(null); // No group for solo students
         setIsLeader(true); // Solo students can always submit
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking user role:', error);
-      // Solo student fallback
-      console.log('Fallback: User is working solo');
-      setUserGroup(null); // No group for solo students
-      setIsLeader(true); // Solo students can always submit
+      // Check if it's a 404 (no group found) vs other errors
+      if (error?.response?.status === 404) {
+        // Solo student - no group found
+        console.log('No group found: User is working solo');
+        setUserGroup(null);
+        setIsLeader(true);
+      } else {
+        // Other error - fallback to solo
+        console.log('Fallback: User is working solo due to error');
+        setUserGroup(null);
+        setIsLeader(true);
+      }
     }
   };
 
@@ -148,24 +157,20 @@ export function SubmissionPage() {
         console.log('Checking group submission for group:', userGroup._id);
         response = await api.get(`/submissions/group/${userGroup._id}`);
         
-        // Group submissions return { submission: {...} }
-        const submission = (response as any).submission || response.data;
-        
-        if (submission && submission._id) {
+        // Group submissions return { success: true, submission: {...} }
+        if (response.success && (response as any).submission) {
           setHasSubmitted(true);
-          setCurrentSubmission(submission);
+          setCurrentSubmission((response as any).submission);
         }
       } else {
         // Solo student - check by student ID
         console.log('Checking solo submission for user:', user?.id);
         response = await api.get(`/submissions/student/${user?.id}`);
         
-        // Solo submissions might return an array or direct object
-        const submission = Array.isArray(response.data) ? response.data[0] : response.data;
-        
-        if (submission && submission._id) {
+        // Solo submissions return { success: true, data: {...} }
+        if (response.success && response.data) {
           setHasSubmitted(true);
-          setCurrentSubmission(submission);
+          setCurrentSubmission(response.data);
         }
       }
     } catch (error: any) {
@@ -173,6 +178,8 @@ export function SubmissionPage() {
       console.log('Submission check error:', error);
       if (error?.response?.status === 404) {
         console.log('No existing submission found (expected for new submissions)');
+        setHasSubmitted(false);
+        setCurrentSubmission(null);
       } else {
         console.error('Unexpected error checking existing submission:', error);
       }
@@ -276,9 +283,14 @@ export function SubmissionPage() {
         toast.success('Submission successful!');
         setHasSubmitted(true);
         setCurrentSubmission(response.data);
+        
+        // Update group status if this was a group submission
+        if (userGroup) {
+          setUserGroup({ ...userGroup, status: 'frozen' });
+        }
       } else {
         console.error('Submission failed with response:', response);
-        toast.error(response.error?.message || 'Failed to submit');
+        toast.error((response as any).error || 'Failed to submit');
       }
     } catch (error: any) {
       console.error('Submission error details:', {
@@ -360,17 +372,38 @@ export function SubmissionPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          className="text-center max-w-md mx-auto p-6"
         >
           <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             Only the group leader can submit work. Please wait for your leader to submit.
           </p>
-          {hasSubmitted && (
+          
+          {userGroup && (
+            <div className="p-4 bg-blue-50 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                <strong>Group:</strong> {userGroup.groupName || userGroup.groupCode}
+              </p>
+              <p className="text-sm text-blue-700">
+                <strong>Status:</strong> {userGroup.status}
+              </p>
+            </div>
+          )}
+          
+          {hasSubmitted && currentSubmission ? (
             <div className="mt-4 p-4 bg-green-50 rounded-lg">
               <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <p className="text-green-700 font-medium">Your group leader has submitted!</p>
+              <p className="text-sm text-green-600 mt-2">
+                Submitted on: {new Date(currentSubmission.submittedAt).toLocaleDateString()}
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+              <p className="text-yellow-700 text-sm">
+                Waiting for group leader to submit...
+              </p>
             </div>
           )}
         </motion.div>

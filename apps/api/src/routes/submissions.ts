@@ -1,5 +1,5 @@
 import express from 'express';
-import { SubmissionService, CreateSubmissionData } from '../services/submissionService';
+import { SubmissionService } from '../services/submissionService';
 import { authenticate } from '../middleware/auth';
 import { rbacGuard } from '../middleware/rbac';
 import { logger } from '../utils/logger';
@@ -201,13 +201,15 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
     const submission = await SubmissionService.createSubmission(submissionData);
 
     res.status(201).json({
+      success: true,
       message: 'Submission created successfully',
-      submission
+      data: submission
     });
 
   } catch (error: any) {
     logger.error('Error creating submission:', error);
     res.status(400).json({
+      success: false,
       error: error.message || 'Failed to create submission'
     });
   }
@@ -244,16 +246,19 @@ router.get('/group/:groupId', authenticate, rbacGuard('student', 'faculty', 'coo
     
     if (!submission) {
       return res.status(404).json({
+        success: false,
         error: 'No submission found for this group'
       });
     }
 
     res.json({
+      success: true,
       submission
     });
   } catch (error: any) {
     logger.error('Error fetching group submission:', error);
     res.status(500).json({
+      success: false,
       error: 'Failed to fetch submission'
     });
   }
@@ -278,6 +283,7 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
     
     if (!submissions || submissions.length === 0) {
       return res.status(404).json({
+        success: false,
         error: 'No submissions found for this student'
       });
     }
@@ -290,6 +296,7 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
   } catch (error: any) {
     logger.error('Error fetching student submission:', error);
     res.status(500).json({
+      success: false,
       error: 'Failed to fetch submission'
     });
   }
