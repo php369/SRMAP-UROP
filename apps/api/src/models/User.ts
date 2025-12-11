@@ -12,6 +12,8 @@ export interface IUser extends Document {
   isCoordinator?: boolean; // For faculty members (coordinator is also a faculty)
   isExternalEvaluator?: boolean; // For faculty members serving as external evaluators
   currentGroupId?: mongoose.Types.ObjectId; // Direct link to user's current group
+  assignedProjectId?: mongoose.Types.ObjectId; // Direct link to assigned project (for both group and solo students)
+  assignedFacultyId?: mongoose.Types.ObjectId; // Direct link to assigned faculty mentor
   preferences: {
     theme: 'light' | 'dark';
     notifications: boolean;
@@ -77,6 +79,14 @@ const UserSchema = new Schema<IUser>({
   currentGroupId: {
     type: Schema.Types.ObjectId,
     ref: 'Group'
+  },
+  assignedProjectId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Project'
+  },
+  assignedFacultyId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
   },
   preferences: {
     theme: {

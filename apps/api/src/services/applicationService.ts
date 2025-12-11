@@ -1,6 +1,7 @@
 import { Application, IApplication } from '../models/Application';
 import { Group } from '../models/Group';
 import { Project } from '../models/Project';
+import { User } from '../models/User';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
 
@@ -128,6 +129,57 @@ export async function getApplicationById(
   } catch (error) {
     logger.error('Error getting application:', error);
     return null;
+  }
+}
+
+/**
+ * Get all applications for a user (by user ID)
+ * @param userId - User ID
+ * @returns Array of applications
+ */
+export async function getApplicationsForUser(
+  userId: mongoose.Types.ObjectId
+): Promise<IApplication[]> {
+  try {
+    // Get user to check if they're in a group
+    const user = await User.findById(userId);
+    if (!user) {
+      logger.warn(`User not found: ${userId}`);
+      return [];
+    }
+
+    const query: any = {};
+    
+    // If user is in a group, get group applications
+    if (user.currentGroupId) {
+      query.groupId = user.currentGroupId;
+    } else {
+      // Otherwise get individual applications
+      query.studentId = userId;
+    }
+
+    logger.info('Querying applications for user:', { 
+      userId: userId.toString(),
+      query,
+      hasGroup: !!user.currentGroupId
+    });
+
+    const applications = await Application.find(query)
+      .populate('projectId', 'title brief facultyName department')
+      .populate('reviewedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    logger.info('Applications query result for user:', { 
+      userId: userId.toString(),
+      count: applications.length,
+      applicationIds: applications.map(app => app._id?.toString()),
+      statuses: applications.map(app => app.status)
+    });
+
+    return applications;
+  } catch (error) {
+    logger.error('Error getting applications for user:', error);
+    return [];
   }
 }
 
@@ -298,7 +350,7 @@ export async function acceptApplication(
     project.assignedTo = application.groupId || application.studentId;
     await project.save();
 
-    // Update group status if group application
+    // Update group status and user assignments if group application
     if (application.groupId) {
       // Get the next group number for this project type and year
       const maxGroupNumber = await Group.findOne({
@@ -311,6 +363,7 @@ export async function acceptApplication(
 
       const nextGroupNumber = maxGroupNumber ? maxGroupNumber.groupNumber! + 1 : 1;
 
+      // Update group
       await Group.findByIdAndUpdate(application.groupId, {
         status: 'approved',
         assignedProjectId: projectId,
@@ -318,7 +371,29 @@ export async function acceptApplication(
         groupNumber: nextGroupNumber
       });
 
+      // Update all group members with project and faculty assignment
+      const group = await Group.findById(application.groupId).populate('members');
+      if (group && group.members) {
+        await User.updateMany(
+          { _id: { $in: group.members } },
+          {
+            assignedProjectId: projectId,
+            assignedFacultyId: facultyId,
+            currentGroupId: application.groupId
+          }
+        );
+        logger.info(`Updated ${group.members.length} group members with project assignment`);
+      }
+
       logger.info(`Assigned group number ${nextGroupNumber} to group ${application.groupId}`);
+    } else if (application.studentId) {
+      // Update solo student with project and faculty assignment
+      await User.findByIdAndUpdate(application.studentId, {
+        assignedProjectId: projectId,
+        assignedFacultyId: facultyId,
+        currentGroupId: null // Clear group ID for solo students
+      });
+      logger.info(`Updated solo student ${application.studentId} with project assignment`);
     }
 
     // Reject ALL other applications from the same student/group
