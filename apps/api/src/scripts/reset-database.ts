@@ -13,7 +13,7 @@ import { MeetingLog } from '../models/MeetingLog';
 import { Notification } from '../models/Notification';
 import { Window } from '../models/Window';
 // Cohort model removed - functionality disabled
-import { Course } from '../models/Course';
+// Course model removed - functionality disabled
 // StudentMeta model removed - functionality disabled
 
 // Load environment variables
@@ -114,11 +114,9 @@ async function resetDatabase() {
     console.log('\n🎓 Step 11: Cohorts (skipped - model removed)...');
     const cohortCount = 0; // Model removed
 
-    // Step 12: Clear all courses
-    console.log('\n📚 Step 12: Clearing Courses...');
-    const courseCount = await Course.countDocuments();
-    await Course.deleteMany({});
-    console.log(`  ✅ Deleted ${courseCount} courses`);
+    // Step 12: Clear all courses (disabled - model removed)
+    console.log('\n📚 Step 12: Courses (skipped - model removed)...');
+    const courseCount = 0; // Model removed
 
     // Step 13: Clear all student metadata (disabled - model removed)
     console.log('\n📋 Step 13: Student Metadata (skipped - model removed)...');

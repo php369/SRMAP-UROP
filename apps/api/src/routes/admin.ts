@@ -5,12 +5,11 @@ import {
   getUsers,
   updateUserRole,
   getSystemStats,
-  createCourse,
   generateReports,
   deleteUser
 } from '../services/adminService';
 // Cohort model removed - functionality disabled
-import { Course } from '../models/Course';
+// Course model removed - functionality disabled
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
@@ -344,101 +343,30 @@ router.delete('/cohorts/:cohortId/members/:userId', authenticate, authorize('adm
 
 /**
  * GET /admin/courses
- * Get all courses
+ * Courses functionality disabled - model removed
  */
 router.get('/courses', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  try {
-    const courses = await Course.find()
-      .populate('facultyId', 'name email')
-      .populate('cohorts', 'name year department')
-      .sort({ year: -1, semester: 1, code: 1 });
-
-    res.json({
-      success: true,
-      data: {
-        courses,
-        count: courses.length,
-      },
-    });
-
-  } catch (error) {
-    logger.error('Failed to get courses:', error);
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'COURSES_FETCH_FAILED',
-        message: 'Failed to retrieve courses',
-      },
-    });
-  }
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Courses functionality has been disabled',
+    },
+  });
 }));
 
 /**
  * POST /admin/courses
- * Create a new course
+ * Courses functionality disabled - model removed
  */
-router.post('/courses', authenticate, authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
-  const adminId = req.user!.id;
-
-  // Validate request body
-  const validationResult = createCourseSchema.safeParse(req.body);
-  if (!validationResult.success) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid course data',
-        details: validationResult.error.errors,
-      },
-    });
-  }
-
-  const courseData = validationResult.data as {
-    code: string;
-    title: string;
-    description?: string;
-    credits: number;
-    facultyId: string;
-    cohortIds?: string[];
-    semester: 'Fall' | 'Spring' | 'Summer';
-    year: number;
-  };
-
-  try {
-    const course = await createCourse(courseData, adminId);
-
-    logger.info(`Course created: ${course.code} by admin ${adminId}`);
-
-    res.status(201).json({
-      success: true,
-      data: {
-        course,
-        message: 'Course created successfully',
-      },
-    });
-
-  } catch (error) {
-    logger.error('Failed to create course:', error);
-
-    if (error instanceof Error && error.message.includes('already exists')) {
-      return res.status(409).json({
-        success: false,
-        error: {
-          code: 'COURSE_EXISTS',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'COURSE_CREATION_FAILED',
-        message: 'Failed to create course',
-      },
-    });
-  }
+router.post('/courses', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'FEATURE_DISABLED',
+      message: 'Courses functionality has been disabled',
+    },
+  });
 }));
 
 /**

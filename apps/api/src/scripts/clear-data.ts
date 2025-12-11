@@ -21,7 +21,7 @@ import { Notification } from '../models/Notification';
 import { TokenStore } from '../models/TokenStore';
 import { MeetingLog } from '../models/MeetingLog';
 import { Assessment } from '../models/Assessment';
-import { Course } from '../models/Course';
+// Course model removed - functionality disabled
 // Cohort model removed - functionality disabled
 
 /**
@@ -57,7 +57,7 @@ async function clearAllData(): Promise<void> {
       TokenStore.deleteMany({}),
       MeetingLog.deleteMany({}),
       Assessment.deleteMany({}),
-      Course.deleteMany({}),
+      // Course.deleteMany({}) - model removed
       // Cohort.deleteMany({}) - model removed
     ];
 
