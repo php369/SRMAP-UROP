@@ -1,0 +1,156 @@
+/* Enhanced Status Badge Styles */
+
+/* Base badge animations */
+.status-badge {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.status-badge:hover {
+  @apply transform scale-105 shadow-lg;
+}
+
+/* Status-specific hover effects */
+.status-badge-approved:hover {
+  @apply shadow-green-200 dark:shadow-green-900/50;
+}
+
+.status-badge-pending:hover {
+  @apply shadow-yellow-200 dark:shadow-yellow-900/50;
+}
+
+.status-badge-rejected:hover {
+  @apply shadow-red-200 dark:shadow-red-900/50;
+}
+
+.status-badge-info:hover {
+  @apply shadow-blue-200 dark:shadow-blue-900/50;
+}
+
+/* Pulse animation for pending status */
+.status-badge-pending {
+  animation: pulse-subtle 2s infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Glow effect for approved status */
+.status-badge-approved {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+}
+
+.dark .status-badge-approved {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+}
+
+/* Enhanced contrast utilities */
+.badge-high-contrast {
+  @apply font-bold border-2;
+}
+
+/* Project type specific styles */
+.project-type-idp {
+  @apply bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-800 border-indigo-200;
+}
+
+.dark .project-type-idp {
+  @apply from-indigo-900/20 to-blue-900/20 text-indigo-300 border-indigo-700;
+}
+
+.project-type-urop {
+  @apply bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-800 border-teal-200;
+}
+
+.dark .project-type-urop {
+  @apply from-teal-900/20 to-emerald-900/20 text-teal-300 border-teal-700;
+}
+
+.project-type-capstone {
+  @apply bg-gradient-to-r from-purple-50 to-violet-50 text-purple-800 border-purple-200;
+}
+
+.dark .project-type-capstone {
+  @apply from-purple-900/20 to-violet-900/20 text-purple-300 border-purple-700;
+}
+
+/* Status indicator dots */
+.status-dot {
+  @apply w-2 h-2 rounded-full inline-block mr-2;
+}
+
+.status-dot-approved {
+  @apply bg-green-500;
+}
+
+.status-dot-pending {
+  @apply bg-yellow-500;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.status-dot-rejected {
+  @apply bg-red-500;
+}
+
+.status-dot-info {
+  @apply bg-blue-500;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Accessibility improvements */
+.status-badge:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-blue-500;
+}
+
+.dark .status-badge:focus {
+  @apply ring-offset-gray-900;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .status-badge {
+    @apply border-2 font-bold;
+  }
+  
+  .status-badge-approved {
+    @apply bg-green-600 text-white border-green-800;
+  }
+  
+  .status-badge-pending {
+    @apply bg-yellow-600 text-white border-yellow-800;
+  }
+  
+  .status-badge-rejected {
+    @apply bg-red-600 text-white border-red-800;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .status-badge {
+    @apply transition-none;
+  }
+  
+  .status-badge-pending {
+    animation: none;
+  }
+  
+  .status-dot-pending {
+    animation: none;
+  }
+}

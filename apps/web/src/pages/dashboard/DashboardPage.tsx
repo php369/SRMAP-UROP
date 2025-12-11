@@ -5,6 +5,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { isStudentRole } from '../../utils/constants';
 import { api } from '../../utils/api';
+import { ApplicationStatusBadge, GroupStatusBadge, UserRoleBadge, StatusBadge } from '../../utils/statusBadges';
+import { CheckCircle } from 'lucide-react';
 
 // Configure axios base URL (only once)
 if (!axios.defaults.baseURL) {
@@ -256,18 +258,7 @@ export function DashboardPage() {
             <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-text">Group Information</h3>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  group.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                  group.status === 'applied' ? 'bg-blue-500/20 text-blue-400' :
-                  group.status === 'complete' ? 'bg-purple-500/20 text-purple-400' :
-                  'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {group.status === 'forming' ? '🔄 Forming' :
-                   group.status === 'complete' ? '✓ Complete' :
-                   group.status === 'applied' ? '📝 Applied' :
-                   group.status === 'approved' ? '✅ Approved' :
-                   group.status === 'frozen' ? '❄️ Frozen' : group.status}
-                </span>
+                <GroupStatusBadge status={group.status} />
               </div>
 
               <div className="space-y-4">
@@ -322,11 +313,13 @@ export function DashboardPage() {
             <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-text">Student Information</h3>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  dashboardData.user.assignedProject ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
-                }`}>
-                  {dashboardData.user.assignedProject ? '✅ Project Assigned' : '👤 Solo Student'}
-                </span>
+                {dashboardData.user.assignedProject ? (
+                  <StatusBadge variant="assigned" icon={<CheckCircle className="w-3 h-3" />}>
+                    Project Assigned
+                  </StatusBadge>
+                ) : (
+                  <UserRoleBadge role="solo" />
+                )}
               </div>
 
               <div className="space-y-4">
@@ -382,15 +375,7 @@ export function DashboardPage() {
                       <p className="text-sm font-semibold text-text">
                         {application.projectId?.title || 'Unknown Project'}
                       </p>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        application.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                        application.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {application.status === 'pending' ? '⏳ Pending' :
-                         application.status === 'approved' ? '✅ Approved' :
-                         application.status === 'rejected' ? '❌ Rejected' : application.status}
-                      </span>
+                      <ApplicationStatusBadge status={application.status} />
                     </div>
                     {application.projectId?.brief && (
                       <p className="text-xs text-textSecondary">{application.projectId.brief}</p>

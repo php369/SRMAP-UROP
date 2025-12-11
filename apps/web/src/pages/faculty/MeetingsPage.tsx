@@ -6,6 +6,7 @@ import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 import { api } from '../../utils/api';
+import { MeetingStatusBadge } from '../../utils/statusBadges';
 
 interface Meeting {
   _id: string;
@@ -202,31 +203,7 @@ export function FacultyMeetingsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'completed' || status === 'submitted') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30">
-          <Clock className="w-3 h-3" />
-          Pending
-        </span>
-      );
-    }
-    if (status === 'approved') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 border-green-300 dark:border-green-500/30">
-          <CheckCircle className="w-3 h-3" />
-          Approved
-        </span>
-      );
-    }
-    if (status === 'rejected') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border-red-300 dark:border-red-500/30">
-          <XCircle className="w-3 h-3" />
-          Rejected
-        </span>
-      );
-    }
-    return null;
+    return <MeetingStatusBadge status={status} />;
   };
 
   // Show loading while checking assignments

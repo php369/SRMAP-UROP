@@ -7,6 +7,7 @@ import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
+import { ApplicationStatusBadge, UserRoleBadge } from '../../utils/statusBadges';
 
 interface Project {
   _id: string;
@@ -716,12 +717,7 @@ export function ApplicationPage() {
                       {application.groupId ? 'Group' : 'Solo'}
                     </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      application.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                    }`}>
-                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                  </span>
+                  <ApplicationStatusBadge status={application.status} />
                 </div>
 
                 <h3 className="font-bold text-lg mb-2">
@@ -910,14 +906,10 @@ export function ApplicationPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {member._id === user?.id && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                          You
-                        </span>
+                        <UserRoleBadge role="member" isCurrentUser={true} />
                       )}
                       {isGroupLeader && member._id === user?.id && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                          Leader
-                        </span>
+                        <UserRoleBadge role="leader" />
                       )}
                     </div>
                   </div>
@@ -1272,9 +1264,7 @@ export function ApplicationPage() {
             <h2 className="text-2xl font-bold mb-6">
               Application Form
               {applicationType === 'group' && isGroupLeader && (
-                <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                  Group Leader
-                </span>
+                <UserRoleBadge role="leader" />
               )}
             </h2>
 
@@ -1535,14 +1525,10 @@ export function ApplicationPage() {
                               <XCircle className="w-5 h-5 text-amber-500" />
                             )}
                             {member._id === user?.id && (
-                              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                You
-                              </span>
+                              <UserRoleBadge role="member" isCurrentUser={true} />
                             )}
                             {isGroupLeader && member._id === user?.id && (
-                              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                                Leader
-                              </span>
+                              <UserRoleBadge role="leader" />className=>
                             )}
                             {isGroupLeader && member._id !== user?.id && (
                               <button

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ProjectTypeBadge } from '../../utils/statusBadges';
 
 import {
   Search,
@@ -303,16 +304,7 @@ export function ProjectsPage() {
                   >
                     {/* Project Type Badge */}
                     <div className="flex items-center justify-between mb-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${project.type === 'IDP'
-                            ? 'bg-blue-100 text-blue-800'
-                            : project.type === 'UROP'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}
-                      >
-                        {project.type}
-                      </span>
+                      <ProjectTypeBadge type={project.type} />
                       {project.capacity && (
                         <div
                           className="flex items-center text-sm"
