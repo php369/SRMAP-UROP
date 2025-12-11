@@ -27,20 +27,21 @@ async function verifyDatabaseState() {
     console.log('======================\n');
 
     // Check collections and counts
-    const collections = [
-      { name: 'Users', model: User },
-      { name: 'Projects', model: Project },
-      { name: 'Windows', model: Window },
-      { name: 'Groups', model: Group },
-      { name: 'Applications', model: Application },
-      { name: 'Submissions', model: Submission },
-    ];
-
     console.log('📊 Collection Counts:');
-    for (const collection of collections) {
-      const count = await collection.model.countDocuments();
-      console.log(`   ${collection.name}: ${count}`);
-    }
+    
+    const userCount = await User.countDocuments();
+    const projectCount = await Project.countDocuments();
+    const windowCount = await Window.countDocuments();
+    const groupCount = await Group.countDocuments();
+    const applicationCount = await Application.countDocuments();
+    const submissionCount = await Submission.countDocuments();
+    
+    console.log(`   Users: ${userCount}`);
+    console.log(`   Projects: ${projectCount}`);
+    console.log(`   Windows: ${windowCount}`);
+    console.log(`   Groups: ${groupCount}`);
+    console.log(`   Applications: ${applicationCount}`);
+    console.log(`   Submissions: ${submissionCount}`);
 
     console.log('\n👥 Users:');
     const users = await User.find().select('name email role isCoordinator');
@@ -60,18 +61,23 @@ async function verifyDatabaseState() {
     }
 
     console.log('\n🪟 Active Windows:');
-    const windows = await Window.find({ isActive: true }).select('title windowType projectType');
+    const windows = await Window.find({ isActive: true }).select('windowType projectType assessmentType');
     if (windows.length === 0) {
       console.log('   • No windows created (as expected for clean setup)');
     } else {
       for (const window of windows) {
-        console.log(`   • ${window.title} (${window.windowType}/${window.projectType})`);
+        const assessmentInfo = window.assessmentType ? ` - ${window.assessmentType}` : '';
+        console.log(`   • ${window.windowType}/${window.projectType}${assessmentInfo}`);
       }
     }
 
     // Check for any old collections that should have been removed
     console.log('\n🗑️  Checking for removed collections:');
-    const allCollections = await mongoose.connection.db.listCollections().toArray();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
+    const allCollections = await db.listCollections().toArray();
     const removedCollections = ['cohorts', 'studentmetas', 'avatarpools', 'eligibilities', 'facultyrosters'];
     
     let foundOldCollections = false;
@@ -96,12 +102,12 @@ async function verifyDatabaseState() {
     console.log('VERIFICATION COMPLETE');
     console.log('======================');
 
-    if (users.length === 2 && projects.length === 0 && windows.length === 0) {
+    if (userCount === 2 && projectCount === 0 && windowCount === 0) {
       console.log('✅ Clean database setup successful!');
     } else {
       console.log('⚠️  Database state may need attention');
       console.log(`   Expected: 2 users, 0 projects, 0 windows`);
-      console.log(`   Found: ${users.length} users, ${projects.length} projects, ${windows.length} windows`);
+      console.log(`   Found: ${userCount} users, ${projectCount} projects, ${windowCount} windows`);
     }
 
   } catch (error) {
