@@ -6,6 +6,7 @@ import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
+import { api } from '../../utils/api';
 
 interface Submission {
   _id: string;
@@ -76,17 +77,12 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/submissions/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
-      if (result.success && result.data) {
-        setSubmissions(result.data);
-      } else if (result.submissions) {
+      const response = await api.get('/submissions/faculty');
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setSubmissions(response.data);
+      } else if ((response as any).submissions && Array.isArray((response as any).submissions)) {
         // Handle legacy response format
-        setSubmissions(result.submissions);
+        setSubmissions((response as any).submissions);
       } else {
         setSubmissions([]);
       }
@@ -105,18 +101,9 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/${logId}/grade`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({ grade })
-      });
+      const response = await api.put(`/meetings/logs/${logId}/grade`, { grade });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success('Grade saved');
         // Update the local state
         setMeetingLogs(prev => {
@@ -129,7 +116,7 @@ export function FacultyAssessmentPage() {
           return updated;
         });
       } else {
-        toast.error(result.error?.message || 'Failed to save grade');
+        toast.error((response as any).error?.message || 'Failed to save grade');
       }
     } catch (error) {
       toast.error('Failed to save grade');
@@ -138,18 +125,13 @@ export function FacultyAssessmentPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
+      const response = await api.get('/meetings/faculty');
 
-      if (result.success && result.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         // Group logs by project ID - projectId should already be populated by backend
         const logsByProject: Record<string, any[]> = {};
 
-        result.data.forEach((log: any) => {
+        response.data.forEach((log: any) => {
           // Handle both populated and non-populated projectId
           const projectId = typeof log.projectId === 'object' && log.projectId !== null
             ? log.projectId._id
@@ -178,10 +160,13 @@ export function FacultyAssessmentPage() {
         });
 
         setMeetingLogs(logsByProject);
+      } else {
+        setMeetingLogs({});
       }
     } catch (error) {
       console.error('Failed to fetch meeting logs:', error);
       toast.error('Failed to fetch meeting logs');
+      setMeetingLogs({});
     }
   };
 
@@ -195,27 +180,19 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/submissions/${selectedSubmission._id}/grade`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({
-          facultyGrade: grade,
-          facultyComments: gradeData.comments,
-          meetUrl: gradeData.meetUrl
-        })
+      const response = await api.put(`/submissions/${selectedSubmission._id}/grade`, {
+        facultyGrade: grade,
+        facultyComments: gradeData.comments,
+        meetUrl: gradeData.meetUrl
       });
 
-      if (response.ok) {
+      if (response.success) {
         toast.success('Grade submitted successfully');
         setSelectedSubmission(null);
         setGradeData({ grade: '', comments: '', meetUrl: '' });
         fetchSubmissions();
       } else {
-        const error = await response.json();
-        toast.error(error.error?.message || 'Failed to submit grade');
+        toast.error((response as any).error?.message || 'Failed to submit grade');
       }
     } catch (error) {
       toast.error('Failed to submit grade');

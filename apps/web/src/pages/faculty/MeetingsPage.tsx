@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
+import { api } from '../../utils/api';
 
 interface Meeting {
   _id: string;
@@ -93,14 +94,11 @@ export function FacultyMeetingsPage() {
 
   const checkAssignments = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/projects/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
+      const response = await api.get('/projects/faculty');
       // Check if any project has been assigned to students
-      const assignedProjects = result.data?.filter((p: any) => p.status === 'assigned') || [];
+      const assignedProjects = (response.data && Array.isArray(response.data)) 
+        ? response.data.filter((p: any) => p.status === 'assigned') 
+        : [];
       setHasAssignments(assignedProjects.length > 0);
     } catch (error) {
       console.error('Error checking assignments:', error);
@@ -111,17 +109,12 @@ export function FacultyMeetingsPage() {
   const fetchMeetings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
+      const response = await api.get('/meetings/faculty');
       // Filter out meetings that have passed by more than 1 hour
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      const activeMeetings = Array.isArray(result.data)
-        ? result.data.filter((meeting: Meeting) => new Date(meeting.meetingDate) > oneHourAgo)
+      const activeMeetings = Array.isArray(response.data)
+        ? response.data.filter((meeting: Meeting) => new Date(meeting.meetingDate) > oneHourAgo)
         : [];
       setMeetings(activeMeetings);
     } catch (error) {
@@ -134,14 +127,9 @@ export function FacultyMeetingsPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/faculty`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
+      const response = await api.get('/meetings/logs/faculty');
       // Ensure data is always an array
-      setMeetingLogs(Array.isArray(result.data) ? result.data : []);
+      setMeetingLogs(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error('Failed to fetch meeting logs');
       setMeetingLogs([]); // Set empty array on error
@@ -151,13 +139,8 @@ export function FacultyMeetingsPage() {
   const fetchProjects = async () => {
     try {
       // Fetch faculty's assigned projects
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/projects/faculty?status=assigned`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        }
-      });
-      const result = await response.json();
-      setProjects(Array.isArray(result.data) ? result.data : []);
+      const response = await api.get('/projects/faculty', { status: 'assigned' });
+      setProjects(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       setProjects([]);
@@ -173,23 +156,14 @@ export function FacultyMeetingsPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({
-          projectId: scheduleData.projectId,
-          meetingDate: scheduleData.meetingDate,
-          meetingLink: scheduleData.meetUrl,
-          mode: scheduleData.mode
-        })
+      const response = await api.post('/meetings', {
+        projectId: scheduleData.projectId,
+        meetingDate: scheduleData.meetingDate,
+        meetingLink: scheduleData.meetUrl,
+        mode: scheduleData.mode
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success('Meeting scheduled successfully');
         setShowScheduleModal(false);
         setScheduleData({
@@ -200,7 +174,7 @@ export function FacultyMeetingsPage() {
         });
         fetchMeetings();
       } else {
-        toast.error(result.error?.message || 'Failed to schedule meeting');
+        toast.error((response as any).error?.message || 'Failed to schedule meeting');
       }
     } catch (error) {
       toast.error('Failed to schedule meeting');
@@ -209,27 +183,18 @@ export function FacultyMeetingsPage() {
 
   const handleApproveLog = async (logId: string, approved: boolean) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/${logId}/approve`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
-        },
-        body: JSON.stringify({
-          approved,
-          facultyNotes: approvalData.facultyNotes
-        })
+      const response = await api.put(`/meetings/logs/${logId}/approve`, {
+        approved,
+        facultyNotes: approvalData.facultyNotes
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (response.success) {
         toast.success(`Meeting log ${approved ? 'approved' : 'rejected'}`);
         setSelectedLog(null);
         setApprovalData({ facultyNotes: '' });
         fetchMeetingLogs();
       } else {
-        toast.error(result.error?.message || 'Failed to update meeting log');
+        toast.error((response as any).error?.message || 'Failed to update meeting log');
       }
     } catch (error) {
       toast.error('Failed to update meeting log');
