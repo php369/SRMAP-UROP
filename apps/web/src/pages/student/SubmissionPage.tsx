@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle, Users, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
@@ -114,37 +114,85 @@ export function SubmissionPage() {
 
   const checkUserRole = async () => {
     try {
-      const response = await api.get('/groups/my-group');
-      if (response.success && response.data) {
-        // User is in a group
-        setUserGroup(response.data);
-        const groupLeaderId = (response.data as any)?.leaderId?._id || (response.data as any)?.leaderId;
-        const userId = user?.id || (user as any)?._id;
-        console.log('Group Leader ID:', groupLeaderId);
-        console.log('Current User ID:', userId);
-        const isGroupLeader = groupLeaderId === userId || String(groupLeaderId) === String(userId);
-        console.log('Is Leader:', isGroupLeader);
-        setIsLeader(isGroupLeader);
+      console.log('🔍 Checking user role for user:', user?.id);
+      
+      // First check if user has any approved applications
+      const applicationsResponse = await api.get('/applications/my-application');
+      console.log('📋 Applications Response:', applicationsResponse);
+      
+      if (applicationsResponse.success && applicationsResponse.data) {
+        const applications = applicationsResponse.data;
+        
+        // Look for approved applications
+        const approvedApps = Array.isArray(applications) ? applications.filter((app: any) => app.status === 'approved') : [];
+        console.log('✅ Approved applications:', approvedApps);
+        
+        if (approvedApps.length > 0) {
+          const app = approvedApps[0]; // Take the first approved application
+          
+          if (app.groupId) {
+            // User is in a group - get group details
+            console.log('👥 User is in group:', app.groupId);
+            
+            try {
+              const groupResponse = await api.get(`/groups/${app.groupId}`);
+              if (groupResponse.success && groupResponse.data) {
+                const groupData = groupResponse.data;
+                console.log('👥 Group data:', groupData);
+                setUserGroup(groupData);
+                
+                // Determine group leadership from the group data
+                // Check if user is the group leader
+                const groupLeaderId = (groupData as any)?.leaderId?._id || (groupData as any)?.leaderId;
+                const isGroupLeader = groupLeaderId === user?.id || String(groupLeaderId) === String(user?.id);
+                
+                console.log('👑 Group Leadership Check:', {
+                  groupLeaderId: groupLeaderId,
+                  userId: user?.id,
+                  isLeader: isGroupLeader
+                });
+                
+                setIsLeader(isGroupLeader);
+              } else {
+                console.log('❌ Could not get group details');
+                setUserGroup(null);
+                setIsLeader(true);
+              }
+            } catch (groupError) {
+              console.error('❌ Error getting group details:', groupError);
+              setUserGroup(null);
+              setIsLeader(true);
+            }
+          } else {
+            // Solo application
+            console.log('🚶 User has solo application');
+            setUserGroup(null);
+            setIsLeader(true);
+          }
+        } else {
+          // No approved applications
+          console.log('🚶 No approved applications found');
+          setUserGroup(null);
+          setIsLeader(true);
+        }
       } else {
-        // Solo student - no group needed
-        console.log('User is working solo');
-        setUserGroup(null); // No group for solo students
-        setIsLeader(true); // Solo students can always submit
+        // No applications found
+        console.log('🚶 No applications found');
+        setUserGroup(null);
+        setIsLeader(true);
       }
     } catch (error: any) {
-      console.error('Error checking user role:', error);
-      // Check if it's a 404 (no group found) vs other errors
-      if (error?.response?.status === 404) {
-        // Solo student - no group found
-        console.log('No group found: User is working solo');
-        setUserGroup(null);
-        setIsLeader(true);
-      } else {
-        // Other error - fallback to solo
-        console.log('Fallback: User is working solo due to error');
-        setUserGroup(null);
-        setIsLeader(true);
-      }
+      console.error('❌ Error checking user role:', error);
+      console.log('📊 Error details:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message
+      });
+      
+      // Fallback to solo
+      console.log('🚶 Fallback: User is working solo due to error');
+      setUserGroup(null);
+      setIsLeader(true);
     }
   };
 
@@ -153,21 +201,19 @@ export function SubmissionPage() {
       let response;
       
       if (userGroup) {
-        // Group student - check by group ID
+        // Group student - check GroupSubmission model by group ID
         console.log('Checking group submission for group:', userGroup._id);
-        response = await api.get(`/submissions/group/${userGroup._id}`);
+        response = await api.get(`/group-submissions/${userGroup._id}`);
         
-        // Group submissions return { success: true, submission: {...} }
-        if (response.success && (response as any).submission) {
+        if (response.success && response.data) {
           setHasSubmitted(true);
-          setCurrentSubmission((response as any).submission);
+          setCurrentSubmission(response.data);
         }
       } else {
-        // Solo student - check by student ID
+        // Solo student - check regular submissions by student ID
         console.log('Checking solo submission for user:', user?.id);
         response = await api.get(`/submissions/student/${user?.id}`);
         
-        // Solo submissions return { success: true, data: {...} }
         if (response.success && response.data) {
           setHasSubmitted(true);
           setCurrentSubmission(response.data);
@@ -252,31 +298,42 @@ export function SubmissionPage() {
       const formDataToSend = new FormData();
       
       if (userGroup) {
-        // Group submission
+        // Group submission - use group submissions endpoint
         console.log('Submitting as group leader');
         formDataToSend.append('groupId', userGroup._id);
+        formDataToSend.append('githubUrl', formData.githubLink);
+        formDataToSend.append('reportFile', formData.reportFile!);
+        if (formData.pptFile) {
+          formDataToSend.append('presentationFile', formData.pptFile);
+        }
+
+        console.log('Sending group submission data:', {
+          groupId: userGroup._id,
+          githubUrl: formData.githubLink,
+          hasReportFile: !!formData.reportFile,
+          hasPresentationFile: !!formData.pptFile
+        });
+
+        var response = await api.post('/group-submissions', formDataToSend);
       } else {
-        // Solo submission
+        // Solo submission - use regular submissions endpoint
         console.log('Submitting as solo student');
         formDataToSend.append('studentId', user?.id || '');
-      }
-      
-      formDataToSend.append('githubUrl', formData.githubLink);
-      formDataToSend.append('reportFile', formData.reportFile!);
-      if (formData.pptFile) {
-        formDataToSend.append('presentationFile', formData.pptFile);
-      }
+        formDataToSend.append('githubUrl', formData.githubLink);
+        formDataToSend.append('reportFile', formData.reportFile!);
+        if (formData.pptFile) {
+          formDataToSend.append('presentationFile', formData.pptFile);
+        }
 
-      console.log('Sending submission data:', {
-        isSolo: !userGroup,
-        studentId: !userGroup ? user?.id : undefined,
-        groupId: userGroup ? userGroup._id : undefined,
-        githubUrl: formData.githubLink,
-        hasReportFile: !!formData.reportFile,
-        hasPresentationFile: !!formData.pptFile
-      });
+        console.log('Sending solo submission data:', {
+          studentId: user?.id,
+          githubUrl: formData.githubLink,
+          hasReportFile: !!formData.reportFile,
+          hasPresentationFile: !!formData.pptFile
+        });
 
-      const response = await api.post('/submissions', formDataToSend);
+        var response = await api.post('/submissions', formDataToSend);
+      }
       console.log('Submission response:', response);
 
       if (response.success) {
@@ -365,6 +422,7 @@ export function SubmissionPage() {
 
   // No need to check for userGroup - solo students don't have groups
 
+  // Show group member waiting message only if user is actually in a group and not the leader
   if (userGroup && !isLeader) {
     // Group member (not leader) - show waiting message
     return (
@@ -380,16 +438,14 @@ export function SubmissionPage() {
             Only the group leader can submit work. Please wait for your leader to submit.
           </p>
           
-          {userGroup && (
-            <div className="p-4 bg-blue-50 rounded-lg mb-4">
-              <p className="text-sm text-blue-700">
-                <strong>Group:</strong> {userGroup.groupName || userGroup.groupCode}
-              </p>
-              <p className="text-sm text-blue-700">
-                <strong>Status:</strong> {userGroup.status}
-              </p>
-            </div>
-          )}
+          <div className="p-4 bg-blue-50 rounded-lg mb-4">
+            <p className="text-sm text-blue-700">
+              <strong>Group:</strong> {userGroup.groupName || userGroup.groupCode}
+            </p>
+            <p className="text-sm text-blue-700">
+              <strong>Status:</strong> {userGroup.status}
+            </p>
+          </div>
           
           {hasSubmitted && currentSubmission ? (
             <div className="mt-4 p-4 bg-green-50 rounded-lg">
@@ -492,6 +548,42 @@ export function SubmissionPage() {
           <p className="text-gray-600">
             Upload your project work for evaluation
           </p>
+          
+          {/* Submission Type Indicator */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            {userGroup ? (
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-blue-800 font-medium">
+                    Submitting as Group Leader
+                  </p>
+                  <p className="text-blue-600 text-sm">
+                    Group: {userGroup.groupName || userGroup.groupCode} ({userGroup.members?.length || 0} members)
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-blue-800 font-medium">
+                      Submitting as Individual Student
+                    </p>
+                    <p className="text-blue-600 text-sm">
+                      Solo submission for {eligibleProjectType}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm">
+                    💡 <strong>Note:</strong> If you want to work in a group, please form or join a group in the Application page before submitting.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         <motion.div

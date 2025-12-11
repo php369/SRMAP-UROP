@@ -10,6 +10,7 @@ import groupRoutes from './groups';
 import applicationRoutes from './applications';
 import assessmentRoutes from './assessments';
 import submissionRoutes from './submissions';
+import groupSubmissionRoutes from './groupSubmissions';
 import evaluationRoutes from './evaluations';
 import adminRoutes from './admin';
 import presenceRoutes from './presence';
@@ -84,6 +85,9 @@ export function setupRoutes(app: Express): void {
 
   // Submission routes
   app.use(`${API_PREFIX}/submissions`, submissionRoutes);
+
+  // Group submission routes
+  app.use(`${API_PREFIX}/group-submissions`, groupSubmissionRoutes);
 
   // Evaluation routes
   app.use(`${API_PREFIX}/evaluations`, evaluationRoutes);
