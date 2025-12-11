@@ -631,11 +631,26 @@ router.get('/my-groups', authenticate, authorize('student'), async (req, res) =>
  */
 router.get('/my-group', authenticate, authorize('student'), async (req, res) => {
   try {
+    logger.info('🔍 Getting group for user:', { 
+      userId: req.user!.id,
+      userRole: req.user!.role 
+    });
+    
     const group = await getUserGroup(
       new mongoose.Types.ObjectId(req.user!.id)
     );
 
+    logger.info('📊 Group query result:', { 
+      found: !!group,
+      groupId: group?._id?.toString(),
+      groupCode: group?.groupCode,
+      status: group?.status,
+      leaderId: group?.leaderId?.toString(),
+      memberCount: group?.members?.length
+    });
+
     if (!group) {
+      logger.info('🚶 No group found for user, returning null');
       res.json({
         success: true,
         data: null,
@@ -644,12 +659,13 @@ router.get('/my-group', authenticate, authorize('student'), async (req, res) => 
       return;
     }
 
+    logger.info('👥 Returning group data for user');
     res.json({
       success: true,
       data: group,
     });
   } catch (error) {
-    logger.error('Error getting user group:', error);
+    logger.error('❌ Error getting user group:', error);
     res.status(500).json({
       success: false,
       error: {
