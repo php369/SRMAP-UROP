@@ -30,7 +30,6 @@ export interface Assessment {
   meetUrl?: string;
   calendarEventId?: string;
   visibility: {
-    cohortIds: string[];
     courseIds: string[];
   };
   settings: {

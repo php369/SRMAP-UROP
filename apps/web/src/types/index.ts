@@ -75,20 +75,6 @@ export interface ActivityLog {
   userAgent?: string;
 }
 
-export interface Cohort {
-  id: string;
-  name: string;
-  description?: string;
-  startDate: string;
-  endDate?: string;
-  students: User[];
-  faculty: User[];
-  courses: Course[];
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Course {
   id: string;
   name: string;
@@ -101,7 +87,6 @@ export interface Course {
   instructor: User;
   students: User[];
   assessments: string[]; // Assessment IDs
-  cohortId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,7 +94,6 @@ export interface Course {
 export interface UserManagementFilter {
   role?: User['role'][];
   department?: string[];
-  cohort?: string[];
   status?: ('active' | 'inactive' | 'suspended')[];
   search?: string;
   dateRange?: {
@@ -119,11 +103,10 @@ export interface UserManagementFilter {
 }
 
 export interface BulkUserAction {
-  action: 'activate' | 'deactivate' | 'suspend' | 'delete' | 'changeRole' | 'assignCohort';
+  action: 'activate' | 'deactivate' | 'suspend' | 'delete' | 'changeRole';
   userIds: string[];
   parameters?: {
     newRole?: User['role'];
-    cohortId?: string;
     reason?: string;
   };
 }
@@ -134,7 +117,6 @@ export interface ReportFilter {
     start: string;
     end: string;
   };
-  cohorts?: string[];
   courses?: string[];
   assessments?: string[];
   departments?: string[];

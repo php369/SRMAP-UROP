@@ -63,7 +63,7 @@ const ProjectSchema = new Schema<IProject>({
   },
   facultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster',
+    ref: 'User',
     required: true
   },
   facultyName: {

@@ -22,6 +22,9 @@
     "clear-projects": "tsx src/scripts/clearProjectsAndApplications.ts",
     "check-data": "tsx src/scripts/check-data.ts",
     "cleanup-schema": "node --import tsx src/scripts/cleanup-schema.ts",
+    "cleanup-models": "tsx src/scripts/cleanup-removed-models.ts",
+    "reset-initialize": "tsx src/scripts/reset-and-initialize-db.ts",
+    "verify-db": "tsx src/scripts/verify-db-state.ts",
     "final-cleanup": "tsx src/scripts/final-db-cleanup.ts",
     "reset-db": "tsx src/scripts/reset-database.ts",
     "clean": "rm -rf dist"

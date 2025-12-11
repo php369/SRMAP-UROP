@@ -116,70 +116,59 @@ export function SubmissionPage() {
     try {
       console.log('🔍 Checking user role for user:', user?.id);
       
-      // First check if user has any approved applications
-      const applicationsResponse = await api.get('/applications/my-application');
-      console.log('📋 Applications Response:', applicationsResponse);
+      // Check if user has an approved application using the new endpoint
+      const approvedResponse = await api.get('/applications/approved');
+      console.log('✅ Approved Application Response:', approvedResponse);
       
-      if (applicationsResponse.success && applicationsResponse.data) {
-        const applications = applicationsResponse.data;
+      if (approvedResponse.success && approvedResponse.data) {
+        const approvedApp = approvedResponse.data as any;
+        console.log('✅ Found approved application:', approvedApp);
         
-        // Look for approved applications
-        const approvedApps = Array.isArray(applications) ? applications.filter((app: any) => app.status === 'approved') : [];
-        console.log('✅ Approved applications:', approvedApps);
-        
-        if (approvedApps.length > 0) {
-          const app = approvedApps[0]; // Take the first approved application
+        if (approvedApp.groupId) {
+          // User is in a group - use the group data from the populated response
+          const groupData = approvedApp.groupId as any;
+          console.log('👥 User is in group:', groupData);
+          setUserGroup(groupData);
           
-          if (app.groupId) {
-            // User is in a group - get group details
-            console.log('👥 User is in group:', app.groupId);
-            
-            try {
-              const groupResponse = await api.get(`/groups/${app.groupId}`);
-              if (groupResponse.success && groupResponse.data) {
-                const groupData = groupResponse.data;
-                console.log('👥 Group data:', groupData);
-                setUserGroup(groupData);
-                
-                // Determine group leadership from the group data
-                // Check if user is the group leader
-                const groupLeaderId = (groupData as any)?.leaderId?._id || (groupData as any)?.leaderId;
-                const isGroupLeader = groupLeaderId === user?.id || String(groupLeaderId) === String(user?.id);
-                
-                console.log('👑 Group Leadership Check:', {
-                  groupLeaderId: groupLeaderId,
-                  userId: user?.id,
-                  isLeader: isGroupLeader
-                });
-                
-                setIsLeader(isGroupLeader);
-              } else {
-                console.log('❌ Could not get group details');
-                setUserGroup(null);
-                setIsLeader(true);
-              }
-            } catch (groupError) {
-              console.error('❌ Error getting group details:', groupError);
-              setUserGroup(null);
-              setIsLeader(true);
-            }
-          } else {
-            // Solo application
-            console.log('🚶 User has solo application');
-            setUserGroup(null);
-            setIsLeader(true);
-          }
+          // Determine group leadership from the group data
+          // Check if user is the group leader
+          const groupLeaderId = groupData?.leaderId?._id || groupData?.leaderId;
+          const isGroupLeader = groupLeaderId === user?.id || String(groupLeaderId) === String(user?.id);
+          
+          console.log('👑 Group Leadership Check:', {
+            groupLeaderId: groupLeaderId,
+            userId: user?.id,
+            isLeader: isGroupLeader
+          });
+          
+          setIsLeader(isGroupLeader);
         } else {
-          // No approved applications
-          console.log('🚶 No approved applications found');
+          // Solo application
+          console.log('🚶 User has solo approved application');
           setUserGroup(null);
           setIsLeader(true);
         }
       } else {
-        // No applications found
-        console.log('🚶 No applications found');
-        setUserGroup(null);
-        setIsLeader(true);
+        // No approved application found - check if user has any applications at all
+        console.log('❌ No approved application found, checking all applications...');
+        
+        try {
+          const applicationsResponse = await api.get('/applications/my-application');
+          if (applicationsResponse.success && applicationsResponse.data && (applicationsResponse.data as any[]).length > 0) {
+            console.log('📋 Found applications but none approved:', applicationsResponse.data);
+            // User has applications but none are approved yet
+            setUserGroup(null);
+            setIsLeader(false); // Don't allow submission until approved
+          } else {
+            console.log('📋 No applications found at all');
+            setUserGroup(null);
+            setIsLeader(false); // Don't allow submission without application
+          }
+        } catch (appError) {
+          console.error('❌ Error checking applications:', appError);
+          setUserGroup(null);
+          setIsLeader(false);
+        }
       }
     } catch (error: any) {
       console.error('❌ Error checking user role:', error);
@@ -189,10 +178,17 @@ export function SubmissionPage() {
         message: error?.message
       });
       
-      // Fallback to solo
-      console.log('🚶 Fallback: User is working solo due to error');
-      setUserGroup(null);
-      setIsLeader(true);
+      // If 404, it means no approved application exists
+      if (error?.response?.status === 404) {
+        console.log('🚶 No approved application found (404)');
+        setUserGroup(null);
+        setIsLeader(false);
+      } else {
+        // Other errors - fallback to solo but don't allow submission
+        console.log('🚶 Fallback: Error occurred, not allowing submission');
+        setUserGroup(null);
+        setIsLeader(false);
+      }
     }
   };
 
@@ -422,49 +418,74 @@ export function SubmissionPage() {
 
   // No need to check for userGroup - solo students don't have groups
 
-  // Show group member waiting message only if user is actually in a group and not the leader
-  if (userGroup && !isLeader) {
-    // Group member (not leader) - show waiting message
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-6"
-        >
-          <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
-          <p className="text-gray-600 mb-4">
-            Only the group leader can submit work. Please wait for your leader to submit.
-          </p>
-          
-          <div className="p-4 bg-blue-50 rounded-lg mb-4">
-            <p className="text-sm text-blue-700">
-              <strong>Group:</strong> {userGroup.groupName || userGroup.groupCode}
+  // Show message if user doesn't have permission to submit
+  if (!isLeader) {
+    if (userGroup) {
+      // Group member (not leader) - show waiting message
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md mx-auto p-6"
+          >
+            <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
+            <p className="text-gray-600 mb-4">
+              Only the group leader can submit work. Please wait for your leader to submit.
             </p>
-            <p className="text-sm text-blue-700">
-              <strong>Status:</strong> {userGroup.status}
-            </p>
-          </div>
-          
-          {hasSubmitted && currentSubmission ? (
-            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-              <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <p className="text-green-700 font-medium">Your group leader has submitted!</p>
-              <p className="text-sm text-green-600 mt-2">
-                Submitted on: {new Date(currentSubmission.submittedAt).toLocaleDateString()}
+            
+            <div className="p-4 bg-blue-50 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
+              </p>
+              <p className="text-sm text-blue-700">
+                <strong>Status:</strong> {(userGroup as any)?.status}
               </p>
             </div>
-          ) : (
-            <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+            
+            {hasSubmitted && currentSubmission ? (
+              <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <p className="text-green-700 font-medium">Your group leader has submitted!</p>
+                <p className="text-sm text-green-600 mt-2">
+                  Submitted on: {new Date(currentSubmission.submittedAt).toLocaleDateString()}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+                <p className="text-yellow-700 text-sm">
+                  Waiting for group leader to submit...
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      );
+    } else {
+      // No approved application or not eligible
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md mx-auto p-6"
+          >
+            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Application Required</h2>
+            <p className="text-gray-600 mb-4">
+              You need an approved application before you can submit work.
+            </p>
+            
+            <div className="p-4 bg-yellow-50 rounded-lg">
               <p className="text-yellow-700 text-sm">
-                Waiting for group leader to submit...
+                Please apply for a project first, and wait for approval before submitting work.
               </p>
             </div>
-          )}
-        </motion.div>
-      </div>
-    );
+          </motion.div>
+        </div>
+      );
+    }
   }
 
   if (hasSubmitted && currentSubmission) {
@@ -559,7 +580,7 @@ export function SubmissionPage() {
                     Submitting as Group Leader
                   </p>
                   <p className="text-blue-600 text-sm">
-                    Group: {userGroup.groupName || userGroup.groupCode} ({userGroup.members?.length || 0} members)
+                    Group: {(userGroup as any)?.groupName || (userGroup as any)?.groupCode} ({(userGroup as any)?.members?.length || 0} members)
                   </p>
                 </div>
               </div>

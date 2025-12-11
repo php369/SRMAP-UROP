@@ -6,13 +6,11 @@ import { assignGroupLeaderRole } from './roleService';
 
 /**
  * Generate a unique 6-character alphanumeric group code
- * @param semester - Current semester
  * @param year - Current year
  * @param projectType - Project type
  * @returns Unique group code
  */
 export async function generateGroupCode(
-  semester: string,
   year: number,
   projectType: IGroup['projectType']
 ): Promise<string> {
@@ -29,10 +27,9 @@ export async function generateGroupCode(
       code += characters.charAt(Math.floor(Math.random() * characters.length));
     }
 
-    // Check if code is unique for this semester and project type
+    // Check if code is unique for this year and project type
     const existing = await Group.findOne({
       groupCode: code,
-      semester,
       year,
       projectType
     });
@@ -52,7 +49,6 @@ export async function generateGroupCode(
  * Create a new group
  * @param leaderId - Student ID who creates the group
  * @param projectType - Project type
- * @param semester - Current semester
  * @param year - Current year
  * @param groupName - Optional group name
  * @returns Created group
@@ -60,24 +56,22 @@ export async function generateGroupCode(
 export async function createGroup(data: {
   leaderId: mongoose.Types.ObjectId;
   projectType: IGroup['projectType'];
-  semester: string;
   year: number;
   groupName?: string;
 }): Promise<IGroup> {
   try {
-    const { leaderId, projectType, semester, year, groupName } = data;
+    const { leaderId, projectType, year, groupName } = data;
 
-    // Check if user is already a group leader for this project type and semester
+    // Check if user is already a group leader for this project type and year
     const existingAsLeader = await Group.findOne({
       leaderId,
       projectType,
-      semester,
       year,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
     });
 
     if (existingAsLeader) {
-      throw new Error(`You are already leading a group for ${projectType} in ${semester} ${year}`);
+      throw new Error(`You are already leading a group for ${projectType} in ${year}`);
     }
 
     // Check if user is already a member of another group
@@ -91,7 +85,7 @@ export async function createGroup(data: {
     }
 
     // Generate unique group code
-    const groupCode = await generateGroupCode(semester, year, projectType);
+    const groupCode = await generateGroupCode(year, projectType);
 
     // Generate unique group ID
     const groupId = `GRP-${projectType}-${year}-${groupCode}`;
@@ -104,12 +98,14 @@ export async function createGroup(data: {
       leaderId,
       members: [leaderId], // Leader is automatically a member
       projectType,
-      semester,
       year,
       status: 'forming'
     });
 
     await group.save();
+
+    // Update user's currentGroupId
+    await User.findByIdAndUpdate(leaderId, { currentGroupId: group._id });
 
     // Assign Group_Leader role
     await assignGroupLeaderRole(leaderId, group._id);
@@ -126,7 +122,6 @@ export async function createGroup(data: {
  * Join a group using group code
  * @param userId - Student ID joining the group
  * @param groupCode - Group code to join
- * @param semester - Current semester
  * @param year - Current year
  * @param projectType - Project type
  * @returns Updated group
@@ -134,7 +129,6 @@ export async function createGroup(data: {
 export async function joinGroup(
   userId: mongoose.Types.ObjectId,
   groupCode: string,
-  semester: string,
   year: number,
   projectType: IGroup['projectType']
 ): Promise<IGroup> {
@@ -149,23 +143,21 @@ export async function joinGroup(
       throw new Error('Group leaders cannot join other groups');
     }
 
-    // Check if user is already in a group for this project type and semester
+    // Check if user is already in a group for this project type and year
     const existingMembership = await Group.findOne({
       members: userId,
       projectType,
-      semester,
       year,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
     });
 
     if (existingMembership) {
-      throw new Error(`You are already in a group for ${projectType} in ${semester} ${year}`);
+      throw new Error(`You are already in a group for ${projectType} in ${year}`);
     }
 
     // Find the group
     const group = await Group.findOne({
       groupCode,
-      semester,
       year,
       projectType,
       status: 'forming' // Can only join groups that are still forming
@@ -189,6 +181,9 @@ export async function joinGroup(
     }
 
     await group.save();
+
+    // Update user's currentGroupId
+    await User.findByIdAndUpdate(userId, { currentGroupId: group._id });
 
     // Delete any solo application the user might have for this project type
     // They will now be linked to the group's application instead
@@ -268,6 +263,12 @@ export async function leaveGroup(
         logger.error('Error cleaning up all member details:', error);
       }
       
+      // Update all members' currentGroupId to null
+      await User.updateMany(
+        { _id: { $in: group.members } },
+        { $unset: { currentGroupId: 1 } }
+      );
+      
       await Group.findByIdAndDelete(groupId);
       logger.info(`Group ${group.groupId} deleted as leader left`);
       return null;
@@ -284,6 +285,9 @@ export async function leaveGroup(
     }
 
     await group.save();
+
+    // Update user's currentGroupId to null
+    await User.findByIdAndUpdate(userId, { $unset: { currentGroupId: 1 } });
 
     logger.info(`User ${userId} left group ${group.groupId}`);
     return group;
@@ -316,21 +320,18 @@ export async function getGroupById(
 /**
  * Get group by code
  * @param groupCode - Group code
- * @param semester - Semester
  * @param year - Year
  * @param projectType - Project type
  * @returns Group
  */
 export async function getGroupByCode(
   groupCode: string,
-  semester: string,
   year: number,
   projectType: IGroup['projectType']
 ): Promise<IGroup | null> {
   try {
     return await Group.findOne({
       groupCode,
-      semester,
       year,
       projectType
     })
@@ -418,18 +419,15 @@ export async function validateGroupSize(
 /**
  * Get all groups for a project type
  * @param projectType - Project type
- * @param semester - Optional semester filter
  * @param year - Optional year filter
  * @returns Array of groups
  */
 export async function getGroupsByProjectType(
   projectType: IGroup['projectType'],
-  semester?: string,
   year?: number
 ): Promise<IGroup[]> {
   try {
     const query: any = { projectType };
-    if (semester) query.semester = semester;
     if (year) query.year = year;
 
     return await Group.find(query)

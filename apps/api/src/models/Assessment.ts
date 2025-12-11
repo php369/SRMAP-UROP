@@ -35,13 +35,9 @@ const AssessmentSchema = new Schema<IAssessment>({
   },
   facultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster',
+    ref: 'User',
     required: true
   },
-  cohortIds: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Cohort'
-  }],
   status: {
     type: String,
     enum: ['draft', 'published', 'archived'],

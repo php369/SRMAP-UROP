@@ -42,7 +42,7 @@ export class SubmissionService {
   }> {
     try {
       // Check if group exists
-      const group = await Group.findById(groupId);
+      const group = await Group.findById(groupId).populate('leaderId', '_id name email');
       if (!group) {
         return { canSubmit: false, reason: 'Group not found' };
       }
@@ -60,13 +60,17 @@ export class SubmissionService {
         return { canSubmit: false, reason: 'You are not a member of this group' };
       }
 
-      // Check if user is the group leader
-      const isLeader = group.leaderId.toString() === userId;
+      // Check if user is the group leader - handle both populated and non-populated cases
+      const leaderIdStr = typeof group.leaderId === 'object' && group.leaderId._id
+        ? group.leaderId._id.toString()
+        : group.leaderId.toString();
+      
+      const isLeader = leaderIdStr === userId;
       if (!isLeader) {
         console.log('Leader check failed:', {
           userId,
-          leaderId: group.leaderId.toString(),
-          match: group.leaderId.toString() === userId
+          leaderId: leaderIdStr,
+          match: leaderIdStr === userId
         });
         return { canSubmit: false, reason: 'Only the group leader can submit' };
       }

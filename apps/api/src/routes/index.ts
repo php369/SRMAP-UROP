@@ -20,11 +20,9 @@ import statusRoutes from './status';
 import notificationRoutes from './notifications';
 import meetingLogRoutes from './meetingLogs';
 import meetingRoutes from './meetings';
-import studentMetaRoutes from './studentMeta';
 import windowRoutes from './windows';
 import { createDebugRoutes } from '../middleware/developmentLogger';
 import userRoutes from './users';
-import cohortRoutes from './cohorts';
 import controlRoutes from './control';
 import eligibilityRoutes from './eligibility';
 
@@ -116,9 +114,6 @@ export function setupRoutes(app: Express): void {
   // Meeting routes
   app.use(`${API_PREFIX}/meetings`, meetingRoutes);
 
-  // Student metadata routes
-  app.use(`${API_PREFIX}/student-meta`, studentMetaRoutes);
-
   // Window routes
   app.use(`${API_PREFIX}/windows`, windowRoutes);
 
@@ -129,9 +124,6 @@ export function setupRoutes(app: Express): void {
 
   // User routes
   app.use(`${API_PREFIX}/users`, userRoutes);
-
-  // Cohort routes
-  app.use(`${API_PREFIX}/cohorts`, cohortRoutes);
 
   // Control panel routes (Coordinator)
   app.use(`${API_PREFIX}/control`, controlRoutes);
@@ -209,9 +201,7 @@ export function setupRoutes(app: Express): void {
         admin: `${API_PREFIX}/admin`,
         notifications: `${API_PREFIX}/notifications`,
         meetingLogs: `${API_PREFIX}/meeting-logs`,
-        studentMeta: `${API_PREFIX}/student-meta`,
         performance: `${API_PREFIX}/performance`,
-        cohorts: `${API_PREFIX}/cohorts`,
         debug: process.env.NODE_ENV === 'development' ? `${API_PREFIX}/debug` : undefined,
       }
     });

@@ -154,6 +154,7 @@ export async function getUserApplications(
 
     const applications = await Application.find(query)
       .populate('projectId', 'title brief facultyName department')
+      .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
     logger.info('Applications query result:', { 
@@ -166,6 +167,47 @@ export async function getUserApplications(
   } catch (error) {
     logger.error('Error getting user applications:', error);
     return [];
+  }
+}
+
+/**
+ * Get approved application for a student or group
+ * @param studentId - Student ID
+ * @param groupId - Group ID
+ * @returns Approved application or null
+ */
+export async function getApprovedApplication(
+  studentId?: mongoose.Types.ObjectId,
+  groupId?: mongoose.Types.ObjectId
+): Promise<IApplication | null> {
+  try {
+    const query: any = { status: 'approved' };
+    if (studentId) query.studentId = studentId;
+    if (groupId) query.groupId = groupId;
+
+    logger.info('Querying approved application with:', { 
+      query, 
+      studentId: studentId?.toString(), 
+      groupId: groupId?.toString() 
+    });
+
+    const application = await Application.findOne(query)
+      .populate('projectId', 'title brief facultyName department')
+      .populate('reviewedBy', 'name email')
+      .populate('groupId', 'groupCode groupName leaderId members status')
+      .populate('studentId', 'name email studentId');
+
+    logger.info('Approved application query result:', { 
+      found: !!application,
+      applicationId: application?._id?.toString(),
+      status: application?.status,
+      projectId: application?.projectId?._id?.toString()
+    });
+
+    return application;
+  } catch (error) {
+    logger.error('Error getting approved application:', error);
+    return null;
   }
 }
 
