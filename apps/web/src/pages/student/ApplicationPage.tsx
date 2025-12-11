@@ -1528,7 +1528,7 @@ export function ApplicationPage() {
                               <UserRoleBadge role="member" isCurrentUser={true} />
                             )}
                             {isGroupLeader && member._id === user?.id && (
-                              <UserRoleBadge role="leader" />className=>
+                              <UserRoleBadge role="leader" />
                             )}
                             {isGroupLeader && member._id !== user?.id && (
                               <button
