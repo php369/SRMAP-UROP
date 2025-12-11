@@ -93,7 +93,7 @@ export function FacultyMeetingsPage() {
 
   const checkAssignments = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/projects/faculty`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/projects/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -111,7 +111,7 @@ export function FacultyMeetingsPage() {
   const fetchMeetings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/faculty`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -134,7 +134,7 @@ export function FacultyMeetingsPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/logs/faculty`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -151,7 +151,7 @@ export function FacultyMeetingsPage() {
   const fetchProjects = async () => {
     try {
       // Fetch faculty's assigned projects
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/projects/faculty?status=assigned`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/projects/faculty?status=assigned`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -173,7 +173,7 @@ export function FacultyMeetingsPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export function FacultyMeetingsPage() {
 
   const handleApproveLog = async (logId: string, approved: boolean) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/meetings/logs/${logId}/approve`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/${logId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

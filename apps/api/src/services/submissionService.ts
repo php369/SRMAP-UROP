@@ -119,17 +119,40 @@ export class SubmissionService {
    * Get submissions for faculty review
    */
   static async getSubmissionsForFaculty(facultyId: string): Promise<ISubmission[]> {
-    // Find projects where faculty is assigned
-    const projects = await Project.find({ facultyId });
-    const projectIds = projects.map(p => p._id);
+    try {
+      // Find submissions where faculty is directly assigned
+      const directSubmissions = await Submission.find({ facultyId })
+        .populate('groupId', 'groupCode members')
+        .populate('studentId', 'name email studentId')
+        .populate('projectId', 'title projectId projectType')
+        .populate('submittedBy', 'name email')
+        .sort({ submittedAt: -1 });
 
-    // Find submissions for these projects
-    return await Submission.find({ projectId: { $in: projectIds } })
-      .populate('groupId')
-      .populate('studentId')
-      .populate('projectId')
-      .populate('submittedBy')
-      .sort({ submittedAt: -1 });
+      // Also find submissions through project assignments
+      const projects = await Project.find({ facultyId });
+      const projectIds = projects.map(p => p._id);
+
+      const projectSubmissions = await Submission.find({ 
+        projectId: { $in: projectIds },
+        facultyId: { $ne: facultyId } // Avoid duplicates
+      })
+        .populate('groupId', 'groupCode members')
+        .populate('studentId', 'name email studentId')
+        .populate('projectId', 'title projectId projectType')
+        .populate('submittedBy', 'name email')
+        .sort({ submittedAt: -1 });
+
+      // Combine and deduplicate
+      const allSubmissions = [...directSubmissions, ...projectSubmissions];
+      const uniqueSubmissions = allSubmissions.filter((submission, index, self) =>
+        index === self.findIndex(s => s._id.toString() === submission._id.toString())
+      );
+
+      return uniqueSubmissions;
+    } catch (error) {
+      console.error('Error fetching faculty submissions:', error);
+      return [];
+    }
   }
 
   /**
