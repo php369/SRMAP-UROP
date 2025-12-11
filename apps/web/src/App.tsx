@@ -29,7 +29,6 @@ import { HelpSupportPage } from './pages/support/HelpSupportPage';
 
 // Lazy loaded pages
 const CoordinatorApprovalsPage = lazy(() => import('./pages/projects/CoordinatorApprovalsPage').then(m => ({ default: m.CoordinatorApprovalsPage })));
-const StudentApplicationPage = lazy(() => import('./pages/dashboard/StudentApplicationPage').then(m => ({ default: m.StudentApplicationPage })));
 const ApplicationPage = lazy(() => import('./pages/student/ApplicationPage').then(m => ({ default: m.ApplicationPage })));
 const SubmissionPage = lazy(() => import('./pages/student/SubmissionPage').then(m => ({ default: m.SubmissionPage })));
 const AssessmentPage = lazy(() => import('./pages/student/AssessmentPage').then(m => ({ default: m.AssessmentPage })));

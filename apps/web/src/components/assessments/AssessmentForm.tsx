@@ -7,7 +7,6 @@ interface AssessmentFormData {
   title: string;
   description: string;
   course: string;
-  cohort: string;
   dueDate: string;
   dueTime: string;
   timezone: string;
@@ -26,7 +25,6 @@ interface AssessmentFormData {
 interface AssessmentFormProps {
   initialData?: Partial<AssessmentFormData>;
   availableCourses: string[];
-  availableCohorts: string[];
   onSubmit: (data: AssessmentFormData) => void;
   onCancel: () => void;
   loading?: boolean;
@@ -37,7 +35,6 @@ interface AssessmentFormProps {
 export function AssessmentForm({
   initialData,
   availableCourses,
-  availableCohorts,
   onSubmit,
   onCancel,
   loading = false,
@@ -48,7 +45,7 @@ export function AssessmentForm({
     title: '',
     description: '',
     course: '',
-    cohort: '',
+
     dueDate: '',
     dueTime: '23:59',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -101,9 +98,7 @@ export function AssessmentForm({
       newErrors.course = 'Course is required';
     }
 
-    if (!formData.cohort) {
-      newErrors.cohort = 'Cohort is required';
-    }
+
 
     if (!formData.dueDate) {
       newErrors.dueDate = 'Due date is required';
@@ -246,28 +241,7 @@ export function AssessmentForm({
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text mb-2">
-                    Cohort *
-                  </label>
-                  <select
-                    value={formData.cohort}
-                    onChange={(e) => updateField('cohort', e.target.value)}
-                    className={cn(
-                      'w-full px-4 py-3 bg-surface border border-border rounded-lg text-text',
-                      'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                      errors.cohort && 'border-error focus:ring-error'
-                    )}
-                  >
-                    <option value="">Select a cohort</option>
-                    {availableCohorts.map(cohort => (
-                      <option key={cohort} value={cohort}>{cohort}</option>
-                    ))}
-                  </select>
-                  {errors.cohort && (
-                    <p className="mt-1 text-sm text-error">{errors.cohort}</p>
-                  )}
-                </div>
+
               </div>
             </div>
 
