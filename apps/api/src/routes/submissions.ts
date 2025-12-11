@@ -84,12 +84,13 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
   { name: 'presentationFile', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const { groupId, githubUrl, presentationUrl, comments } = req.body;
+    const { groupId, studentId, githubUrl, presentationUrl, comments } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     // Debug logging
     logger.info('Submission request received:', {
       groupId,
+      studentId,
       githubUrl,
       presentationUrl,
       hasReportFile: !!(files.reportFile && files.reportFile[0]),
@@ -105,19 +106,33 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       });
     }
     
-    // For solo students without a group, groupId can be null
-    if (!groupId) {
-      logger.warn(`Solo student submission attempt by user ${req.user!.id} without a group`);
+    // Must have either groupId (group submission) or studentId (solo submission)
+    if (!groupId && !studentId) {
+      logger.warn(`Submission attempt by user ${req.user!.id} without groupId or studentId`);
       return res.status(400).json({
-        error: 'You must create or join a group before submitting. Solo students should create a group with just themselves.'
+        error: 'Either groupId or studentId is required for submission'
       });
     }
 
     // Check if user can submit
-    const eligibility = await SubmissionService.canUserSubmit(req.user!.id, groupId);
+    let eligibility;
+    if (groupId) {
+      // Group submission
+      eligibility = await SubmissionService.canUserSubmit(req.user!.id, groupId);
+    } else {
+      // Solo submission - check if the studentId matches the authenticated user
+      if (studentId !== req.user!.id) {
+        return res.status(403).json({
+          error: 'You can only submit for yourself'
+        });
+      }
+      eligibility = { canSubmit: true };
+    }
+    
     logger.info('Submission eligibility check:', {
       userId: req.user!.id,
       groupId,
+      studentId,
       canSubmit: eligibility.canSubmit,
       reason: eligibility.reason
     });
@@ -129,8 +144,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
     }
 
     // Prepare submission data
-    const submissionData: CreateSubmissionData = {
-      groupId,
+    const submissionData: any = {
       githubUrl,
       presentationUrl,
       comments,
@@ -140,6 +154,13 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
         userAgent: req.get('User-Agent') || 'unknown'
       }
     };
+
+    // Add either groupId or studentId
+    if (groupId) {
+      submissionData.groupId = groupId;
+    } else {
+      submissionData.studentId = studentId;
+    }
 
     // Handle file uploads
     if (files.reportFile && files.reportFile[0]) {
@@ -232,6 +253,42 @@ router.get('/group/:groupId', authenticate, rbacGuard('student', 'faculty', 'coo
     });
   } catch (error: any) {
     logger.error('Error fetching group submission:', error);
+    res.status(500).json({
+      error: 'Failed to fetch submission'
+    });
+  }
+});
+
+/**
+ * GET /api/submissions/student/:studentId
+ * Get submission for a specific student (solo submissions)
+ */
+router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 'coordinator'), async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    // For students, they can only access their own submissions
+    if (req.user!.role.includes('student') && studentId !== req.user!.id) {
+      return res.status(403).json({
+        error: 'You can only access your own submissions'
+      });
+    }
+    
+    const submissions = await SubmissionService.getStudentSubmissions(studentId);
+    
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({
+        error: 'No submissions found for this student'
+      });
+    }
+
+    // Return the most recent submission for compatibility with frontend
+    res.json({
+      success: true,
+      data: submissions[0] // Most recent submission
+    });
+  } catch (error: any) {
+    logger.error('Error fetching student submission:', error);
     res.status(500).json({
       error: 'Failed to fetch submission'
     });
