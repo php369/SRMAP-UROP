@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { api } from '../../utils/api';
+import { StatusBadge, ProjectTypeBadge, MeetingStatusBadge } from '../../utils/statusBadges';
 
 interface Submission {
   _id: string;
@@ -200,17 +201,17 @@ export function FacultyAssessmentPage() {
   };
 
   const getAssessmentBadge = (type: string) => {
-    const colors = {
-      A1: 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30',
-      A2: 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30',
-      A3: 'bg-pink-100 dark:bg-pink-500/20 text-pink-800 dark:text-pink-300 border-pink-300 dark:border-pink-500/30',
-      External: 'bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-500/30'
+    const variantMap: Record<string, any> = {
+      A1: 'info',
+      A2: 'capstone', 
+      A3: 'error',
+      External: 'warning'
     };
-
+    
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${colors[type as keyof typeof colors]}`}>
+      <StatusBadge variant={variantMap[type] || 'info'}>
         {type}
-      </span>
+      </StatusBadge>
     );
   };
 
@@ -323,14 +324,10 @@ export function FacultyAssessmentPage() {
                                     <div className="flex items-center gap-3">
                                       <span className="text-base font-semibold text-text">Meeting #{index + 1}</span>
                                       {log.status === 'approved' && (
-                                        <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
-                                          Approved
-                                        </span>
+                                        <MeetingStatusBadge status="approved" />
                                       )}
                                       {log.status === 'completed' && (
-                                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-500/30">
-                                          Completed
-                                        </span>
+                                        <MeetingStatusBadge status="completed" />
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-textSecondary">
@@ -432,13 +429,11 @@ export function FacultyAssessmentPage() {
                             : submission.studentId?.name}
                         </h3>
                         {getAssessmentBadge(submission.assessmentType)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
-                          {submission.projectId.projectType}
-                        </span>
+                        <ProjectTypeBadge type={submission.projectId.projectType} />
                         {submission.facultyGrade !== undefined && (
-                          <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
+                          <StatusBadge variant="success">
                             Graded: {submission.facultyGrade}/100
-                          </span>
+                          </StatusBadge>
                         )}
                       </div>
 
@@ -501,7 +496,7 @@ export function FacultyAssessmentPage() {
                       {meetingLogs[submission.projectId._id]?.length > 0 && (
                         <button
                           onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId._id])}
-                          className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm"
+                          className="px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg transition-all flex items-center gap-2 text-sm shadow-sm"
                           title="View Meeting Logs"
                         >
                           <FileText className="w-4 h-4" />

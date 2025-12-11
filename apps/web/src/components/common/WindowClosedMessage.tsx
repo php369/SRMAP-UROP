@@ -102,11 +102,11 @@ export function WindowClosedMessage({
               <div key={pType} className="bg-surface/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-text">{pType}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    info.status === 'active' ? 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300' :
-                    info.status === 'upcoming' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300' :
-                    info.status === 'ended' ? 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300' :
-                    'bg-gray-100 dark:bg-gray-500/20 text-gray-800 dark:text-gray-300'
+                  <span className={`px-2 py-1 rounded-lg text-xs font-semibold border shadow-sm ${
+                    info.status === 'active' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' :
+                    info.status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' :
+                    info.status === 'ended' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' :
+                    'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800'
                   }`}>
                     {info.status === 'active' ? 'Active' :
                      info.status === 'upcoming' ? 'Upcoming' :

@@ -286,14 +286,14 @@ export function CoordinatorApprovalsPage() {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => handleApproveProject(project._id)}
-                              className="flex items-center space-x-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                              className="flex items-center space-x-1 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30 transition-colors shadow-sm"
                             >
                               <Check className="w-4 h-4" />
                               <span>Approve</span>
                             </button>
                             <button
                               onClick={() => setShowRejectModal(project._id)}
-                              className="flex items-center space-x-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                              className="flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors shadow-sm"
                             >
                               <X className="w-4 h-4" />
                               <span>Reject</span>
@@ -364,7 +364,7 @@ export function CoordinatorApprovalsPage() {
                 </button>
                 <button
                   onClick={() => handleRejectProject(showRejectModal, rejectReason)}
-                  className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                  className="px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors shadow-sm"
                 >
                   Reject Project
                 </button>

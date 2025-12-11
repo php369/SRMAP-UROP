@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { isStudentRole } from '../../utils/constants';
 import { api } from '../../utils/api';
 import { ApplicationStatusBadge, GroupStatusBadge, UserRoleBadge, StatusBadge } from '../../utils/statusBadges';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, FileText } from 'lucide-react';
 
 // Configure axios base URL (only once)
 if (!axios.defaults.baseURL) {
@@ -363,9 +363,9 @@ export function DashboardPage() {
             <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-text">Application Status</h3>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
+                <StatusBadge variant="info" icon={<FileText className="w-3 h-3" />}>
                   {dashboardData.applications.length} Application{dashboardData.applications.length !== 1 ? 's' : ''}
-                </span>
+                </StatusBadge>
               </div>
 
               <div className="space-y-3">

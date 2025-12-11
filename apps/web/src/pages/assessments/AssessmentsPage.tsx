@@ -223,7 +223,7 @@ export const AssessmentsPage: React.FC = () => {
                             {log.projectId?.title || 'Project Meeting'}
                           </h3>
                           {log.status === 'approved' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                            <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 text-xs rounded-lg font-semibold shadow-sm dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
                               Approved
                             </span>
                           )}

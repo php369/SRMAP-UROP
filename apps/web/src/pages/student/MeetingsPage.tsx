@@ -336,7 +336,7 @@ export function MeetingsPage() {
                     {participantNames.map((name, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
+                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-200 font-medium shadow-sm dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
                       >
                         {name}
                       </span>

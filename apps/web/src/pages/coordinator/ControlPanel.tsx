@@ -481,23 +481,23 @@ export function ControlPanel() {
                           {window.windowType.replace('_', ' ')} - {window.projectType}
                         </h3>
                         {window.assessmentType && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-sm font-semibold shadow-sm dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
                             {window.assessmentType}
                           </span>
                         )}
                         {isActive && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium flex items-center gap-1">
+                          <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-semibold shadow-sm dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 flex items-center gap-1">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                             Active
                           </span>
                         )}
                         {hasEnded && (
-                          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm font-medium">
+                          <span className="px-2 py-1 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-sm font-semibold shadow-sm dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800">
                             Inactive
                           </span>
                         )}
                         {isUpcoming && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-sm font-semibold shadow-sm dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
                             Upcoming
                           </span>
                         )}

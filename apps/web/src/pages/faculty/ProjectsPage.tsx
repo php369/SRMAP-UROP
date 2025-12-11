@@ -6,6 +6,7 @@ import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { api } from '../../utils/api';
+import { ProjectStatusBadge, ProjectTypeBadge } from '../../utils/statusBadges';
 
 interface Project {
   _id: string;
@@ -190,28 +191,7 @@ export function FacultyProjectsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const styles = {
-      draft: 'bg-gray-500/20 dark:bg-gray-500/30 text-gray-700 dark:text-gray-300 border-gray-500/40 dark:border-gray-500/30',
-      published: 'bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 border-blue-500/40 dark:border-blue-500/30',
-      frozen: 'bg-yellow-500/20 dark:bg-yellow-500/30 text-yellow-700 dark:text-yellow-300 border-yellow-500/40 dark:border-yellow-500/30',
-      assigned: 'bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-300 border-green-500/40 dark:border-green-500/30'
-    };
-
-    const icons = {
-      draft: Clock,
-      published: Eye,
-      frozen: Clock,
-      assigned: CheckCircle
-    };
-
-    const Icon = icons[status as keyof typeof icons] || Clock;
-
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles] || styles.draft}`}>
-        <Icon className="w-3 h-3" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
+    return <ProjectStatusBadge status={status} />;
   };
 
   return (
@@ -308,9 +288,7 @@ export function FacultyProjectsPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold text-text">{project.title}</h3>
                         {getStatusBadge(project.status)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/30 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
-                          {project.type}
-                        </span>
+                        <ProjectTypeBadge type={project.type} />
                       </div>
                       <p className="text-textSecondary text-sm mb-3">{project.brief}</p>
                       {project.prerequisites && (
