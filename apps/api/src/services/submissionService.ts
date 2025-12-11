@@ -6,7 +6,8 @@ import { Project } from '../models/Project';
 import mongoose from 'mongoose';
 
 export interface CreateSubmissionData {
-  groupId: string;
+  groupId?: string; // For group submissions
+  studentId?: string; // For solo submissions
   githubUrl: string;
   presentationUrl?: string;
   comments?: string;
@@ -158,40 +159,82 @@ export class SubmissionService {
    * Create a new submission
    */
   static async createSubmission(data: CreateSubmissionData): Promise<ISubmission> {
-    // Validate group exists
-    const group = await Group.findById(data.groupId).populate('assignedProjectId').populate('assignedFacultyId');
-    if (!group) {
-      throw new Error('Group not found');
-    }
+    let group: any = null;
+    let projectType: string = 'UROP'; // Default
+    let projectId: mongoose.Types.ObjectId | undefined;
+    let facultyId: mongoose.Types.ObjectId | undefined;
 
-    // Validate submitter is group leader
-    if (group.leaderId.toString() !== data.submittedBy) {
-      throw new Error('Only group leader can submit');
-    }
+    if (data.groupId) {
+      // Group submission
+      group = await Group.findById(data.groupId).populate('assignedProjectId').populate('assignedFacultyId');
+      if (!group) {
+        throw new Error('Group not found');
+      }
 
-    // Check if submission already exists
-    const groupObjectId = new mongoose.Types.ObjectId(data.groupId);
-    const existingSubmission = await Submission.findOne({ groupId: groupObjectId });
-    if (existingSubmission) {
-      throw new Error('Group has already submitted');
+      // Validate submitter is group leader
+      if (group.leaderId.toString() !== data.submittedBy) {
+        throw new Error('Only group leader can submit');
+      }
+
+      // Check if submission already exists
+      const groupObjectId = new mongoose.Types.ObjectId(data.groupId);
+      const existingSubmission = await Submission.findOne({ groupId: groupObjectId });
+      if (existingSubmission) {
+        throw new Error('Group has already submitted');
+      }
+
+      projectType = group.projectType;
+    } else if (data.studentId) {
+      // Solo submission
+      const studentObjectId = new mongoose.Types.ObjectId(data.studentId);
+      
+      // Validate submitter is the student
+      if (data.studentId !== data.submittedBy) {
+        throw new Error('You can only submit for yourself');
+      }
+
+      // Check if submission already exists
+      const existingSubmission = await Submission.findOne({ studentId: studentObjectId });
+      if (existingSubmission) {
+        throw new Error('You have already submitted');
+      }
+
+      // Get user to determine project type
+      const user = await User.findById(data.studentId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Map role to project type
+      const roleToProjectType: Record<string, string> = {
+        'idp-student': 'IDP',
+        'urop-student': 'UROP',
+        'capstone-student': 'CAPSTONE'
+      };
+      projectType = roleToProjectType[user.role] || 'UROP';
+    } else {
+      throw new Error('Either groupId or studentId is required');
     }
 
     // Get project and faculty details
-    let projectId: mongoose.Types.ObjectId | undefined;
-    let facultyId: mongoose.Types.ObjectId | undefined;
-    
-    if (group.assignedProjectId) {
-      const project = group.assignedProjectId as any;
-      projectId = project._id;
-      facultyId = project.facultyId;
-    }
-    
-    if (group.assignedFacultyId) {
-      facultyId = (group.assignedFacultyId as any)._id || group.assignedFacultyId;
+    if (group) {
+      // Group submission - get project details from group
+      if (group.assignedProjectId) {
+        const project = group.assignedProjectId as any;
+        projectId = project._id;
+        facultyId = project.facultyId;
+      }
+      
+      if (group.assignedFacultyId) {
+        facultyId = (group.assignedFacultyId as any)._id || group.assignedFacultyId;
+      }
+    } else {
+      // Solo submission - project details will be assigned later by coordinator
+      // For now, we'll use placeholder values
     }
     
     // If no project or faculty assigned, create a placeholder
-    // This allows groups to submit before formal project assignment
+    // This allows submissions before formal project assignment
     if (!projectId) {
       // Create a temporary project ID - in production, you'd want to handle this differently
       projectId = new mongoose.Types.ObjectId();
@@ -203,32 +246,41 @@ export class SubmissionService {
     }
     
     // Generate unique submission ID
-    const submissionId = await this.generateSubmissionId(group.projectType, 'A1');
+    const submissionId = await this.generateSubmissionId(projectType, 'A1');
     
     // Create submission
-    const submission = new Submission({
+    const submissionData: any = {
       submissionId,
-      groupId: data.groupId,
       projectId,
-      projectType: group.projectType,
+      projectType,
       assessmentType: 'A1', // Default to A1, can be updated later
       githubLink: data.githubUrl,
       reportUrl: data.reportFile?.url || '',
       pptUrl: data.presentationUrl || data.presentationFile?.url || '',
       submittedBy: data.submittedBy,
       facultyId,
-      submittedAt: new Date(),
-      comments: data.comments,
-      metadata: data.metadata,
-      isFrozen: true,
-      isGraded: false,
-      isGradeReleased: false
-    });
+    };
 
+    // Add either groupId or studentId
+    if (data.groupId) {
+      submissionData.groupId = data.groupId;
+    } else {
+      submissionData.studentId = data.studentId;
+    }
+
+    // Add additional fields
+    submissionData.submittedAt = new Date();
+    submissionData.comments = data.comments;
+    submissionData.metadata = data.metadata;
+    submissionData.isFrozen = true;
+    submissionData.isGraded = false;
+    submissionData.isGradeReleased = false;
+
+    const submission = new Submission(submissionData);
     await submission.save();
     
-    // Update group status to frozen after submission
-    if (group.status !== 'frozen') {
+    // Update group status to frozen after submission (only for group submissions)
+    if (group && group.status !== 'frozen') {
       group.status = 'frozen';
       await group.save();
     }

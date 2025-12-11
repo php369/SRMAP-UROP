@@ -116,20 +116,35 @@ export function SubmissionPage() {
     try {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
+        // User is in a group
         setUserGroup(response.data);
         const groupLeaderId = (response.data as any)?.leaderId?._id || (response.data as any)?.leaderId;
-        const userId = user?.id || (user as any)?._id; // Use user.id (not user._id)
+        const userId = user?.id || (user as any)?._id;
         console.log('Group Leader ID:', groupLeaderId);
         console.log('Current User ID:', userId);
         console.log('Is Leader:', groupLeaderId === userId || String(groupLeaderId) === String(userId));
         setIsLeader(groupLeaderId === userId || String(groupLeaderId) === String(userId));
       } else {
-        // Solo student
+        // Solo student - create a virtual group object for consistency
+        console.log('User is working solo, creating virtual group');
+        setUserGroup({
+          _id: `solo-${user?.id}`, // Virtual group ID for solo students
+          isSolo: true,
+          leaderId: user?.id,
+          members: [user]
+        });
         setIsLeader(true);
       }
     } catch (error) {
       console.error('Error checking user role:', error);
-      // Default to true for solo students
+      // Solo student fallback - create virtual group
+      console.log('Fallback: User is working solo, creating virtual group');
+      setUserGroup({
+        _id: `solo-${user?.id}`, // Virtual group ID for solo students
+        isSolo: true,
+        leaderId: user?.id,
+        members: [user]
+      });
       setIsLeader(true);
     }
   };
@@ -141,11 +156,30 @@ export function SubmissionPage() {
     }
     
     try {
-      const response = await api.get(`/submissions/group/${userGroup._id}`);
+      let response;
+      
+      if (userGroup.isSolo) {
+        // For solo students, check by student ID
+        console.log('Checking solo submission for user:', user?.id);
+        response = await api.get(`/submissions/student/${user?.id}`);
+      } else {
+        // For group students, check by group ID
+        console.log('Checking group submission for group:', userGroup._id);
+        response = await api.get(`/submissions/group/${userGroup._id}`);
+      }
+      
       console.log('Submission check response:', response);
       
-      // The response structure is { submission: {...} } directly, not wrapped in success/data
-      const submission = (response as any).submission;
+      // Handle different response structures
+      let submission;
+      if (userGroup.isSolo) {
+        // Solo submissions might return an array or direct object
+        submission = Array.isArray(response.data) ? response.data[0] : response.data;
+      } else {
+        // Group submissions return { submission: {...} }
+        submission = (response as any).submission || response.data;
+      }
+      
       console.log('Found submission:', submission);
       
       if (submission && submission._id) {
@@ -219,12 +253,6 @@ export function SubmissionPage() {
   };
 
   const handleSubmit = async () => {
-    // Check if user is in a group
-    if (!userGroup || !userGroup._id) {
-      toast.error('You must create or join a group before submitting. Please go to the Groups page to create a group.');
-      return;
-    }
-
     if (!validateForm()) {
       toast.error('Please fix all errors before submitting');
       return;
@@ -233,7 +261,17 @@ export function SubmissionPage() {
     setLoading(true);
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('groupId', userGroup._id);
+      
+      if (userGroup?.isSolo) {
+        // Solo submission
+        console.log('Submitting as solo student');
+        formDataToSend.append('studentId', user?.id || '');
+      } else {
+        // Group submission
+        console.log('Submitting as group leader');
+        formDataToSend.append('groupId', userGroup?._id || '');
+      }
+      
       formDataToSend.append('githubUrl', formData.githubLink);
       formDataToSend.append('reportFile', formData.reportFile!);
       if (formData.pptFile) {
@@ -258,9 +296,11 @@ export function SubmissionPage() {
         errorMessage = error.message;
       }
       
-      // Show user-friendly messages
+      // Show user-friendly messages for group-specific errors
       if (errorMessage.includes('already submitted')) {
-        errorMessage = 'Your group has already submitted. You cannot submit again.';
+        errorMessage = userGroup?.isSolo 
+          ? 'You have already submitted. You cannot submit again.'
+          : 'Your group has already submitted. You cannot submit again.';
       } else if (errorMessage.includes('not a member')) {
         errorMessage = 'You are not a member of this group.';
       } else if (errorMessage.includes('Only the group leader')) {
@@ -300,35 +340,16 @@ export function SubmissionPage() {
     );
   }
 
-  // Check if user doesn't have a group
+  // Check if user data is still loading
   if (!userGroup) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md"
-        >
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Group Required</h2>
-          <p className="text-gray-600 mb-4">
-            You need to create or join a group before you can submit your work.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Even if you're working solo, you need to create a group with just yourself as the leader.
-          </p>
-          <button
-            onClick={() => window.location.href = '/dashboard'}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Go to Dashboard
-          </button>
-        </motion.div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!isLeader) {
+  if (!isLeader && !userGroup?.isSolo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -365,7 +386,7 @@ export function SubmissionPage() {
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">Submission Complete</h2>
               <p className="text-gray-600">
-                Your submission for {submissionWindow.assessmentType} has been recorded.
+                Your {userGroup?.isSolo ? 'individual' : 'group'} submission for {submissionWindow.assessmentType} has been recorded.
               </p>
             </div>
 
