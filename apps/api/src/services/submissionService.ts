@@ -280,9 +280,10 @@ export class SubmissionService {
     await submission.save();
     
     // Update group status to frozen after submission (only for group submissions)
-    if (group && group.status !== 'frozen') {
+    if (data.groupId && group && group.status !== 'frozen') {
       group.status = 'frozen';
       await group.save();
+      console.log(`Group ${group._id} status updated to frozen after submission`);
     }
     
     return submission;
