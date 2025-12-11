@@ -17,12 +17,12 @@ import { GroupSubmission } from '../models/GroupSubmission';
 import { Evaluation } from '../models/Evaluation';
 import { Window } from '../models/Window';
 import { Notification } from '../models/Notification';
-import { StudentMeta } from '../models/StudentMeta';
+// StudentMeta model removed - functionality disabled
 import { TokenStore } from '../models/TokenStore';
 import { MeetingLog } from '../models/MeetingLog';
 import { Assessment } from '../models/Assessment';
 import { Course } from '../models/Course';
-import { Cohort } from '../models/Cohort';
+// Cohort model removed - functionality disabled
 
 /**
  * Clear all data from collections (but keep the collections)
@@ -53,12 +53,12 @@ async function clearAllData(): Promise<void> {
       User.deleteMany({}),
       Window.deleteMany({}),
       Notification.deleteMany({}),
-      StudentMeta.deleteMany({}),
+      // StudentMeta.deleteMany({}) - model removed
       TokenStore.deleteMany({}),
       MeetingLog.deleteMany({}),
       Assessment.deleteMany({}),
       Course.deleteMany({}),
-      Cohort.deleteMany({})
+      // Cohort.deleteMany({}) - model removed
     ];
 
     const results = await Promise.all(clearPromises);
