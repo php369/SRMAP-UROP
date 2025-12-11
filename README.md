@@ -1,6 +1,6 @@
 # SRM University-AP Project Management Portal
 
-A comprehensive project management portal for SRM University-AP with Google OAuth integration, assessment workflows, and modern UI.
+A comprehensive project management portal for SRM University-AP with Google OAuth integration, assessment workflows, group management, and modern UI. The system supports IDP, UROP, and CAPSTONE project types with streamlined application and submission workflows.
 
 ## Features
 
@@ -13,29 +13,33 @@ A comprehensive project management portal for SRM University-AP with Google OAut
 - Rate limiting and DDoS protection
 - Input validation and sanitization with Zod schemas
 
-### 📝 Assessment Management
+### 📝 Assessment & Meeting Management
 
-- Assessment creation with automatic Google Meet links
-- Google Calendar integration for scheduling
+- Assessment creation and management for faculty
+- Meeting scheduling with Google Meet integration
+- Student meeting log submissions and faculty approval
 - Real-time assessment status tracking
-- Assessment eligibility and window management
-- Automated assessment workflows
+- Grading system for submissions and meeting logs
+- Assessment window management
 
-### 📁 File Management & Submissions
+### 📁 Project & Submission Management
 
+- Project management for IDP, UROP, and CAPSTONE types
+- Application system with eligibility checking
+- Group and individual submission workflows
 - Secure file upload with Cloudinary integration
 - File type validation and size restrictions
-- Group submission system
-- Submission tracking and management
-- File access control with signed URLs
+- Submission tracking and status management
+- Faculty evaluation and grading system
 
 ### 👥 User & Group Management
 
-- User profile management with role assignment
-- Group formation and management
-- Faculty roster management
-- Student enrollment tracking
+- User profile management with role assignment (Student, Faculty, Admin)
+- Dynamic group formation and management
+- Project application system with group/solo options
+- Faculty coordinator assignment
 - Admin user management interface
+- Group member details tracking
 
 ### 📊 Grading & Evaluation
 
@@ -55,10 +59,11 @@ A comprehensive project management portal for SRM University-AP with Google OAut
 
 ### 🔄 Real-time Features
 
-- WebSocket integration for live updates
-- Real-time notifications
-- Live assessment status updates
-- Instant grade notifications
+- Live application status updates
+- Real-time group formation tracking
+- Assessment window status monitoring
+- Meeting scheduling notifications
+- Submission status updates
 
 ### 🛡️ Security & Compliance
 
@@ -71,10 +76,33 @@ A comprehensive project management portal for SRM University-AP with Google OAut
 ## Tech Stack
 
 - **Frontend**: React + Vite + TypeScript + Tailwind CSS + Framer Motion + Three.js
-- **Backend**: Node.js + Express + TypeScript + MongoDB + Socket.IO
-- **Authentication**: Google OAuth 2.0 + JWT
-- **File Storage**: Cloudinary
-- **Deployment**: Vercel (Frontend) + Render (Backend) + MongoDB Atlas
+- **Backend**: Node.js + Express + TypeScript + MongoDB + Mongoose
+- **Authentication**: Google OAuth 2.0 + JWT with domain restriction (@srmap.edu.in)
+- **File Storage**: Cloudinary with secure upload and validation
+- **Database**: MongoDB Atlas with optimized schemas
+- **Deployment**: Vercel (Frontend) + Render (Backend)
+- **Testing**: Playwright (E2E) + Jest (Unit/Integration)
+
+## Recent Updates & Current Status
+
+### ✅ Latest Improvements (December 2025)
+
+- **Complete Database Reset**: Cleaned and optimized database schema, removed deprecated models
+- **Assessment & Meetings System**: Fixed API endpoints and improved faculty/student workflows
+- **Vercel Deployment**: Resolved all deployment issues and removed legacy cohort system
+- **Group Management**: Enhanced group formation and application system
+- **API Standardization**: Consistent response formats across all endpoints
+- **TypeScript Compliance**: Resolved all compilation errors and improved type safety
+
+### 🎯 Current System Focus
+
+The system now focuses on core functionality:
+- **Users**: Student, Faculty, and Admin roles with proper authentication
+- **Projects**: IDP, UROP, and CAPSTONE project types
+- **Groups**: Dynamic group formation and management
+- **Applications**: Streamlined project application workflow
+- **Submissions**: File upload and evaluation system
+- **Assessments**: Meeting scheduling and grading system
 
 ## Getting Started
 
@@ -90,14 +118,12 @@ A comprehensive project management portal for SRM University-AP with Google OAut
 
 1. Clone the repository:
 
-
 ```bash
 git clone <repository-url>
 cd srm-project-portal
 ```
 
 2. Install dependencies:
-
 
 ```bash
 pnpm install
@@ -106,7 +132,6 @@ pnpm install
 3. Set up environment variables (see Environment Setup section below)
 
 4. Start development servers:
-
 
 ```bash
 pnpm dev
@@ -119,7 +144,6 @@ pnpm dev
 The following environment variables need to be configured:
 
 #### Backend (.env in apps/api)
-
 
 ```env
 # Database
@@ -150,7 +174,6 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3001
 ```
 
 #### Frontend (.env in apps/web)
-
 
 ```env
 VITE_API_URL=http://localhost:3001
@@ -187,14 +210,8 @@ VITE_GOOGLE_CLIENT_ID=
 
 #### Development
 
-#### Development
-
 - `pnpm dev` - Start all development servers
 - `pnpm build` - Build all packages
-- `pnpm clean` - Clean build artifacts
-
-#### Testing & Quality
-
 - `pnpm clean` - Clean build artifacts
 
 #### Testing & Quality
@@ -205,19 +222,7 @@ VITE_GOOGLE_CLIENT_ID=
 
 #### Database
 
-
-#### Database
-
-- `pnpm seed` - Seed database with demo data
-
-#### Security & Deployment
-
-- `pnpm security:audit` - Run comprehensive security audit
-- `pnpm security:validate` - Validate security measures
-- `pnpm security:check` - Run both audit and validation
-- `pnpm deploy:validate` - Validate deployment health
-- `pnpm deploy:validate:frontend` - Validate frontend deployment only
-- `pnpm deploy:validate:backend` - Validate backend deployment only
+- `pnpm seed` - Seed database with initial users
 
 #### Security & Deployment
 
@@ -238,58 +243,38 @@ VITE_GOOGLE_CLIENT_ID=
 │   │   │   │   ├── admin/      # Admin-specific components
 │   │   │   │   ├── assessments/# Assessment management
 │   │   │   │   ├── auth/       # Authentication components
-│   │   │   │   ├── grading/    # Grading system
+│   │   │   │   ├── common/     # Common UI components
 │   │   │   │   ├── projects/   # Project management
 │   │   │   │   ├── submissions/# File submission system
 │   │   │   │   └── ui/         # Reusable UI components
-│   │   │   ├── contexts/       # React contexts
+│   │   │   ├── contexts/       # React contexts (Auth, Theme)
 │   │   │   ├── hooks/          # Custom React hooks
 │   │   │   ├── pages/          # Page components
+│   │   │   │   ├── admin/      # Admin pages
+│   │   │   │   ├── faculty/    # Faculty pages
+│   │   │   │   ├── student/    # Student pages
+│   │   │   │   └── dashboard/  # Dashboard pages
 │   │   │   ├── services/       # API service layer
-│   │   │   ├── stores/         # State management (Zustand)
+│   │   │   ├── types/          # TypeScript type definitions
 │   │   │   └── utils/          # Utility functions
-│   │   ├── e2e/               # End-to-end tests (Playwright)
 │   │   └── scripts/           # Build and deployment scripts
 │   └── api/                   # Express backend API
 │       ├── src/
 │       │   ├── config/        # Configuration files
 │       │   ├── middleware/    # Express middleware
 │       │   ├── models/        # MongoDB/Mongoose models
+│       │   │   ├── User.ts    # User model with roles
+│       │   │   ├── Project.ts # Project model (IDP/UROP/CAPSTONE)
+│       │   │   ├── Group.ts   # Group management
+│       │   │   ├── Application.ts # Application system
+│       │   │   ├── Submission.ts  # Submission tracking
+│       │   │   └── Assessment.ts  # Assessment management
 │       │   ├── routes/        # API route handlers
 │       │   ├── services/      # Business logic services
 │       │   ├── utils/         # Utility functions
-│       │   └── __tests__/     # API tests (Jest)
-│       └── scripts/           # Database scripts and utilities
-│   ├── web/                    # React frontend application
-│   │   ├── src/
-│   │   │   ├── components/     # React components
-│   │   │   │   ├── admin/      # Admin-specific components
-│   │   │   │   ├── assessments/# Assessment management
-│   │   │   │   ├── auth/       # Authentication components
-│   │   │   │   ├── grading/    # Grading system
-│   │   │   │   ├── projects/   # Project management
-│   │   │   │   ├── submissions/# File submission system
-│   │   │   │   └── ui/         # Reusable UI components
-│   │   │   ├── contexts/       # React contexts
-│   │   │   ├── hooks/          # Custom React hooks
-│   │   │   ├── pages/          # Page components
-│   │   │   ├── services/       # API service layer
-│   │   │   ├── stores/         # State management (Zustand)
-│   │   │   └── utils/          # Utility functions
-│   │   ├── e2e/               # End-to-end tests (Playwright)
-│   │   └── scripts/           # Build and deployment scripts
-│   └── api/                   # Express backend API
-│       ├── src/
-│       │   ├── config/        # Configuration files
-│       │   ├── middleware/    # Express middleware
-│       │   ├── models/        # MongoDB/Mongoose models
-│       │   ├── routes/        # API route handlers
-│       │   ├── services/      # Business logic services
-│       │   ├── utils/         # Utility functions
-│       │   └── __tests__/     # API tests (Jest)
-│       └── scripts/           # Database scripts and utilities
+│       │   └── scripts/       # Database management scripts
+│       └── scripts/           # Database utilities and reset tools
 ├── packages/
-│   ├── ui/                    # Shared UI component library
 │   └── config/                # Shared configurations
 │       ├── eslint/            # ESLint configurations
 │       ├── prettier/          # Prettier configurations
@@ -299,35 +284,19 @@ VITE_GOOGLE_CLIENT_ID=
 │   ├── security-audit.js      # Comprehensive security auditing
 │   ├── security-validation.js # Security validation testing
 │   └── validate-deployment.js # Deployment health checks
-├── docs/                      # Documentation
-│   ├── ENVIRONMENT_SETUP.md   # Environment setup guide
-│   └── SECURITY_COMPLIANCE.md # Security compliance documentation
-├── DEPLOYMENT.md              # Deployment guide
-├── DEPLOYMENT-CHECKLIST.md    # Pre-deployment checklist
-└── SECURITY.md                # Security policy and procedures
-│   ├── ui/                    # Shared UI component library
-│   └── config/                # Shared configurations
-│       ├── eslint/            # ESLint configurations
-│       ├── prettier/          # Prettier configurations
-│       ├── tailwind/          # Tailwind CSS configurations
-│       └── typescript/        # TypeScript configurations
-├── scripts/                   # Project-wide scripts
-│   ├── security-audit.js      # Comprehensive security auditing
-│   ├── security-validation.js # Security validation testing
-│   └── validate-deployment.js # Deployment health checks
-├── docs/                      # Documentation
-│   ├── ENVIRONMENT_SETUP.md   # Environment setup guide
-│   └── SECURITY_COMPLIANCE.md # Security compliance documentation
-├── DEPLOYMENT.md              # Deployment guide
-├── DEPLOYMENT-CHECKLIST.md    # Pre-deployment checklist
-└── SECURITY.md                # Security policy and procedures
+└── docs/                      # Documentation and fix logs
 ```
 
 ## Deployment
 
-### Quick Deployment
+### Deployment Status
 
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md) and [DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md).
+- **Frontend**: ✅ Deployment ready (all TypeScript errors resolved)
+- **Backend**: ✅ Build successful (all deprecated models removed)
+- **Database**: ✅ Clean state with optimized schema
+- **API Endpoints**: ✅ Standardized and tested
+
+### Quick Deployment
 
 #### Automated Deployment (Recommended)
 
@@ -342,24 +311,14 @@ pnpm run deploy:validate
 #### Manual Deployment
 
 **Frontend (Vercel)**
-
-```bash
-cd apps/web
-npm run deploy:prod
-```
+- Automatic deployment on push to main branch
+- Environment variables configured in Vercel dashboard
 
 **Backend (Render)**
-
-1. Connect GitHub repository to Render
-2. Configure build: `cd apps/api && pnpm build`
-3. Configure start: `cd apps/api && pnpm start`
-4. Set environment variables from `.env.example`
-
-### Deployment Environments
-
-- **Production**: https://srm-portal-web.vercel.app
-- **Staging**: https://srm-portal-web-staging.vercel.app
-- **API**: https://srm-portal-api.onrender.com
+- Connected to GitHub repository
+- Build command: `cd apps/api && pnpm build`
+- Start command: `cd apps/api && pnpm start`
+- Environment variables configured in Render dashboard
 
 ### Security & Monitoring
 
@@ -378,7 +337,6 @@ pnpm run deploy:validate --watch
 
 The API includes comprehensive OpenAPI/Swagger documentation available at:
 
-- **Production**: https://srm-portal-api.onrender.com/docs
 - **Local Development**: http://localhost:3001/docs
 
 ## Testing
@@ -417,141 +375,7 @@ pnpm security:validate # Security validation tests
 
 ### Monitoring Features
 
-- Real-time health checks (`/health`, `/api/v1/status`)
-- Performance monitoring with Web Vitals
-- Error tracking and alerting
-- Security monitoring and audit trails
-- Automated dependency vulnerability scanning
-
-## Security
-
-This project implements comprehensive security measures including:
-
-- **Authentication**: Google OAuth 2.0 with domain restrictions
-- **Authorization**: Role-based access control (RBAC)
-- **Data Protection**: Encryption in transit and at rest
-- **Input Validation**: Zod schema validation on all endpoints
-- **Security Headers**: CSP, HSTS, X-Frame-Options, etc.
-- **Rate Limiting**: IP-based request throttling
-- **File Security**: Type validation and secure cloud storage
-
-For detailed security information, see [SECURITY.md](./SECURITY.md).
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Write tests for new features
-- Run security audit before submitting PRs
-- Ensure accessibility compliance
-- Follow the established code style (ESLint + Prettier)
-
-## Support
-
-- **Documentation**: Check the `/docs` directory for detailed guides
-- **Issues**: Report bugs and feature requests via GitHub Issues
-- **Security**: Report security vulnerabilities to security@srmap.edu.in
-- **General**: Contact the development team for general inquiries
-### Quick Deployment
-
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md) and [DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md).
-
-#### Automated Deployment (Recommended)
-
-```bash
-# Deploy via GitHub Actions (configured for main branch)
-git push origin main
-
-# Validate deployment
-pnpm run deploy:validate
-```
-
-#### Manual Deployment
-
-**Frontend (Vercel)**
-
-```bash
-cd apps/web
-npm run deploy:prod
-```
-
-**Backend (Render)**
-
-1. Connect GitHub repository to Render
-2. Configure build: `cd apps/api && pnpm build`
-3. Configure start: `cd apps/api && pnpm start`
-4. Set environment variables from `.env.example`
-
-### Deployment Environments
-
-- **Production**: https://srm-portal-web.vercel.app
-- **Staging**: https://srm-portal-web-staging.vercel.app
-- **API**: https://srm-portal-api.onrender.com
-
-### Security & Monitoring
-
-```bash
-# Pre-deployment security check
-pnpm run security:check
-
-# Post-deployment validation
-pnpm run deploy:validate
-
-# Monitor deployment health
-pnpm run deploy:validate --watch
-```
-
-## API Documentation
-
-The API includes comprehensive OpenAPI/Swagger documentation available at:
-
-- **Production**: https://srm-portal-api.onrender.com/docs
-- **Local Development**: http://localhost:3001/docs
-
-## Testing
-
-### Frontend Testing
-
-```bash
-cd apps/web
-pnpm test:e2e          # End-to-end tests with Playwright
-pnpm test:e2e:ui       # Interactive test runner
-pnpm lighthouse        # Performance and accessibility audits
-```
-
-### Backend Testing
-
-```bash
-cd apps/api
-pnpm test              # Unit and integration tests
-pnpm test:coverage     # Test coverage report
-```
-
-### Security Testing
-
-```bash
-pnpm security:audit    # Comprehensive security audit
-pnpm security:validate # Security validation tests
-```
-
-## Performance & Monitoring
-
-### Performance Benchmarks
-
-- **Frontend**: Core Web Vitals compliant, Lighthouse score >90
-- **Backend**: API response time <200ms (95th percentile)
-- **Database**: Query time <100ms (95th percentile)
-
-### Monitoring Features
-
-- Real-time health checks (`/health`, `/api/v1/status`)
+- Real-time health checks (`/health`, `/api/status`)
 - Performance monitoring with Web Vitals
 - Error tracking and alerting
 - Security monitoring and audit trails
@@ -597,4 +421,3 @@ For detailed security information, see [SECURITY.md](./SECURITY.md).
 ## License
 
 MIT License - see LICENSE file for details
-
