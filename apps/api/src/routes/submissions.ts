@@ -311,12 +311,15 @@ router.get('/faculty', authenticate, rbacGuard('faculty', 'coordinator'), async 
     const submissions = await SubmissionService.getSubmissionsForFaculty(req.user!.id);
     
     res.json({
-      submissions,
+      success: true,
+      data: submissions,
+      count: submissions.length,
       message: submissions.length === 0 ? 'No submissions have been made for your projects yet.' : undefined
     });
   } catch (error: any) {
     logger.error('Error fetching faculty submissions:', error);
     res.status(500).json({
+      success: false,
       error: 'Failed to fetch submissions'
     });
   }
@@ -363,6 +366,69 @@ router.get('/:groupId/eligibility', authenticate, rbacGuard('student'), async (r
     logger.error('Error checking submission eligibility:', error);
     res.status(500).json({
       error: 'Failed to check eligibility'
+    });
+  }
+});
+
+/**
+ * PUT /api/submissions/:id/grade
+ * Grade a submission (faculty only)
+ */
+router.put('/:id/grade', authenticate, rbacGuard('faculty', 'coordinator'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { facultyGrade, facultyComments, meetUrl } = req.body;
+
+    if (facultyGrade === undefined || facultyGrade < 0 || facultyGrade > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Grade must be between 0 and 100'
+      });
+    }
+
+    const submission = await SubmissionService.getSubmissionById(id);
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: 'Submission not found'
+      });
+    }
+
+    // Verify faculty is authorized to grade this submission
+    if (submission.facultyId && submission.facultyId.toString() !== req.user!.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'You are not authorized to grade this submission'
+      });
+    }
+
+    // Update submission with grade
+    submission.facultyGrade = facultyGrade;
+    submission.facultyComments = facultyComments || '';
+    submission.isGraded = true;
+    
+    if (meetUrl) {
+      submission.meetUrl = meetUrl;
+    }
+
+    await submission.save();
+
+    logger.info('Submission graded:', {
+      submissionId: id,
+      facultyId: req.user!.id,
+      grade: facultyGrade
+    });
+
+    res.json({
+      success: true,
+      message: 'Grade submitted successfully',
+      data: submission
+    });
+  } catch (error: any) {
+    logger.error('Error grading submission:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to grade submission'
     });
   }
 });

@@ -96,10 +96,18 @@ export function AssessmentPage() {
     try {
       const response = await api.get(`/submissions/student/${user.id}`);
       if (response.success && response.data) {
-        setSubmissions(response.data as any[]);
+        // Handle both single submission and array of submissions
+        const submissionData = Array.isArray(response.data) ? response.data : [response.data];
+        setSubmissions(submissionData as any[]);
+      } else if ((response as any).submissions) {
+        // Handle legacy response format
+        setSubmissions((response as any).submissions as any[]);
+      } else {
+        setSubmissions([]);
       }
     } catch (error) {
       console.error('Error fetching submissions:', error);
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -109,12 +117,19 @@ export function AssessmentPage() {
     if (!user?.id) return;
     
     try {
-      const response = await api.get(`/meeting-logs/user/${user.id}`);
-      if (response.success && response.data) {
-        setMeetingLogs(response.data as any[]);
+      const response = await api.get(`/meetings/student`);
+      if (response.success && response.data && Array.isArray(response.data)) {
+        // Filter for approved meeting logs with grades
+        const approvedLogs = response.data.filter((log: any) => 
+          log.status === 'approved' && log.grade !== undefined
+        );
+        setMeetingLogs(approvedLogs as any[]);
+      } else {
+        setMeetingLogs([]);
       }
     } catch (error) {
       console.error('Error fetching meeting logs:', error);
+      setMeetingLogs([]);
     }
   };
 

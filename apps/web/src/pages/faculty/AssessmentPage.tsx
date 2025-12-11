@@ -37,7 +37,7 @@ interface Submission {
 }
 
 export function FacultyAssessmentPage() {
-  const { user } = useAuth();
+  useAuth(); // Keep for authentication check
   const { isAssessmentOpen, loading: windowLoading } = useWindowStatus();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<Record<string, any[]>>({});
@@ -76,7 +76,7 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/faculty/${user?.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/submissions/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -84,6 +84,9 @@ export function FacultyAssessmentPage() {
       const result = await response.json();
       if (result.success && result.data) {
         setSubmissions(result.data);
+      } else if (result.submissions) {
+        // Handle legacy response format
+        setSubmissions(result.submissions);
       } else {
         setSubmissions([]);
       }
@@ -102,7 +105,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/meetings/logs/${logId}/grade`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/logs/${logId}/grade`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +138,7 @@ export function FacultyAssessmentPage() {
 
   const fetchMeetingLogs = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/meetings/faculty`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/meetings/faculty`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('srm_portal_token')}`
         }
@@ -192,7 +195,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/v1/submissions/${selectedSubmission._id}/grade`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/submissions/${selectedSubmission._id}/grade`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -11,6 +11,7 @@ export interface ISubmission extends Document {
   githubLink: string;
   reportUrl: string; // Cloudinary URL for PDF
   pptUrl?: string; // Cloudinary URL or external link (required for External only)
+  presentationUrl?: string; // Alternative field name for compatibility
   submittedBy: mongoose.Types.ObjectId; // Group leader or solo student
   submittedAt: Date;
   isFrozen: boolean;
@@ -19,8 +20,12 @@ export interface ISubmission extends Document {
   facultyGrade?: number; // Out of 100
   externalGrade?: number; // Out of 100
   finalGrade?: number; // Combined grade
+  facultyComments?: string; // Faculty feedback
+  externalComments?: string; // External evaluator feedback
   isGraded: boolean;
   isGradeReleased: boolean;
+  gradeReleased: boolean; // Alternative field name for compatibility
+  meetUrl?: string; // Meeting URL for discussions
   comments?: string; // Optional comments from submitter
   metadata?: {
     ipAddress?: string;
@@ -78,6 +83,10 @@ const SubmissionSchema = new Schema<ISubmission>({
     type: String,
     trim: true
   },
+  presentationUrl: {
+    type: String,
+    trim: true
+  },
   submittedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -115,6 +124,14 @@ const SubmissionSchema = new Schema<ISubmission>({
     min: 0,
     max: 100
   },
+  facultyComments: {
+    type: String,
+    trim: true
+  },
+  externalComments: {
+    type: String,
+    trim: true
+  },
   isGraded: {
     type: Boolean,
     default: false
@@ -122,6 +139,14 @@ const SubmissionSchema = new Schema<ISubmission>({
   isGradeReleased: {
     type: Boolean,
     default: false
+  },
+  gradeReleased: {
+    type: Boolean,
+    default: false
+  },
+  meetUrl: {
+    type: String,
+    trim: true
   },
   comments: {
     type: String,
