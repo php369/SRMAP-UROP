@@ -211,10 +211,10 @@ export async function updateCohort(
 }
 
 /**
- * Create a new course
+ * Create a new course (DISABLED - model removed)
  * @param courseData - Course data
  * @param adminId - Admin creating the course
- * @returns Created course
+ * @returns Error - functionality disabled
  */
 export async function createCourse(
   courseData: {
@@ -229,27 +229,7 @@ export async function createCourse(
   },
   adminId: string
 ): Promise<any> {
-  try {
-    const { Course } = await import('../models/Course');
-
-    const course = new Course({
-      code: courseData.code,
-      name: courseData.title, // Map title to name
-      credits: courseData.credits,
-      department: 'Computer Science', // Default department
-      semester: 1, // Default semester number
-      type: 'IDP', // Default type
-      status: 'active'
-    });
-
-    await course.save();
-    logger.info(`Course created: ${course.code} by admin ${adminId}`);
-
-    return course;
-  } catch (error) {
-    logger.error('Failed to create course:', error);
-    throw error;
-  }
+  throw new Error('Course functionality has been disabled - model removed');
 }
 
 /**
