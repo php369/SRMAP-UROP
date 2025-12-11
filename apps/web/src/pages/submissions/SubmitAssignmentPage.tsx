@@ -12,7 +12,7 @@ const mockAssessment: Assessment = {
   dueDate: '2024-01-15T23:59:00Z',
   status: 'published',
   course: 'CS 4641 - Machine Learning',
-  cohort: 'Fall 2024',
+
   meetUrl: 'https://meet.google.com/abc-defg-hij',
   submissionCount: 15,
   totalStudents: 25,

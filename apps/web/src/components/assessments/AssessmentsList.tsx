@@ -32,7 +32,6 @@ export function AssessmentsList({
     search: '',
     status: [],
     course: [],
-    cohort: [],
     sortBy: 'dueDate',
     sortOrder: 'asc',
   });
@@ -43,10 +42,7 @@ export function AssessmentsList({
     [assessments]
   );
 
-  const availableCohorts = useMemo(() => 
-    [...new Set(assessments.map(a => a.cohort))].sort(),
-    [assessments]
-  );
+
 
   // Filter and sort assessments
   const filteredAssessments = useMemo(() => {
@@ -58,8 +54,7 @@ export function AssessmentsList({
       filtered = filtered.filter(assessment =>
         assessment.title.toLowerCase().includes(searchLower) ||
         assessment.description.toLowerCase().includes(searchLower) ||
-        assessment.course.toLowerCase().includes(searchLower) ||
-        assessment.cohort.toLowerCase().includes(searchLower)
+        assessment.course.toLowerCase().includes(searchLower)
       );
     }
 
@@ -77,12 +72,7 @@ export function AssessmentsList({
       );
     }
 
-    // Cohort filter
-    if (filters.cohort.length > 0) {
-      filtered = filtered.filter(assessment =>
-        filters.cohort.includes(assessment.cohort)
-      );
-    }
+
 
     // Sort
     filtered.sort((a, b) => {
@@ -183,7 +173,6 @@ export function AssessmentsList({
         filters={filters}
         onFiltersChange={setFilters}
         availableCourses={availableCourses}
-        availableCohorts={availableCohorts}
         userRole={userRole}
       />
 
@@ -198,7 +187,6 @@ export function AssessmentsList({
               search: '',
               status: [],
               course: [],
-              cohort: [],
               sortBy: 'dueDate',
               sortOrder: 'asc',
             })}

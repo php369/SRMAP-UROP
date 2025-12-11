@@ -135,10 +135,7 @@ export const LazyAdminDashboard = lazy(
   () => <DashboardSkeleton />
 );
 
-export const LazyCohortManagement = lazy(
-  () => import('../pages/admin/CohortManagement'),
-  LoadingSpinner
-);
+
 
 export const LazyReportsPage = lazy(
   () => import('../pages/admin/ReportsPage'),

@@ -11,12 +11,7 @@ const mockCourses = [
   'CS 3300 - Software Engineering',
 ];
 
-const mockCohorts = [
-  'Fall 2024',
-  'Spring 2024',
-  'Summer 2024',
-  'Fall 2023',
-];
+
 
 export function CreateAssessmentPage() {
   const navigate = useNavigate();
@@ -50,7 +45,6 @@ export function CreateAssessmentPage() {
     <div className="min-h-screen py-8">
       <AssessmentForm
         availableCourses={mockCourses}
-        availableCohorts={mockCohorts}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}

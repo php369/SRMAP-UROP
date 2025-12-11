@@ -7,7 +7,6 @@ interface FilterOptions {
   search: string;
   status: string[];
   course: string[];
-  cohort: string[];
   sortBy: 'dueDate' | 'createdAt' | 'title' | 'status';
   sortOrder: 'asc' | 'desc';
 }
@@ -16,7 +15,6 @@ interface AssessmentFiltersProps {
   filters: FilterOptions;
   onFiltersChange: (filters: FilterOptions) => void;
   availableCourses: string[];
-  availableCohorts: string[];
   userRole: 'student' | 'faculty' | 'admin';
   className?: string;
 }
@@ -25,7 +23,6 @@ export function AssessmentFilters({
   filters,
   onFiltersChange,
   availableCourses,
-  availableCohorts,
   userRole,
   className,
 }: AssessmentFiltersProps) {
@@ -69,25 +66,19 @@ export function AssessmentFilters({
     updateFilters({ course: newCourse });
   };
 
-  const toggleCohort = (cohort: string) => {
-    const newCohort = filters.cohort.includes(cohort)
-      ? filters.cohort.filter(c => c !== cohort)
-      : [...filters.cohort, cohort];
-    updateFilters({ cohort: newCohort });
-  };
+
 
   const clearAllFilters = () => {
     updateFilters({
       search: '',
       status: [],
       course: [],
-      cohort: [],
       sortBy: 'dueDate',
       sortOrder: 'asc',
     });
   };
 
-  const activeFilterCount = filters.status.length + filters.course.length + filters.cohort.length + (filters.search ? 1 : 0);
+  const activeFilterCount = filters.status.length + filters.course.length + (filters.search ? 1 : 0);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -227,28 +218,7 @@ export function AssessmentFilters({
                 </div>
               )}
 
-              {/* Cohort Filters */}
-              {availableCohorts.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-text mb-2">Cohorts</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {availableCohorts.map(cohort => (
-                      <button
-                        key={cohort}
-                        onClick={() => toggleCohort(cohort)}
-                        className={cn(
-                          'px-3 py-1 rounded-lg text-sm transition-all duration-200',
-                          filters.cohort.includes(cohort)
-                            ? 'bg-accent text-white'
-                            : 'bg-surface border border-border text-textSecondary hover:text-text'
-                        )}
-                      >
-                        {cohort}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           </motion.div>
         )}

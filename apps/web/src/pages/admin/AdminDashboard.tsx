@@ -38,10 +38,10 @@ const mockAnalytics: SystemAnalytics = {
       id: '3',
       userId: 'admin789',
       userName: 'Admin User',
-      action: 'created_cohort',
-      resource: 'CS 2024 Batch',
+      action: 'created_project',
+      resource: 'Machine Learning Project',
       timestamp: '2024-01-28T14:20:00Z',
-      details: { cohortId: 'cohort123', studentCount: 45 },
+      details: { projectId: 'proj123', capacity: 4 },
     },
   ],
 };
@@ -114,8 +114,8 @@ export function AdminDashboard() {
         return '📤';
       case 'graded_submission':
         return '✅';
-      case 'created_cohort':
-        return '👥';
+      case 'created_project':
+        return '📋';
       case 'created_assessment':
         return '📝';
       case 'user_login':
@@ -131,8 +131,8 @@ export function AdminDashboard() {
         return 'bg-info';
       case 'graded_submission':
         return 'bg-success';
-      case 'created_cohort':
-        return 'bg-warning';
+      case 'created_project':
+        return 'bg-info';
       case 'created_assessment':
         return 'bg-primary';
       case 'user_login':
@@ -403,7 +403,7 @@ export function AdminDashboard() {
               </button>
               <button className="p-4 bg-success/10 hover:bg-success/20 rounded-lg transition-colors text-center">
                 <div className="text-2xl mb-2">🎓</div>
-                <div className="text-sm font-medium text-text">Manage Cohorts</div>
+                <div className="text-sm font-medium text-text">Manage Projects</div>
               </button>
               <button className="p-4 bg-warning/10 hover:bg-warning/20 rounded-lg transition-colors text-center">
                 <div className="text-2xl mb-2">📊</div>

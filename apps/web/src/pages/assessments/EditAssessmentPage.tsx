@@ -12,18 +12,13 @@ const mockCourses = [
   'CS 3300 - Software Engineering',
 ];
 
-const mockCohorts = [
-  'Fall 2024',
-  'Spring 2024',
-  'Summer 2024',
-  'Fall 2023',
-];
+
 
 const mockAssessmentData: Partial<AssessmentFormData> = {
   title: 'Machine Learning Fundamentals Quiz',
   description: 'Test your understanding of basic ML concepts including supervised learning, unsupervised learning, and neural networks.',
   course: 'CS 4641 - Machine Learning',
-  cohort: 'Fall 2024',
+
   dueDate: '2024-01-15',
   dueTime: '23:59',
   timezone: 'America/New_York',
@@ -121,7 +116,6 @@ export function EditAssessmentPage() {
       <AssessmentForm
         initialData={assessmentData}
         availableCourses={mockCourses}
-        availableCohorts={mockCohorts}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}
