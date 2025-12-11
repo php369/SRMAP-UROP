@@ -23,14 +23,14 @@ const router = express.Router();
  */
 router.post('/', authenticate, authorize('student'), async (req, res) => {
   try {
-    const { projectType, semester, year, groupName } = req.body;
+    const { projectType, year, groupName } = req.body;
 
-    if (!projectType || !semester || !year) {
+    if (!projectType || !year) {
       res.status(400).json({
         success: false,
         error: {
           code: 'MISSING_REQUIRED_FIELDS',
-          message: 'projectType, semester, and year are required',
+          message: 'projectType and year are required',
           timestamp: new Date().toISOString(),
         },
       });
@@ -40,7 +40,6 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
     const group = await createGroup({
       leaderId: new mongoose.Types.ObjectId(req.user!.id),
       projectType,
-      semester,
       year,
       groupName
     });
@@ -95,14 +94,14 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
  */
 router.post('/join', authenticate, authorize('student'), async (req, res) => {
   try {
-    const { groupCode, semester, year, projectType } = req.body;
+    const { groupCode, year, projectType } = req.body;
 
-    if (!groupCode || !semester || !year || !projectType) {
+    if (!groupCode || !year || !projectType) {
       res.status(400).json({
         success: false,
         error: {
           code: 'MISSING_REQUIRED_FIELDS',
-          message: 'groupCode, semester, year, and projectType are required',
+          message: 'groupCode, year, and projectType are required',
           timestamp: new Date().toISOString(),
         },
       });
@@ -112,7 +111,6 @@ router.post('/join', authenticate, authorize('student'), async (req, res) => {
     const group = await joinGroup(
       new mongoose.Types.ObjectId(req.user!.id),
       groupCode.toUpperCase(),
-      semester,
       year,
       projectType
     );
@@ -725,14 +723,14 @@ router.get('/:id', authenticate, async (req, res) => {
 router.get('/code/:code', authenticate, authorize('student'), async (req, res) => {
   try {
     const { code } = req.params;
-    const { semester, year, projectType } = req.query;
+    const { year, projectType } = req.query;
 
-    if (!semester || !year || !projectType) {
+    if (!year || !projectType) {
       res.status(400).json({
         success: false,
         error: {
           code: 'MISSING_PARAMETERS',
-          message: 'semester, year, and projectType are required',
+          message: 'year and projectType are required',
           timestamp: new Date().toISOString(),
         },
       });
@@ -741,7 +739,6 @@ router.get('/code/:code', authenticate, authorize('student'), async (req, res) =
 
     const group = await getGroupByCode(
       code.toUpperCase(),
-      semester as string,
       parseInt(year as string),
       projectType as any
     );
@@ -782,7 +779,7 @@ router.get('/code/:code', authenticate, authorize('student'), async (req, res) =
  */
 router.get('/', authenticate, authorize('faculty', 'coordinator', 'admin'), async (req, res) => {
   try {
-    const { projectType, semester, year } = req.query;
+    const { projectType, year } = req.query;
 
     if (!projectType) {
       res.status(400).json({
@@ -798,7 +795,6 @@ router.get('/', authenticate, authorize('faculty', 'coordinator', 'admin'), asyn
 
     const groups = await getGroupsByProjectType(
       projectType as any,
-      semester as string,
       year ? parseInt(year as string) : undefined
     );
 
@@ -870,13 +866,6 @@ router.post('/:id/member-details', authenticate, authorize('student'), async (re
     }
 
     // Create or update member details
-    console.log('Creating/updating member details:', {
-      groupId: id,
-      userId: req.user!.id,
-      department: department.trim(),
-      specialization: specialization?.trim() || ''
-    });
-
     const memberDetails = await GroupMemberDetails.findOneAndUpdate(
       { groupId: id, userId: req.user!.id },
       { 
@@ -886,12 +875,6 @@ router.post('/:id/member-details', authenticate, authorize('student'), async (re
       },
       { upsert: true, new: true }
     );
-
-    console.log('Member details created/updated:', memberDetails);
-
-    // Verify the data was saved by fetching it back
-    const savedDetails = await GroupMemberDetails.findOne({ groupId: id, userId: req.user!.id });
-    console.log('Verification fetch:', savedDetails);
 
     logger.info(`Member details submitted for user ${req.user!.id} in group ${group.groupId}`);
 
@@ -950,20 +933,9 @@ router.get('/:id/member-details', authenticate, authorize('student'), async (req
     }
 
     // Get all member details for this group
-    console.log('Fetching member details for group:', id);
-    console.log('Requesting user:', req.user!.id);
-    
     const memberDetails = await GroupMemberDetails.find({ groupId: id })
       .populate('userId', 'name email studentId')
       .sort({ submittedAt: 1 });
-
-    console.log('Found member details:', memberDetails.map(d => ({
-      id: d._id,
-      groupId: d.groupId,
-      userId: d.userId,
-      department: d.department,
-      specialization: d.specialization
-    })));
 
     res.json({
       success: true,
