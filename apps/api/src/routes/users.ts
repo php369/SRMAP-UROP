@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { User } from '../models/User';
+import { Group } from '../models/Group';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -195,6 +197,101 @@ router.put('/name', authenticate, asyncHandler(async (req: Request, res: Respons
             error: {
                 code: 'NAME_UPDATE_FAILED',
                 message: 'Failed to update name',
+            },
+        });
+    }
+}));
+
+/**
+ * GET /api/users/dashboard-data
+ * Get comprehensive dashboard data for current user (students)
+ * Includes: user info, group info, project assignment, faculty info
+ */
+router.get('/dashboard-data', authenticate, asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    try {
+        // Get user with populated project and faculty info
+        const user = await User.findById(userId)
+            .populate('assignedProjectId', 'title brief description projectType department')
+            .populate('assignedFacultyId', 'name email facultyId department')
+            .populate('currentGroupId')
+            .select('-googleId -__v');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        let dashboardData: any = {
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                department: user.department,
+                studentId: user.studentId,
+                facultyId: user.facultyId,
+                isCoordinator: user.isCoordinator,
+                assignedProject: user.assignedProjectId,
+                assignedFaculty: user.assignedFacultyId,
+            }
+        };
+
+        // For students, get additional group and application info
+        if (userRole.includes('student')) {
+            // Get group info if user is in a group
+            if (user.currentGroupId) {
+                const group = await Group.findById(user.currentGroupId)
+                    .populate('leaderId', 'name email studentId')
+                    .populate('members', 'name email studentId')
+                    .populate('assignedProjectId', 'title brief description')
+                    .populate('assignedFacultyId', 'name email facultyId');
+
+                dashboardData.group = group;
+            }
+
+            // Get application status
+            const { getApplicationsForUser } = await import('../services/applicationService');
+            const applications = await getApplicationsForUser(new mongoose.Types.ObjectId(userId));
+            dashboardData.applications = applications;
+
+            // Determine student status
+            dashboardData.studentStatus = {
+                hasGroup: !!user.currentGroupId,
+                hasProject: !!user.assignedProjectId,
+                hasFaculty: !!user.assignedFacultyId,
+                applicationsCount: applications.length,
+                approvedApplications: applications.filter((app: any) => app.status === 'approved').length
+            };
+        }
+
+        logger.info(`Dashboard data fetched for user ${userId}`, {
+            hasGroup: !!dashboardData.group,
+            hasProject: !!user.assignedProjectId,
+            applicationsCount: dashboardData.applications?.length || 0
+        });
+
+        res.json({
+            success: true,
+            data: dashboardData,
+        });
+
+    } catch (error) {
+        logger.error('Error fetching dashboard data:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'DASHBOARD_FETCH_FAILED',
+                message: 'Failed to fetch dashboard data',
+                timestamp: new Date().toISOString(),
             },
         });
     }

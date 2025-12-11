@@ -36,11 +36,34 @@ interface GroupData {
   year: number;
 }
 
+interface DashboardData {
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    department?: string;
+    studentId?: string;
+    facultyId?: string;
+    assignedProject?: any;
+    assignedFaculty?: any;
+  };
+  group?: GroupData;
+  applications?: any[];
+  studentStatus?: {
+    hasGroup: boolean;
+    hasProject: boolean;
+    hasFaculty: boolean;
+    applicationsCount: number;
+    approvedApplications: number;
+  };
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [group, setGroup] = useState<GroupData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch dashboard data
@@ -49,17 +72,34 @@ export function DashboardPage() {
       try {
         setLoading(true);
 
-        // Fetch group if student
+        // For students, use the new comprehensive dashboard endpoint
         if (isStudentRole(user?.role)) {
           try {
-            const groupRes = await api.get('/groups/my-group');
-            if (groupRes.success && groupRes.data) {
-              setGroup(groupRes.data as any);
+            const response = await api.get('/users/dashboard-data');
+            if (response.success && response.data) {
+              setDashboardData(response.data as DashboardData);
             }
           } catch (err: any) {
-            // No group found is okay
-            if (err.response?.status !== 404) {
-              console.error('Error fetching group:', err);
+            console.error('Error fetching dashboard data:', err);
+            // Fallback to old group endpoint if new endpoint fails
+            try {
+              const groupRes = await api.get('/groups/my-group');
+              if (groupRes.success && groupRes.data) {
+                setDashboardData({
+                  user: {
+                    _id: user?.id || '',
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    role: user?.role || '',
+                    department: user?.profile?.department
+                  },
+                  group: groupRes.data as any
+                });
+              }
+            } catch (fallbackErr: any) {
+              if (fallbackErr.response?.status !== 404) {
+                console.error('Error fetching group fallback:', fallbackErr);
+              }
             }
           }
         }
@@ -85,6 +125,7 @@ export function DashboardPage() {
     return leaderId;
   };
 
+  const group = dashboardData?.group;
   const isGroupLeader = group && user && (
     getLeaderId(group.leaderId) === user.id ||
     String(getLeaderId(group.leaderId)) === String(user.id)
@@ -103,10 +144,10 @@ export function DashboardPage() {
 
       if (response.data?.success) {
         toast.success('Member removed successfully');
-        // Refresh group data
-        const groupRes = await api.get('/groups/my-group');
-        if (groupRes.success && groupRes.data) {
-          setGroup(groupRes.data as any);
+        // Refresh dashboard data
+        const refreshResponse = await api.get('/users/dashboard-data');
+        if (refreshResponse.success && refreshResponse.data) {
+          setDashboardData(refreshResponse.data as DashboardData);
         }
       } else {
         toast.error(response.data?.error?.message || 'Failed to remove member');
@@ -273,6 +314,108 @@ export function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Solo Student Information Card */}
+          {!group && dashboardData?.user && (
+            <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text">Student Information</h3>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  dashboardData.user.assignedProject ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+                }`}>
+                  {dashboardData.user.assignedProject ? '✅ Project Assigned' : '👤 Solo Student'}
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-textSecondary">Student ID</p>
+                  <p className="text-lg font-semibold text-text">{dashboardData.user.studentId || 'Not set'}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-textSecondary">Department</p>
+                  <p className="text-md font-medium text-text">{dashboardData.user.department || 'Not specified'}</p>
+                </div>
+
+                {dashboardData.user.assignedProject && (
+                  <div>
+                    <p className="text-sm text-textSecondary">Assigned Project</p>
+                    <div className="p-3 bg-surface/80 rounded-lg">
+                      <p className="text-md font-semibold text-text">{dashboardData.user.assignedProject.title}</p>
+                      {dashboardData.user.assignedProject.brief && (
+                        <p className="text-sm text-textSecondary mt-1">{dashboardData.user.assignedProject.brief}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {dashboardData.user.assignedFaculty && (
+                  <div>
+                    <p className="text-sm text-textSecondary">Faculty Mentor</p>
+                    <div className="p-3 bg-surface/80 rounded-lg">
+                      <p className="text-md font-semibold text-text">{dashboardData.user.assignedFaculty.name}</p>
+                      <p className="text-sm text-textSecondary">{dashboardData.user.assignedFaculty.email}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Application Status Card */}
+          {dashboardData?.applications && dashboardData.applications.length > 0 && (
+            <div className="bg-surface/50 backdrop-blur-md rounded-lg p-6 border border-border shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text">Application Status</h3>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
+                  {dashboardData.applications.length} Application{dashboardData.applications.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {dashboardData.applications.map((application: any, index: number) => (
+                  <div key={application._id || index} className="p-3 bg-surface/80 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-text">
+                        {application.projectId?.title || 'Unknown Project'}
+                      </p>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        application.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                        application.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {application.status === 'pending' ? '⏳ Pending' :
+                         application.status === 'approved' ? '✅ Approved' :
+                         application.status === 'rejected' ? '❌ Rejected' : application.status}
+                      </span>
+                    </div>
+                    {application.projectId?.brief && (
+                      <p className="text-xs text-textSecondary">{application.projectId.brief}</p>
+                    )}
+                    {application.projectId?.facultyName && (
+                      <p className="text-xs text-textSecondary mt-1">Faculty: {application.projectId.facultyName}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {dashboardData.studentStatus && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <p className="text-lg font-bold text-primary">{dashboardData.studentStatus.approvedApplications}</p>
+                      <p className="text-xs text-textSecondary">Approved</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-text">{dashboardData.studentStatus.applicationsCount}</p>
+                      <p className="text-xs text-textSecondary">Total Applied</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
