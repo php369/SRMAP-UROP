@@ -85,14 +85,14 @@ export function SubmissionPage() {
     }
   }, [eligibleProjectType]);
 
-  // Check for existing submission when userGroup is loaded
+  // Check for existing submission when user role is determined
   useEffect(() => {
-    console.log('userGroup changed:', userGroup);
-    if (userGroup?._id) {
-      console.log('Checking for existing submission for group:', userGroup._id);
+    console.log('User role determined:', { userGroup, user: user?.id });
+    // Check submissions for both solo (userGroup === null) and group (userGroup !== null) students
+    if (user?.id) {
       checkExistingSubmission();
     }
-  }, [userGroup]);
+  }, [userGroup, user?.id]);
 
   const checkSubmissionWindow = async () => {
     if (!eligibleProjectType) return;
@@ -125,74 +125,56 @@ export function SubmissionPage() {
         console.log('Is Leader:', groupLeaderId === userId || String(groupLeaderId) === String(userId));
         setIsLeader(groupLeaderId === userId || String(groupLeaderId) === String(userId));
       } else {
-        // Solo student - create a virtual group object for consistency
-        console.log('User is working solo, creating virtual group');
-        setUserGroup({
-          _id: `solo-${user?.id}`, // Virtual group ID for solo students
-          isSolo: true,
-          leaderId: user?.id,
-          members: [user]
-        });
-        setIsLeader(true);
+        // Solo student - no group needed
+        console.log('User is working solo');
+        setUserGroup(null); // No group for solo students
+        setIsLeader(true); // Solo students can always submit
       }
     } catch (error) {
       console.error('Error checking user role:', error);
-      // Solo student fallback - create virtual group
-      console.log('Fallback: User is working solo, creating virtual group');
-      setUserGroup({
-        _id: `solo-${user?.id}`, // Virtual group ID for solo students
-        isSolo: true,
-        leaderId: user?.id,
-        members: [user]
-      });
-      setIsLeader(true);
+      // Solo student fallback
+      console.log('Fallback: User is working solo');
+      setUserGroup(null); // No group for solo students
+      setIsLeader(true); // Solo students can always submit
     }
   };
 
   const checkExistingSubmission = async () => {
-    // Wait for userGroup to be loaded
-    if (!userGroup?._id) {
-      return;
-    }
-    
     try {
       let response;
       
-      if (userGroup.isSolo) {
-        // For solo students, check by student ID
-        console.log('Checking solo submission for user:', user?.id);
-        response = await api.get(`/submissions/student/${user?.id}`);
-      } else {
-        // For group students, check by group ID
+      if (userGroup) {
+        // Group student - check by group ID
         console.log('Checking group submission for group:', userGroup._id);
         response = await api.get(`/submissions/group/${userGroup._id}`);
-      }
-      
-      console.log('Submission check response:', response);
-      
-      // Handle different response structures
-      let submission;
-      if (userGroup.isSolo) {
-        // Solo submissions might return an array or direct object
-        submission = Array.isArray(response.data) ? response.data[0] : response.data;
-      } else {
+        
         // Group submissions return { submission: {...} }
-        submission = (response as any).submission || response.data;
-      }
-      
-      console.log('Found submission:', submission);
-      
-      if (submission && submission._id) {
-        setHasSubmitted(true);
-        setCurrentSubmission(submission);
+        const submission = (response as any).submission || response.data;
+        
+        if (submission && submission._id) {
+          setHasSubmitted(true);
+          setCurrentSubmission(submission);
+        }
       } else {
-        console.log('No valid submission found in response');
+        // Solo student - check by student ID
+        console.log('Checking solo submission for user:', user?.id);
+        response = await api.get(`/submissions/student/${user?.id}`);
+        
+        // Solo submissions might return an array or direct object
+        const submission = Array.isArray(response.data) ? response.data[0] : response.data;
+        
+        if (submission && submission._id) {
+          setHasSubmitted(true);
+          setCurrentSubmission(submission);
+        }
       }
     } catch (error: any) {
-      // 404 means no submission exists, which is fine
+      // 404 means no submission exists, which is fine for new submissions
       console.log('Submission check error:', error);
-      if (error?.response?.status !== 404 && error?.message !== 'HTTP 404: Not Found') {
-        console.error('Error checking existing submission:', error);
+      if (error?.response?.status === 404) {
+        console.log('No existing submission found (expected for new submissions)');
+      } else {
+        console.error('Unexpected error checking existing submission:', error);
       }
     }
   };
@@ -262,14 +244,14 @@ export function SubmissionPage() {
     try {
       const formDataToSend = new FormData();
       
-      if (userGroup?.isSolo) {
+      if (userGroup) {
+        // Group submission
+        console.log('Submitting as group leader');
+        formDataToSend.append('groupId', userGroup._id);
+      } else {
         // Solo submission
         console.log('Submitting as solo student');
         formDataToSend.append('studentId', user?.id || '');
-      } else {
-        // Group submission
-        console.log('Submitting as group leader');
-        formDataToSend.append('groupId', userGroup?._id || '');
       }
       
       formDataToSend.append('githubUrl', formData.githubLink);
@@ -278,36 +260,65 @@ export function SubmissionPage() {
         formDataToSend.append('presentationFile', formData.pptFile);
       }
 
+      console.log('Sending submission data:', {
+        isSolo: !userGroup,
+        studentId: !userGroup ? user?.id : undefined,
+        groupId: userGroup ? userGroup._id : undefined,
+        githubUrl: formData.githubLink,
+        hasReportFile: !!formData.reportFile,
+        hasPresentationFile: !!formData.pptFile
+      });
+
       const response = await api.post('/submissions', formDataToSend);
+      console.log('Submission response:', response);
 
       if (response.success) {
         toast.success('Submission successful!');
         setHasSubmitted(true);
         setCurrentSubmission(response.data);
       } else {
+        console.error('Submission failed with response:', response);
         toast.error(response.error?.message || 'Failed to submit');
       }
     } catch (error: any) {
-      console.error('Submission error:', error);
+      console.error('Submission error details:', {
+        error,
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      
       let errorMessage = 'Failed to submit';
       
       // Handle different error types
-      if (error?.message) {
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
         errorMessage = error.message;
       }
       
-      // Show user-friendly messages for group-specific errors
+      // Show user-friendly messages for different scenarios
       if (errorMessage.includes('already submitted')) {
-        errorMessage = userGroup?.isSolo 
-          ? 'You have already submitted. You cannot submit again.'
-          : 'Your group has already submitted. You cannot submit again.';
+        errorMessage = userGroup 
+          ? 'Your group has already submitted. You cannot submit again.'
+          : 'You have already submitted. You cannot submit again.';
       } else if (errorMessage.includes('not a member')) {
         errorMessage = 'You are not a member of this group.';
       } else if (errorMessage.includes('Only the group leader')) {
         errorMessage = 'Only the group leader can submit.';
+      } else if (errorMessage.includes('GitHub URL is required')) {
+        errorMessage = 'Please provide a valid GitHub URL.';
+      } else if (errorMessage.includes('Either groupId or studentId is required')) {
+        errorMessage = 'System error: Missing submission identifier. Please refresh and try again.';
       }
       
       toast.error(errorMessage);
+      
+      // Also show a generic error toast with more details for debugging
+      if (error?.response?.status) {
+        console.error(`HTTP ${error.response.status}: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -340,16 +351,10 @@ export function SubmissionPage() {
     );
   }
 
-  // Check if user data is still loading
-  if (!userGroup) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // No need to check for userGroup - solo students don't have groups
 
-  if (!isLeader && !userGroup?.isSolo) {
+  if (userGroup && !isLeader) {
+    // Group member (not leader) - show waiting message
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -386,7 +391,7 @@ export function SubmissionPage() {
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">Submission Complete</h2>
               <p className="text-gray-600">
-                Your {userGroup?.isSolo ? 'individual' : 'group'} submission for {submissionWindow.assessmentType} has been recorded.
+                Your {userGroup ? 'group' : 'individual'} submission for {submissionWindow.assessmentType} has been recorded.
               </p>
             </div>
 
