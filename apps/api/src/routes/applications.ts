@@ -5,6 +5,7 @@ import {
   createApplications,
   getApplicationById,
   getUserApplications,
+  getApprovedApplication,
   getFacultyApplications,
   acceptApplication,
   rejectApplication,
@@ -228,6 +229,72 @@ router.get('/my-application', authenticate, authorize('student'), async (req, re
       error: {
         code: 'GET_APPLICATION_FAILED',
         message: 'Failed to get application',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * GET /api/applications/approved
+ * Get current user's approved application
+ * Accessible by: students only
+ */
+router.get('/approved', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.id);
+
+    logger.info('Fetching approved application for user:', { userId: userId.toString() });
+
+    // Check if user is in a group
+    const group = await getUserGroup(userId);
+    logger.info('User group status:', { 
+      hasGroup: !!group, 
+      groupId: group?._id?.toString(),
+      groupStatus: group?.status 
+    });
+
+    let approvedApplication: any = null;
+    
+    if (group) {
+      // User is in a group - get group's approved application
+      approvedApplication = await getApprovedApplication(undefined, group._id);
+      logger.info('Found group approved application:', { found: !!approvedApplication });
+    } else {
+      // User is not in a group - get solo approved application
+      approvedApplication = await getApprovedApplication(userId, undefined);
+      logger.info('Found solo approved application:', { found: !!approvedApplication });
+    }
+
+    if (!approvedApplication) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'NO_APPROVED_APPLICATION',
+          message: 'No approved application found',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    logger.info('Approved application result:', { 
+      applicationId: approvedApplication._id?.toString(),
+      projectId: approvedApplication.projectId?._id?.toString(),
+      status: approvedApplication.status
+    });
+
+    res.json({
+      success: true,
+      data: approvedApplication,
+    });
+  } catch (error) {
+    logger.error('Error getting approved application:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_APPROVED_APPLICATION_FAILED',
+        message: 'Failed to get approved application',
         timestamp: new Date().toISOString(),
       },
     });

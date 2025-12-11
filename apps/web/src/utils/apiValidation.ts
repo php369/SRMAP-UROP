@@ -63,7 +63,6 @@ export const assessmentSchema = z.object({
   meetUrl: z.string().url().optional().nullable(),
   calendarEventId: z.string().optional().nullable(),
   visibility: z.object({
-    cohortIds: z.array(z.string()).optional(),
     courseIds: z.array(z.string()).optional(),
   }).optional(),
   settings: z.object({

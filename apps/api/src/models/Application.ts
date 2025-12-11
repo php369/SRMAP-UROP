@@ -76,7 +76,7 @@ const ApplicationSchema = new Schema<IApplication>({
   },
   reviewedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   },
   reviewedAt: {
     type: Date

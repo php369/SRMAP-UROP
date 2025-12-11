@@ -51,12 +51,12 @@ const EvaluationSchema = new Schema<IEvaluation>({
   },
   facultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster',
+    ref: 'User',
     required: true
   },
   externalFacultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   },
   internal: {
     a1: {
@@ -106,7 +106,7 @@ const EvaluationSchema = new Schema<IEvaluation>({
   },
   publishedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   }
 }, {
   timestamps: true,

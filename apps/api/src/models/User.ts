@@ -11,6 +11,7 @@ export interface IUser extends Document {
   department?: string; // Department for all users
   isCoordinator?: boolean; // For faculty members (coordinator is also a faculty)
   isExternalEvaluator?: boolean; // For faculty members serving as external evaluators
+  currentGroupId?: mongoose.Types.ObjectId; // Direct link to user's current group
   preferences: {
     theme: 'light' | 'dark';
     notifications: boolean;
@@ -72,6 +73,10 @@ const UserSchema = new Schema<IUser>({
   isExternalEvaluator: {
     type: Boolean,
     default: false
+  },
+  currentGroupId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Group'
   },
   preferences: {
     theme: {

@@ -11,7 +11,6 @@ export interface IGroup extends Document {
   leaderId: mongoose.Types.ObjectId; // Student who created the group
   members: mongoose.Types.ObjectId[]; // 2-4 students
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  semester: string;
   year: number;
   status: 'forming' | 'complete' | 'applied' | 'approved' | 'frozen';
   assignedProjectId?: mongoose.Types.ObjectId;
@@ -84,11 +83,6 @@ const GroupSchema = new Schema<IGroup>({
     enum: ['IDP', 'UROP', 'CAPSTONE'],
     required: true
   },
-  semester: {
-    type: String,
-    required: true,
-    trim: true
-  },
   year: {
     type: Number,
     required: true
@@ -105,11 +99,11 @@ const GroupSchema = new Schema<IGroup>({
   },
   assignedFacultyId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   },
   externalEvaluatorId: {
     type: Schema.Types.ObjectId,
-    ref: 'FacultyRoster'
+    ref: 'User'
   },
   meetUrl: {
     type: String,
@@ -135,7 +129,7 @@ const GroupSchema = new Schema<IGroup>({
 // Indexes for performance optimization
 GroupSchema.index({ leaderId: 1 }); // Find groups by leader
 GroupSchema.index({ members: 1 }); // Find groups by member
-GroupSchema.index({ projectType: 1, semester: 1 }); // Groups by type and semester
+GroupSchema.index({ projectType: 1, year: 1 }); // Groups by type and year
 GroupSchema.index({ createdAt: -1 }); // Recent groups
 
 // Validation for member count (1-4 students, allowing solo students)

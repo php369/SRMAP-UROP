@@ -31,7 +31,6 @@ export const ROUTES = {
   PROFILE: '/dashboard/profile',
   ADMIN: '/dashboard/admin',
   ADMIN_USERS: '/dashboard/admin/users',
-  ADMIN_COHORTS: '/dashboard/admin/cohorts',
   ADMIN_COURSES: '/dashboard/admin/courses',
   ADMIN_REPORTS: '/dashboard/admin/reports',
 } as const;

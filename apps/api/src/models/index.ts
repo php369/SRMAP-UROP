@@ -10,10 +10,8 @@ export { Window } from './Window';
 export { Evaluation } from './Evaluation';
 export { Notification } from './Notification';
 export { Assessment } from './Assessment';
-export { Cohort } from './Cohort';
 export { Course } from './Course';
 export { MeetingLog } from './MeetingLog';
-export { StudentMeta } from './StudentMeta';
 export { OnlineStatus } from './OnlineStatus';
 export { Submission } from './Submission';
 
@@ -29,10 +27,8 @@ export type { IWindow } from './Window';
 export type { IEvaluation } from './Evaluation';
 export type { INotification } from './Notification';
 export type { IAssessment } from './Assessment';
-export type { ICohort } from './Cohort';
 export type { ICourse } from './Course';
 export type { IMeetingLog } from './MeetingLog';
-export type { IStudentMeta } from './StudentMeta';
 export type { IOnlineStatus } from './OnlineStatus';
 export type { ISubmission } from './Submission';
 
