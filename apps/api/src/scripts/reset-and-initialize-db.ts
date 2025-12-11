@@ -56,11 +56,16 @@ async function resetAndInitializeDatabase() {
 
     // 1. Drop all collections to start fresh
     logger.info('🗑️  Dropping all existing collections...');
-    const collections = await mongoose.connection.db.listCollections().toArray();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
+    
+    const collections = await db.listCollections().toArray();
     
     for (const collection of collections) {
       try {
-        await mongoose.connection.db.dropCollection(collection.name);
+        await db.dropCollection(collection.name);
         logger.info(`   ✓ Dropped collection: ${collection.name}`);
       } catch (error: any) {
         if (!error.message.includes('ns not found')) {
