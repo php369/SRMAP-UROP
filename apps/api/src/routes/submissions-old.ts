@@ -48,11 +48,18 @@ async function uploadToCloudinary(
   folder: string = 'submissions'
 ): Promise<{ url: string; cloudinaryId: string }> {
   return new Promise((resolve, reject) => {
+    // Remove extension from filename to avoid double extensions
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    const extension = filename.split('.').pop()?.toLowerCase();
+    
+    // Determine correct resource type
+    const resourceType = ['pdf', 'doc', 'docx', 'zip', 'rar'].includes(extension || '') ? 'raw' : 'auto';
+    
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        public_id: `${Date.now()}_${filename}`,
-        resource_type: 'auto'
+        public_id: `${Date.now()}_${nameWithoutExt}`,
+        resource_type: resourceType
       },
       (error, result) => {
         if (error) {
