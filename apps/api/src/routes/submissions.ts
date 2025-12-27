@@ -266,7 +266,7 @@ router.get('/group/:groupId', authenticate, rbacGuard('student', 'faculty', 'coo
 
 /**
  * GET /api/submissions/student/:studentId
- * Get submission for a specific student (solo submissions)
+ * Get submissions for a specific student (both solo and group submissions)
  */
 router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 'coordinator'), async (req, res) => {
   try {
@@ -279,42 +279,43 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
       });
     }
     
-    const submissions = await SubmissionService.getStudentSubmissions(studentId);
+    // Get both solo and group submissions for the student
+    const allSubmissions = await SubmissionService.getAllStudentSubmissions(studentId);
     
-    if (!submissions || submissions.length === 0) {
+    if (!allSubmissions || allSubmissions.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'No submissions found for this student'
       });
     }
 
-    // Return the most recent submission for compatibility with frontend
+    // Return all submissions (frontend can handle multiple submissions)
     res.json({
       success: true,
-      data: submissions[0] // Most recent submission
+      data: allSubmissions
     });
   } catch (error: any) {
-    logger.error('Error fetching student submission:', error);
+    logger.error('Error fetching student submissions:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch submission'
+      error: 'Failed to fetch submissions'
     });
   }
 });
 
 /**
  * GET /api/submissions/faculty
- * Get all submissions for faculty review
+ * Get all submissions for faculty review (both solo and group submissions)
  */
 router.get('/faculty', authenticate, rbacGuard('faculty', 'coordinator'), async (req, res) => {
   try {
-    const submissions = await SubmissionService.getSubmissionsForFaculty(req.user!.id);
+    const allSubmissions = await SubmissionService.getAllSubmissionsForFaculty(req.user!.id);
     
     res.json({
       success: true,
-      data: submissions,
-      count: submissions.length,
-      message: submissions.length === 0 ? 'No submissions have been made for your projects yet.' : undefined
+      data: allSubmissions,
+      count: allSubmissions.length,
+      message: allSubmissions.length === 0 ? 'No submissions have been made for your projects yet.' : undefined
     });
   } catch (error: any) {
     logger.error('Error fetching faculty submissions:', error);

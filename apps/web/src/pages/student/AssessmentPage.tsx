@@ -232,11 +232,31 @@ export function AssessmentPage() {
                 >
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h3 className="text-xl font-bold mb-1">
+                      <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
+                        {submission.submissionType === 'group' ? (
+                          <Users className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-green-500" />
+                        )}
                         {submission.assessmentType} Assessment
+                        {submission.submissionType === 'group' && (
+                          <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            Group
+                          </span>
+                        )}
+                        {submission.submissionType === 'solo' && (
+                          <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Solo
+                          </span>
+                        )}
                       </h3>
                       <p className="text-gray-600">
                         Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
+                        {submission.submissionType === 'group' && submission.groupId?.groupCode && (
+                          <span className="ml-2 text-blue-600 font-medium">
+                            Group: {submission.groupId.groupCode}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="text-right">
@@ -276,20 +296,22 @@ export function AssessmentPage() {
                       </a>
                     </div>
 
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-5 h-5 text-gray-600" />
-                        <h4 className="font-medium">Report</h4>
+                    {submission.reportUrl && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                          <h4 className="font-medium">Report</h4>
+                        </div>
+                        <a
+                          href={submission.reportUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline text-sm"
+                        >
+                          View PDF
+                        </a>
                       </div>
-                      <a
-                        href={submission.reportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm"
-                      >
-                        View PDF
-                      </a>
-                    </div>
+                    )}
 
                     {submission.pptUrl && (
                       <div className="p-4 bg-gray-50 rounded-lg">
@@ -309,8 +331,8 @@ export function AssessmentPage() {
                     )}
                   </div>
 
-                  {/* Grades */}
-                  {submission.isGradeReleased && (
+                  {/* Grades - Only show for solo submissions or graded group submissions */}
+                  {submission.isGradeReleased && submission.submissionType === 'solo' && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}

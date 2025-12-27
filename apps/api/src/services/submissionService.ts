@@ -1,4 +1,5 @@
 import { Submission, ISubmission } from '../models/Submission';
+import { GroupSubmission } from '../models/GroupSubmission';
 import { Group } from '../models/Group';
 import { User } from '../models/User';
 import { Window } from '../models/Window';
@@ -500,6 +501,171 @@ export class SubmissionService {
     return `${prefix}-${String(count + 1).padStart(5, '0')}`;
   }
 
+  /**
+   * Get all submissions for a student (both solo and group submissions)
+   */
+  static async getAllStudentSubmissions(studentId: string): Promise<any[]> {
+    try {
+      const allSubmissions: any[] = [];
+
+      // 1. Get solo submissions from Submission model
+      const soloSubmissions = await Submission.find({ studentId })
+        .populate('projectId')
+        .populate('facultyId')
+        .populate('externalEvaluatorId')
+        .sort({ submittedAt: -1 });
+
+      // Transform solo submissions to consistent format
+      soloSubmissions.forEach(submission => {
+        allSubmissions.push({
+          _id: submission._id,
+          submissionType: 'solo',
+          assessmentType: submission.assessmentType,
+          githubLink: submission.githubLink,
+          reportUrl: submission.reportUrl,
+          pptUrl: submission.pptUrl || submission.presentationUrl,
+          submittedAt: submission.submittedAt,
+          submittedBy: submission.submittedBy,
+          isGraded: submission.isGraded,
+          isGradeReleased: submission.isGradeReleased,
+          facultyGrade: submission.facultyGrade,
+          externalGrade: submission.externalGrade,
+          finalGrade: submission.finalGrade,
+          facultyComments: submission.facultyComments,
+          externalComments: submission.externalComments,
+          projectId: submission.projectId,
+          facultyId: submission.facultyId,
+          comments: submission.comments
+        });
+      });
+
+      // 2. Get group submissions from GroupSubmission model
+      // First find groups where the student is a member
+      const userGroups = await Group.find({ 
+        members: { $elemMatch: { user: studentId } }
+      });
+
+      if (userGroups.length > 0) {
+        const groupIds = userGroups.map(group => group._id);
+        
+        const groupSubmissions = await GroupSubmission.find({ 
+          groupId: { $in: groupIds } 
+        })
+          .populate('submittedBy', 'name email')
+          .populate('groupId')
+          .sort({ submittedAt: -1 });
+
+        // Transform group submissions to consistent format
+        groupSubmissions.forEach(submission => {
+          allSubmissions.push({
+            _id: submission._id,
+            submissionType: 'group',
+            assessmentType: 'A1', // GroupSubmissions are typically A1 assessments
+            githubLink: submission.githubUrl,
+            reportUrl: submission.reportFile?.url,
+            pptUrl: submission.presentationFile?.url || submission.presentationUrl,
+            submittedAt: submission.submittedAt,
+            submittedBy: submission.submittedBy,
+            groupId: submission.groupId,
+            isGraded: false, // GroupSubmissions don't have grading yet
+            isGradeReleased: false,
+            comments: submission.comments
+          });
+        });
+      }
+
+      // Sort all submissions by submission date (most recent first)
+      allSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+      return allSubmissions;
+    } catch (error) {
+      console.error('Error fetching all student submissions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all submissions for faculty review (both solo and group submissions)
+   */
+  static async getAllSubmissionsForFaculty(facultyId: string): Promise<any[]> {
+    try {
+      const allSubmissions: any[] = [];
+
+      // 1. Get solo submissions from Submission model
+      const soloSubmissions = await SubmissionService.getSubmissionsForFaculty(facultyId);
+      
+      // Transform solo submissions
+      soloSubmissions.forEach(submission => {
+        allSubmissions.push({
+          _id: submission._id,
+          submissionType: 'solo',
+          assessmentType: submission.assessmentType,
+          githubLink: submission.githubLink,
+          reportUrl: submission.reportUrl,
+          pptUrl: submission.pptUrl || submission.presentationUrl,
+          submittedAt: submission.submittedAt,
+          submittedBy: submission.submittedBy,
+          studentId: submission.studentId,
+          isGraded: submission.isGraded,
+          isGradeReleased: submission.isGradeReleased,
+          facultyGrade: submission.facultyGrade,
+          externalGrade: submission.externalGrade,
+          finalGrade: submission.finalGrade,
+          facultyComments: submission.facultyComments,
+          externalComments: submission.externalComments,
+          projectId: submission.projectId,
+          facultyId: submission.facultyId,
+          comments: submission.comments
+        });
+      });
+
+      // 2. Get group submissions where faculty is assigned to the group's project
+      // Find groups assigned to this faculty
+      const facultyGroups = await Group.find({ assignedFacultyId: facultyId })
+        .populate('members.user', 'name email studentId');
+
+      if (facultyGroups.length > 0) {
+        const groupIds = facultyGroups.map(group => group._id);
+        
+        const groupSubmissions = await GroupSubmission.find({ 
+          groupId: { $in: groupIds } 
+        })
+          .populate('submittedBy', 'name email')
+          .populate('groupId')
+          .sort({ submittedAt: -1 });
+
+        // Transform group submissions
+        groupSubmissions.forEach(submission => {
+          const group = facultyGroups.find(g => g._id.toString() === submission.groupId._id.toString());
+          
+          allSubmissions.push({
+            _id: submission._id,
+            submissionType: 'group',
+            assessmentType: 'A1', // GroupSubmissions are typically A1 assessments
+            githubLink: submission.githubUrl,
+            reportUrl: submission.reportFile?.url,
+            pptUrl: submission.presentationFile?.url || submission.presentationUrl,
+            submittedAt: submission.submittedAt,
+            submittedBy: submission.submittedBy,
+            groupId: submission.groupId,
+            groupCode: group?.groupCode,
+            members: group?.members,
+            isGraded: false, // GroupSubmissions don't have grading yet
+            isGradeReleased: false,
+            comments: submission.comments
+          });
+        });
+      }
+
+      // Sort all submissions by submission date (most recent first)
+      allSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+      return allSubmissions;
+    } catch (error) {
+      console.error('Error fetching all faculty submissions:', error);
+      return [];
+    }
+  }
   /**
    * Get submission statistics
    */
