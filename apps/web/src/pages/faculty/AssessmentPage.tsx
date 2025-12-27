@@ -81,7 +81,7 @@ export function FacultyAssessmentPage() {
       if (response.success && response.data && Array.isArray(response.data)) {
         setSubmissions(response.data);
       } else if ((response as any).submissions && Array.isArray((response as any).submissions)) {
-        // Handle legacy response format
+        // Handle current API response format
         setSubmissions((response as any).submissions);
       } else {
         setSubmissions([]);
@@ -433,7 +433,7 @@ export function FacultyAssessmentPage() {
                         </h3>
                         {getAssessmentBadge(submission.assessmentType)}
                         <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
-                          {submission.projectId.projectType}
+                          {submission.projectId?.projectType || 'Unknown'}
                         </span>
                         {submission.facultyGrade !== undefined && (
                           <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
@@ -445,7 +445,7 @@ export function FacultyAssessmentPage() {
                       <div className="space-y-2 mb-4">
                         <div>
                           <span className="text-sm font-medium text-text">Project: </span>
-                          <span className="text-sm text-textSecondary">{submission.projectId.title}</span>
+                          <span className="text-sm text-textSecondary">{submission.projectId?.title || 'Unknown Project'}</span>
                         </div>
                         {submission.groupId && (
                           <div>
@@ -498,7 +498,7 @@ export function FacultyAssessmentPage() {
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
-                      {meetingLogs[submission.projectId._id]?.length > 0 && (
+                      {submission.projectId?._id && meetingLogs[submission.projectId._id]?.length > 0 && (
                         <button
                           onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId._id])}
                           className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm"
@@ -569,7 +569,7 @@ export function FacultyAssessmentPage() {
                     </div>
                     <div>
                       <span className="text-sm font-medium text-textSecondary">Project:</span>
-                      <p className="text-text">{selectedSubmission.projectId.title}</p>
+                      <p className="text-text">{selectedSubmission.projectId?.title || 'Unknown Project'}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-textSecondary">Assessment:</span>

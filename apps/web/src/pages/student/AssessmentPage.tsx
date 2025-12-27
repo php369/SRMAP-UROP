@@ -94,17 +94,58 @@ export function AssessmentPage() {
     }
     
     try {
-      const response = await api.get(`/submissions/student/${user.id}`);
-      if (response.success && response.data) {
-        // Handle both single submission and array of submissions
-        const submissionData = Array.isArray(response.data) ? response.data : [response.data];
-        setSubmissions(submissionData as any[]);
-      } else if ((response as any).submissions) {
+      // Fetch both regular submissions and group submissions
+      const [regularResponse, groupResponse] = await Promise.all([
+        api.get('/submissions/my').catch(() => ({ success: false, data: [] })),
+        api.get('/group-submissions/my/submissions').catch(() => ({ success: false, data: [] }))
+      ]);
+
+      const allSubmissions: any[] = [];
+
+      // Add regular submissions
+      if (regularResponse.success && regularResponse.data) {
+        const regularSubmissions = Array.isArray(regularResponse.data) ? regularResponse.data : [regularResponse.data];
+        regularSubmissions.forEach(submission => {
+          allSubmissions.push({
+            ...submission,
+            submissionType: 'solo'
+          });
+        });
+      } else if ((regularResponse as any).submissions) {
         // Handle legacy response format
-        setSubmissions((response as any).submissions as any[]);
-      } else {
-        setSubmissions([]);
+        const legacySubmissions = Array.isArray((regularResponse as any).submissions) 
+          ? (regularResponse as any).submissions 
+          : [(regularResponse as any).submissions];
+        legacySubmissions.forEach((submission: any) => {
+          allSubmissions.push({
+            ...submission,
+            submissionType: 'solo'
+          });
+        });
       }
+
+      // Add group submissions
+      if (groupResponse.success && groupResponse.data) {
+        const groupSubmissions = Array.isArray(groupResponse.data) ? groupResponse.data : [groupResponse.data];
+        groupSubmissions.forEach(submission => {
+          allSubmissions.push({
+            ...submission,
+            submissionType: 'group',
+            // Map group submission fields to match expected format
+            assessmentType: submission.assessmentType || 'A1',
+            githubLink: submission.githubUrl || submission.githubLink,
+            reportUrl: submission.reportFile?.url,
+            pptUrl: submission.presentationFile?.url || submission.presentationUrl,
+            isGraded: false, // Group submissions don't have grades yet
+            isGradeReleased: false
+          });
+        });
+      }
+
+      // Sort by submission date (most recent first)
+      allSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+      setSubmissions(allSubmissions);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       setSubmissions([]);
