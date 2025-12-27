@@ -56,14 +56,35 @@ async function uploadToCloudinary(
       {
         folder,
         public_id: `${Date.now()}_${filename}`,
-        resource_type: resourceType
+        resource_type: resourceType,
+        // Add these options to help with untrusted account issues
+        type: 'upload',
+        access_mode: 'public'
       },
       (error, result) => {
         if (error) {
           reject(error);
         } else if (result) {
+          // Generate a signed URL for raw files to bypass untrusted restrictions
+          let finalUrl = result.secure_url;
+          
+          if (resourceType === 'raw') {
+            try {
+              // Generate signed URL for raw files
+              finalUrl = cloudinary.url(result.public_id, {
+                resource_type: 'raw',
+                type: 'upload',
+                sign_url: true,
+                secure: true
+              });
+            } catch (signError) {
+              console.warn('Failed to generate signed URL, using original:', signError);
+              // Fallback to original URL if signing fails
+            }
+          }
+          
           resolve({
-            url: result.secure_url,
+            url: finalUrl,
             cloudinaryId: result.public_id
           });
         } else {
