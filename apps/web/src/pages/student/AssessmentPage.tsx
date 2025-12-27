@@ -292,6 +292,15 @@ export function AssessmentPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:underline text-sm"
+                        onClick={(e) => {
+                          // Handle both relative and absolute URLs
+                          if (submission.reportUrl?.startsWith('/api/')) {
+                            // For our streaming API, open in new tab with full URL
+                            e.preventDefault();
+                            const fullUrl = `${window.location.origin}${submission.reportUrl}`;
+                            window.open(fullUrl, '_blank');
+                          }
+                        }}
                         onError={(e) => {
                           console.error('Failed to load report:', submission.reportUrl);
                           e.currentTarget.style.color = '#ef4444';
@@ -314,6 +323,15 @@ export function AssessmentPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:underline text-sm"
+                        onClick={(e) => {
+                          // Handle both relative and absolute URLs
+                          if (submission.pptUrl?.startsWith('/api/')) {
+                            // For our streaming API, open in new tab with full URL
+                            e.preventDefault();
+                            const fullUrl = `${window.location.origin}${submission.pptUrl}`;
+                            window.open(fullUrl, '_blank');
+                          }
+                        }}
                         onError={(e) => {
                           console.error('Failed to load presentation:', submission.pptUrl);
                           e.currentTarget.style.color = '#ef4444';

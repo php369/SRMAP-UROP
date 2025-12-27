@@ -21,6 +21,7 @@ import notificationRoutes from './notifications';
 import meetingLogRoutes from './meetingLogs';
 import meetingRoutes from './meetings';
 import windowRoutes from './windows';
+import fileRoutes from './files';
 import { createDebugRoutes } from '../middleware/developmentLogger';
 import userRoutes from './users';
 import controlRoutes from './control';
@@ -116,6 +117,9 @@ export function setupRoutes(app: Express): void {
 
   // Window routes
   app.use(`${API_PREFIX}/windows`, windowRoutes);
+
+  // File streaming routes
+  app.use(`${API_PREFIX}/files`, fileRoutes);
 
   // Development debug routes (only in development)
   if (process.env.NODE_ENV === 'development') {

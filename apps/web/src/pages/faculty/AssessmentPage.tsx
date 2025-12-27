@@ -478,6 +478,15 @@ export function FacultyAssessmentPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1 text-primary hover:underline"
+                              onClick={(e) => {
+                                // Handle both relative and absolute URLs
+                                if (submission.reportUrl?.startsWith('/api/')) {
+                                  // For our streaming API, open in new tab with full URL
+                                  e.preventDefault();
+                                  const fullUrl = `${window.location.origin}${submission.reportUrl}`;
+                                  window.open(fullUrl, '_blank');
+                                }
+                              }}
                             >
                               <FileText className="w-4 h-4" />
                               Report
@@ -489,6 +498,15 @@ export function FacultyAssessmentPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1 text-primary hover:underline"
+                              onClick={(e) => {
+                                // Handle both relative and absolute URLs
+                                if (submission.presentationUrl?.startsWith('/api/')) {
+                                  // For our streaming API, open in new tab with full URL
+                                  e.preventDefault();
+                                  const fullUrl = `${window.location.origin}${submission.presentationUrl}`;
+                                  window.open(fullUrl, '_blank');
+                                }
+                              }}
                             >
                               <Presentation className="w-4 h-4" />
                               Presentation
@@ -617,6 +635,15 @@ export function FacultyAssessmentPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                          onClick={(e) => {
+                            // Handle both relative and absolute URLs
+                            if (selectedSubmission.reportUrl?.startsWith('/api/')) {
+                              // For our streaming API, open in new tab with full URL
+                              e.preventDefault();
+                              const fullUrl = `${window.location.origin}${selectedSubmission.reportUrl}`;
+                              window.open(fullUrl, '_blank');
+                            }
+                          }}
                         >
                           <FileText className="w-5 h-5 text-primary" />
                           <div className="flex-1">
@@ -631,6 +658,15 @@ export function FacultyAssessmentPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                          onClick={(e) => {
+                            // Handle both relative and absolute URLs
+                            if (selectedSubmission.presentationUrl?.startsWith('/api/')) {
+                              // For our streaming API, open in new tab with full URL
+                              e.preventDefault();
+                              const fullUrl = `${window.location.origin}${selectedSubmission.presentationUrl}`;
+                              window.open(fullUrl, '_blank');
+                            }
+                          }}
                         >
                           <Presentation className="w-5 h-5 text-primary" />
                           <div className="flex-1">
