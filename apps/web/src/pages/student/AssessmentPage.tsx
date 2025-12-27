@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Video, FileText, Github, Award, Clock, CheckCircle, AlertCircle, Calendar, Users, MapPin } from 'lucide-react';
+import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -9,8 +9,6 @@ export function AssessmentPage() {
   const { user } = useAuth();
   const [assessmentWindow, setAssessmentWindow] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
-  const [meetingLogs, setMeetingLogs] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'submissions' | 'meetings'>('submissions');
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
@@ -56,8 +54,7 @@ export function AssessmentPage() {
         try {
           await Promise.all([
             checkAssessmentWindow(),
-            fetchSubmissions(),
-            fetchMeetingLogs()
+            fetchSubmissions()
           ]);
         } catch (error) {
           console.error('Error initializing assessment data:', error);
@@ -154,26 +151,6 @@ export function AssessmentPage() {
     }
   };
 
-  const fetchMeetingLogs = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const response = await api.get(`/meetings/student`);
-      if (response.success && response.data && Array.isArray(response.data)) {
-        // Filter for approved meeting logs with grades
-        const approvedLogs = response.data.filter((log: any) => 
-          log.status === 'approved' && log.grade !== undefined
-        );
-        setMeetingLogs(approvedLogs as any[]);
-      } else {
-        setMeetingLogs([]);
-      }
-    } catch (error) {
-      console.error('Error fetching meeting logs:', error);
-      setMeetingLogs([]);
-    }
-  };
-
   // Show loading while initializing
   if (initializing || !eligibleProjectType) {
     return (
@@ -219,319 +196,182 @@ export function AssessmentPage() {
         >
           <h1 className="text-3xl font-bold mb-2">Assessment</h1>
           <p className="text-gray-600">
-            View your submissions, grades, and meeting logs
+            View your submissions and grades
           </p>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab('submissions')}
-              className={`px-4 py-2 font-medium transition-colors ${
-                activeTab === 'submissions'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Submissions ({submissions.length})
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('meetings')}
-              className={`px-4 py-2 font-medium transition-colors ${
-                activeTab === 'meetings'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Meeting Logs ({meetingLogs.length})
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Submissions Tab */}
-        {activeTab === 'submissions' && (
-          <div className="grid gap-6">
-            {submissions.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No submissions yet</p>
-              </div>
-            ) : (
-              submissions.map((submission) => (
-                <motion.div
-                  key={submission._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl shadow-lg p-6"
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div>
-                      <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                        {submission.submissionType === 'group' ? (
-                          <Users className="w-5 h-5 text-blue-500" />
-                        ) : (
-                          <FileText className="w-5 h-5 text-green-500" />
-                        )}
-                        {submission.assessmentType} Assessment
-                        {submission.submissionType === 'group' && (
-                          <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                            Group
-                          </span>
-                        )}
-                        {submission.submissionType === 'solo' && (
-                          <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                            Solo
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-gray-600">
-                        Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
-                        {submission.submissionType === 'group' && submission.groupId?.groupCode && (
-                          <span className="ml-2 text-blue-600 font-medium">
-                            Group: {submission.groupId.groupCode}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {submission.isGradeReleased ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Graded</span>
-                        </div>
-                      ) : submission.isGraded ? (
-                        <div className="flex items-center gap-2 text-yellow-600">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Pending Release</span>
-                        </div>
+        {/* Submissions */}
+        <div className="grid gap-6">
+          {submissions.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No submissions yet</p>
+            </div>
+          ) : (
+            submissions.map((submission) => (
+              <motion.div
+                key={submission._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
+                      {submission.submissionType === 'group' ? (
+                        <Users className="w-5 h-5 text-blue-500" />
                       ) : (
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">Under Review</span>
-                        </div>
+                        <FileText className="w-5 h-5 text-green-500" />
                       )}
+                      {submission.assessmentType} Assessment
+                      {submission.submissionType === 'group' && (
+                        <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Group
+                        </span>
+                      )}
+                      {submission.submissionType === 'solo' && (
+                        <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          Solo
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-gray-600">
+                      Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
+                      {submission.submissionType === 'group' && submission.groupId?.groupCode && (
+                        <span className="ml-2 text-blue-600 font-medium">
+                          Group: {submission.groupId.groupCode}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {submission.isGradeReleased ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="font-medium">Graded</span>
+                      </div>
+                    ) : submission.isGraded ? (
+                      <div className="flex items-center gap-2 text-yellow-600">
+                        <Clock className="w-5 h-5" />
+                        <span className="font-medium">Pending Release</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="font-medium">Under Review</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submitted Work */}
+                <div className="grid md:grid-cols-3 gap-4 mb-6">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Github className="w-5 h-5 text-gray-600" />
+                      <h4 className="font-medium">GitHub</h4>
                     </div>
+                    <a
+                      href={submission.githubLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline text-sm break-all"
+                    >
+                      View Repository
+                    </a>
                   </div>
 
-                  {/* Submitted Work */}
-                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                  {submission.reportUrl && (
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Github className="w-5 h-5 text-gray-600" />
-                        <h4 className="font-medium">GitHub</h4>
+                        <FileText className="w-5 h-5 text-gray-600" />
+                        <h4 className="font-medium">Report</h4>
                       </div>
                       <a
-                        href={submission.githubLink}
+                        href={submission.reportUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm break-all"
+                        className="text-blue-500 hover:underline text-sm"
+                        onError={(e) => {
+                          console.error('Failed to load report:', submission.reportUrl);
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.textContent = 'Report unavailable';
+                        }}
                       >
-                        View Repository
+                        View PDF
                       </a>
                     </div>
-
-                    {submission.reportUrl && (
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="w-5 h-5 text-gray-600" />
-                          <h4 className="font-medium">Report</h4>
-                        </div>
-                        <a
-                          href={submission.reportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline text-sm"
-                        >
-                          View PDF
-                        </a>
-                      </div>
-                    )}
-
-                    {submission.pptUrl && (
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="w-5 h-5 text-gray-600" />
-                          <h4 className="font-medium">Presentation</h4>
-                        </div>
-                        <a
-                          href={submission.pptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline text-sm"
-                        >
-                          View PPT
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Grades - Only show for solo submissions or graded group submissions */}
-                  {submission.isGradeReleased && submission.submissionType === 'solo' && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200"
-                    >
-                      <div className="flex items-center gap-3 mb-4">
-                        <Award className="w-8 h-8 text-blue-500" />
-                        <h4 className="text-xl font-bold">Your Grade</h4>
-                      </div>
-
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {submission.facultyGrade !== undefined && (
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 mb-1">Faculty Grade</p>
-                            <p className="text-3xl font-bold text-blue-600">
-                              {submission.facultyGrade}/100
-                            </p>
-                          </div>
-                        )}
-
-                        {submission.externalGrade !== undefined && (
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 mb-1">External Grade</p>
-                            <p className="text-3xl font-bold text-purple-600">
-                              {submission.externalGrade}/100
-                            </p>
-                          </div>
-                        )}
-
-                        {submission.finalGrade !== undefined && (
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 mb-1">Final Grade</p>
-                            <p className="text-4xl font-bold text-green-600">
-                              {submission.finalGrade}/100
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
                   )}
-                </motion.div>
-              ))
-            )}
-          </div>
-        )}
 
-        {/* Meeting Logs Tab */}
-        {activeTab === 'meetings' && (
-          <div className="grid gap-6">
-            {meetingLogs.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No meeting logs yet</p>
-              </div>
-            ) : (
-              meetingLogs.map((log) => (
-                <motion.div
-                  key={log._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl shadow-lg p-6"
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div>
-                      <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                        {log.mode === 'online' ? (
-                          <Video className="w-5 h-5 text-blue-500" />
-                        ) : (
-                          <MapPin className="w-5 h-5 text-green-500" />
-                        )}
-                        {log.mode === 'online' ? 'Online' : 'In-Person'} Meeting
-                      </h3>
-                      <p className="text-gray-600">
-                        {new Date(log.meetingDate).toLocaleDateString()} at{' '}
-                        {new Date(log.startedAt).toLocaleTimeString()}
-                      </p>
+                  {submission.pptUrl && (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-5 h-5 text-gray-600" />
+                        <h4 className="font-medium">Presentation</h4>
+                      </div>
+                      <a
+                        href={submission.pptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline text-sm"
+                        onError={(e) => {
+                          console.error('Failed to load presentation:', submission.pptUrl);
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.textContent = 'Presentation unavailable';
+                        }}
+                      >
+                        View PPT
+                      </a>
                     </div>
-                    <div className="text-right">
-                      {log.status === 'approved' ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Approved</span>
+                  )}
+                </div>
+
+                {/* Grades - Only show for solo submissions or graded group submissions */}
+                {submission.isGradeReleased && submission.submissionType === 'solo' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <Award className="w-8 h-8 text-blue-500" />
+                      <h4 className="text-xl font-bold">Your Grade</h4>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {submission.facultyGrade !== undefined && (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-1">Faculty Grade</p>
+                          <p className="text-3xl font-bold text-blue-600">
+                            {submission.facultyGrade}/100
+                          </p>
                         </div>
-                      ) : log.status === 'rejected' ? (
-                        <div className="flex items-center gap-2 text-red-600">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">Rejected</span>
+                      )}
+
+                      {submission.externalGrade !== undefined && (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-1">External Grade</p>
+                          <p className="text-3xl font-bold text-purple-600">
+                            {submission.externalGrade}/100
+                          </p>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-yellow-600">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Pending Review</span>
+                      )}
+
+                      {submission.finalGrade !== undefined && (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-1">Final Grade</p>
+                          <p className="text-4xl font-bold text-green-600">
+                            {submission.finalGrade}/100
+                          </p>
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* Meeting Details */}
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    {log.location && (
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <MapPin className="w-4 h-4 text-gray-600" />
-                          <h4 className="font-medium text-sm">Location</h4>
-                        </div>
-                        <p className="text-sm text-gray-700">{log.location}</p>
-                      </div>
-                    )}
-                    
-                    {log.attendees && log.attendees.length > 0 && (
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Users className="w-4 h-4 text-gray-600" />
-                          <h4 className="font-medium text-sm">Attendees</h4>
-                        </div>
-                        <p className="text-sm text-gray-700">
-                          {log.attendees.filter((a: any) => a.present).length} / {log.attendees.length} present
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Minutes of Meeting */}
-                  {log.minutesOfMeeting && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-medium mb-2 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        Minutes of Meeting
-                      </h4>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{log.minutesOfMeeting}</p>
-                    </div>
-                  )}
-
-                  {/* Grade */}
-                  {log.grade !== undefined && log.status === 'approved' && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Award className="w-6 h-6 text-green-500" />
-                          <h4 className="font-bold">Meeting Grade</h4>
-                        </div>
-                        <p className="text-3xl font-bold text-green-600">{log.grade}/5</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Rejection Reason */}
-                  {log.status === 'rejected' && log.rejectionReason && (
-                    <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                      <h4 className="font-medium text-red-800 mb-2">Rejection Reason</h4>
-                      <p className="text-sm text-red-700">{log.rejectionReason}</p>
-                    </div>
-                  )}
-                </motion.div>
-              ))
-            )}
-          </div>
-        )}
+                  </motion.div>
+                )}
+              </motion.div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

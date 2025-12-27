@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users } from 'lucide-react';
+import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -49,8 +49,7 @@ export function FacultyAssessmentPage() {
   const [initializing, setInitializing] = useState(true);
   const [gradeData, setGradeData] = useState({
     grade: '',
-    comments: '',
-    meetUrl: ''
+    comments: ''
   });
 
   // Check if any assessment window is open (for any project type)
@@ -171,6 +170,12 @@ export function FacultyAssessmentPage() {
   };
 
   const handleGradeSubmission = async () => {
+    // Grading functionality is temporarily disabled as the API endpoint is not available
+    toast.error('Grading functionality is currently unavailable. Please contact the administrator.');
+    return;
+    
+    /* 
+    // This code will be enabled when the grading API is deployed
     if (!selectedSubmission) return;
 
     const grade = parseFloat(gradeData.grade);
@@ -182,14 +187,13 @@ export function FacultyAssessmentPage() {
     try {
       const response = await api.put(`/submissions/${selectedSubmission._id}/grade`, {
         facultyGrade: grade,
-        facultyComments: gradeData.comments,
-        meetUrl: gradeData.meetUrl
+        facultyComments: gradeData.comments
       });
 
       if (response.success) {
         toast.success('Grade submitted successfully');
         setSelectedSubmission(null);
-        setGradeData({ grade: '', comments: '', meetUrl: '' });
+        setGradeData({ grade: '', comments: '' });
         fetchSubmissions();
       } else {
         toast.error((response as any).error?.message || 'Failed to submit grade');
@@ -197,6 +201,7 @@ export function FacultyAssessmentPage() {
     } catch (error) {
       toast.error('Failed to submit grade');
     }
+    */
   };
 
   const getAssessmentBadge = (type: string) => {
@@ -513,8 +518,7 @@ export function FacultyAssessmentPage() {
                           setSelectedSubmission(submission);
                           setGradeData({
                             grade: submission.facultyGrade?.toString() || '',
-                            comments: submission.facultyComments || '',
-                            meetUrl: ''
+                            comments: submission.facultyComments || ''
                           });
                         }}
                         className="p-2 hover:bg-white/10 rounded-lg transition-all"
@@ -541,7 +545,7 @@ export function FacultyAssessmentPage() {
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => {
               setSelectedSubmission(null);
-              setGradeData({ grade: '', comments: '', meetUrl: '' });
+              setGradeData({ grade: '', comments: '' });
             }}
           >
             <motion.div
@@ -553,6 +557,18 @@ export function FacultyAssessmentPage() {
             >
               <GlassCard className="p-6">
                 <h2 className="text-2xl font-bold text-text mb-6">Grade Submission</h2>
+                
+                {/* Temporary Notice */}
+                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                    <h3 className="font-medium text-yellow-800 dark:text-yellow-300">Notice</h3>
+                  </div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                    Grading functionality is temporarily unavailable while the system is being updated. 
+                    You can still view submissions and provide feedback through other channels.
+                  </p>
+                </div>
 
                 <div className="space-y-6">
                   {/* Submission Info */}
@@ -657,34 +673,6 @@ export function FacultyAssessmentPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-text mb-2">
-                        Google Meet Link (Optional)
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="url"
-                          value={gradeData.meetUrl}
-                          onChange={(e) => setGradeData({ ...gradeData, meetUrl: e.target.value })}
-                          className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="https://meet.google.com/..."
-                        />
-                        {gradeData.meetUrl && (
-                          <a
-                            href={gradeData.meetUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition-all flex items-center gap-2"
-                          >
-                            <Video className="w-4 h-4" />
-                            Join
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-xs text-textSecondary mt-1">
-                        Schedule a meeting for presentation or discussion
-                      </p>
-                    </div>
                   </div>
 
                   {/* Existing Grade Info */}
@@ -705,7 +693,7 @@ export function FacultyAssessmentPage() {
                   <button
                     onClick={() => {
                       setSelectedSubmission(null);
-                      setGradeData({ grade: '', comments: '', meetUrl: '' });
+                      setGradeData({ grade: '', comments: '' });
                     }}
                     className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
                   >
