@@ -30,6 +30,7 @@ async function streamPdf(req: any, res: any) {
     res.setHeader("Accept-Ranges", cloudinaryResponse.headers["accept-ranges"] || "bytes");
     res.setHeader("Content-Range", cloudinaryResponse.headers["content-range"]);
     res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "no-store"); // 🚫 Prevent Service Worker caching
     
     // Important for Vercel
     res.status(206);

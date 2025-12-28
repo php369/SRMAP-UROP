@@ -91,10 +91,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle API requests
+  // 🚫 DO NOT INTERCEPT API ROUTES (especially PDF files)
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleApiRequest(request));
-    return;
+    return; // Let the request go directly to the network
   }
 
   // Handle navigation requests
