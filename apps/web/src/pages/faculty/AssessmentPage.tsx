@@ -473,44 +473,108 @@ export function FacultyAssessmentPage() {
                             </a>
                           )}
                           {submission.reportUrl && (
-                            <a
-                              href={submission.reportUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-primary hover:underline"
-                              onClick={(e) => {
-                                // Handle both relative and absolute URLs
-                                if (submission.reportUrl?.startsWith('/api/')) {
-                                  // For our streaming API, open in new tab with full URL
-                                  e.preventDefault();
-                                  const fullUrl = `${window.location.origin}${submission.reportUrl}`;
-                                  window.open(fullUrl, '_blank');
-                                }
-                              }}
-                            >
-                              <FileText className="w-4 h-4" />
-                              Report
-                            </a>
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => {
+                                  const fullUrl = submission.reportUrl?.startsWith('/api/') 
+                                    ? `${window.location.origin}${submission.reportUrl}`
+                                    : submission.reportUrl;
+                                  
+                                  // Create modal with embedded PDF
+                                  const modal = document.createElement('div');
+                                  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                                  modal.innerHTML = `
+                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                      <div class="flex justify-between items-center p-4 border-b">
+                                        <h3 class="text-lg font-semibold">Report PDF</h3>
+                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                      </div>
+                                      <div class="flex-1 p-4">
+                                        <iframe 
+                                          src="${fullUrl}" 
+                                          class="w-full h-full border-0 rounded"
+                                          title="Report PDF"
+                                        ></iframe>
+                                      </div>
+                                    </div>
+                                  `;
+                                  
+                                  document.body.appendChild(modal);
+                                  
+                                  // Close modal handlers
+                                  const closeModal = () => document.body.removeChild(modal);
+                                  modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                                  modal.addEventListener('click', (e) => {
+                                    if (e.target === modal) closeModal();
+                                  });
+                                }}
+                                className="flex items-center gap-1 text-primary hover:underline cursor-pointer bg-none border-none p-0 text-left"
+                              >
+                                <FileText className="w-4 h-4" />
+                                📄 View Report
+                              </button>
+                              <a
+                                href={submission.reportUrl?.startsWith('/api/') 
+                                  ? `${window.location.origin}${submission.reportUrl}`
+                                  : submission.reportUrl}
+                                download
+                                className="flex items-center gap-1 text-green-600 hover:underline text-sm"
+                              >
+                                ⬇️ Download
+                              </a>
+                            </div>
                           )}
                           {submission.presentationUrl && (
-                            <a
-                              href={submission.presentationUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-primary hover:underline"
-                              onClick={(e) => {
-                                // Handle both relative and absolute URLs
-                                if (submission.presentationUrl?.startsWith('/api/')) {
-                                  // For our streaming API, open in new tab with full URL
-                                  e.preventDefault();
-                                  const fullUrl = `${window.location.origin}${submission.presentationUrl}`;
-                                  window.open(fullUrl, '_blank');
-                                }
-                              }}
-                            >
-                              <Presentation className="w-4 h-4" />
-                              Presentation
-                            </a>
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => {
+                                  const fullUrl = submission.presentationUrl?.startsWith('/api/') 
+                                    ? `${window.location.origin}${submission.presentationUrl}`
+                                    : submission.presentationUrl;
+                                  
+                                  // Create modal with embedded presentation
+                                  const modal = document.createElement('div');
+                                  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                                  modal.innerHTML = `
+                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                      <div class="flex justify-between items-center p-4 border-b">
+                                        <h3 class="text-lg font-semibold">Presentation</h3>
+                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                      </div>
+                                      <div class="flex-1 p-4">
+                                        <iframe 
+                                          src="${fullUrl}" 
+                                          class="w-full h-full border-0 rounded"
+                                          title="Presentation"
+                                        ></iframe>
+                                      </div>
+                                    </div>
+                                  `;
+                                  
+                                  document.body.appendChild(modal);
+                                  
+                                  // Close modal handlers
+                                  const closeModal = () => document.body.removeChild(modal);
+                                  modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                                  modal.addEventListener('click', (e) => {
+                                    if (e.target === modal) closeModal();
+                                  });
+                                }}
+                                className="flex items-center gap-1 text-primary hover:underline cursor-pointer bg-none border-none p-0 text-left"
+                              >
+                                <Presentation className="w-4 h-4" />
+                                📊 View Presentation
+                              </button>
+                              <a
+                                href={submission.presentationUrl?.startsWith('/api/') 
+                                  ? `${window.location.origin}${submission.presentationUrl}`
+                                  : submission.presentationUrl}
+                                download
+                                className="flex items-center gap-1 text-green-600 hover:underline text-sm"
+                              >
+                                ⬇️ Download
+                              </a>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -630,50 +694,124 @@ export function FacultyAssessmentPage() {
                         </a>
                       )}
                       {selectedSubmission.reportUrl && (
-                        <a
-                          href={selectedSubmission.reportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
-                          onClick={(e) => {
-                            // Handle both relative and absolute URLs
-                            if (selectedSubmission.reportUrl?.startsWith('/api/')) {
-                              // For our streaming API, open in new tab with full URL
-                              e.preventDefault();
-                              const fullUrl = `${window.location.origin}${selectedSubmission.reportUrl}`;
-                              window.open(fullUrl, '_blank');
-                            }
-                          }}
-                        >
-                          <FileText className="w-5 h-5 text-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-text">Report PDF</p>
-                            <p className="text-xs text-textSecondary">Click to view</p>
+                        <div className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+                          <div className="flex items-center gap-3 mb-2">
+                            <FileText className="w-5 h-5 text-primary" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-text">Report PDF</p>
+                              <p className="text-xs text-textSecondary">View or download</p>
+                            </div>
                           </div>
-                        </a>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const fullUrl = selectedSubmission.reportUrl?.startsWith('/api/') 
+                                  ? `${window.location.origin}${selectedSubmission.reportUrl}`
+                                  : selectedSubmission.reportUrl;
+                                
+                                // Create modal with embedded PDF
+                                const modal = document.createElement('div');
+                                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                                modal.innerHTML = `
+                                  <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                    <div class="flex justify-between items-center p-4 border-b">
+                                      <h3 class="text-lg font-semibold">Report PDF</h3>
+                                      <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                    </div>
+                                    <div class="flex-1 p-4">
+                                      <iframe 
+                                        src="${fullUrl}" 
+                                        class="w-full h-full border-0 rounded"
+                                        title="Report PDF"
+                                      ></iframe>
+                                    </div>
+                                  </div>
+                                `;
+                                
+                                document.body.appendChild(modal);
+                                
+                                // Close modal handlers
+                                const closeModal = () => document.body.removeChild(modal);
+                                modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                                modal.addEventListener('click', (e) => {
+                                  if (e.target === modal) closeModal();
+                                });
+                              }}
+                              className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                            >
+                              📄 View
+                            </button>
+                            <a
+                              href={selectedSubmission.reportUrl?.startsWith('/api/') 
+                                ? `${window.location.origin}${selectedSubmission.reportUrl}`
+                                : selectedSubmission.reportUrl}
+                              download
+                              className="text-green-600 hover:underline text-sm"
+                            >
+                              ⬇️ Download
+                            </a>
+                          </div>
+                        </div>
                       )}
                       {selectedSubmission.presentationUrl && (
-                        <a
-                          href={selectedSubmission.presentationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
-                          onClick={(e) => {
-                            // Handle both relative and absolute URLs
-                            if (selectedSubmission.presentationUrl?.startsWith('/api/')) {
-                              // For our streaming API, open in new tab with full URL
-                              e.preventDefault();
-                              const fullUrl = `${window.location.origin}${selectedSubmission.presentationUrl}`;
-                              window.open(fullUrl, '_blank');
-                            }
-                          }}
-                        >
-                          <Presentation className="w-5 h-5 text-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-text">Presentation</p>
-                            <p className="text-xs text-textSecondary">Click to view</p>
+                        <div className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Presentation className="w-5 h-5 text-primary" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-text">Presentation</p>
+                              <p className="text-xs text-textSecondary">View or download</p>
+                            </div>
                           </div>
-                        </a>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const fullUrl = selectedSubmission.presentationUrl?.startsWith('/api/') 
+                                  ? `${window.location.origin}${selectedSubmission.presentationUrl}`
+                                  : selectedSubmission.presentationUrl;
+                                
+                                // Create modal with embedded presentation
+                                const modal = document.createElement('div');
+                                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                                modal.innerHTML = `
+                                  <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                    <div class="flex justify-between items-center p-4 border-b">
+                                      <h3 class="text-lg font-semibold">Presentation</h3>
+                                      <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                    </div>
+                                    <div class="flex-1 p-4">
+                                      <iframe 
+                                        src="${fullUrl}" 
+                                        class="w-full h-full border-0 rounded"
+                                        title="Presentation"
+                                      ></iframe>
+                                    </div>
+                                  </div>
+                                `;
+                                
+                                document.body.appendChild(modal);
+                                
+                                // Close modal handlers
+                                const closeModal = () => document.body.removeChild(modal);
+                                modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                                modal.addEventListener('click', (e) => {
+                                  if (e.target === modal) closeModal();
+                                });
+                              }}
+                              className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                            >
+                              📊 View
+                            </button>
+                            <a
+                              href={selectedSubmission.presentationUrl?.startsWith('/api/') 
+                                ? `${window.location.origin}${selectedSubmission.presentationUrl}`
+                                : selectedSubmission.presentationUrl}
+                              download
+                              className="text-green-600 hover:underline text-sm"
+                            >
+                              ⬇️ Download
+                            </a>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>

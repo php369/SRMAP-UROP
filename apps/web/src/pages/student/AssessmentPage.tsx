@@ -287,28 +287,56 @@ export function AssessmentPage() {
                         <FileText className="w-5 h-5 text-gray-600" />
                         <h4 className="font-medium">Report</h4>
                       </div>
-                      <a
-                        href={submission.reportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm"
-                        onClick={(e) => {
-                          // Handle both relative and absolute URLs
-                          if (submission.reportUrl?.startsWith('/api/')) {
-                            // For our streaming API, open in new tab with full URL
-                            e.preventDefault();
-                            const fullUrl = `${window.location.origin}${submission.reportUrl}`;
-                            window.open(fullUrl, '_blank');
-                          }
-                        }}
-                        onError={(e) => {
-                          console.error('Failed to load report:', submission.reportUrl);
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.textContent = 'Report unavailable';
-                        }}
-                      >
-                        View PDF
-                      </a>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            const fullUrl = submission.reportUrl?.startsWith('/api/') 
+                              ? `${window.location.origin}${submission.reportUrl}`
+                              : submission.reportUrl;
+                            
+                            // Create modal with embedded PDF
+                            const modal = document.createElement('div');
+                            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                            modal.innerHTML = `
+                              <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                <div class="flex justify-between items-center p-4 border-b">
+                                  <h3 class="text-lg font-semibold">Report PDF</h3>
+                                  <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                </div>
+                                <div class="flex-1 p-4">
+                                  <iframe 
+                                    src="${fullUrl}" 
+                                    class="w-full h-full border-0 rounded"
+                                    title="Report PDF"
+                                  ></iframe>
+                                </div>
+                              </div>
+                            `;
+                            
+                            document.body.appendChild(modal);
+                            
+                            // Close modal handlers
+                            const closeModal = () => document.body.removeChild(modal);
+                            modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                            modal.addEventListener('click', (e) => {
+                              if (e.target === modal) closeModal();
+                            });
+                          }}
+                          className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                        >
+                          📄 View PDF
+                        </button>
+                        <br />
+                        <a
+                          href={submission.reportUrl?.startsWith('/api/') 
+                            ? `${window.location.origin}${submission.reportUrl}`
+                            : submission.reportUrl}
+                          download
+                          className="text-green-600 hover:underline text-sm"
+                        >
+                          ⬇️ Download PDF
+                        </a>
+                      </div>
                     </div>
                   )}
 
@@ -318,28 +346,56 @@ export function AssessmentPage() {
                         <FileText className="w-5 h-5 text-gray-600" />
                         <h4 className="font-medium">Presentation</h4>
                       </div>
-                      <a
-                        href={submission.pptUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm"
-                        onClick={(e) => {
-                          // Handle both relative and absolute URLs
-                          if (submission.pptUrl?.startsWith('/api/')) {
-                            // For our streaming API, open in new tab with full URL
-                            e.preventDefault();
-                            const fullUrl = `${window.location.origin}${submission.pptUrl}`;
-                            window.open(fullUrl, '_blank');
-                          }
-                        }}
-                        onError={(e) => {
-                          console.error('Failed to load presentation:', submission.pptUrl);
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.textContent = 'Presentation unavailable';
-                        }}
-                      >
-                        View PPT
-                      </a>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            const fullUrl = submission.pptUrl?.startsWith('/api/') 
+                              ? `${window.location.origin}${submission.pptUrl}`
+                              : submission.pptUrl;
+                            
+                            // Create modal with embedded PDF/PPT
+                            const modal = document.createElement('div');
+                            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                            modal.innerHTML = `
+                              <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                <div class="flex justify-between items-center p-4 border-b">
+                                  <h3 class="text-lg font-semibold">Presentation</h3>
+                                  <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                </div>
+                                <div class="flex-1 p-4">
+                                  <iframe 
+                                    src="${fullUrl}" 
+                                    class="w-full h-full border-0 rounded"
+                                    title="Presentation"
+                                  ></iframe>
+                                </div>
+                              </div>
+                            `;
+                            
+                            document.body.appendChild(modal);
+                            
+                            // Close modal handlers
+                            const closeModal = () => document.body.removeChild(modal);
+                            modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                            modal.addEventListener('click', (e) => {
+                              if (e.target === modal) closeModal();
+                            });
+                          }}
+                          className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                        >
+                          📊 View Presentation
+                        </button>
+                        <br />
+                        <a
+                          href={submission.pptUrl?.startsWith('/api/') 
+                            ? `${window.location.origin}${submission.pptUrl}`
+                            : submission.pptUrl}
+                          download
+                          className="text-green-600 hover:underline text-sm"
+                        >
+                          ⬇️ Download
+                        </a>
+                      </div>
                     </div>
                   )}
                 </div>
