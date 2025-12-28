@@ -123,8 +123,22 @@ export class SubmissionService {
     try {
       // Find submissions where faculty is directly assigned
       const directSubmissions = await Submission.find({ facultyId })
-        .populate('groupId', 'groupCode members')
-        .populate('studentId', 'name email studentId')
+        .populate({
+          path: 'groupId',
+          populate: {
+            path: 'assignedProjectId',
+            model: 'Project',
+            select: 'title projectId type brief facultyName'
+          }
+        })
+        .populate({
+          path: 'studentId',
+          populate: {
+            path: 'assignedProjectId',
+            model: 'Project',
+            select: 'title projectId type brief facultyName'
+          }
+        })
         .populate('projectId', 'title projectId projectType')
         .populate('submittedBy', 'name email')
         .sort({ submittedAt: -1 });
@@ -137,8 +151,22 @@ export class SubmissionService {
         projectId: { $in: projectIds },
         facultyId: { $ne: facultyId } // Avoid duplicates
       })
-        .populate('groupId', 'groupCode members')
-        .populate('studentId', 'name email studentId')
+        .populate({
+          path: 'groupId',
+          populate: {
+            path: 'assignedProjectId',
+            model: 'Project',
+            select: 'title projectId type brief facultyName'
+          }
+        })
+        .populate({
+          path: 'studentId',
+          populate: {
+            path: 'assignedProjectId',
+            model: 'Project',
+            select: 'title projectId type brief facultyName'
+          }
+        })
         .populate('projectId', 'title projectId projectType')
         .populate('submittedBy', 'name email')
         .sort({ submittedAt: -1 });
@@ -622,7 +650,8 @@ export class SubmissionService {
       // 2. Get group submissions where faculty is assigned to the group's project
       // Find groups assigned to this faculty
       const facultyGroups = await Group.find({ assignedFacultyId: facultyId })
-        .populate('members.user', 'name email studentId');
+        .populate('members.user', 'name email studentId')
+        .populate('assignedProjectId', 'title projectId type brief facultyName'); // Populate project details
 
       if (facultyGroups.length > 0) {
         const groupIds = facultyGroups.map(group => group._id);
@@ -631,7 +660,14 @@ export class SubmissionService {
           groupId: { $in: groupIds } 
         })
           .populate('submittedBy', 'name email')
-          .populate('groupId')
+          .populate({
+            path: 'groupId',
+            populate: {
+              path: 'assignedProjectId',
+              model: 'Project',
+              select: 'title projectId type brief facultyName'
+            }
+          })
           .sort({ submittedAt: -1 });
 
         // Transform group submissions
@@ -644,15 +680,20 @@ export class SubmissionService {
             assessmentType: 'A1', // GroupSubmissions are typically A1 assessments
             githubLink: submission.githubUrl,
             reportUrl: submission.reportFile?.url,
-            pptUrl: submission.presentationFile?.url || submission.presentationUrl,
+            presentationUrl: submission.presentationFile?.url || submission.presentationUrl,
             submittedAt: submission.submittedAt,
             submittedBy: submission.submittedBy,
-            groupId: submission.groupId,
-            groupCode: group?.groupCode,
-            members: group?.members,
+            groupId: {
+              _id: submission.groupId._id,
+              groupCode: group?.groupCode,
+              members: group?.members,
+              assignedProjectId: group?.assignedProjectId
+            },
             isGraded: false, // GroupSubmissions don't have grading yet
             isGradeReleased: false,
-            comments: submission.comments
+            comments: submission.comments,
+            // Include project info directly for easier access
+            projectId: group?.assignedProjectId
           });
         });
       }

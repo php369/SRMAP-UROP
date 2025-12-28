@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, AlertCircle } from 'lucide-react';
+import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, GlowButton } from '../../components/ui';
+import { GlassCard } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
@@ -14,13 +14,29 @@ interface Submission {
     _id: string;
     groupCode: string;
     members: any[];
+    assignedProjectId?: {
+      _id: string;
+      title: string;
+      projectId: string;
+      type: string;
+      brief: string;
+      facultyName: string;
+    };
   };
   studentId?: {
     _id: string;
     name: string;
     email: string;
+    assignedProjectId?: {
+      _id: string;
+      title: string;
+      projectId: string;
+      type: string;
+      brief: string;
+      facultyName: string;
+    };
   };
-  projectId: {
+  projectId?: {
     _id: string;
     title: string;
     projectType: string;
@@ -78,7 +94,29 @@ export function FacultyAssessmentPage() {
     try {
       const response = await api.get('/submissions/faculty');
       if (response.success && response.data && Array.isArray(response.data)) {
-        setSubmissions(response.data);
+        // Enhance submissions with proper project info
+        const enhancedSubmissions = await Promise.all(
+          response.data.map(async (submission: Submission) => {
+            // If project info is missing, try to fetch it from group's assignedProjectId
+            if (submission.groupId && !submission.projectId && submission.groupId.assignedProjectId) {
+              try {
+                const projectResponse = await api.get(`/projects/${submission.groupId.assignedProjectId._id}`);
+                if (projectResponse.success && projectResponse.data) {
+                  const projectData = projectResponse.data as any;
+                  submission.projectId = {
+                    _id: projectData._id || submission.groupId.assignedProjectId._id,
+                    title: projectData.title || submission.groupId.assignedProjectId.title,
+                    projectType: projectData.type || submission.groupId.assignedProjectId.type
+                  };
+                }
+              } catch (error) {
+                console.warn('Failed to fetch project details for submission:', submission._id);
+              }
+            }
+            return submission;
+          })
+        );
+        setSubmissions(enhancedSubmissions);
       } else if ((response as any).submissions && Array.isArray((response as any).submissions)) {
         // Handle current API response format
         setSubmissions((response as any).submissions);
@@ -93,8 +131,51 @@ export function FacultyAssessmentPage() {
     }
   };
 
+  const getProjectInfo = (submission: Submission) => {
+    // Try to get project info from group's assignedProjectId first
+    if (submission.groupId?.assignedProjectId) {
+      return {
+        title: submission.groupId.assignedProjectId.title,
+        type: submission.groupId.assignedProjectId.type,
+        projectId: submission.groupId.assignedProjectId.projectId,
+        brief: submission.groupId.assignedProjectId.brief,
+        facultyName: submission.groupId.assignedProjectId.facultyName
+      };
+    }
+    
+    // Try to get project info from student's assignedProjectId
+    if (submission.studentId?.assignedProjectId) {
+      return {
+        title: submission.studentId.assignedProjectId.title,
+        type: submission.studentId.assignedProjectId.type,
+        projectId: submission.studentId.assignedProjectId.projectId,
+        brief: submission.studentId.assignedProjectId.brief,
+        facultyName: submission.studentId.assignedProjectId.facultyName
+      };
+    }
+    
+    // Fallback to projectId if available
+    if (submission.projectId) {
+      return {
+        title: submission.projectId.title,
+        type: submission.projectId.projectType,
+        projectId: 'N/A',
+        brief: 'No description available',
+        facultyName: 'Unknown Faculty'
+      };
+    }
+    
+    // Default fallback
+    return {
+      title: 'Unknown Project',
+      type: 'Unknown',
+      projectId: 'N/A',
+      brief: 'No project assigned',
+      facultyName: 'Unknown Faculty'
+    };
+  };
   const handleGradeChange = async (logId: string, grade: number) => {
-    if (isNaN(grade) || grade < 0 || grade > 5) {
+    if (grade < 0 || grade > 5) {
       toast.error('Grade must be between 0 and 5');
       return;
     }
@@ -170,12 +251,6 @@ export function FacultyAssessmentPage() {
   };
 
   const handleGradeSubmission = async () => {
-    // Grading functionality is temporarily disabled as the API endpoint is not available
-    toast.error('Grading functionality is currently unavailable. Please contact the administrator.');
-    return;
-    
-    /* 
-    // This code will be enabled when the grading API is deployed
     if (!selectedSubmission) return;
 
     const grade = parseFloat(gradeData.grade);
@@ -201,7 +276,6 @@ export function FacultyAssessmentPage() {
     } catch (error) {
       toast.error('Failed to submit grade');
     }
-    */
   };
 
   const getAssessmentBadge = (type: string) => {
@@ -437,8 +511,8 @@ export function FacultyAssessmentPage() {
                             : submission.studentId?.name}
                         </h3>
                         {getAssessmentBadge(submission.assessmentType)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
-                          {submission.projectId?.projectType || 'Unknown'}
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600 text-blue-800 dark:text-white text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-600">
+                          {getProjectInfo(submission).type}
                         </span>
                         {submission.facultyGrade !== undefined && (
                           <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
@@ -450,7 +524,15 @@ export function FacultyAssessmentPage() {
                       <div className="space-y-2 mb-4">
                         <div>
                           <span className="text-sm font-medium text-text">Project: </span>
-                          <span className="text-sm text-textSecondary">{submission.projectId?.title || 'Unknown Project'}</span>
+                          <span className="text-sm text-textSecondary">{getProjectInfo(submission).title}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-text">Project ID: </span>
+                          <span className="text-sm text-textSecondary">{getProjectInfo(submission).projectId}</span>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-text">Faculty: </span>
+                          <span className="text-sm text-textSecondary">{getProjectInfo(submission).facultyName}</span>
                         </div>
                         {submission.groupId && (
                           <div>
@@ -587,7 +669,7 @@ export function FacultyAssessmentPage() {
                     <div className="flex items-center gap-2 ml-4">
                       {submission.projectId?._id && meetingLogs[submission.projectId._id]?.length > 0 && (
                         <button
-                          onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId._id])}
+                          onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId!._id])}
                           className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm"
                           title="View Meeting Logs"
                         >
@@ -624,7 +706,7 @@ export function FacultyAssessmentPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
             onClick={() => {
               setSelectedSubmission(null);
               setGradeData({ grade: '', comments: '' });
@@ -635,71 +717,63 @@ export function FacultyAssessmentPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-2xl"
             >
-              <GlassCard className="p-6">
-                <h2 className="text-2xl font-bold text-text mb-6">Grade Submission</h2>
+              <div className="p-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Grade Submission</h2>
                 
-                {/* Temporary Notice */}
-                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                    <h3 className="font-medium text-yellow-800 dark:text-yellow-300">Notice</h3>
-                  </div>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                    Grading functionality is temporarily unavailable while the system is being updated. 
-                    You can still view submissions and provide feedback through other channels.
-                  </p>
-                </div>
-
                 <div className="space-y-6">
                   {/* Submission Info */}
-                  <div className="p-4 bg-white/5 rounded-lg space-y-3">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
                     <div>
-                      <span className="text-sm font-medium text-textSecondary">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                         {selectedSubmission.groupId ? 'Group' : 'Student'}:
                       </span>
-                      <p className="text-text">
+                      <p className="text-gray-900 dark:text-white font-semibold">
                         {selectedSubmission.groupId
                           ? `Group ${selectedSubmission.groupId.groupCode}`
                           : selectedSubmission.studentId?.name}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-textSecondary">Project:</span>
-                      <p className="text-text">{selectedSubmission.projectId?.title || 'Unknown Project'}</p>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Project:</span>
+                      <p className="text-gray-900 dark:text-white font-semibold">{getProjectInfo(selectedSubmission).title}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-textSecondary">Assessment:</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Project ID:</span>
+                      <p className="text-gray-900 dark:text-white">{getProjectInfo(selectedSubmission).projectId}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Assessment:</span>
                       <div className="mt-1">{getAssessmentBadge(selectedSubmission.assessmentType)}</div>
                     </div>
                   </div>
 
                   {/* Submission Links */}
                   <div>
-                    <label className="block text-sm font-medium text-text mb-3">Submitted Work</label>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">Submitted Work</label>
                     <div className="grid grid-cols-1 gap-3">
                       {selectedSubmission.githubLink && (
                         <a
                           href={selectedSubmission.githubLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                          className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-all border border-gray-200 dark:border-gray-600"
                         >
-                          <Github className="w-5 h-5 text-primary" />
+                          <Github className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-text">GitHub Repository</p>
-                            <p className="text-xs text-textSecondary truncate">{selectedSubmission.githubLink}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">GitHub Repository</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{selectedSubmission.githubLink}</p>
                           </div>
                         </a>
                       )}
                       {selectedSubmission.reportUrl && (
-                        <div className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center gap-3 mb-2">
-                            <FileText className="w-5 h-5 text-primary" />
+                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-text">Report PDF</p>
-                              <p className="text-xs text-textSecondary">View or download</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">Report PDF</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300">View or download</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -737,7 +811,7 @@ export function FacultyAssessmentPage() {
                                   if (e.target === modal) closeModal();
                                 });
                               }}
-                              className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                              className="text-blue-600 dark:text-blue-400 hover:underline text-sm cursor-pointer bg-none border-none p-0"
                             >
                               📄 View
                             </button>
@@ -746,7 +820,7 @@ export function FacultyAssessmentPage() {
                                 ? `${window.location.origin}${selectedSubmission.reportUrl}`
                                 : selectedSubmission.reportUrl}
                               download
-                              className="text-green-600 hover:underline text-sm"
+                              className="text-green-600 dark:text-green-400 hover:underline text-sm"
                             >
                               ⬇️ Download
                             </a>
@@ -754,12 +828,12 @@ export function FacultyAssessmentPage() {
                         </div>
                       )}
                       {selectedSubmission.presentationUrl && (
-                        <div className="p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div className="flex items-center gap-3 mb-2">
-                            <Presentation className="w-5 h-5 text-primary" />
+                            <Presentation className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-text">Presentation</p>
-                              <p className="text-xs text-textSecondary">View or download</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">Presentation</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300">View or download</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -797,7 +871,7 @@ export function FacultyAssessmentPage() {
                                   if (e.target === modal) closeModal();
                                 });
                               }}
-                              className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                              className="text-blue-600 dark:text-blue-400 hover:underline text-sm cursor-pointer bg-none border-none p-0"
                             >
                               📊 View
                             </button>
@@ -806,7 +880,7 @@ export function FacultyAssessmentPage() {
                                 ? `${window.location.origin}${selectedSubmission.presentationUrl}`
                                 : selectedSubmission.presentationUrl}
                               download
-                              className="text-green-600 hover:underline text-sm"
+                              className="text-green-600 dark:text-green-400 hover:underline text-sm"
                             >
                               ⬇️ Download
                             </a>
@@ -819,7 +893,7 @@ export function FacultyAssessmentPage() {
                   {/* Grading Form */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                         Grade (0-100) *
                       </label>
                       <input
@@ -829,61 +903,59 @@ export function FacultyAssessmentPage() {
                         step="0.5"
                         value={gradeData.grade}
                         onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
-                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter grade"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text mb-2">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                         Comments / Feedback
                       </label>
                       <textarea
                         value={gradeData.comments}
                         onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
-                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         rows={4}
                         placeholder="Provide feedback to students..."
                       />
                     </div>
-
                   </div>
 
                   {/* Existing Grade Info */}
                   {selectedSubmission.facultyGrade !== undefined && (
-                    <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
-                      <p className="text-sm text-success mb-2">Previously Graded</p>
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-300 mb-2 font-medium">Previously Graded</p>
                       <div className="space-y-1 text-sm">
-                        <p className="text-text">Grade: {selectedSubmission.facultyGrade}/100</p>
+                        <p className="text-gray-900 dark:text-white">Grade: <span className="font-semibold">{selectedSubmission.facultyGrade}/100</span></p>
                         {selectedSubmission.facultyComments && (
-                          <p className="text-textSecondary">Comments: {selectedSubmission.facultyComments}</p>
+                          <p className="text-gray-700 dark:text-gray-300">Comments: {selectedSubmission.facultyComments}</p>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
                   <button
                     onClick={() => {
                       setSelectedSubmission(null);
                       setGradeData({ grade: '', comments: '' });
                     }}
-                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
+                    className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white transition-all"
                   >
                     Cancel
                   </button>
-                  <GlowButton
+                  <button
                     onClick={handleGradeSubmission}
-                    variant="primary"
-                    glow
-                    className="flex-1"
+                    disabled={!gradeData.grade || parseFloat(gradeData.grade) < 0 || parseFloat(gradeData.grade) > 100}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <Send className="w-4 h-4 mr-2" />
+                    <Send className="w-4 h-4" />
                     Submit Grade
-                  </GlowButton>
+                  </button>
                 </div>
-              </GlassCard>
+              </div>
             </motion.div>
           </motion.div>
         )}
