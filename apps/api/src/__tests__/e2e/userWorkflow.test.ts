@@ -13,7 +13,7 @@ import { afterEach } from 'node:test';
 // Mock external services
 const mockGoogleAuth = require('../../services/googleAuth');
 const mockGoogleCalendar = require('../../services/googleCalendar');
-const mockCloudinary = require('../../services/cloudinaryService');
+const mockStorage = require('../../services/storageService');
 
 describe('E2E User Workflows', () => {
   let app: express.Application;
@@ -107,9 +107,9 @@ describe('E2E User Workflows', () => {
       id: 'calendar-event-123',
       meetUrl: 'https://meet.google.com/test-meet-link',
     });
-    mockCloudinary.uploadFile.mockResolvedValue({
-      url: 'https://cloudinary.com/test-file.pdf',
-      publicId: 'test-file-123',
+    mockStorage.uploadFile.mockResolvedValue({
+      url: 'https://supabase.co/storage/test-file.pdf',
+      path: 'submissions/test-file.pdf',
     });
   });
 

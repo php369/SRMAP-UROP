@@ -1,7 +1,38 @@
 import multer from 'multer';
 import { Request, Response, NextFunction } from 'express';
-import { validateFile } from '../services/cloudinaryService';
 import { logger } from '../utils/logger';
+
+// Simple file validation function (replacing cloudinary dependency)
+const validateFile = (
+  file: { mimetype: string; size: number; originalname: string },
+  allowedTypes?: string[],
+  maxSize?: number
+) => {
+  const defaultAllowedTypes = ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png', 'zip', 'rar'];
+  const defaultMaxSize = 10 * 1024 * 1024; // 10MB
+
+  const types = allowedTypes || defaultAllowedTypes;
+  const sizeLimit = maxSize || defaultMaxSize;
+
+  // Check file extension
+  const extension = file.originalname.split('.').pop()?.toLowerCase();
+  if (!extension || !types.includes(extension)) {
+    return {
+      isValid: false,
+      error: `File type .${extension} not allowed. Allowed types: ${types.join(', ')}`
+    };
+  }
+
+  // Check file size
+  if (file.size > sizeLimit) {
+    return {
+      isValid: false,
+      error: `File size ${Math.round(file.size / (1024 * 1024))}MB exceeds limit of ${Math.round(sizeLimit / (1024 * 1024))}MB`
+    };
+  }
+
+  return { isValid: true };
+};
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();

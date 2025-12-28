@@ -482,7 +482,7 @@ export interface GroupSubmissionFile {
   name: string;
   size: number;
   contentType: string;
-  cloudinaryId?: string;
+  storagePath: string;
 }
 
 export interface GroupSubmission {

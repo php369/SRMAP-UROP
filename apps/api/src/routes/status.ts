@@ -87,9 +87,9 @@ router.get('/', async (_req: Request, res: Response) => {
     
     // Check file storage configuration
     const fileStorageConfigured = !!(
-      config.CLOUDINARY_CLOUD_NAME && 
-      config.CLOUDINARY_API_KEY && 
-      config.CLOUDINARY_API_SECRET
+      config.SUPABASE_URL && 
+      config.SUPABASE_SERVICE_ROLE_KEY && 
+      config.SUPABASE_ANON_KEY
     );
     
     // Determine overall status
@@ -119,8 +119,8 @@ router.get('/', async (_req: Request, res: Response) => {
         },
         fileStorage: {
           configured: fileStorageConfigured,
-          provider: 'cloudinary',
-          cloudName: config.CLOUDINARY_CLOUD_NAME || 'not-configured'
+          provider: 'supabase',
+          url: config.SUPABASE_URL || 'not-configured'
         }
       },
       system: {

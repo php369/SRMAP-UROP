@@ -6,9 +6,9 @@ process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
 process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-key-for-testing-only';
 process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
 process.env.GOOGLE_CLIENT_SECRET = 'test-google-client-secret';
-process.env.CLOUDINARY_CLOUD_NAME = 'test-cloudinary';
-process.env.CLOUDINARY_API_KEY = 'test-api-key';
-process.env.CLOUDINARY_API_SECRET = 'test-api-secret';
+process.env.SUPABASE_URL = 'https://test.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
+process.env.SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.FRONTEND_URL = 'http://localhost:3000';
 
 // Increase timeout for database operations
@@ -29,10 +29,10 @@ jest.mock('../services/googleCalendar', () => ({
   deleteCalendarEvent: jest.fn(),
 }));
 
-jest.mock('../services/cloudinaryService', () => ({
+jest.mock('../services/storageService', () => ({
   uploadFile: jest.fn(),
   deleteFile: jest.fn(),
-  generateSignedUploadUrl: jest.fn(),
+  fileExists: jest.fn(),
 }));
 
 // Mock Winston logger to avoid console spam during tests

@@ -24,10 +24,10 @@ const envSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().url('Invalid Google Redirect URI'),
   GOOGLE_CALENDAR_API_KEY: z.string().optional(),
   
-  // Cloudinary
-  CLOUDINARY_CLOUD_NAME: z.string().min(1, 'Cloudinary Cloud Name is required'),
-  CLOUDINARY_API_KEY: z.string().min(1, 'Cloudinary API Key is required'),
-  CLOUDINARY_API_SECRET: z.string().min(1, 'Cloudinary API Secret is required'),
+  // Supabase
+  SUPABASE_URL: z.string().min(1, 'Supabase URL is required'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase Service Role Key is required'),
+  SUPABASE_ANON_KEY: z.string().min(1, 'Supabase Anon Key is required'),
   
   // App Configuration
   FRONTEND_URL: z.string().url('Invalid Frontend URL').default('http://localhost:5173').transform(url => url.replace(/\/$/, '')),
@@ -94,9 +94,9 @@ export const {
   GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI,
   GOOGLE_CALENDAR_API_KEY,
-  CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_ANON_KEY,
   FRONTEND_URL,
   ALLOWED_ORIGINS,
   ADMIN_EMAIL,
