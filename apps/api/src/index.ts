@@ -69,6 +69,7 @@ async function startServer() {
           imgSrc: ["'self'", "data:", "https:"],
         },
       },
+      frameguard: false, // Disable X-Frame-Options to allow iframe embedding
     }));
     
     // CORS configuration

@@ -24,19 +24,38 @@ async function streamPdf(req: any, res: any) {
       },
     });
     
-    // 🔴 CRITICAL HEADERS (THIS FIXES THE ISSUE)
+    // Check if this is a download request
+    const isDownload = req.query.download === 'true';
+    
+    // Set headers for PDF streaming
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Length", cloudinaryResponse.headers["content-length"]);
     res.setHeader("Accept-Ranges", cloudinaryResponse.headers["accept-ranges"] || "bytes");
     res.setHeader("Content-Range", cloudinaryResponse.headers["content-range"]);
-    res.setHeader("Content-Disposition", "inline");
-    res.setHeader("Cache-Control", "no-store"); // 🚫 Prevent Service Worker caching
+    res.setHeader("Cache-Control", "no-store");
     
-    // Important for Vercel
-    res.status(206);
+    // Allow iframe embedding (remove X-Frame-Options restriction)
+    res.removeHeader("X-Frame-Options");
+    
+    if (isDownload) {
+      // Force download
+      const filename = path.split('/').pop() || 'document.pdf';
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    } else {
+      // Inline viewing
+      res.setHeader("Content-Disposition", "inline");
+    }
+    
+    // Important for Vercel - use appropriate status
+    if (req.headers.range) {
+      res.status(206); // Partial content for range requests
+    } else {
+      res.status(200); // Full content
+    }
+    
     cloudinaryResponse.data.pipe(res);
   } catch (error: any) {
-    console.error(error);
+    console.error("PDF streaming error:", error?.response?.data || error);
     res.status(500).send("Unable to load PDF");
   }
 }

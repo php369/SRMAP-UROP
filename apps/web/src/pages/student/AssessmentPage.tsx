@@ -290,7 +290,7 @@ export function AssessmentPage() {
                       <div className="space-y-2">
                         <button
                           onClick={() => {
-                            const fullUrl = submission.reportUrl?.startsWith('/api/') 
+                            const baseUrl = submission.reportUrl?.startsWith('/api/') 
                               ? `${window.location.origin}${submission.reportUrl}`
                               : submission.reportUrl;
                             
@@ -305,9 +305,10 @@ export function AssessmentPage() {
                                 </div>
                                 <div class="flex-1 p-4">
                                   <iframe 
-                                    src="${fullUrl}" 
+                                    src="${baseUrl}" 
                                     class="w-full h-full border-0 rounded"
                                     title="Report PDF"
+                                    sandbox="allow-same-origin allow-scripts"
                                   ></iframe>
                                 </div>
                               </div>
@@ -328,11 +329,25 @@ export function AssessmentPage() {
                         </button>
                         <br />
                         <a
-                          href={submission.reportUrl?.startsWith('/api/') 
+                          href={`${submission.reportUrl?.startsWith('/api/') 
                             ? `${window.location.origin}${submission.reportUrl}`
-                            : submission.reportUrl}
-                          download
+                            : submission.reportUrl}?download=true`}
                           className="text-green-600 hover:underline text-sm"
+                          onClick={(e) => {
+                            // Force download by adding download parameter
+                            e.preventDefault();
+                            const downloadUrl = `${submission.reportUrl?.startsWith('/api/') 
+                              ? `${window.location.origin}${submission.reportUrl}`
+                              : submission.reportUrl}?download=true`;
+                            
+                            // Create temporary link to trigger download
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = '';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
                         >
                           ⬇️ Download PDF
                         </a>
@@ -349,7 +364,7 @@ export function AssessmentPage() {
                       <div className="space-y-2">
                         <button
                           onClick={() => {
-                            const fullUrl = submission.pptUrl?.startsWith('/api/') 
+                            const baseUrl = submission.pptUrl?.startsWith('/api/') 
                               ? `${window.location.origin}${submission.pptUrl}`
                               : submission.pptUrl;
                             
@@ -364,9 +379,10 @@ export function AssessmentPage() {
                                 </div>
                                 <div class="flex-1 p-4">
                                   <iframe 
-                                    src="${fullUrl}" 
+                                    src="${baseUrl}" 
                                     class="w-full h-full border-0 rounded"
                                     title="Presentation"
+                                    sandbox="allow-same-origin allow-scripts"
                                   ></iframe>
                                 </div>
                               </div>
@@ -387,11 +403,25 @@ export function AssessmentPage() {
                         </button>
                         <br />
                         <a
-                          href={submission.pptUrl?.startsWith('/api/') 
+                          href={`${submission.pptUrl?.startsWith('/api/') 
                             ? `${window.location.origin}${submission.pptUrl}`
-                            : submission.pptUrl}
-                          download
+                            : submission.pptUrl}?download=true`}
                           className="text-green-600 hover:underline text-sm"
+                          onClick={(e) => {
+                            // Force download by adding download parameter
+                            e.preventDefault();
+                            const downloadUrl = `${submission.pptUrl?.startsWith('/api/') 
+                              ? `${window.location.origin}${submission.pptUrl}`
+                              : submission.pptUrl}?download=true`;
+                            
+                            // Create temporary link to trigger download
+                            const link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.download = '';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
                         >
                           ⬇️ Download
                         </a>
