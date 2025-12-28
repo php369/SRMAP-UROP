@@ -10,6 +10,7 @@ export interface IGroupSubmission extends Document {
     size: number;
     contentType: string;
     cloudinaryId?: string;
+    storagePath?: string;
   };
   presentationFile?: {
     url: string;
@@ -17,6 +18,7 @@ export interface IGroupSubmission extends Document {
     size: number;
     contentType: string;
     cloudinaryId?: string;
+    storagePath?: string;
   };
   presentationUrl?: string; // Optional presentation URL (alternative to file)
   comments?: string; // Optional comments from the group
@@ -53,6 +55,10 @@ const FileSchema = new Schema({
     required: true
   },
   cloudinaryId: {
+    type: String,
+    default: null
+  },
+  storagePath: {
     type: String,
     default: null
   }

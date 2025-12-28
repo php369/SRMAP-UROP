@@ -18,14 +18,16 @@ export interface CreateSubmissionData {
     name: string;
     size: number;
     contentType: string;
-    cloudinaryId: string;
+    cloudinaryId?: string; // Optional for backward compatibility
+    storagePath?: string; // Supabase storage path
   };
   presentationFile?: {
     url: string;
     name: string;
     size: number;
     contentType: string;
-    cloudinaryId: string;
+    cloudinaryId?: string; // Optional for backward compatibility
+    storagePath?: string; // Supabase storage path
   };
   metadata?: {
     ipAddress: string;
