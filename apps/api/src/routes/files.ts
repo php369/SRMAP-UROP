@@ -10,23 +10,32 @@ const router = express.Router();
  */
 async function streamPdf(req: any, res: any) {
   try {
-    const { path } = req.params;
-    // path = group-submissions/reports/1766879837219_sample.pdf
+    const path = req.params.path;
     const cloudinaryUrl = `https://res.cloudinary.com/dz1ytivuu/raw/upload/${path}`;
     
-    const response = await axios.get(cloudinaryUrl, {
+    const cloudinaryResponse = await axios.get(cloudinaryUrl, {
       responseType: "stream",
       auth: {
         username: process.env.CLOUDINARY_API_KEY,
         password: process.env.CLOUDINARY_API_SECRET,
       },
+      headers: {
+        Range: req.headers.range || "bytes=0-",
+      },
     });
     
+    // 🔴 CRITICAL HEADERS (THIS FIXES THE ISSUE)
     res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Length", cloudinaryResponse.headers["content-length"]);
+    res.setHeader("Accept-Ranges", cloudinaryResponse.headers["accept-ranges"] || "bytes");
+    res.setHeader("Content-Range", cloudinaryResponse.headers["content-range"]);
     res.setHeader("Content-Disposition", "inline");
-    response.data.pipe(res);
-  } catch (err: any) {
-    console.error(err?.response?.data || err);
+    
+    // Important for Vercel
+    res.status(206);
+    cloudinaryResponse.data.pipe(res);
+  } catch (error: any) {
+    console.error(error);
     res.status(500).send("Unable to load PDF");
   }
 }
