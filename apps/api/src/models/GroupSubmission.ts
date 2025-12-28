@@ -9,16 +9,14 @@ export interface IGroupSubmission extends Document {
     name: string;
     size: number;
     contentType: string;
-    cloudinaryId?: string;
-    storagePath?: string;
+    storagePath: string; // Supabase storage path
   };
   presentationFile?: {
     url: string;
     name: string;
     size: number;
     contentType: string;
-    cloudinaryId?: string;
-    storagePath?: string;
+    storagePath: string; // Supabase storage path
   };
   presentationUrl?: string; // Optional presentation URL (alternative to file)
   comments?: string; // Optional comments from the group
@@ -54,13 +52,9 @@ const FileSchema = new Schema({
     type: String,
     required: true
   },
-  cloudinaryId: {
-    type: String,
-    default: null
-  },
   storagePath: {
     type: String,
-    default: null
+    required: true
   }
 }, { _id: false });
 
