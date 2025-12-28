@@ -182,7 +182,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       );
       
       submissionData.reportFile = {
-        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use our streaming API
+        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use cloudinaryId which contains full path
         name: reportFile.originalname,
         size: reportFile.size,
         contentType: reportFile.mimetype,
@@ -199,7 +199,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       );
       
       submissionData.presentationFile = {
-        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use our streaming API
+        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use cloudinaryId which contains full path
         name: presentationFile.originalname,
         size: presentationFile.size,
         contentType: presentationFile.mimetype,
