@@ -3,10 +3,9 @@ import { authenticate } from '../middleware/auth';
 import { rbacGuard } from '../middleware/rbac';
 import { logger } from '../utils/logger';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
 import { GroupSubmission } from '../models/GroupSubmission';
 import { Application } from '../models/Application';
+import { StorageService } from '../services/storageService';
 
 const router = express.Router();
 
@@ -32,72 +31,6 @@ const upload = multer({
     }
   }
 });
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-/**
- * Upload file to Cloudinary
- */
-async function uploadToCloudinary(
-  buffer: Buffer, 
-  filename: string, 
-  folder: string = 'group-submissions'
-): Promise<{ url: string; cloudinaryId: string }> {
-  return new Promise((resolve, reject) => {
-    // Determine correct resource type based on file extension
-    const extension = filename.split('.').pop()?.toLowerCase();
-    const resourceType = ['pdf', 'doc', 'docx', 'zip', 'rar'].includes(extension || '') ? 'raw' : 'auto';
-    
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        public_id: `${Date.now()}_${filename}`,
-        resource_type: resourceType,
-        // Add these options to help with untrusted account issues
-        type: 'upload',
-        access_mode: 'public'
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else if (result) {
-          // Generate a signed URL for raw files to bypass untrusted restrictions
-          let finalUrl = result.secure_url;
-          
-          if (resourceType === 'raw') {
-            try {
-              // Generate signed URL for raw files
-              finalUrl = cloudinary.url(result.public_id, {
-                resource_type: 'raw',
-                type: 'upload',
-                sign_url: true,
-                secure: true
-              });
-            } catch (signError) {
-              console.warn('Failed to generate signed URL, using original:', signError);
-              // Fallback to original URL if signing fails
-            }
-          }
-          
-          resolve({
-            url: finalUrl,
-            cloudinaryId: result.public_id
-          });
-        } else {
-          reject(new Error('Upload failed'));
-        }
-      }
-    );
-
-    const stream = Readable.from(buffer);
-    stream.pipe(uploadStream);
-  });
-}
 
 /**
  * POST /api/group-submissions
@@ -175,35 +108,37 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
     // Handle file uploads
     if (files.reportFile && files.reportFile[0]) {
       const reportFile = files.reportFile[0];
-      const uploadResult = await uploadToCloudinary(
+      const uploadResult = await StorageService.uploadFile(
         reportFile.buffer,
         reportFile.originalname,
-        'group-submissions/reports'
+        'group',
+        reportFile.mimetype
       );
       
       submissionData.reportFile = {
-        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use cloudinaryId which contains full path
+        url: uploadResult.url,
         name: reportFile.originalname,
         size: reportFile.size,
         contentType: reportFile.mimetype,
-        cloudinaryId: uploadResult.cloudinaryId
+        storagePath: uploadResult.path
       };
     }
 
     if (files.presentationFile && files.presentationFile[0]) {
       const presentationFile = files.presentationFile[0];
-      const uploadResult = await uploadToCloudinary(
+      const uploadResult = await StorageService.uploadFile(
         presentationFile.buffer,
         presentationFile.originalname,
-        'group-submissions/presentations'
+        'group',
+        presentationFile.mimetype
       );
       
       submissionData.presentationFile = {
-        url: `/api/v1/files/pdf/${uploadResult.cloudinaryId}`, // Use cloudinaryId which contains full path
+        url: uploadResult.url,
         name: presentationFile.originalname,
         size: presentationFile.size,
         contentType: presentationFile.mimetype,
-        cloudinaryId: uploadResult.cloudinaryId
+        storagePath: uploadResult.path
       };
     }
 

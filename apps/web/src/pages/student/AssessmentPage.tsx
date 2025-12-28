@@ -290,10 +290,6 @@ export function AssessmentPage() {
                       <div className="space-y-2">
                         <button
                           onClick={() => {
-                            const baseUrl = submission.reportUrl?.startsWith('/api/') 
-                              ? `${window.location.origin}${submission.reportUrl}`
-                              : submission.reportUrl;
-                            
                             // Create modal with embedded PDF
                             const modal = document.createElement('div');
                             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
@@ -305,10 +301,9 @@ export function AssessmentPage() {
                                 </div>
                                 <div class="flex-1 p-4">
                                   <iframe 
-                                    src="${baseUrl}" 
+                                    src="${submission.reportUrl}" 
                                     class="w-full h-full border-0 rounded"
                                     title="Report PDF"
-                                    sandbox="allow-same-origin allow-scripts"
                                   ></iframe>
                                 </div>
                               </div>
@@ -329,25 +324,9 @@ export function AssessmentPage() {
                         </button>
                         <br />
                         <a
-                          href={`${submission.reportUrl?.startsWith('/api/') 
-                            ? `${window.location.origin}${submission.reportUrl}`
-                            : submission.reportUrl}?download=true`}
+                          href={submission.reportUrl}
+                          download
                           className="text-green-600 hover:underline text-sm"
-                          onClick={(e) => {
-                            // Force download by adding download parameter
-                            e.preventDefault();
-                            const downloadUrl = `${submission.reportUrl?.startsWith('/api/') 
-                              ? `${window.location.origin}${submission.reportUrl}`
-                              : submission.reportUrl}?download=true`;
-                            
-                            // Create temporary link to trigger download
-                            const link = document.createElement('a');
-                            link.href = downloadUrl;
-                            link.download = '';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
                         >
                           ⬇️ Download PDF
                         </a>
@@ -364,10 +343,6 @@ export function AssessmentPage() {
                       <div className="space-y-2">
                         <button
                           onClick={() => {
-                            const baseUrl = submission.pptUrl?.startsWith('/api/') 
-                              ? `${window.location.origin}${submission.pptUrl}`
-                              : submission.pptUrl;
-                            
                             // Create modal with embedded PDF/PPT
                             const modal = document.createElement('div');
                             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
@@ -379,10 +354,9 @@ export function AssessmentPage() {
                                 </div>
                                 <div class="flex-1 p-4">
                                   <iframe 
-                                    src="${baseUrl}" 
+                                    src="${submission.pptUrl}" 
                                     class="w-full h-full border-0 rounded"
                                     title="Presentation"
-                                    sandbox="allow-same-origin allow-scripts"
                                   ></iframe>
                                 </div>
                               </div>
@@ -403,25 +377,9 @@ export function AssessmentPage() {
                         </button>
                         <br />
                         <a
-                          href={`${submission.pptUrl?.startsWith('/api/') 
-                            ? `${window.location.origin}${submission.pptUrl}`
-                            : submission.pptUrl}?download=true`}
+                          href={submission.pptUrl}
+                          download
                           className="text-green-600 hover:underline text-sm"
-                          onClick={(e) => {
-                            // Force download by adding download parameter
-                            e.preventDefault();
-                            const downloadUrl = `${submission.pptUrl?.startsWith('/api/') 
-                              ? `${window.location.origin}${submission.pptUrl}`
-                              : submission.pptUrl}?download=true`;
-                            
-                            // Create temporary link to trigger download
-                            const link = document.createElement('a');
-                            link.href = downloadUrl;
-                            link.download = '';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
                         >
                           ⬇️ Download
                         </a>
