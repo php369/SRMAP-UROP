@@ -10,6 +10,7 @@ import { api } from '../../utils/api';
 
 interface Submission {
   _id: string;
+  submissionType?: 'solo' | 'group';
   groupId?: {
     _id: string;
     groupCode: string;
@@ -519,6 +520,11 @@ export function FacultyAssessmentPage() {
                             Graded: {submission.facultyGrade}/100
                           </span>
                         )}
+                        {submission.submissionType === 'group' && (
+                          <span className="px-2 py-1 bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-lg border border-orange-300 dark:border-orange-500/30">
+                            Group - Use Meeting Logs
+                          </span>
+                        )}
                       </div>
 
                       <div className="space-y-2 mb-4">
@@ -679,6 +685,12 @@ export function FacultyAssessmentPage() {
                       )}
                       <button
                         onClick={() => {
+                          // Check if this is a group submission that can't be graded through this interface
+                          if (submission.submissionType === 'group') {
+                            toast.error('Group submissions are graded through the meeting logs system. Please use the meeting logs section to grade this submission.');
+                            return;
+                          }
+                          
                           setSelectedSubmission(submission);
                           setGradeData({
                             grade: submission.facultyGrade?.toString() || '',
@@ -686,7 +698,13 @@ export function FacultyAssessmentPage() {
                           });
                         }}
                         className="p-2 hover:bg-white/10 rounded-lg transition-all"
-                        title={submission.facultyGrade !== undefined ? 'View/Edit Grade' : 'Grade Submission'}
+                        title={
+                          submission.submissionType === 'group' 
+                            ? 'Group submissions are graded through meeting logs'
+                            : submission.facultyGrade !== undefined 
+                              ? 'View/Edit Grade' 
+                              : 'Grade Submission'
+                        }
                       >
                         <Eye className="w-4 h-4 text-text" />
                       </button>
@@ -720,7 +738,21 @@ export function FacultyAssessmentPage() {
               className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-2xl"
             >
               <div className="p-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Grade Submission</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  {selectedSubmission.submissionType === 'group' ? 'Group Submission Details' : 'Grade Submission'}
+                </h2>
+                
+                {selectedSubmission.submissionType === 'group' && (
+                  <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                      <h3 className="font-medium text-orange-800 dark:text-orange-300">Group Submission</h3>
+                    </div>
+                    <p className="text-sm text-orange-700 dark:text-orange-400">
+                      Group submissions are graded through the meeting logs system. Please use the meeting logs section above to grade individual meetings for this group.
+                    </p>
+                  </div>
+                )}
                 
                 <div className="space-y-6">
                   {/* Submission Info */}
@@ -890,37 +922,39 @@ export function FacultyAssessmentPage() {
                     </div>
                   </div>
 
-                  {/* Grading Form */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                        Grade (0-100) *
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.5"
-                        value={gradeData.grade}
-                        onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter grade"
-                      />
-                    </div>
+                  {/* Grading Form - Only show for solo submissions */}
+                  {selectedSubmission.submissionType !== 'group' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          Grade (0-100) *
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          value={gradeData.grade}
+                          onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter grade"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                        Comments / Feedback
-                      </label>
-                      <textarea
-                        value={gradeData.comments}
-                        onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={4}
-                        placeholder="Provide feedback to students..."
-                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          Comments / Feedback
+                        </label>
+                        <textarea
+                          value={gradeData.comments}
+                          onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          rows={4}
+                          placeholder="Provide feedback to students..."
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Existing Grade Info */}
                   {selectedSubmission.facultyGrade !== undefined && (
@@ -944,16 +978,18 @@ export function FacultyAssessmentPage() {
                     }}
                     className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white transition-all"
                   >
-                    Cancel
+                    Close
                   </button>
-                  <button
-                    onClick={handleGradeSubmission}
-                    disabled={!gradeData.grade || parseFloat(gradeData.grade) < 0 || parseFloat(gradeData.grade) > 100}
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Submit Grade
-                  </button>
+                  {selectedSubmission.submissionType !== 'group' && (
+                    <button
+                      onClick={handleGradeSubmission}
+                      disabled={!gradeData.grade || parseFloat(gradeData.grade) < 0 || parseFloat(gradeData.grade) > 100}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-4 h-4" />
+                      Submit Grade
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

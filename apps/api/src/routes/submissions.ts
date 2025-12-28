@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import multer from 'multer';
 import { Group } from '../models/Group';
 import { Submission } from '../models/Submission';
+import { GroupSubmission } from '../models/GroupSubmission';
 import { StorageService } from '../services/storageService';
 
 const router = express.Router();
@@ -347,7 +348,24 @@ router.put('/:id/grade', authenticate, rbacGuard('faculty', 'coordinator'), asyn
       });
     }
 
-    const submission = await SubmissionService.getSubmissionById(id);
+    // Try to find in regular Submission collection first
+    let submission = await SubmissionService.getSubmissionById(id);
+
+    // If not found, try GroupSubmission collection
+    if (!submission) {
+      const groupSubmission = await GroupSubmission.findById(id)
+        .populate('groupId')
+        .populate('submittedBy');
+      
+      if (groupSubmission) {
+        // For now, we'll return an error since GroupSubmissions don't have grading implemented yet
+        return res.status(400).json({
+          success: false,
+          error: 'Group submissions grading is not yet implemented. Please use the meeting logs grading system for group assessments.'
+        });
+      }
+    }
+
     if (!submission) {
       return res.status(404).json({
         success: false,
