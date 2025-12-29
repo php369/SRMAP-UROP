@@ -85,10 +85,18 @@ export function FacultyAssessmentPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [selectedProjectLogs, setSelectedProjectLogs] = useState<any[] | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentEvaluation | null>(null);
+  const [showGroupGrading, setShowGroupGrading] = useState(false);
   const [assessmentType, setAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'>('CLA-1');
   const [initializing, setInitializing] = useState(true);
   const [gradeData, setGradeData] = useState({
     grade: '',
+    comments: ''
+  });
+  const [groupGradeData, setGroupGradeData] = useState<{
+    students: Record<string, string>;
+    comments: string;
+  }>({
+    students: {},
     comments: ''
   });
 
@@ -353,6 +361,88 @@ export function FacultyAssessmentPage() {
       }
     } catch (error) {
       toast.error('Failed to submit grade');
+    }
+  };
+
+  const handleGroupGradeSubmission = async () => {
+    if (!selectedSubmission?.students) return;
+
+    const maxScore = getMaxScore(assessmentType);
+    const studentsToGrade = selectedSubmission.students;
+    
+    // Validate all grades
+    const invalidGrades = studentsToGrade.filter(student => {
+      const grade = parseFloat(groupGradeData.students[student.studentId] || '');
+      return isNaN(grade) || grade < 0 || grade > maxScore;
+    });
+
+    if (invalidGrades.length > 0) {
+      toast.error(`Please enter valid grades (0-${maxScore}) for all students`);
+      return;
+    }
+
+    // Check if any student has published grades
+    const publishedStudents = studentsToGrade.filter(student => student.evaluation?.isPublished);
+    if (publishedStudents.length > 0) {
+      const studentNames = publishedStudents.map(s => s.studentName).join(', ');
+      const confirmModify = window.confirm(
+        `⚠️ WARNING: The following students have published grades: ${studentNames}\n\n` +
+        'Modifying published grades may cause confusion and requires coordinator approval.\n\n' +
+        'Are you sure you want to proceed?'
+      );
+      if (!confirmModify) {
+        return;
+      }
+    }
+
+    try {
+      const component = assessmentType === 'CLA-1' ? 'cla1' : 
+                      assessmentType === 'CLA-2' ? 'cla2' : 
+                      assessmentType === 'CLA-3' ? 'cla3' : 'external';
+
+      // Submit grades for all students
+      const gradePromises = studentsToGrade.map(student => {
+        const grade = parseFloat(groupGradeData.students[student.studentId]);
+        
+        let endpoint = '';
+        let payload: any = {};
+
+        if (assessmentType === 'External') {
+          endpoint = '/student-evaluations/external/score';
+          payload = {
+            studentId: student.studentId,
+            groupId: selectedSubmission?.groupId?._id,
+            conductScore: grade,
+            comments: groupGradeData.comments || ''
+          };
+        } else {
+          endpoint = '/student-evaluations/internal/score';
+          payload = {
+            studentId: student.studentId,
+            groupId: selectedSubmission?.groupId?._id,
+            component: component,
+            conductScore: grade,
+            comments: groupGradeData.comments || ''
+          };
+        }
+
+        return api.put(endpoint, payload);
+      });
+
+      const results = await Promise.all(gradePromises);
+      const failedGrades = results.filter(result => !result.success);
+
+      if (failedGrades.length === 0) {
+        toast.success(`Successfully graded all ${studentsToGrade.length} students`);
+        setSelectedSubmission(null);
+        setShowGroupGrading(false);
+        setGroupGradeData({ students: {}, comments: '' });
+        fetchSubmissions();
+      } else {
+        toast.error(`Failed to grade ${failedGrades.length} students. Please try again.`);
+      }
+    } catch (error) {
+      toast.error('Failed to submit group grades');
     }
   };
 
@@ -622,7 +712,31 @@ export function FacultyAssessmentPage() {
                         {/* Student Grading List */}
                         {submission.students && submission.students.length > 0 && (
                           <div className="mt-3">
-                            <span className="text-sm font-medium text-text mb-2 block">Student Grades ({assessmentType}):</span>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-text">Student Grades ({assessmentType}):</span>
+                              <button
+                                onClick={() => {
+                                  setSelectedSubmission(submission);
+                                  setShowGroupGrading(true);
+                                  // Initialize group grade data with current scores
+                                  const initialGrades: Record<string, string> = {};
+                                  submission.students?.forEach(student => {
+                                    const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                                       assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
+                                                       assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
+                                                       student.evaluation.external.reportPresentation.conduct;
+                                    initialGrades[student.studentId] = currentScore > 0 ? currentScore.toString() : '';
+                                  });
+                                  setGroupGradeData({
+                                    students: initialGrades,
+                                    comments: ''
+                                  });
+                                }}
+                                className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
+                              >
+                                Grade Group
+                              </button>
+                            </div>
                             <div className="space-y-2">
                               {submission.students.map((student) => {
                                 const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
@@ -647,19 +761,6 @@ export function FacultyAssessmentPage() {
                                       ) : (
                                         <span className="text-sm text-textSecondary">Not graded</span>
                                       )}
-                                      <button
-                                        onClick={() => {
-                                          setSelectedSubmission(submission);
-                                          setSelectedStudent(student);
-                                          setGradeData({
-                                            grade: currentScore > 0 ? currentScore.toString() : '',
-                                            comments: ''
-                                          });
-                                        }}
-                                        className="px-2 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-xs rounded transition-all"
-                                      >
-                                        Grade
-                                      </button>
                                     </div>
                                   </div>
                                 );
@@ -827,7 +928,7 @@ export function FacultyAssessmentPage() {
 
       {/* Grading Modal */}
       <AnimatePresence>
-        {selectedSubmission && (
+        {(selectedSubmission && (selectedStudent || showGroupGrading || (!selectedStudent && !showGroupGrading))) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -847,7 +948,8 @@ export function FacultyAssessmentPage() {
             >
               <div className="p-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  {selectedStudent ? `Grade Student - ${assessmentType}` : 'Submission Details'}
+                  {selectedStudent ? `Grade Student - ${assessmentType}` : 
+                   showGroupGrading ? `Grade Group - ${assessmentType}` : 'Submission Details'}
                 </h2>
                 
                 <div className="space-y-6">
@@ -1066,8 +1168,87 @@ export function FacultyAssessmentPage() {
                     </div>
                   )}
 
+                  {/* Group Grading Form - Show when grading entire group */}
+                  {showGroupGrading && selectedSubmission.students && (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                          Group Grading - {assessmentType}
+                        </h4>
+                        <p className="text-sm text-blue-600 dark:text-blue-300">
+                          Enter grades for all students in this group. The same comment will be applied to all students.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                          Student Grades (0-{getMaxScore(assessmentType)})
+                        </h4>
+                        {selectedSubmission.students.map((student) => {
+                          const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                             assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
+                                             assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
+                                             student.evaluation.external.reportPresentation.conduct;
+                          
+                          return (
+                            <div key={student.studentId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 dark:text-white">{student.studentName}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{student.studentEmail}</p>
+                                {currentScore > 0 && (
+                                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                                    Current: {currentScore}/{getMaxScore(assessmentType)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={getMaxScore(assessmentType)}
+                                  step="0.5"
+                                  value={groupGradeData.students[student.studentId] || ''}
+                                  onChange={(e) => setGroupGradeData({
+                                    ...groupGradeData,
+                                    students: {
+                                      ...groupGradeData.students,
+                                      [student.studentId]: e.target.value
+                                    }
+                                  })}
+                                  className="w-20 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="0"
+                                />
+                                {groupGradeData.students[student.studentId] && (
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    → {getConvertedScore(parseFloat(groupGradeData.students[student.studentId]) || 0, assessmentType)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          Group Comments / Feedback (Optional)
+                        </label>
+                        <textarea
+                          value={groupGradeData.comments}
+                          onChange={(e) => setGroupGradeData({ ...groupGradeData, comments: e.target.value })}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          rows={3}
+                          placeholder="Provide feedback that will be shared with all group members..."
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          This comment will be applied to all students in the group
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Current Grades Display - Show when viewing submission details */}
-                  {!selectedStudent && selectedSubmission.students && (
+                  {!selectedStudent && !showGroupGrading && selectedSubmission.students && (
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Current Grades ({assessmentType})</h3>
                       <div className="space-y-2">
@@ -1113,7 +1294,9 @@ export function FacultyAssessmentPage() {
                     onClick={() => {
                       setSelectedSubmission(null);
                       setSelectedStudent(null);
+                      setShowGroupGrading(false);
                       setGradeData({ grade: '', comments: '' });
+                      setGroupGradeData({ students: {}, comments: '' });
                     }}
                     className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white transition-all"
                   >
@@ -1127,6 +1310,20 @@ export function FacultyAssessmentPage() {
                     >
                       <Send className="w-4 h-4" />
                       Submit Grade
+                    </button>
+                  )}
+                  {showGroupGrading && (
+                    <button
+                      onClick={handleGroupGradeSubmission}
+                      disabled={!selectedSubmission?.students?.every(student => 
+                        groupGradeData.students[student.studentId] && 
+                        parseFloat(groupGradeData.students[student.studentId]) >= 0 && 
+                        parseFloat(groupGradeData.students[student.studentId]) <= getMaxScore(assessmentType)
+                      )}
+                      className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-4 h-4" />
+                      Submit Group Grades
                     </button>
                   )}
                 </div>
