@@ -5,31 +5,31 @@ import { logger } from '../utils/logger';
 
 export class EvaluationService {
   /**
-   * Convert A1 conduct score (0-20) to final grade (0-10)
+   * Convert CLA-1 conduct score (0-20) to final grade (0-10)
    */
-  static convertA1(conductScore: number): number {
+  static convertCLA1(conductScore: number): number {
     if (conductScore < 0 || conductScore > 20) {
-      throw new Error('A1 conduct score must be between 0 and 20');
+      throw new Error('CLA-1 conduct score must be between 0 and 20');
     }
     return Math.min(10, Math.round(conductScore * 10 / 20));
   }
 
   /**
-   * Convert A2 conduct score (0-30) to final grade (0-15)
+   * Convert CLA-2 conduct score (0-30) to final grade (0-15)
    */
-  static convertA2(conductScore: number): number {
+  static convertCLA2(conductScore: number): number {
     if (conductScore < 0 || conductScore > 30) {
-      throw new Error('A2 conduct score must be between 0 and 30');
+      throw new Error('CLA-2 conduct score must be between 0 and 30');
     }
     return Math.min(15, Math.round(conductScore * 15 / 30));
   }
 
   /**
-   * Convert A3 conduct score (0-50) to final grade (0-25)
+   * Convert CLA-3 conduct score (0-50) to final grade (0-25)
    */
-  static convertA3(conductScore: number): number {
+  static convertCLA3(conductScore: number): number {
     if (conductScore < 0 || conductScore > 50) {
-      throw new Error('A3 conduct score must be between 0 and 50');
+      throw new Error('CLA-3 conduct score must be between 0 and 50');
     }
     return Math.min(25, Math.round(conductScore * 25 / 50));
   }
@@ -49,9 +49,9 @@ export class EvaluationService {
    */
   static calculateScores(evaluation: Partial<IEvaluation>): {
     internal: {
-      a1: { conduct: number; convert: number };
-      a2: { conduct: number; convert: number };
-      a3: { conduct: number; convert: number };
+      cla1: { conduct: number; convert: number };
+      cla2: { conduct: number; convert: number };
+      cla3: { conduct: number; convert: number };
     };
     external: {
       reportPresentation: { conduct: number; convert: number };
@@ -61,9 +61,9 @@ export class EvaluationService {
     total: number;
   } {
     const internal = evaluation.internal || {
-      a1: { conduct: 0, convert: 0 },
-      a2: { conduct: 0, convert: 0 },
-      a3: { conduct: 0, convert: 0 }
+      cla1: { conduct: 0, convert: 0 },
+      cla2: { conduct: 0, convert: 0 },
+      cla3: { conduct: 0, convert: 0 }
     };
 
     const external = evaluation.external || {
@@ -71,21 +71,21 @@ export class EvaluationService {
     };
 
     // Calculate conversions
-    const a1Convert = this.convertA1(internal.a1.conduct);
-    const a2Convert = this.convertA2(internal.a2.conduct);
-    const a3Convert = this.convertA3(internal.a3.conduct);
+    const cla1Convert = this.convertCLA1(internal.cla1.conduct);
+    const cla2Convert = this.convertCLA2(internal.cla2.conduct);
+    const cla3Convert = this.convertCLA3(internal.cla3.conduct);
     const externalConvert = this.convertExternal(external.reportPresentation.conduct);
 
     // Calculate totals
-    const totalInternal = a1Convert + a2Convert + a3Convert;
+    const totalInternal = cla1Convert + cla2Convert + cla3Convert;
     const totalExternal = externalConvert;
     const total = totalInternal + totalExternal;
 
     return {
       internal: {
-        a1: { conduct: internal.a1.conduct, convert: a1Convert },
-        a2: { conduct: internal.a2.conduct, convert: a2Convert },
-        a3: { conduct: internal.a3.conduct, convert: a3Convert }
+        cla1: { conduct: internal.cla1.conduct, convert: cla1Convert },
+        cla2: { conduct: internal.cla2.conduct, convert: cla2Convert },
+        cla3: { conduct: internal.cla3.conduct, convert: cla3Convert }
       },
       external: {
         reportPresentation: { conduct: external.reportPresentation.conduct, convert: externalConvert }
@@ -103,18 +103,18 @@ export class EvaluationService {
     try {
       const calculated = this.calculateScores(evaluation);
       
-      // Check A1 conversion accuracy
-      if (calculated.internal.a1.convert !== evaluation.internal.a1.convert) {
+      // Check CLA-1 conversion accuracy
+      if (calculated.internal.cla1.convert !== evaluation.internal.cla1.convert) {
         return false;
       }
       
-      // Check A2 conversion accuracy
-      if (calculated.internal.a2.convert !== evaluation.internal.a2.convert) {
+      // Check CLA-2 conversion accuracy
+      if (calculated.internal.cla2.convert !== evaluation.internal.cla2.convert) {
         return false;
       }
       
-      // Check A3 conversion accuracy
-      if (calculated.internal.a3.convert !== evaluation.internal.a3.convert) {
+      // Check CLA-3 conversion accuracy
+      if (calculated.internal.cla3.convert !== evaluation.internal.cla3.convert) {
         return false;
       }
       
@@ -137,11 +137,11 @@ export class EvaluationService {
   }
 
   /**
-   * Update internal assessment score (A1, A2, A3)
+   * Update internal assessment score (CLA-1, CLA-2, CLA-3)
    */
   static async updateInternalScore(
     groupId: mongoose.Types.ObjectId,
-    component: 'a1' | 'a2' | 'a3',
+    component: 'cla1' | 'cla2' | 'cla3',
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
     userRole: string
@@ -163,7 +163,7 @@ export class EvaluationService {
       }
 
       // Validate score ranges based on component
-      const maxScores = { a1: 20, a2: 30, a3: 50 };
+      const maxScores = { cla1: 20, cla2: 30, cla3: 50 };
       const maxScore = maxScores[component];
       
       if (conductScore < 0 || conductScore > maxScore) {
@@ -183,9 +183,9 @@ export class EvaluationService {
           projectId: group.projectId,
           facultyId: group.facultyId,
           internal: {
-            a1: { conduct: 0, convert: 0 },
-            a2: { conduct: 0, convert: 0 },
-            a3: { conduct: 0, convert: 0 }
+            cla1: { conduct: 0, convert: 0 },
+            cla2: { conduct: 0, convert: 0 },
+            cla3: { conduct: 0, convert: 0 }
           },
           external: {
             reportPresentation: { conduct: 0, convert: 0 }
@@ -369,9 +369,9 @@ export class EvaluationService {
           facultyId: group.facultyId,
           externalFacultyId: externalFacultyId,
           internal: {
-            a1: { conduct: 0, convert: 0 },
-            a2: { conduct: 0, convert: 0 },
-            a3: { conduct: 0, convert: 0 }
+            cla1: { conduct: 0, convert: 0 },
+            cla2: { conduct: 0, convert: 0 },
+            cla3: { conduct: 0, convert: 0 }
           },
           external: {
             reportPresentation: { conduct: 0, convert: 0 }
@@ -927,9 +927,9 @@ export class EvaluationService {
    */
   private static isEvaluationComplete(evaluation: IEvaluation): boolean {
     return (
-      evaluation.internal.a1.conduct > 0 &&
-      evaluation.internal.a2.conduct > 0 &&
-      evaluation.internal.a3.conduct > 0 &&
+      evaluation.internal.cla1.conduct > 0 &&
+      evaluation.internal.cla2.conduct > 0 &&
+      evaluation.internal.cla3.conduct > 0 &&
       evaluation.external.reportPresentation.conduct > 0
     );
   }

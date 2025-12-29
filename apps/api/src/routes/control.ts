@@ -294,6 +294,104 @@ router.post('/grades/release', authenticate, isCoordinatorOrAdmin, async (req: R
 });
 
 /**
+ * @route   POST /api/v1/control/grades/release-final
+ * @desc    Release final grades for all students in a project type
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { projectType } = req.body;
+
+    if (!projectType) {
+      return res.status(400).json({ 
+        success: false,
+        error: {
+          code: 'MISSING_PROJECT_TYPE',
+          message: 'Project type is required' 
+        }
+      });
+    }
+
+    // Validate project type
+    if (!['IDP', 'UROP', 'CAPSTONE'].includes(projectType)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_PROJECT_TYPE',
+          message: 'Invalid project type. Must be IDP, UROP, or CAPSTONE'
+        }
+      });
+    }
+
+    // Import StudentEvaluation model
+    const { StudentEvaluation } = await import('../models/StudentEvaluation');
+    
+    // Find all groups of the specified project type
+    const groups = await Group.find({ 
+      type: projectType,
+      status: 'approved',
+      assignedProjectId: { $exists: true }
+    }).select('_id');
+
+    if (groups.length === 0) {
+      return res.json({
+        success: true,
+        message: `No approved groups found for ${projectType}`,
+        data: { count: 0 }
+      });
+    }
+
+    const groupIds = groups.map(g => g._id);
+
+    // Release final grades for all student evaluations in these groups
+    const result = await StudentEvaluation.updateMany(
+      {
+        groupId: { $in: groupIds },
+        isPublished: false
+      },
+      {
+        isPublished: true,
+        publishedAt: new Date(),
+        publishedBy: new mongoose.Types.ObjectId(req.user!.id)
+      }
+    );
+
+    // Also release grades for legacy submissions if any exist
+    const submissionResult = await Submission.updateMany(
+      {
+        projectType,
+        isGraded: true,
+        isGradeReleased: false
+      },
+      { 
+        isGradeReleased: true 
+      }
+    );
+
+    const totalReleased = result.modifiedCount + submissionResult.modifiedCount;
+
+    res.json({
+      success: true,
+      message: `Released final grades for ${totalReleased} evaluations in ${projectType}`,
+      data: { 
+        count: totalReleased,
+        studentEvaluations: result.modifiedCount,
+        legacySubmissions: submissionResult.modifiedCount
+      }
+    });
+  } catch (error: any) {
+    console.error('Release final grades error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'RELEASE_FINAL_GRADES_FAILED',
+        message: 'Failed to release final grades'
+      }
+    });
+  }
+});
+
+/**
  * @route   GET /api/v1/control/stats
  * @desc    Get dashboard statistics
  * @access  Private (Coordinator, Admin)

@@ -60,7 +60,7 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({
   };
 
   const renderScoreComponent = (
-    componentKey: 'a1' | 'a2' | 'a3',
+    componentKey: 'cla1' | 'cla2' | 'cla3',
     component: { conduct: number; convert: number }
   ) => {
     const details = componentDetails[componentKey];
@@ -243,14 +243,14 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({
             {/* Internal Assessments */}
             {evaluation ? (
               <>
-                {renderScoreComponent('a1', evaluation.internal.a1)}
-                {renderScoreComponent('a2', evaluation.internal.a2)}
-                {renderScoreComponent('a3', evaluation.internal.a3)}
+                {renderScoreComponent('cla1', evaluation.internal.cla1)}
+                {renderScoreComponent('cla2', evaluation.internal.cla2)}
+                {renderScoreComponent('cla3', evaluation.internal.cla3)}
                 {renderExternalComponent()}
               </>
             ) : (
               <>
-                {(['a1', 'a2', 'a3'] as const).map((key) => (
+                {(['cla1', 'cla2', 'cla3'] as const).map((key) => (
                   <div key={key} className="p-4 bg-surface border border-border rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-textPrimary">

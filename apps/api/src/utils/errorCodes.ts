@@ -187,8 +187,8 @@ export function errorCodeMiddleware(err: any, req: any, res: any, next: any) {
  * // Example 3: Custom message
  * throw new AppError(
  *   ErrorCodes.BUSINESS_WINDOW_CLOSED,
- *   { windowType: 'submission', assessmentType: 'A1' },
- *   'Submission window for Assessment A1 is closed'
+ *   { windowType: 'submission', assessmentType: 'CLA-1' },
+ *   'Submission window for Assessment CLA-1 is closed'
  * );
  * 
  * // Example 4: In route handler

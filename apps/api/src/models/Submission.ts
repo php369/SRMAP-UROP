@@ -7,7 +7,7 @@ export interface ISubmission extends Document {
   studentId?: mongoose.Types.ObjectId; // For solo submissions
   projectId: mongoose.Types.ObjectId;
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  assessmentType: 'A1' | 'A2' | 'A3' | 'External';
+  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   githubLink: string;
   reportUrl: string; // Cloudinary URL for PDF
   pptUrl?: string; // Cloudinary URL or external link (required for External only)
@@ -62,7 +62,7 @@ const SubmissionSchema = new Schema<ISubmission>({
   },
   assessmentType: {
     type: String,
-    enum: ['A1', 'A2', 'A3', 'External'],
+    enum: ['CLA-1', 'CLA-2', 'CLA-3', 'External'],
     required: true
   },
   githubLink: {

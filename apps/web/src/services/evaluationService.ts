@@ -12,9 +12,9 @@ export interface Evaluation {
   facultyId: string;
   externalFacultyId?: string;
   internal: {
-    a1: EvaluationComponent;
-    a2: EvaluationComponent;
-    a3: EvaluationComponent;
+    cla1: EvaluationComponent;
+    cla2: EvaluationComponent;
+    cla3: EvaluationComponent;
   };
   external: {
     reportPresentation: EvaluationComponent;
@@ -72,11 +72,11 @@ export class EvaluationService {
   }
 
   /**
-   * Update internal assessment score (A1, A2, or A3)
+   * Update internal assessment score (CLA-1, CLA-2, or CLA-3)
    */
   static async updateInternalScore(
     groupId: string,
-    component: 'a1' | 'a2' | 'a3',
+    component: 'cla1' | 'cla2' | 'cla3',
     conductScore: number
   ): Promise<Evaluation> {
     const response = await api.put('/evaluations/internal/score', {
@@ -188,20 +188,20 @@ export class EvaluationService {
    */
   static getComponentDetails() {
     return {
-      a1: {
-        name: 'A1 - Project Proposal',
+      cla1: {
+        name: 'CLA-1 - Project Proposal',
         maxConduct: 20,
         maxConvert: 10,
         description: 'Initial project proposal and planning'
       },
-      a2: {
-        name: 'A2 - Progress Review',
+      cla2: {
+        name: 'CLA-2 - Progress Review',
         maxConduct: 30,
         maxConvert: 15,
         description: 'Mid-term progress and implementation review'
       },
-      a3: {
-        name: 'A3 - Final Implementation',
+      cla3: {
+        name: 'CLA-3 - Final Implementation',
         maxConduct: 50,
         maxConvert: 25,
         description: 'Final project implementation and documentation'
@@ -220,9 +220,9 @@ export class EvaluationService {
    */
   static isEvaluationComplete(evaluation: Evaluation): boolean {
     return (
-      evaluation.internal.a1.conduct > 0 &&
-      evaluation.internal.a2.conduct > 0 &&
-      evaluation.internal.a3.conduct > 0 &&
+      evaluation.internal.cla1.conduct > 0 &&
+      evaluation.internal.cla2.conduct > 0 &&
+      evaluation.internal.cla3.conduct > 0 &&
       evaluation.external.reportPresentation.conduct > 0
     );
   }
@@ -232,11 +232,11 @@ export class EvaluationService {
    */
   static getEvaluationProgress(evaluation: Evaluation): number {
     let completed = 0;
-    const total = 4; // a1, a2, a3, external
+    const total = 4; // cla1, cla2, cla3, external
     
-    if (evaluation.internal.a1.conduct > 0) completed++;
-    if (evaluation.internal.a2.conduct > 0) completed++;
-    if (evaluation.internal.a3.conduct > 0) completed++;
+    if (evaluation.internal.cla1.conduct > 0) completed++;
+    if (evaluation.internal.cla2.conduct > 0) completed++;
+    if (evaluation.internal.cla3.conduct > 0) completed++;
     if (evaluation.external.reportPresentation.conduct > 0) completed++;
     
     return Math.round((completed / total) * 100);

@@ -6,11 +6,16 @@ import { api } from '../../utils/api';
 
 type WindowType = 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
-type AssessmentType = 'A1' | 'A2' | 'A3' | 'External';
+type AssessmentType = 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
 
 export function ControlPanel() {
   const [windows, setWindows] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [releasedGrades, setReleasedGrades] = useState<Record<ProjectType, boolean>>({
+    'IDP': false,
+    'UROP': false,
+    'CAPSTONE': false
+  });
   const [showWindowForm, setShowWindowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingWindow, setEditingWindow] = useState<any>(null);
@@ -26,6 +31,7 @@ export function ControlPanel() {
   useEffect(() => {
     fetchWindows();
     fetchStats();
+    checkReleasedGrades();
   }, []);
 
   const fetchWindows = async () => {
@@ -57,6 +63,44 @@ export function ControlPanel() {
         toast.error('Rate limit reached. Please wait a moment before refreshing.');
       }
     }
+  };
+
+  const checkReleasedGrades = async () => {
+    try {
+      // Check if grades have been released for each project type
+      const projectTypes: ProjectType[] = ['IDP', 'UROP', 'CAPSTONE'];
+      const releasedStatus: Record<ProjectType, boolean> = {
+        'IDP': false,
+        'UROP': false,
+        'CAPSTONE': false
+      };
+
+      for (const projectType of projectTypes) {
+        try {
+          const response = await api.get(`/student-evaluations/released-count?projectType=${projectType}`);
+          if (response.success && response.data && response.data.count > 0) {
+            releasedStatus[projectType] = true;
+          }
+        } catch (error) {
+          // If endpoint doesn't exist or fails, assume not released
+          console.log(`Could not check released status for ${projectType}`);
+        }
+      }
+
+      setReleasedGrades(releasedStatus);
+    } catch (error) {
+      console.error('Error checking released grades:', error);
+    }
+  };
+
+  // Check if grade release window is active for any project type
+  const isGradeReleaseWindowActive = () => {
+    const now = new Date();
+    return windows.some(window => {
+      const start = new Date(window.startDate);
+      const end = new Date(window.endDate);
+      return window.windowType === 'grade_release' && now >= start && now <= end;
+    });
   };
 
   const handleEditWindow = (window: any) => {
@@ -187,22 +231,28 @@ export function ControlPanel() {
     }
   };
 
-  const handleReleaseGrades = async (projectType: ProjectType, assessmentType?: AssessmentType) => {
-    if (!confirm(`Are you sure you want to release grades for ${projectType}${assessmentType ? ` - ${assessmentType}` : ''}?`)) {
+  const handleReleaseFinalGrades = async (projectType: ProjectType) => {
+    if (releasedGrades[projectType]) {
+      toast.error(`Final grades for ${projectType} have already been released.`);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to release FINAL grades for ${projectType}? This will make all completed evaluations (CLA-1, CLA-2, CLA-3, and External) visible to students.`)) {
       return;
     }
 
     try {
-      const response = await api.post('/control/grades/release', { projectType, assessmentType });
+      const response = await api.post('/control/grades/release-final', { projectType });
 
       if (response.success) {
-        toast.success((response as any).message || 'Grades released successfully');
+        toast.success((response as any).message || 'Final grades released successfully');
+        setReleasedGrades(prev => ({ ...prev, [projectType]: true }));
         fetchStats();
       } else {
-        toast.error(response.error?.message || 'Failed to release grades');
+        toast.error(response.error?.message || 'Failed to release final grades');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to release grades');
+      toast.error(error.message || 'Failed to release final grades');
     }
   };
 
@@ -292,41 +342,49 @@ export function ControlPanel() {
           </div>
         )}
 
-        {/* Grade Release Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg p-6 mb-8"
-        >
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Award className="w-6 h-6" />
-            Release Grades
-          </h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((projectType) => (
-              <div key={projectType} className="p-4 border rounded-lg">
-                <h3 className="font-bold mb-3">{projectType}</h3>
-                <div className="space-y-2">
-                  {(['A1', 'A2', 'A3', 'External'] as AssessmentType[]).map((assessmentType) => (
+        {/* Grade Release Section - Only show when grade release window is active */}
+        {isGradeReleaseWindowActive() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg p-6 mb-8"
+          >
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Award className="w-6 h-6" />
+              Release Final Grades
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Release final grades to students. This will make all completed evaluations (CLA-1, CLA-2, CLA-3, and External) visible to students as their total score out of 100.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((projectType) => {
+                const isReleased = releasedGrades[projectType];
+                return (
+                  <div key={projectType} className="p-6 border-2 border-gray-200 rounded-lg text-center">
+                    <h3 className="font-bold text-lg mb-4">{projectType}</h3>
                     <button
-                      key={assessmentType}
-                      onClick={() => handleReleaseGrades(projectType, assessmentType)}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                      onClick={() => handleReleaseFinalGrades(projectType)}
+                      disabled={isReleased}
+                      className={`w-full px-6 py-3 rounded-lg font-medium transition-colors ${
+                        isReleased 
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
                     >
-                      Release {assessmentType}
+                      {isReleased ? 'Grades Released' : 'Release Final Grades'}
                     </button>
-                  ))}
-                  <button
-                    onClick={() => handleReleaseGrades(projectType)}
-                    className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                  >
-                    Release All
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      {isReleased 
+                        ? 'Final grades have been released to students' 
+                        : 'Students will see their total score out of 100'
+                      }
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Windows Management */}
         <motion.div
@@ -396,9 +454,9 @@ export function ControlPanel() {
                       className="w-full px-4 py-2 border rounded-lg"
                     >
                       <option value="">Select...</option>
-                      <option value="A1">A1</option>
-                      <option value="A2">A2</option>
-                      <option value="A3">A3</option>
+                      <option value="CLA-1">CLA-1</option>
+                      <option value="CLA-2">CLA-2</option>
+                      <option value="CLA-3">CLA-3</option>
                       <option value="External">External</option>
                     </select>
                   </div>

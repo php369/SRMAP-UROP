@@ -6,7 +6,7 @@ export interface Window {
   _id: string;
   windowType: 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  assessmentType?: 'A1' | 'A2' | 'A3' | 'External';
+  assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   startDate: string | Date;
   endDate: string | Date;
   isActive: boolean;
@@ -79,7 +79,7 @@ export function canPerformAction(
   actionType: 'submit' | 'apply' | 'propose' | 'grade',
   windows: Window[],
   projectType: 'IDP' | 'UROP' | 'CAPSTONE',
-  assessmentType?: 'A1' | 'A2' | 'A3' | 'External'
+  assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
 ): boolean {
   const windowTypeMap: Record<string, string> = {
     submit: 'submission',

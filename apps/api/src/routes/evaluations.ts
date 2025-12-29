@@ -41,7 +41,7 @@ const updateInternalScoreSchema = Joi.object({
     }
     return value;
   }),
-  component: Joi.string().valid('a1', 'a2', 'a3').required(),
+  component: Joi.string().valid('cla1', 'cla2', 'cla3').required(),
   conductScore: Joi.number().min(0).required()
 });
 
@@ -59,7 +59,7 @@ const updateExternalScoreSchema = Joi.object({
  * @swagger
  * /api/evaluations/internal/score:
  *   put:
- *     summary: Update internal assessment score (A1/A2/A3)
+ *     summary: Update internal assessment score (CLA-1/CLA-2/CLA-3)
  *     tags: [Evaluations]
  *     security:
  *       - bearerAuth: []
@@ -79,7 +79,7 @@ const updateExternalScoreSchema = Joi.object({
  *                 description: Group ID to update evaluation for
  *               component:
  *                 type: string
- *                 enum: [a1, a2, a3]
+ *                 enum: [cla1, cla2, cla3]
  *                 description: Assessment component to update
  *               conductScore:
  *                 type: number

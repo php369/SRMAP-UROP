@@ -187,7 +187,7 @@ export const AssessmentsPage: React.FC = () => {
                 <h3 className="font-medium text-blue-900 mb-1">Grade Visibility</h3>
                 <p className="text-sm text-blue-700">
                   Assessment scores are hidden until published by coordinators. You'll see detailed breakdowns
-                  including A1, A2, A3 internal assessments and external evaluation scores once published.
+                  including CLA-1, CLA-2, CLA-3 internal assessments and external evaluation scores once published.
                 </p>
               </div>
             </div>
@@ -269,9 +269,9 @@ export const AssessmentsPage: React.FC = () => {
               <div>
                 <h4 className="font-medium text-textPrimary mb-2">Internal Assessments (50 marks)</h4>
                 <ul className="space-y-1 text-textSecondary">
-                  <li>• A1 - Project Proposal (20 → 10 marks)</li>
-                  <li>• A2 - Progress Review (30 → 15 marks)</li>
-                  <li>• A3 - Final Implementation (50 → 25 marks)</li>
+                  <li>• CLA-1 - Project Proposal (20 → 10 marks)</li>
+                  <li>• CLA-2 - Progress Review (30 → 15 marks)</li>
+                  <li>• CLA-3 - Final Implementation (50 → 25 marks)</li>
                 </ul>
               </div>
               <div>

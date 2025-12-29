@@ -91,7 +91,10 @@ export function AssessmentPage() {
     }
     
     try {
-      // Fetch both regular submissions and group submissions
+      // Fetch student evaluations (new CLA grading system)
+      const evaluationsResponse = await api.get('/student-evaluations/my').catch(() => ({ success: false, data: [] }));
+      
+      // Fetch both regular submissions and group submissions (legacy)
       const [regularResponse, groupResponse] = await Promise.all([
         api.get('/submissions/my').catch(() => ({ success: false, data: [] })),
         api.get('/group-submissions/my/submissions').catch(() => ({ success: false, data: [] }))
@@ -99,7 +102,30 @@ export function AssessmentPage() {
 
       const allSubmissions: any[] = [];
 
-      // Add regular submissions
+      // Add student evaluations (new system)
+      if (evaluationsResponse.success && evaluationsResponse.data) {
+        const evaluations = Array.isArray(evaluationsResponse.data) ? evaluationsResponse.data : [evaluationsResponse.data];
+        evaluations.forEach(evalData => {
+          if (evalData.evaluation && evalData.evaluation.isPublished) {
+            allSubmissions.push({
+              _id: evalData.evaluation._id,
+              submissionType: 'evaluation',
+              assessmentType: 'Final Grade',
+              submittedAt: evalData.evaluation.createdAt,
+              groupId: evalData.evaluation.groupId,
+              projectId: evalData.evaluation.projectId,
+              isGradeReleased: true,
+              finalGrade: evalData.evaluation.total,
+              total: evalData.evaluation.total,
+              // Add project info if available
+              projectTitle: evalData.projectTitle || 'Project',
+              groupCode: evalData.groupCode
+            });
+          }
+        });
+      }
+
+      // Add regular submissions (legacy)
       if (regularResponse.success && regularResponse.data) {
         const regularSubmissions = Array.isArray(regularResponse.data) ? regularResponse.data : [regularResponse.data];
         regularSubmissions.forEach(submission => {
@@ -121,7 +147,7 @@ export function AssessmentPage() {
         });
       }
 
-      // Add group submissions
+      // Add group submissions (legacy)
       if (groupResponse.success && groupResponse.data) {
         const groupSubmissions = Array.isArray(groupResponse.data) ? groupResponse.data : [groupResponse.data];
         groupSubmissions.forEach(submission => {
@@ -129,7 +155,7 @@ export function AssessmentPage() {
             ...submission,
             submissionType: 'group',
             // Map group submission fields to match expected format
-            assessmentType: submission.assessmentType || 'A1',
+            assessmentType: submission.assessmentType || 'CLA-1',
             githubLink: submission.githubUrl || submission.githubLink,
             reportUrl: submission.reportFile?.url,
             pptUrl: submission.presentationFile?.url || submission.presentationUrl,
@@ -218,12 +244,19 @@ export function AssessmentPage() {
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                      {submission.submissionType === 'group' ? (
+                      {submission.submissionType === 'evaluation' ? (
+                        <Award className="w-5 h-5 text-purple-500" />
+                      ) : submission.submissionType === 'group' ? (
                         <Users className="w-5 h-5 text-blue-500" />
                       ) : (
                         <FileText className="w-5 h-5 text-green-500" />
                       )}
-                      {submission.assessmentType} Assessment
+                      {submission.assessmentType} {submission.submissionType === 'evaluation' ? '' : 'Assessment'}
+                      {submission.submissionType === 'evaluation' && (
+                        <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                          Final Grade
+                        </span>
+                      )}
                       {submission.submissionType === 'group' && (
                         <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           Group
@@ -236,10 +269,20 @@ export function AssessmentPage() {
                       )}
                     </h3>
                     <p className="text-gray-600">
-                      Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
+                      {submission.submissionType === 'evaluation' ? 'Grade released on' : 'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
                       {submission.submissionType === 'group' && submission.groupId?.groupCode && (
                         <span className="ml-2 text-blue-600 font-medium">
                           Group: {submission.groupId.groupCode}
+                        </span>
+                      )}
+                      {submission.submissionType === 'evaluation' && submission.groupCode && (
+                        <span className="ml-2 text-purple-600 font-medium">
+                          Group: {submission.groupCode}
+                        </span>
+                      )}
+                      {submission.submissionType === 'evaluation' && submission.projectTitle && (
+                        <span className="ml-2 text-gray-600">
+                          Project: {submission.projectTitle}
                         </span>
                       )}
                     </p>
@@ -264,132 +307,134 @@ export function AssessmentPage() {
                   </div>
                 </div>
 
-                {/* Submitted Work */}
-                <div className="grid md:grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Github className="w-5 h-5 text-gray-600" />
-                      <h4 className="font-medium">GitHub</h4>
+                {/* Submitted Work - Only show for submissions with files */}
+                {submission.submissionType !== 'evaluation' && (
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Github className="w-5 h-5 text-gray-600" />
+                        <h4 className="font-medium">GitHub</h4>
+                      </div>
+                      <a
+                        href={submission.githubLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline text-sm break-all"
+                      >
+                        View Repository
+                      </a>
                     </div>
-                    <a
-                      href={submission.githubLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-sm break-all"
-                    >
-                      View Repository
-                    </a>
+
+                    {submission.reportUrl && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                          <h4 className="font-medium">Report</h4>
+                        </div>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => {
+                              // Create modal with embedded PDF
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                              modal.innerHTML = `
+                                <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                  <div class="flex justify-between items-center p-4 border-b">
+                                    <h3 class="text-lg font-semibold">Report PDF</h3>
+                                    <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                  </div>
+                                  <div class="flex-1 p-4">
+                                    <iframe 
+                                      src="${submission.reportUrl}" 
+                                      class="w-full h-full border-0 rounded"
+                                      title="Report PDF"
+                                    ></iframe>
+                                  </div>
+                                </div>
+                              `;
+                              
+                              document.body.appendChild(modal);
+                              
+                              // Close modal handlers
+                              const closeModal = () => document.body.removeChild(modal);
+                              modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                              modal.addEventListener('click', (e) => {
+                                if (e.target === modal) closeModal();
+                              });
+                            }}
+                            className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                          >
+                            📄 View PDF
+                          </button>
+                          <br />
+                          <a
+                            href={submission.reportUrl}
+                            download
+                            className="text-green-600 hover:underline text-sm"
+                          >
+                            ⬇️ Download PDF
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {submission.pptUrl && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                          <h4 className="font-medium">Presentation</h4>
+                        </div>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => {
+                              // Create modal with embedded PDF/PPT
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                              modal.innerHTML = `
+                                <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+                                  <div class="flex justify-between items-center p-4 border-b">
+                                    <h3 class="text-lg font-semibold">Presentation</h3>
+                                    <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                                  </div>
+                                  <div class="flex-1 p-4">
+                                    <iframe 
+                                      src="${submission.pptUrl}" 
+                                      class="w-full h-full border-0 rounded"
+                                      title="Presentation"
+                                    ></iframe>
+                                  </div>
+                                </div>
+                              `;
+                              
+                              document.body.appendChild(modal);
+                              
+                              // Close modal handlers
+                              const closeModal = () => document.body.removeChild(modal);
+                              modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+                              modal.addEventListener('click', (e) => {
+                                if (e.target === modal) closeModal();
+                              });
+                            }}
+                            className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                          >
+                            📊 View Presentation
+                          </button>
+                          <br />
+                          <a
+                            href={submission.pptUrl}
+                            download
+                            className="text-green-600 hover:underline text-sm"
+                          >
+                            ⬇️ Download
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  {submission.reportUrl && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-5 h-5 text-gray-600" />
-                        <h4 className="font-medium">Report</h4>
-                      </div>
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => {
-                            // Create modal with embedded PDF
-                            const modal = document.createElement('div');
-                            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                            modal.innerHTML = `
-                              <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                <div class="flex justify-between items-center p-4 border-b">
-                                  <h3 class="text-lg font-semibold">Report PDF</h3>
-                                  <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                </div>
-                                <div class="flex-1 p-4">
-                                  <iframe 
-                                    src="${submission.reportUrl}" 
-                                    class="w-full h-full border-0 rounded"
-                                    title="Report PDF"
-                                  ></iframe>
-                                </div>
-                              </div>
-                            `;
-                            
-                            document.body.appendChild(modal);
-                            
-                            // Close modal handlers
-                            const closeModal = () => document.body.removeChild(modal);
-                            modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                            modal.addEventListener('click', (e) => {
-                              if (e.target === modal) closeModal();
-                            });
-                          }}
-                          className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
-                        >
-                          📄 View PDF
-                        </button>
-                        <br />
-                        <a
-                          href={submission.reportUrl}
-                          download
-                          className="text-green-600 hover:underline text-sm"
-                        >
-                          ⬇️ Download PDF
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {submission.pptUrl && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-5 h-5 text-gray-600" />
-                        <h4 className="font-medium">Presentation</h4>
-                      </div>
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => {
-                            // Create modal with embedded PDF/PPT
-                            const modal = document.createElement('div');
-                            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                            modal.innerHTML = `
-                              <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                <div class="flex justify-between items-center p-4 border-b">
-                                  <h3 class="text-lg font-semibold">Presentation</h3>
-                                  <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                </div>
-                                <div class="flex-1 p-4">
-                                  <iframe 
-                                    src="${submission.pptUrl}" 
-                                    class="w-full h-full border-0 rounded"
-                                    title="Presentation"
-                                  ></iframe>
-                                </div>
-                              </div>
-                            `;
-                            
-                            document.body.appendChild(modal);
-                            
-                            // Close modal handlers
-                            const closeModal = () => document.body.removeChild(modal);
-                            modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                            modal.addEventListener('click', (e) => {
-                              if (e.target === modal) closeModal();
-                            });
-                          }}
-                          className="text-blue-500 hover:underline text-sm cursor-pointer bg-none border-none p-0"
-                        >
-                          📊 View Presentation
-                        </button>
-                        <br />
-                        <a
-                          href={submission.pptUrl}
-                          download
-                          className="text-green-600 hover:underline text-sm"
-                        >
-                          ⬇️ Download
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Grades - Only show for solo submissions or graded group submissions */}
-                {submission.isGradeReleased && submission.submissionType === 'solo' && (
+                {/* Grades - Only show final total score when released */}
+                {submission.isGradeReleased && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -397,36 +442,17 @@ export function AssessmentPage() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <Award className="w-8 h-8 text-blue-500" />
-                      <h4 className="text-xl font-bold">Your Grade</h4>
+                      <h4 className="text-xl font-bold">Your Final Grade</h4>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-4">
-                      {submission.facultyGrade !== undefined && (
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600 mb-1">Faculty Grade</p>
-                          <p className="text-3xl font-bold text-blue-600">
-                            {submission.facultyGrade}/100
-                          </p>
-                        </div>
-                      )}
-
-                      {submission.externalGrade !== undefined && (
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600 mb-1">External Grade</p>
-                          <p className="text-3xl font-bold text-purple-600">
-                            {submission.externalGrade}/100
-                          </p>
-                        </div>
-                      )}
-
-                      {submission.finalGrade !== undefined && (
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600 mb-1">Final Grade</p>
-                          <p className="text-4xl font-bold text-green-600">
-                            {submission.finalGrade}/100
-                          </p>
-                        </div>
-                      )}
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-2">Total Score</p>
+                      <p className="text-5xl font-bold text-green-600 mb-2">
+                        {submission.finalGrade || submission.total || 0}/100
+                      </p>
+                      <p className="text-gray-500 text-sm">
+                        Based on CLA-1, CLA-2, CLA-3, and External evaluations
+                      </p>
                     </div>
                   </motion.div>
                 )}

@@ -152,7 +152,7 @@ export const zodSchemas = {
     }),
 
   // Assessment type
-  assessmentType: z.enum(['A1', 'A2', 'A3', 'External']),
+  assessmentType: z.enum(['CLA-1', 'CLA-2', 'CLA-3', 'External']),
 
   // User role
   userRole: z.enum(['student', 'faculty', 'coordinator', 'admin']),

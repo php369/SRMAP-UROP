@@ -302,14 +302,14 @@ export class SubmissionService {
     }
     
     // Generate unique submission ID
-    const submissionId = await this.generateSubmissionId(projectType, 'A1');
+    const submissionId = await this.generateSubmissionId(projectType, 'CLA-1');
     
     // Create submission
     const submissionData: any = {
       submissionId,
       projectId,
       projectType,
-      assessmentType: 'A1', // Default to A1, can be updated later
+      assessmentType: 'CLA-1', // Default to CLA-1, can be updated later
       githubLink: data.githubUrl,
       reportUrl: data.reportFile?.url || '',
       pptUrl: data.presentationUrl || data.presentationFile?.url || '',
@@ -473,7 +473,7 @@ export class SubmissionService {
    */
   static async releaseGrades(
     projectType: 'IDP' | 'UROP' | 'CAPSTONE',
-    assessmentType?: 'A1' | 'A2' | 'A3' | 'External'
+    assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
   ): Promise<number> {
     const query: any = { 
       projectType,
@@ -498,7 +498,7 @@ export class SubmissionService {
    */
   static async checkSubmissionWindow(
     projectType: 'IDP' | 'UROP' | 'CAPSTONE',
-    assessmentType: 'A1' | 'A2' | 'A3' | 'External'
+    assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
   ): Promise<boolean> {
     const now = new Date();
 
@@ -588,7 +588,7 @@ export class SubmissionService {
           allSubmissions.push({
             _id: submission._id,
             submissionType: 'group',
-            assessmentType: 'A1', // GroupSubmissions are typically A1 assessments
+            assessmentType: 'CLA-1', // GroupSubmissions are typically CLA-1 assessments
             githubLink: submission.githubUrl,
             reportUrl: submission.reportFile?.url,
             pptUrl: submission.presentationFile?.url || submission.presentationUrl,
@@ -677,7 +677,7 @@ export class SubmissionService {
           allSubmissions.push({
             _id: submission._id,
             submissionType: 'group',
-            assessmentType: 'A1', // GroupSubmissions are typically A1 assessments
+            assessmentType: 'CLA-1', // GroupSubmissions are typically CLA-1 assessments
             githubLink: submission.githubUrl,
             reportUrl: submission.reportFile?.url,
             presentationUrl: submission.presentationFile?.url || submission.presentationUrl,

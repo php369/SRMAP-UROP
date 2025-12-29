@@ -174,8 +174,8 @@ const swaggerOptions: swaggerJsdoc.Options = {
             projectId: { type: 'string', example: '507f1f77bcf86cd799439011' },
             assessmentType: {
               type: 'string',
-              enum: ['A1', 'A2', 'A3', 'External'],
-              example: 'A1',
+              enum: ['CLA-1', 'CLA-2', 'CLA-3', 'External'],
+              example: 'CLA-1',
             },
             githubLink: {
               type: 'string',

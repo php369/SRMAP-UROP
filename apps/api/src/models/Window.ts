@@ -4,7 +4,7 @@ export interface IWindow extends Document {
   _id: mongoose.Types.ObjectId;
   windowType: 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
   projectType: 'IDP' | 'UROP' | 'CAPSTONE';
-  assessmentType?: 'A1' | 'A2' | 'A3' | 'External'; // For submission/assessment windows
+  assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'; // For submission/assessment windows
   startDate: Date;
   endDate: Date;
   isActive: boolean; // Computed based on current time
@@ -26,7 +26,7 @@ const WindowSchema = new Schema<IWindow>({
   },
   assessmentType: {
     type: String,
-    enum: ['A1', 'A2', 'A3', 'External']
+    enum: ['CLA-1', 'CLA-2', 'CLA-3', 'External']
   },
   startDate: {
     type: Date,

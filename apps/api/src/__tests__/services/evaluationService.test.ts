@@ -46,9 +46,9 @@ describe('EvaluationService', () => {
     test('should calculate all conversions and totals correctly', () => {
       const evaluation = {
         internal: {
-          a1: { conduct: 18, convert: 0 },
-          a2: { conduct: 24, convert: 0 },
-          a3: { conduct: 40, convert: 0 }
+          cla1: { conduct: 18, convert: 0 },
+          cla2: { conduct: 24, convert: 0 },
+          cla3: { conduct: 40, convert: 0 }
         },
         external: {
           reportPresentation: { conduct: 80, convert: 0 }
@@ -57,9 +57,9 @@ describe('EvaluationService', () => {
 
       const result = EvaluationService.calculateScores(evaluation);
 
-      expect(result.internal.a1.convert).toBe(9);
-      expect(result.internal.a2.convert).toBe(12);
-      expect(result.internal.a3.convert).toBe(20);
+      expect(result.internal.cla1.convert).toBe(9);
+      expect(result.internal.cla2.convert).toBe(12);
+      expect(result.internal.cla3.convert).toBe(20);
       expect(result.external.reportPresentation.convert).toBe(40);
       expect(result.totalInternal).toBe(41); // 9 + 12 + 20
       expect(result.totalExternal).toBe(40);
@@ -71,9 +71,9 @@ describe('EvaluationService', () => {
 
       const result = EvaluationService.calculateScores(evaluation);
 
-      expect(result.internal.a1.convert).toBe(0);
-      expect(result.internal.a2.convert).toBe(0);
-      expect(result.internal.a3.convert).toBe(0);
+      expect(result.internal.cla1.convert).toBe(0);
+      expect(result.internal.cla2.convert).toBe(0);
+      expect(result.internal.cla3.convert).toBe(0);
       expect(result.external.reportPresentation.convert).toBe(0);
       expect(result.totalInternal).toBe(0);
       expect(result.totalExternal).toBe(0);

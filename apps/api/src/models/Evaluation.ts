@@ -8,9 +8,9 @@ export interface IEvaluation extends Document {
   facultyId: mongoose.Types.ObjectId;
   externalFacultyId?: mongoose.Types.ObjectId;
   internal: {
-    a1: { conduct: number; convert: number }; // 0-20 → 0-10
-    a2: { conduct: number; convert: number }; // 0-30 → 0-15
-    a3: { conduct: number; convert: number }; // 0-50 → 0-25
+    cla1: { conduct: number; convert: number }; // 0-20 → 0-10
+    cla2: { conduct: number; convert: number }; // 0-30 → 0-15
+    cla3: { conduct: number; convert: number }; // 0-50 → 0-25
   };
   external: {
     reportPresentation: { conduct: number; convert: number }; // 0-100 → 0-50
@@ -59,15 +59,15 @@ const EvaluationSchema = new Schema<IEvaluation>({
     ref: 'User'
   },
   internal: {
-    a1: {
+    cla1: {
       type: EvaluationComponentSchema,
       default: { conduct: 0, convert: 0 }
     },
-    a2: {
+    cla2: {
       type: EvaluationComponentSchema,
       default: { conduct: 0, convert: 0 }
     },
-    a3: {
+    cla3: {
       type: EvaluationComponentSchema,
       default: { conduct: 0, convert: 0 }
     }
@@ -128,9 +128,9 @@ EvaluationSchema.pre('save', function(next) {
     });
     
     // Update the document with calculated values
-    this.internal.a1.convert = calculated.internal.a1.convert;
-    this.internal.a2.convert = calculated.internal.a2.convert;
-    this.internal.a3.convert = calculated.internal.a3.convert;
+    this.internal.cla1.convert = calculated.internal.cla1.convert;
+    this.internal.cla2.convert = calculated.internal.cla2.convert;
+    this.internal.cla3.convert = calculated.internal.cla3.convert;
     this.external.reportPresentation.convert = calculated.external.reportPresentation.convert;
     this.totalInternal = calculated.totalInternal;
     this.totalExternal = calculated.totalExternal;
