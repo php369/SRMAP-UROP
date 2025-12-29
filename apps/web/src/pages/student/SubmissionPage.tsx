@@ -31,6 +31,37 @@ export function SubmissionPage() {
     pptFile: ''
   });
 
+  // PDF Modal function
+  const openPDFModal = (url: string, title: string = 'PDF Viewer') => {
+    // Create modal with embedded PDF
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+          <h3 class="text-lg font-semibold">${title}</h3>
+          <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div class="flex-1 p-4">
+          <iframe 
+            src="${url}" 
+            class="w-full h-full border-0 rounded"
+            title="${title}"
+          ></iframe>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close modal handlers
+    const closeModal = () => document.body.removeChild(modal);
+    modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  };
+
   useEffect(() => {
     const checkEligibility = async () => {
       try {
@@ -520,27 +551,54 @@ export function SubmissionPage() {
 
               <div className="p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-bold mb-2">Report PDF</h3>
-                <a
-                  href={currentSubmission.reportUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  View Report
-                </a>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openPDFModal(currentSubmission.reportUrl, 'Project Report')}
+                    className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
+                  >
+                    📄 View Report
+                  </button>
+                  <span className="text-gray-400">|</span>
+                  <a
+                    href={currentSubmission.reportUrl}
+                    download
+                    className="text-green-600 hover:underline"
+                  >
+                    ⬇️ Download PDF
+                  </a>
+                </div>
               </div>
 
               {currentSubmission.pptUrl && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-bold mb-2">Presentation</h3>
-                  <a
-                    href={currentSubmission.pptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    View Presentation
-                  </a>
+                  <div className="flex items-center gap-2">
+                    {currentSubmission.pptUrl.toLowerCase().includes('.pdf') ? (
+                      <button
+                        onClick={() => openPDFModal(currentSubmission.pptUrl, 'Presentation')}
+                        className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
+                      >
+                        📄 View Presentation
+                      </button>
+                    ) : (
+                      <a
+                        href={currentSubmission.pptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        📊 View Presentation
+                      </a>
+                    )}
+                    <span className="text-gray-400">|</span>
+                    <a
+                      href={currentSubmission.pptUrl}
+                      download
+                      className="text-green-600 hover:underline"
+                    >
+                      ⬇️ Download File
+                    </a>
+                  </div>
                 </div>
               )}
 

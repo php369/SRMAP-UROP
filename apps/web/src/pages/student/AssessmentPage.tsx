@@ -13,6 +13,17 @@ export function AssessmentPage() {
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
 
+  // Helper function to check if evaluation has any scores
+  const hasAnyScores = (evaluation: any) => {
+    if (!evaluation) return false;
+    return (
+      evaluation.internal.cla1.conduct > 0 ||
+      evaluation.internal.cla2.conduct > 0 ||
+      evaluation.internal.cla3.conduct > 0 ||
+      evaluation.external.reportPresentation.conduct > 0
+    );
+  };
+
   useEffect(() => {
     const checkEligibility = async () => {
       try {
@@ -106,7 +117,8 @@ export function AssessmentPage() {
       if (evaluationsResponse.success && evaluationsResponse.data) {
         const evaluations = Array.isArray(evaluationsResponse.data) ? evaluationsResponse.data : [evaluationsResponse.data];
         evaluations.forEach(evalData => {
-          if (evalData.evaluation && evalData.evaluation.isPublished) {
+          if (evalData.evaluation) {
+            // Show all evaluations, not just published ones
             allSubmissions.push({
               _id: evalData.evaluation._id,
               submissionType: 'evaluation',
@@ -114,9 +126,11 @@ export function AssessmentPage() {
               submittedAt: evalData.evaluation.createdAt,
               groupId: evalData.evaluation.groupId,
               projectId: evalData.evaluation.projectId,
-              isGradeReleased: true,
-              finalGrade: evalData.evaluation.total,
-              total: evalData.evaluation.total,
+              isGradeReleased: evalData.evaluation.isPublished,
+              isGraded: evalData.evaluation.isPublished || hasAnyScores(evalData.evaluation),
+              finalGrade: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
+              total: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
+              evaluation: evalData.evaluation, // Include full evaluation data
               // Add project info if available
               projectTitle: evalData.projectTitle || 'Project',
               groupCode: evalData.groupCode
@@ -269,7 +283,9 @@ export function AssessmentPage() {
                       )}
                     </h3>
                     <p className="text-gray-600">
-                      {submission.submissionType === 'evaluation' ? 'Grade released on' : 'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
+                      {submission.submissionType === 'evaluation' ? 
+                        (submission.isGradeReleased ? 'Grade released on' : 'Evaluation created on') : 
+                        'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
                       {submission.submissionType === 'group' && submission.groupId?.groupCode && (
                         <span className="ml-2 text-blue-600 font-medium">
                           Group: {submission.groupId.groupCode}

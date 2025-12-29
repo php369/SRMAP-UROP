@@ -442,8 +442,8 @@ export class StudentEvaluationService {
   static async getStudentOwnEvaluation(studentId: mongoose.Types.ObjectId): Promise<any[]> {
     try {
       const evaluations = await StudentEvaluation.find({
-        studentId: studentId,
-        isPublished: true // Only show published evaluations to students
+        studentId: studentId
+        // Remove isPublished filter to show all evaluations (including graded but not released)
       })
         .populate('groupId', 'groupCode')
         .populate('projectId', 'title type')
