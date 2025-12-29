@@ -8,12 +8,12 @@ export interface IStudentEvaluation extends Document {
   facultyId: mongoose.Types.ObjectId;
   externalFacultyId?: mongoose.Types.ObjectId;
   internal: {
-    cla1: { conduct: number; convert: number }; // 0-20 → 0-10
-    cla2: { conduct: number; convert: number }; // 0-30 → 0-15
-    cla3: { conduct: number; convert: number }; // 0-50 → 0-25
+    cla1: { conduct: number; convert: number; comments?: string }; // 0-20 → 0-10
+    cla2: { conduct: number; convert: number; comments?: string }; // 0-30 → 0-15
+    cla3: { conduct: number; convert: number; comments?: string }; // 0-50 → 0-25
   };
   external: {
-    reportPresentation: { conduct: number; convert: number }; // 0-100 → 0-50
+    reportPresentation: { conduct: number; convert: number; comments?: string }; // 0-100 → 0-50
   };
   totalInternal: number;
   totalExternal: number;
@@ -37,6 +37,11 @@ const EvaluationComponentSchema = new Schema({
     required: true,
     min: 0,
     default: 0
+  },
+  comments: {
+    type: String,
+    trim: true,
+    maxlength: 1000
   }
 }, { _id: false });
 

@@ -540,12 +540,12 @@ export function SubmissionPage() {
               <div className="p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-bold mb-2">GitHub Repository</h3>
                 <a
-                  href={currentSubmission.githubLink}
+                  href={currentSubmission.githubUrl || currentSubmission.githubLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
                 >
-                  {currentSubmission.githubLink}
+                  {currentSubmission.githubUrl || currentSubmission.githubLink}
                 </a>
               </div>
 
@@ -563,6 +563,20 @@ export function SubmissionPage() {
                     href={currentSubmission.reportUrl}
                     download
                     className="text-green-600 hover:underline"
+                    onClick={(e) => {
+                      // Ensure the download works by using the modal approach for problematic URLs
+                      if (currentSubmission.reportUrl.includes('supabase')) {
+                        e.preventDefault();
+                        // Create a temporary link for download
+                        const link = document.createElement('a');
+                        link.href = currentSubmission.reportUrl;
+                        link.download = 'report.pdf';
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
+                    }}
                   >
                     ⬇️ Download PDF
                   </a>

@@ -54,7 +54,8 @@ export class StudentEvaluationService {
     component: 'cla1' | 'cla2' | 'cla3',
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
-    userRole: string
+    userRole: string,
+    comments?: string
   ): Promise<IStudentEvaluation> {
     try {
       // Find the group and validate it exists
@@ -101,12 +102,12 @@ export class StudentEvaluationService {
           projectId: group.assignedProjectId,
           facultyId: group.assignedFacultyId,
           internal: {
-            cla1: { conduct: 0, convert: 0 },
-            cla2: { conduct: 0, convert: 0 },
-            cla3: { conduct: 0, convert: 0 }
+            cla1: { conduct: 0, convert: 0, comments: '' },
+            cla2: { conduct: 0, convert: 0, comments: '' },
+            cla3: { conduct: 0, convert: 0, comments: '' }
           },
           external: {
-            reportPresentation: { conduct: 0, convert: 0 }
+            reportPresentation: { conduct: 0, convert: 0, comments: '' }
           },
           totalInternal: 0,
           totalExternal: 0,
@@ -115,13 +116,21 @@ export class StudentEvaluationService {
         });
       }
 
-      // Update the specific component score
+      // Check if grades are already published (frozen)
+      if (evaluation.isPublished) {
+        throw new Error('Grades have been published and cannot be modified. Please contact the coordinator if changes are needed.');
+      }
+
+      // Update the specific component score and comments
       evaluation.internal[component].conduct = conductScore;
+      if (comments !== undefined) {
+        evaluation.internal[component].comments = comments;
+      }
       
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
-      logger.info(`${component.toUpperCase()} score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}`);
+      logger.info(`${component.toUpperCase()} score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
 
       return await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')
@@ -143,7 +152,8 @@ export class StudentEvaluationService {
     groupId: mongoose.Types.ObjectId,
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
-    userRole: string
+    userRole: string,
+    comments?: string
   ): Promise<IStudentEvaluation> {
     try {
       // Find the group and validate it exists
@@ -172,6 +182,11 @@ export class StudentEvaluationService {
         throw new Error('Student evaluation record not found');
       }
 
+      // Check if grades are already published (frozen)
+      if (evaluation.isPublished) {
+        throw new Error('Grades have been published and cannot be modified. Please contact the coordinator if changes are needed.');
+      }
+
       // Check if faculty is authorized to evaluate this student as external evaluator
       if (userRole === 'faculty') {
         if (!evaluation.externalFacultyId || !evaluation.externalFacultyId.equals(facultyId)) {
@@ -179,13 +194,16 @@ export class StudentEvaluationService {
         }
       }
 
-      // Update the external score
+      // Update the external score and comments
       evaluation.external.reportPresentation.conduct = conductScore;
+      if (comments !== undefined) {
+        evaluation.external.reportPresentation.comments = comments;
+      }
       
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
-      logger.info(`External score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}`);
+      logger.info(`External score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
 
       return await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')

@@ -300,6 +300,19 @@ export function FacultyAssessmentPage() {
       return;
     }
 
+    // Check if student already has published grades
+    const existingEvaluation = selectedStudent.evaluation;
+    if (existingEvaluation?.isPublished) {
+      const confirmModify = window.confirm(
+        '⚠️ WARNING: This student\'s grades have already been published and are visible to the student.\n\n' +
+        'Modifying published grades may cause confusion and requires coordinator approval.\n\n' +
+        'Are you sure you want to proceed?'
+      );
+      if (!confirmModify) {
+        return;
+      }
+    }
+
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' : 
                       assessmentType === 'CLA-2' ? 'cla2' : 
@@ -313,7 +326,8 @@ export function FacultyAssessmentPage() {
         payload = {
           studentId: selectedStudent.studentId,
           groupId: selectedSubmission?.groupId?._id,
-          conductScore: grade
+          conductScore: grade,
+          comments: gradeData.comments || ''
         };
       } else {
         endpoint = '/student-evaluations/internal/score';
@@ -321,7 +335,8 @@ export function FacultyAssessmentPage() {
           studentId: selectedStudent.studentId,
           groupId: selectedSubmission?.groupId?._id,
           component: component,
-          conductScore: grade
+          conductScore: grade,
+          comments: gradeData.comments || ''
         };
       }
 

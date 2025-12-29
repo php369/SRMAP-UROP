@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
+import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -20,6 +20,17 @@ export function AssessmentPage() {
       evaluation.internal.cla1.conduct > 0 ||
       evaluation.internal.cla2.conduct > 0 ||
       evaluation.internal.cla3.conduct > 0 ||
+      evaluation.external.reportPresentation.conduct > 0
+    );
+  };
+
+  // Helper function to check if evaluation is complete (all components graded)
+  const isEvaluationComplete = (evaluation: any) => {
+    if (!evaluation) return false;
+    return (
+      evaluation.internal.cla1.conduct > 0 &&
+      evaluation.internal.cla2.conduct > 0 &&
+      evaluation.internal.cla3.conduct > 0 &&
       evaluation.external.reportPresentation.conduct > 0
     );
   };
@@ -128,6 +139,7 @@ export function AssessmentPage() {
               projectId: evalData.evaluation.projectId,
               isGradeReleased: evalData.evaluation.isPublished,
               isGraded: evalData.evaluation.isPublished || hasAnyScores(evalData.evaluation),
+              isComplete: isEvaluationComplete(evalData.evaluation),
               finalGrade: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
               total: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
               evaluation: evalData.evaluation, // Include full evaluation data
@@ -309,10 +321,15 @@ export function AssessmentPage() {
                         <CheckCircle className="w-5 h-5" />
                         <span className="font-medium">Graded</span>
                       </div>
+                    ) : submission.isComplete ? (
+                      <div className="flex items-center gap-2 text-orange-600">
+                        <Clock className="w-5 h-5" />
+                        <span className="font-medium">Awaiting Release</span>
+                      </div>
                     ) : submission.isGraded ? (
                       <div className="flex items-center gap-2 text-yellow-600">
                         <Clock className="w-5 h-5" />
-                        <span className="font-medium">Pending Release</span>
+                        <span className="font-medium">Partially Graded</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-blue-600">
@@ -469,6 +486,64 @@ export function AssessmentPage() {
                       <p className="text-gray-500 text-sm">
                         Based on CLA-1, CLA-2, CLA-3, and External evaluations
                       </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Faculty Comments - Only show when grades are released */}
+                {submission.isGradeReleased && submission.evaluation && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <MessageSquare className="w-6 h-6 text-gray-600" />
+                      <h4 className="text-lg font-bold">Faculty Feedback</h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* CLA-1 Comments */}
+                      {submission.evaluation.internal?.cla1?.comments && (
+                        <div className="p-3 bg-white rounded border-l-4 border-blue-400">
+                          <h5 className="font-medium text-blue-700 mb-1">CLA-1 Feedback</h5>
+                          <p className="text-gray-700 text-sm">{submission.evaluation.internal.cla1.comments}</p>
+                        </div>
+                      )}
+
+                      {/* CLA-2 Comments */}
+                      {submission.evaluation.internal?.cla2?.comments && (
+                        <div className="p-3 bg-white rounded border-l-4 border-green-400">
+                          <h5 className="font-medium text-green-700 mb-1">CLA-2 Feedback</h5>
+                          <p className="text-gray-700 text-sm">{submission.evaluation.internal.cla2.comments}</p>
+                        </div>
+                      )}
+
+                      {/* CLA-3 Comments */}
+                      {submission.evaluation.internal?.cla3?.comments && (
+                        <div className="p-3 bg-white rounded border-l-4 border-purple-400">
+                          <h5 className="font-medium text-purple-700 mb-1">CLA-3 Feedback</h5>
+                          <p className="text-gray-700 text-sm">{submission.evaluation.internal.cla3.comments}</p>
+                        </div>
+                      )}
+
+                      {/* External Comments */}
+                      {submission.evaluation.external?.reportPresentation?.comments && (
+                        <div className="p-3 bg-white rounded border-l-4 border-orange-400">
+                          <h5 className="font-medium text-orange-700 mb-1">External Evaluation Feedback</h5>
+                          <p className="text-gray-700 text-sm">{submission.evaluation.external.reportPresentation.comments}</p>
+                        </div>
+                      )}
+
+                      {/* No comments message */}
+                      {!submission.evaluation.internal?.cla1?.comments && 
+                       !submission.evaluation.internal?.cla2?.comments && 
+                       !submission.evaluation.internal?.cla3?.comments && 
+                       !submission.evaluation.external?.reportPresentation?.comments && (
+                        <div className="p-3 bg-white rounded border border-gray-200 text-center">
+                          <p className="text-gray-500 text-sm italic">No additional feedback provided by faculty</p>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

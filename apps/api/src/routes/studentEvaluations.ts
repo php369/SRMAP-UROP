@@ -24,7 +24,8 @@ const updateInternalScoreSchema = Joi.object({
     return value;
   }),
   component: Joi.string().valid('cla1', 'cla2', 'cla3').required(),
-  conductScore: Joi.number().min(0).required()
+  conductScore: Joi.number().min(0).required(),
+  comments: Joi.string().max(1000).allow('').optional()
 });
 
 const updateExternalScoreSchema = Joi.object({
@@ -40,7 +41,8 @@ const updateExternalScoreSchema = Joi.object({
     }
     return value;
   }),
-  conductScore: Joi.number().min(0).max(100).required()
+  conductScore: Joi.number().min(0).max(100).required(),
+  comments: Joi.string().max(1000).allow('').optional()
 });
 
 /**
@@ -54,7 +56,7 @@ router.put(
   validateRequest(updateInternalScoreSchema),
   async (req, res) => {
     try {
-      const { studentId, groupId, component, conductScore } = req.body;
+      const { studentId, groupId, component, conductScore, comments } = req.body;
       const facultyId = req.user!.id;
 
       const result = await StudentEvaluationService.updateStudentInternalScore(
@@ -63,7 +65,8 @@ router.put(
         component as 'cla1' | 'cla2' | 'cla3',
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
-        req.user!.role
+        req.user!.role,
+        comments
       );
 
       res.json({
@@ -119,7 +122,7 @@ router.put(
   validateRequest(updateExternalScoreSchema),
   async (req, res) => {
     try {
-      const { studentId, groupId, conductScore } = req.body;
+      const { studentId, groupId, conductScore, comments } = req.body;
       const facultyId = req.user!.id;
 
       const result = await StudentEvaluationService.updateStudentExternalScore(
@@ -127,7 +130,8 @@ router.put(
         new mongoose.Types.ObjectId(groupId),
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
-        req.user!.role
+        req.user!.role,
+        comments
       );
 
       res.json({
