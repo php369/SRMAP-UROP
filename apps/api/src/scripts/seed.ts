@@ -11,7 +11,7 @@ import { Project, IProject } from '../models/Project';
 import { Group, IGroup } from '../models/Group';
 import { Application, IApplication } from '../models/Application';
 import { GroupSubmission, IGroupSubmission } from '../models/GroupSubmission';
-import { Evaluation, IEvaluation } from '../models/Evaluation';
+import { StudentEvaluation, IStudentEvaluation } from '../models/StudentEvaluation';
 import { Window, IWindow } from '../models/Window';
 
 /**
@@ -29,7 +29,7 @@ interface SeedData {
   groups: IGroup[];
   applications: IApplication[];
   submissions: IGroupSubmission[];
-  evaluations: IEvaluation[];
+  evaluations: IStudentEvaluation[];
   windows: IWindow[];
 }
 
@@ -50,7 +50,7 @@ async function clearExistingData(): Promise<void> {
 
   try {
     await Promise.all([
-      Evaluation.deleteMany({}),
+      StudentEvaluation.deleteMany({}),
       GroupSubmission.deleteMany({}),
       Application.deleteMany({}),
       Group.deleteMany({}),

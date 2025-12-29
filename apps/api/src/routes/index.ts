@@ -11,7 +11,6 @@ import applicationRoutes from './applications';
 import assessmentRoutes from './assessments';
 import submissionRoutes from './submissions';
 import groupSubmissionRoutes from './groupSubmissions';
-import evaluationRoutes from './evaluations';
 import studentEvaluationRoutes from './studentEvaluations';
 import adminRoutes from './admin';
 import presenceRoutes from './presence';
@@ -88,9 +87,6 @@ export function setupRoutes(app: Express): void {
 
   // Group submission routes
   app.use(`${API_PREFIX}/group-submissions`, groupSubmissionRoutes);
-
-  // Evaluation routes
-  app.use(`${API_PREFIX}/evaluations`, evaluationRoutes);
 
   // Student evaluation routes
   app.use(`${API_PREFIX}/student-evaluations`, studentEvaluationRoutes);
@@ -204,7 +200,7 @@ export function setupRoutes(app: Express): void {
         applications: `${API_PREFIX}/applications`,
         assessments: `${API_PREFIX}/assessments`,
         submissions: `${API_PREFIX}/submissions`,
-        evaluations: `${API_PREFIX}/evaluations`,
+        studentEvaluations: `${API_PREFIX}/student-evaluations`,
         users: `${API_PREFIX}/users`,
         admin: `${API_PREFIX}/admin`,
         notifications: `${API_PREFIX}/notifications`,

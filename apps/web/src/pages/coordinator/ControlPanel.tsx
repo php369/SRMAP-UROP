@@ -78,7 +78,7 @@ export function ControlPanel() {
       for (const projectType of projectTypes) {
         try {
           const response = await api.get(`/student-evaluations/released-count?projectType=${projectType}`);
-          if (response.success && response.data && response.data.count > 0) {
+          if (response.success && response.data && (response.data as any).count > 0) {
             releasedStatus[projectType] = true;
           }
         } catch (error) {

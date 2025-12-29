@@ -14,7 +14,7 @@ import { Project } from '../models/Project';
 import { Group } from '../models/Group';
 import { Application } from '../models/Application';
 import { GroupSubmission } from '../models/GroupSubmission';
-import { Evaluation } from '../models/Evaluation';
+import { StudentEvaluation } from '../models/StudentEvaluation';
 import { Window } from '../models/Window';
 import { Notification } from '../models/Notification';
 // StudentMeta model removed - functionality disabled
@@ -45,7 +45,7 @@ async function clearAllData(): Promise<void> {
     // Clear all collections by deleting documents (not dropping collections)
     // Note: Eligibility, FacultyRoster, and AvatarPool collections have been dropped
     const clearPromises = [
-      Evaluation.deleteMany({}),
+      StudentEvaluation.deleteMany({}),
       GroupSubmission.deleteMany({}),
       Application.deleteMany({}),
       Group.deleteMany({}),

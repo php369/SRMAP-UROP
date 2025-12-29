@@ -43,7 +43,7 @@ export class EvaluationService {
    * Get evaluations for current user's groups (student view)
    */
   static async getMyEvaluations(): Promise<StudentEvaluationView[]> {
-    const response = await api.get('/evaluations/my');
+    const response = await api.get('/student-evaluations/my');
     return (response.data as any)?.evaluations || [];
   }
 
@@ -52,7 +52,7 @@ export class EvaluationService {
    */
   static async getGroupEvaluation(groupId: string): Promise<StudentEvaluationView | null> {
     try {
-      const response = await api.get(`/evaluations/group/${groupId}`);
+      const response = await api.get(`/student-evaluations/group/${groupId}`);
       return (response.data as any)?.evaluation || null;
     } catch (error: any) {
       if (error.message?.includes('404')) {
@@ -67,7 +67,7 @@ export class EvaluationService {
    */
   static async getFacultyEvaluations(facultyId: string, type?: 'IDP' | 'UROP' | 'CAPSTONE'): Promise<Evaluation[]> {
     const params = type ? `?type=${type}` : '';
-    const response = await api.get(`/evaluations/faculty/${facultyId}${params}`);
+    const response = await api.get(`/student-evaluations/faculty/${facultyId}${params}`);
     return (response.data as any)?.data || [];
   }
 
@@ -79,7 +79,7 @@ export class EvaluationService {
     component: 'cla1' | 'cla2' | 'cla3',
     conductScore: number
   ): Promise<Evaluation> {
-    const response = await api.put('/evaluations/internal/score', {
+    const response = await api.put('/student-evaluations/internal/score', {
       groupId,
       component,
       conductScore
@@ -94,7 +94,7 @@ export class EvaluationService {
     groupId: string,
     conductScore: number
   ): Promise<Evaluation> {
-    const response = await api.put('/evaluations/external/score', {
+    const response = await api.put('/student-evaluations/external/score', {
       groupId,
       conductScore
     });
@@ -105,7 +105,7 @@ export class EvaluationService {
    * Get evaluations assigned to external faculty
    */
   static async getExternalEvaluatorAssignments(facultyId: string): Promise<Evaluation[]> {
-    const response = await api.get(`/evaluations/external-assignments/${facultyId}`);
+    const response = await api.get(`/student-evaluations/external-assignments/${facultyId}`);
     return (response.data as any)?.data || [];
   }
 
@@ -116,7 +116,7 @@ export class EvaluationService {
     evaluationIds: string[],
     isPublished: boolean
   ): Promise<{ updated: number; evaluations: Evaluation[] }> {
-    const response = await api.put('/evaluations/publish', {
+    const response = await api.put('/student-evaluations/publish', {
       evaluationIds,
       isPublished
     });
@@ -143,7 +143,7 @@ export class EvaluationService {
     if (type) params.append('type', type);
     if (published !== undefined) params.append('published', published.toString());
     
-    const response = await api.get(`/evaluations/coordinator/overview?${params.toString()}`);
+    const response = await api.get(`/student-evaluations/coordinator/overview?${params.toString()}`);
     return (response.data as any)?.data || { evaluations: [], stats: { total: 0, published: 0, unpublished: 0, complete: 0, incomplete: 0 } };
   }
 

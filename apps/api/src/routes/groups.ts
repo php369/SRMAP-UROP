@@ -529,8 +529,8 @@ router.get('/:id/analytics', authenticate, async (req, res) => {
     const submissions = await Submission.find({ groupId: id });
 
     // Get evaluations/grades
-    const { Evaluation } = await import('../models/Evaluation');
-    const evaluations = await Evaluation.find({ groupId: id });
+    const { StudentEvaluation } = await import('../models/StudentEvaluation');
+    const evaluations = await StudentEvaluation.find({ groupId: id });
 
     // Calculate analytics
     const analytics = {

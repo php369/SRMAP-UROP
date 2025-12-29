@@ -474,7 +474,7 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
  * @desc    Get user statistics
  * @access  Private (Coordinator, Admin)
  */
-router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (_req: Request, res: Response) => {
   try {
     const [
       totalUsers,

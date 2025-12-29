@@ -16,7 +16,7 @@ import { Group } from '../models/Group';
 import { Application } from '../models/Application';
 import { GroupSubmission } from '../models/GroupSubmission';
 import { Submission } from '../models/Submission';
-import { Evaluation } from '../models/Evaluation';
+import { StudentEvaluation } from '../models/StudentEvaluation';
 import { Assessment } from '../models/Assessment';
 import { MeetingLog } from '../models/MeetingLog';
 import { Notification } from '../models/Notification';
@@ -106,7 +106,7 @@ async function completeReset() {
       { model: Application, name: 'Applications' },
       { model: GroupSubmission, name: 'Group Submissions' },
       { model: Submission, name: 'Submissions' },
-      { model: Evaluation, name: 'Evaluations' },
+      { model: StudentEvaluation, name: 'Student Evaluations' },
       { model: Assessment, name: 'Assessments' },
       { model: MeetingLog, name: 'Meeting Logs' },
       { model: Notification, name: 'Notifications' },

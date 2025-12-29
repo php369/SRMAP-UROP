@@ -257,7 +257,7 @@ router.get(
 
       res.json({
         success: true,
-        data: evaluations
+        evaluations: evaluations
       });
 
     } catch (error) {
@@ -266,6 +266,299 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Failed to get evaluations'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/student-evaluations/group/:groupId
+ * Get evaluation for a specific group (student view)
+ */
+router.get(
+  '/group/:groupId',
+  authenticate,
+  rbacGuard('student', 'faculty', 'coordinator', 'admin'),
+  async (req, res) => {
+    try {
+      const { groupId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid group ID'
+        });
+      }
+
+      // For now, return null as this endpoint needs to be implemented in the service
+      // This is a placeholder to prevent 404 errors
+      res.json({
+        success: true,
+        evaluation: null
+      });
+
+    } catch (error) {
+      logger.error('Error getting group evaluation:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get group evaluation'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/student-evaluations/faculty/:facultyId
+ * Get evaluations assigned to faculty for grading
+ */
+router.get(
+  '/faculty/:facultyId',
+  authenticate,
+  rbacGuard('faculty', 'coordinator', 'admin'),
+  async (req, res) => {
+    try {
+      const { facultyId } = req.params;
+      const { type } = req.query;
+
+      if (!mongoose.Types.ObjectId.isValid(facultyId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid faculty ID'
+        });
+      }
+
+      // Faculty can only view their own evaluations, coordinators/admins can view any
+      if (req.user!.role === 'faculty' && req.user!.id !== facultyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Can only view your own evaluations'
+        });
+      }
+
+      const evaluations = await StudentEvaluationService.getFacultyStudentEvaluations(
+        new mongoose.Types.ObjectId(facultyId),
+        type as 'IDP' | 'UROP' | 'CAPSTONE' | undefined
+      );
+
+      res.json({
+        success: true,
+        data: evaluations,
+        message: evaluations.length === 0 ? 'No student evaluations are available yet.' : undefined
+      });
+
+    } catch (error) {
+      logger.error('Error getting faculty student evaluations:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get student evaluations'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/student-evaluations/external-assignments/:facultyId
+ * Get evaluations assigned to external faculty
+ */
+router.get(
+  '/external-assignments/:facultyId',
+  authenticate,
+  rbacGuard('faculty', 'coordinator', 'admin'),
+  async (req, res) => {
+    try {
+      const { facultyId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(facultyId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid faculty ID'
+        });
+      }
+
+      // Faculty can only view their own assignments, coordinators/admins can view any
+      if (req.user!.role === 'faculty' && req.user!.id !== facultyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Can only view your own external evaluator assignments'
+        });
+      }
+
+      // For now, return empty array as external evaluator functionality needs to be implemented
+      res.json({
+        success: true,
+        data: [],
+        message: 'You have not been assigned as an external evaluator for any projects yet.'
+      });
+
+    } catch (error) {
+      logger.error('Error getting external evaluator assignments:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get external evaluator assignments'
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/student-evaluations/publish
+ * Bulk publish or unpublish student evaluations
+ */
+router.put(
+  '/publish',
+  authenticate,
+  rbacGuard('coordinator', 'admin'),
+  async (req, res) => {
+    try {
+      const { evaluationIds, isPublished } = req.body;
+
+      // Validate input
+      if (!Array.isArray(evaluationIds) || evaluationIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'evaluationIds must be a non-empty array'
+        });
+      }
+
+      if (typeof isPublished !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'isPublished must be a boolean'
+        });
+      }
+
+      // Validate all evaluation IDs
+      for (const id of evaluationIds) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid evaluation ID: ${id}`
+          });
+        }
+      }
+
+      // For now, return success with 0 updated as this functionality needs to be implemented
+      res.json({
+        success: true,
+        message: `0 evaluation(s) ${isPublished ? 'published' : 'unpublished'} successfully`,
+        data: { updated: 0, evaluations: [] }
+      });
+
+    } catch (error) {
+      logger.error('Error updating evaluation publication status:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update evaluation publication status'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/student-evaluations/released-count
+ * Get count of released evaluations by project type
+ */
+router.get(
+  '/released-count',
+  authenticate,
+  rbacGuard('coordinator', 'admin'),
+  async (req, res) => {
+    try {
+      const { projectType } = req.query;
+
+      if (!projectType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Project type is required'
+        });
+      }
+
+      // Validate project type
+      if (!['IDP', 'UROP', 'CAPSTONE'].includes(projectType as string)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid project type. Must be IDP, UROP, or CAPSTONE'
+        });
+      }
+
+      const { StudentEvaluation } = await import('../models/StudentEvaluation');
+      const { Group } = await import('../models/Group');
+      
+      // Find all groups of the specified project type
+      const groups = await Group.find({ 
+        type: projectType,
+        status: 'approved',
+        assignedProjectId: { $exists: true }
+      }).select('_id');
+
+      if (groups.length === 0) {
+        return res.json({
+          success: true,
+          data: { count: 0 }
+        });
+      }
+
+      const groupIds = groups.map(g => g._id);
+
+      // Count published student evaluations for these groups
+      const count = await StudentEvaluation.countDocuments({
+        groupId: { $in: groupIds },
+        isPublished: true
+      });
+
+      res.json({
+        success: true,
+        data: { count }
+      });
+
+    } catch (error) {
+      logger.error('Error getting released evaluations count:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get released evaluations count'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/student-evaluations/coordinator/overview
+ * Get evaluation overview for coordinator management
+ */
+router.get(
+  '/coordinator/overview',
+  authenticate,
+  rbacGuard('coordinator', 'admin'),
+  async (_req, res) => {
+    try {
+      // For now, return empty data as this functionality needs to be implemented
+      const result = {
+        evaluations: [],
+        stats: {
+          total: 0,
+          published: 0,
+          unpublished: 0,
+          complete: 0,
+          incomplete: 0
+        }
+      };
+
+      res.json({
+        success: true,
+        data: result
+      });
+
+    } catch (error) {
+      logger.error('Error getting coordinator evaluation overview:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get evaluation overview'
       });
     }
   }

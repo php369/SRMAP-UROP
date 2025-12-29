@@ -7,7 +7,7 @@ import { Group } from '../models/Group';
 import { Application } from '../models/Application';
 import { GroupSubmission } from '../models/GroupSubmission';
 import { Submission } from '../models/Submission';
-import { Evaluation } from '../models/Evaluation';
+import { StudentEvaluation } from '../models/StudentEvaluation';
 import { Assessment } from '../models/Assessment';
 import { MeetingLog } from '../models/MeetingLog';
 import { Notification } from '../models/Notification';
@@ -80,11 +80,11 @@ async function resetDatabase() {
     await GroupSubmission.deleteMany({});
     console.log(`  ✅ Deleted ${submissionCount} submissions and ${groupSubmissionCount} group submissions`);
 
-    // Step 6: Clear all evaluations
-    console.log('\n⭐ Step 6: Clearing Evaluations...');
-    const evaluationCount = await Evaluation.countDocuments();
-    await Evaluation.deleteMany({});
-    console.log(`  ✅ Deleted ${evaluationCount} evaluations`);
+    // Step 6: Clear all student evaluations
+    console.log('\n⭐ Step 6: Clearing Student Evaluations...');
+    const evaluationCount = await StudentEvaluation.countDocuments();
+    await StudentEvaluation.deleteMany({});
+    console.log(`  ✅ Deleted ${evaluationCount} student evaluations`);
 
     // Step 7: Clear all assessments
     console.log('\n📊 Step 7: Clearing Assessments...');
@@ -132,7 +132,7 @@ async function resetDatabase() {
     console.log(`  Groups: ${groupCount} deleted`);
     console.log(`  Applications: ${applicationCount} deleted`);
     console.log(`  Submissions: ${submissionCount + groupSubmissionCount} deleted`);
-    console.log(`  Evaluations: ${evaluationCount} deleted`);
+    console.log(`  Student Evaluations: ${evaluationCount} deleted`);
     console.log(`  Assessments: ${assessmentCount} deleted`);
     console.log(`  Meeting Logs: ${meetingLogCount} deleted`);
     console.log(`  Notifications: ${notificationCount} deleted`);
