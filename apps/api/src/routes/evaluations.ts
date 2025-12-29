@@ -120,7 +120,7 @@ router.put(
 
       const result = await EvaluationService.updateInternalScore(
         new mongoose.Types.ObjectId(groupId),
-        component as 'a1' | 'a2' | 'a3',
+        component as 'cla1' | 'cla2' | 'cla3',
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
         req.user!.role
