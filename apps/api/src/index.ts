@@ -173,19 +173,28 @@ async function startServer() {
     // Error handling middleware (must be last)
     app.use(errorHandler);
     
-    // Start server
-    const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : config.PORT || 3001;
-    const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+    // Start server - following Render's recommended pattern
+    const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     
     // Debug port configuration
-    logger.info(`🔧 Port Configuration: process.env.PORT=${process.env.PORT}, config.PORT=${config.PORT}, final PORT=${PORT}`);
-    logger.info(`🔧 Host Configuration: NODE_ENV=${process.env.NODE_ENV}, HOST=${HOST}`);
+    logger.info(`🔧 Port Configuration: process.env.PORT=${process.env.PORT}, final PORT=${PORT}`);
+    logger.info(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}`);
     
-    server.listen(PORT, HOST, () => {
-      logger.info(`🚀 Server running on ${HOST}:${PORT}`);
-      logger.info(`📊 Health check: http://${HOST}:${PORT}/health`);
-      logger.info(`📚 API docs: http://${HOST}:${PORT}/docs`);
-    });
+    // In production, bind to all interfaces (0.0.0.0) by not specifying host
+    // In development, bind to localhost for security
+    if (process.env.NODE_ENV === 'production') {
+      server.listen(PORT, () => {
+        logger.info(`🚀 Server running on port ${PORT} (all interfaces)`);
+        logger.info(`📊 Health check: /health`);
+        logger.info(`📚 API docs: /docs`);
+      });
+    } else {
+      server.listen(PORT, 'localhost', () => {
+        logger.info(`🚀 Server running on localhost:${PORT}`);
+        logger.info(`📊 Health check: http://localhost:${PORT}/health`);
+        logger.info(`📚 API docs: http://localhost:${PORT}/docs`);
+      });
+    }
     
     // Handle server errors
     server.on('error', (error: any) => {
