@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 
 
 
@@ -30,37 +31,6 @@ export function SubmissionPage() {
     reportFile: '',
     pptFile: ''
   });
-
-  // PDF Modal function
-  const openPDFModal = (url: string, title: string = 'PDF Viewer') => {
-    // Create modal with embedded PDF
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="text-lg font-semibold">${title}</h3>
-          <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-        </div>
-        <div class="flex-1 p-4">
-          <iframe 
-            src="${url}" 
-            class="w-full h-full border-0 rounded"
-            title="${title}"
-          ></iframe>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Close modal handlers
-    const closeModal = () => document.body.removeChild(modal);
-    modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-  };
 
   useEffect(() => {
     const checkEligibility = async () => {
@@ -559,27 +529,12 @@ export function SubmissionPage() {
                     📄 View Report
                   </button>
                   <span className="text-gray-400">|</span>
-                  <a
-                    href={currentSubmission.reportUrl}
-                    download
+                  <button
+                    onClick={() => downloadFile(currentSubmission.reportUrl, 'project-report.pdf')}
                     className="text-green-600 hover:underline"
-                    onClick={(e) => {
-                      // Ensure the download works by using the modal approach for problematic URLs
-                      if (currentSubmission.reportUrl.includes('supabase')) {
-                        e.preventDefault();
-                        // Create a temporary link for download
-                        const link = document.createElement('a');
-                        link.href = currentSubmission.reportUrl;
-                        link.download = 'report.pdf';
-                        link.target = '_blank';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }
-                    }}
                   >
                     ⬇️ Download PDF
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -605,13 +560,12 @@ export function SubmissionPage() {
                       </a>
                     )}
                     <span className="text-gray-400">|</span>
-                    <a
-                      href={currentSubmission.pptUrl}
-                      download
+                    <button
+                      onClick={() => downloadFile(currentSubmission.pptUrl, 'presentation.pdf')}
                       className="text-green-600 hover:underline"
                     >
                       ⬇️ Download File
-                    </a>
+                    </button>
                   </div>
                 </div>
               )}

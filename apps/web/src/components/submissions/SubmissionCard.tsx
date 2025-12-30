@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge';
 import { Textarea } from '../ui/Textarea';
 import { GroupSubmission } from '../../types';
 import { SubmissionService } from '../../services/submissionService';
+import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { 
   FileText, 
   Presentation, 
@@ -66,40 +67,6 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
-  };
-
-  const openLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const openPDFModal = (url: string, title: string = 'PDF Viewer') => {
-    // Create modal with embedded PDF
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-        <div class="flex justify-between items-center p-4 border-b">
-          <h3 class="text-lg font-semibold">${title}</h3>
-          <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-        </div>
-        <div class="flex-1 p-4">
-          <iframe 
-            src="${url}" 
-            class="w-full h-full border-0 rounded"
-            title="${title}"
-          ></iframe>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Close modal handlers
-    const closeModal = () => document.body.removeChild(modal);
-    modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
   };
 
   return (
@@ -181,7 +148,7 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => openLink(submission.reportFile!.url)}
+                  onClick={() => downloadFile(submission.reportFile!.url, 'project-report.pdf')}
                   title="Download PDF"
                 >
                   <Download className="w-4 h-4" />
@@ -222,8 +189,8 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => openLink(submission.presentationFile!.url)}
-                      title="Open presentation"
+                      onClick={() => openPDFModal(submission.presentationFile!.url, 'Presentation')}
+                      title="View presentation"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </Button>
@@ -231,7 +198,7 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => openLink(submission.presentationFile!.url)}
+                    onClick={() => downloadFile(submission.presentationFile!.url, 'presentation.pdf')}
                     title="Download file"
                   >
                     <Download className="w-4 h-4" />

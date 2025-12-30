@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare } from 'lucide-react';
+import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { FinalGradeCard } from '../../components/assessment/FinalGradeCard';
+import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 
 export function AssessmentPage() {
   const { user } = useAuth();
@@ -384,42 +386,17 @@ export function AssessmentPage() {
                             </div>
                             <div className="flex gap-3">
                               <button
-                                onClick={() => {
-                                  const modal = document.createElement('div');
-                                  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                                  modal.innerHTML = `
-                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                      <div class="flex justify-between items-center p-4 border-b">
-                                        <h3 class="text-lg font-semibold">Project Report</h3>
-                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                      </div>
-                                      <div class="flex-1 p-4">
-                                        <iframe 
-                                          src="${submission.reportUrl}" 
-                                          class="w-full h-full border-0 rounded"
-                                          title="Project Report"
-                                        ></iframe>
-                                      </div>
-                                    </div>
-                                  `;
-                                  document.body.appendChild(modal);
-                                  const closeModal = () => document.body.removeChild(modal);
-                                  modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                                  modal.addEventListener('click', (e) => {
-                                    if (e.target === modal) closeModal();
-                                  });
-                                }}
+                                onClick={() => openPDFModal(submission.reportUrl, 'Project Report')}
                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                               >
                                 👁️ View
                               </button>
-                              <a
-                                href={submission.reportUrl}
-                                download
+                              <button
+                                onClick={() => downloadFile(submission.reportUrl, 'project-report.pdf')}
                                 className="text-green-600 hover:text-green-800 text-sm font-medium"
                               >
                                 ⬇️ Download
-                              </a>
+                              </button>
                             </div>
                           </div>
                         )}
@@ -438,42 +415,17 @@ export function AssessmentPage() {
                             </div>
                             <div className="flex gap-3">
                               <button
-                                onClick={() => {
-                                  const modal = document.createElement('div');
-                                  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                                  modal.innerHTML = `
-                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                      <div class="flex justify-between items-center p-4 border-b">
-                                        <h3 class="text-lg font-semibold">Presentation</h3>
-                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                      </div>
-                                      <div class="flex-1 p-4">
-                                        <iframe 
-                                          src="${submission.pptUrl}" 
-                                          class="w-full h-full border-0 rounded"
-                                          title="Presentation"
-                                        ></iframe>
-                                      </div>
-                                    </div>
-                                  `;
-                                  document.body.appendChild(modal);
-                                  const closeModal = () => document.body.removeChild(modal);
-                                  modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                                  modal.addEventListener('click', (e) => {
-                                    if (e.target === modal) closeModal();
-                                  });
-                                }}
+                                onClick={() => openPDFModal(submission.pptUrl, 'Presentation')}
                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                               >
                                 👁️ View
                               </button>
-                              <a
-                                href={submission.pptUrl}
-                                download
+                              <button
+                                onClick={() => downloadFile(submission.pptUrl, 'presentation.pdf')}
                                 className="text-green-600 hover:text-green-800 text-sm font-medium"
                               >
                                 ⬇️ Download
-                              </a>
+                              </button>
                             </div>
                           </div>
                         )}
@@ -489,7 +441,7 @@ export function AssessmentPage() {
                         Assessment Progress
                       </h4>
                       
-                      {/* Assessment Components Grid */}
+                      {/* Assessment Components Grid - Hide individual scores */}
                       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* CLA-1 */}
                         <div className={`p-4 rounded-lg border-2 ${
@@ -508,7 +460,7 @@ export function AssessmentPage() {
                           {submission.evaluation.internal?.cla1?.conduct > 0 ? (
                             <div>
                               <p className="text-sm text-green-700 font-medium">
-                                Score: {submission.evaluation.internal.cla1.conduct}/20
+                                ✅ Graded
                               </p>
                               {submission.isGradeReleased && submission.evaluation.internal.cla1.comments && (
                                 <p className="text-xs text-gray-600 mt-2 italic">
@@ -538,7 +490,7 @@ export function AssessmentPage() {
                           {submission.evaluation.internal?.cla2?.conduct > 0 ? (
                             <div>
                               <p className="text-sm text-green-700 font-medium">
-                                Score: {submission.evaluation.internal.cla2.conduct}/30
+                                ✅ Graded
                               </p>
                               {submission.isGradeReleased && submission.evaluation.internal.cla2.comments && (
                                 <p className="text-xs text-gray-600 mt-2 italic">
@@ -568,7 +520,7 @@ export function AssessmentPage() {
                           {submission.evaluation.internal?.cla3?.conduct > 0 ? (
                             <div>
                               <p className="text-sm text-green-700 font-medium">
-                                Score: {submission.evaluation.internal.cla3.conduct}/50
+                                ✅ Graded
                               </p>
                               {submission.isGradeReleased && submission.evaluation.internal.cla3.comments && (
                                 <p className="text-xs text-gray-600 mt-2 italic">
@@ -598,7 +550,7 @@ export function AssessmentPage() {
                           {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
                             <div>
                               <p className="text-sm text-green-700 font-medium">
-                                Score: {submission.evaluation.external.reportPresentation.conduct}/100
+                                ✅ Graded
                               </p>
                               {submission.isGradeReleased && submission.evaluation.external.reportPresentation.comments && (
                                 <p className="text-xs text-gray-600 mt-2 italic">
@@ -615,26 +567,11 @@ export function AssessmentPage() {
                   )}
 
                   {/* Final Grade - Only show when released */}
-                  {submission.isGradeReleased && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200"
-                    >
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                          <Award className="w-8 h-8 text-green-600" />
-                          <h4 className="text-2xl font-bold text-gray-800">Final Grade Released</h4>
-                        </div>
-                        <div className="text-6xl font-bold text-green-600 mb-2">
-                          {submission.finalGrade || submission.total || 0}/100
-                        </div>
-                        <p className="text-gray-600">
-                          Congratulations! Your assessment has been completed and grades are now available.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
+                  <FinalGradeCard 
+                    totalScore={submission.finalGrade || submission.total || 0}
+                    isReleased={submission.isGradeReleased}
+                    className="mt-6"
+                  />
                 </div>
               </motion.div>
             ))
