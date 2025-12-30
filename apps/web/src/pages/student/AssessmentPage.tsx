@@ -114,7 +114,9 @@ export function AssessmentPage() {
     
     try {
       // Fetch student evaluations (new CLA grading system)
-      const evaluationsResponse = await api.get('/student-evaluations/my').catch(() => ({ success: false, data: [] }));
+      const evaluationsResponse = await api.get('/student-evaluations/my').catch(() => ({ success: false, evaluations: [] }));
+      
+      console.log('🔍 Evaluations Response:', evaluationsResponse);
       
       // Fetch both regular submissions and group submissions (legacy)
       const [regularResponse, groupResponse] = await Promise.all([
@@ -125,10 +127,17 @@ export function AssessmentPage() {
       const allSubmissions: any[] = [];
 
       // Add student evaluations (new system)
-      if (evaluationsResponse.success && evaluationsResponse.data) {
-        const evaluations = Array.isArray(evaluationsResponse.data) ? evaluationsResponse.data : [evaluationsResponse.data];
-        evaluations.forEach(evalData => {
+      if (evaluationsResponse.success && (evaluationsResponse as any).evaluations) {
+        const evaluations = Array.isArray((evaluationsResponse as any).evaluations) ? (evaluationsResponse as any).evaluations : [(evaluationsResponse as any).evaluations];
+        console.log('📊 Processing evaluations:', evaluations);
+        
+        evaluations.forEach((evalData: any) => {
           if (evalData.evaluation) {
+            console.log('📝 Evaluation data:', evalData.evaluation);
+            console.log('🔢 Has scores:', hasAnyScores(evalData.evaluation));
+            console.log('✅ Is complete:', isEvaluationComplete(evalData.evaluation));
+            console.log('📢 Is published:', evalData.evaluation.isPublished);
+            
             // Show all evaluations, not just published ones
             allSubmissions.push({
               _id: evalData.evaluation._id,

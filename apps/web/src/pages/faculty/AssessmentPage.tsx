@@ -300,6 +300,17 @@ export function FacultyAssessmentPage() {
   const handleGradeSubmission = async () => {
     if (!selectedStudent) return;
 
+    // Show freeze warning before proceeding
+    const confirmSubmit = window.confirm(
+      '⚠️ IMPORTANT: Grade Submission Warning\n\n' +
+      'Once you submit this grade, it will be FROZEN and cannot be modified without coordinator approval.\n\n' +
+      'Please review the grade carefully before proceeding.\n\n' +
+      'Are you sure you want to submit this grade?'
+    );
+    if (!confirmSubmit) {
+      return;
+    }
+
     const grade = parseFloat(gradeData.grade);
     const maxScore = getMaxScore(assessmentType);
     
@@ -366,6 +377,17 @@ export function FacultyAssessmentPage() {
 
   const handleGroupGradeSubmission = async () => {
     if (!selectedSubmission?.students) return;
+
+    // Show freeze warning before proceeding
+    const confirmSubmit = window.confirm(
+      '⚠️ IMPORTANT: Grade Submission Warning\n\n' +
+      'Once you submit these grades, they will be FROZEN and cannot be modified without coordinator approval.\n\n' +
+      'Please review all grades carefully before proceeding.\n\n' +
+      'Are you sure you want to submit these grades?'
+    );
+    if (!confirmSubmit) {
+      return;
+    }
 
     const maxScore = getMaxScore(assessmentType);
     const studentsToGrade = selectedSubmission.students;
@@ -714,28 +736,45 @@ export function FacultyAssessmentPage() {
                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-text">Student Grades ({assessmentType}):</span>
-                              <button
-                                onClick={() => {
-                                  setSelectedSubmission(submission);
-                                  setShowGroupGrading(true);
-                                  // Initialize group grade data with current scores
-                                  const initialGrades: Record<string, string> = {};
-                                  submission.students?.forEach(student => {
-                                    const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
-                                                       assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
-                                                       assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
-                                                       student.evaluation.external.reportPresentation.conduct;
-                                    initialGrades[student.studentId] = currentScore > 0 ? currentScore.toString() : '';
-                                  });
-                                  setGroupGradeData({
-                                    students: initialGrades,
-                                    comments: ''
-                                  });
-                                }}
-                                className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
-                              >
-                                Grade Group
-                              </button>
+                              {/* Only show Grade Group button if not all students are graded for this assessment */}
+                              {(() => {
+                                const allGraded = submission.students?.every(student => {
+                                  const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                                     assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
+                                                     assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
+                                                     student.evaluation.external.reportPresentation.conduct;
+                                  return currentScore > 0;
+                                });
+                                
+                                return !allGraded ? (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedSubmission(submission);
+                                      setShowGroupGrading(true);
+                                      // Initialize group grade data with current scores
+                                      const initialGrades: Record<string, string> = {};
+                                      submission.students?.forEach(student => {
+                                        const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                                           assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
+                                                           assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
+                                                           student.evaluation.external.reportPresentation.conduct;
+                                        initialGrades[student.studentId] = currentScore > 0 ? currentScore.toString() : '';
+                                      });
+                                      setGroupGradeData({
+                                        students: initialGrades,
+                                        comments: ''
+                                      });
+                                    }}
+                                    className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
+                                  >
+                                    Grade Group
+                                  </button>
+                                ) : (
+                                  <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded">
+                                    ✓ All Graded
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <div className="space-y-2">
                               {submission.students.map((student) => {
