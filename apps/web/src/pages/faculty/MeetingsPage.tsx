@@ -741,7 +741,8 @@ export function FacultyMeetingsPage() {
                     <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
                   </div>
 
-                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && (
+                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && 
+                   (selectedLog.minutesOfMeeting || selectedLog.mom) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Faculty Notes 
@@ -777,7 +778,8 @@ export function FacultyMeetingsPage() {
                   >
                     Close
                   </button>
-                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && (
+                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && 
+                   (selectedLog.minutesOfMeeting || selectedLog.mom) && (
                     <>
                       <button
                         onClick={() => handleApproveLog(selectedLog._id, false)}

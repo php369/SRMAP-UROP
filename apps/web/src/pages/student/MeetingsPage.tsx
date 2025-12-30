@@ -147,8 +147,8 @@ export function MeetingsPage() {
       return;
     }
 
-    // Allow resubmission if rejected, otherwise check if already logged and approved/completed
-    if ((meeting.minutesOfMeeting || meeting.mom) && meeting.status !== 'rejected') {
+    // Allow resubmission if rejected or pending, otherwise check if already logged and approved/completed
+    if ((meeting.minutesOfMeeting || meeting.mom) && meeting.status !== 'rejected' && meeting.status !== 'pending') {
       toast('This meeting has already been logged', { icon: 'ℹ️' });
       return;
     }
@@ -522,10 +522,17 @@ export function MeetingsPage() {
                   </p>
                 )}
 
-                {meeting.status === 'completed' && hasLog && !canResubmit && (
+                {(meeting.status === 'completed' && hasLog && !canResubmit) && (
                   <p className="text-sm text-green-600 italic flex items-center gap-1">
                     <CheckCircle className="w-4 h-4" />
-                    Meeting minutes submitted
+                    Meeting minutes submitted, awaiting faculty review
+                  </p>
+                )}
+
+                {meeting.status === 'approved' && (
+                  <p className="text-sm text-green-600 italic flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Meeting minutes approved by faculty
                   </p>
                 )}
               </motion.div>

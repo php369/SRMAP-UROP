@@ -337,9 +337,9 @@ router.get('/logs/faculty', authenticate, authorize('faculty', 'coordinator'), a
             facultyId,
             status: { $in: ['completed', 'pending', 'approved', 'rejected'] },
             $or: [
-                { minutesOfMeeting: { $ne: '' } },
-                { mom: { $ne: '' } }
-            ], // Only logs with minutes
+                { minutesOfMeeting: { $exists: true, $ne: '', $nin: [null, ''] } },
+                { mom: { $exists: true, $ne: '', $nin: [null, ''] } }
+            ], // Only logs with actual minutes submitted
         })
             .populate('groupId', 'groupCode')
             .populate('studentId', 'name email')
