@@ -327,6 +327,17 @@ export class StudentEvaluationService {
           evaluationMap.set(evaluation.studentId._id.toString(), evaluation);
         });
 
+        // Create students array with all group members, including evaluation data if it exists
+        const studentsWithEvaluations = group.members.map((member: any) => {
+          const evaluation = evaluationMap.get(member._id.toString());
+          return {
+            studentId: member._id,
+            studentName: member.name,
+            studentEmail: member.email,
+            evaluation: evaluation || null // null if no evaluation exists yet
+          };
+        });
+
         submissions.push({
           _id: submission._id,
           submissionType: 'group',
@@ -343,12 +354,7 @@ export class StudentEvaluationService {
             assignedProjectId: group.assignedProjectId
           },
           projectId: group.assignedProjectId,
-          students: studentEvaluations.map(evaluation => ({
-            studentId: (evaluation.studentId as any)._id,
-            studentName: (evaluation.studentId as any).name,
-            studentEmail: (evaluation.studentId as any).email,
-            evaluation: evaluation
-          })),
+          students: studentsWithEvaluations,
           comments: submission.comments
         });
       }

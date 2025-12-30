@@ -739,6 +739,9 @@ export function FacultyAssessmentPage() {
                               {/* Only show Grade Group button if not all students are graded for this assessment */}
                               {(() => {
                                 const allGraded = submission.students?.every(student => {
+                                  // If no evaluation record exists yet, student is not graded
+                                  if (!student.evaluation) return false;
+                                  
                                   const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
                                                      assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
                                                      assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
@@ -754,7 +757,9 @@ export function FacultyAssessmentPage() {
                                       // Initialize group grade data with current scores
                                       const initialGrades: Record<string, string> = {};
                                       submission.students?.forEach(student => {
-                                        const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                        // If no evaluation record exists yet, default to 0
+                                        const currentScore = !student.evaluation ? 0 :
+                                                           assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
                                                            assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
                                                            assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
                                                            student.evaluation.external.reportPresentation.conduct;
@@ -778,7 +783,9 @@ export function FacultyAssessmentPage() {
                             </div>
                             <div className="space-y-2">
                               {submission.students.map((student) => {
-                                const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                                // If no evaluation record exists yet, default to 0
+                                const currentScore = !student.evaluation ? 0 :
+                                                   assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
                                                    assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
                                                    assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
                                                    student.evaluation.external.reportPresentation.conduct;
@@ -1224,7 +1231,9 @@ export function FacultyAssessmentPage() {
                           Student Grades (0-{getMaxScore(assessmentType)})
                         </h4>
                         {selectedSubmission.students.map((student) => {
-                          const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                          // If no evaluation record exists yet, default to 0
+                          const currentScore = !student.evaluation ? 0 :
+                                             assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
                                              assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
                                              assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
                                              student.evaluation.external.reportPresentation.conduct;
@@ -1292,7 +1301,9 @@ export function FacultyAssessmentPage() {
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Current Grades ({assessmentType})</h3>
                       <div className="space-y-2">
                         {selectedSubmission.students.map((student) => {
-                          const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
+                          // If no evaluation record exists yet, default to 0
+                          const currentScore = !student.evaluation ? 0 :
+                                             assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
                                              assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
                                              assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
                                              student.evaluation.external.reportPresentation.conduct;
