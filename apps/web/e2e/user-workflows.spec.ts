@@ -139,14 +139,6 @@ test.describe('Faculty Workflow: Create Assessment and Grade Submissions', () =>
       if (await meetOption.count() > 0) {
         console.log('✅ Google Meet integration available');
       }
-
-      // Look for cohort selection
-      const cohortSelect = page.locator(
-        'select[name="cohort"], [data-testid="cohort-select"], text=Cohort'
-      );
-      if (await cohortSelect.count() > 0) {
-        console.log('✅ Cohort selection available');
-      }
     }
   });
 

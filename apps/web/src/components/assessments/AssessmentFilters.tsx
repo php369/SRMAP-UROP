@@ -6,7 +6,6 @@ import { cn } from '../../utils/cn';
 interface FilterOptions {
   search: string;
   status: string[];
-  course: string[];
   sortBy: 'dueDate' | 'createdAt' | 'title' | 'status';
   sortOrder: 'asc' | 'desc';
 }
@@ -14,7 +13,6 @@ interface FilterOptions {
 interface AssessmentFiltersProps {
   filters: FilterOptions;
   onFiltersChange: (filters: FilterOptions) => void;
-  availableCourses: string[];
   userRole: 'student' | 'faculty' | 'admin';
   className?: string;
 }
@@ -22,7 +20,6 @@ interface AssessmentFiltersProps {
 export function AssessmentFilters({
   filters,
   onFiltersChange,
-  availableCourses,
   userRole,
   className,
 }: AssessmentFiltersProps) {
@@ -59,26 +56,16 @@ export function AssessmentFilters({
     updateFilters({ status: newStatus });
   };
 
-  const toggleCourse = (course: string) => {
-    const newCourse = filters.course.includes(course)
-      ? filters.course.filter(c => c !== course)
-      : [...filters.course, course];
-    updateFilters({ course: newCourse });
-  };
-
-
-
   const clearAllFilters = () => {
     updateFilters({
       search: '',
       status: [],
-      course: [],
       sortBy: 'dueDate',
       sortOrder: 'asc',
     });
   };
 
-  const activeFilterCount = filters.status.length + filters.course.length + (filters.search ? 1 : 0);
+  const activeFilterCount = filters.status.length + (filters.search ? 1 : 0);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -194,30 +181,6 @@ export function AssessmentFilters({
                   ))}
                 </div>
               </div>
-
-              {/* Course Filters */}
-              {availableCourses.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-text mb-2">Courses</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {availableCourses.map(course => (
-                      <button
-                        key={course}
-                        onClick={() => toggleCourse(course)}
-                        className={cn(
-                          'px-3 py-1 rounded-lg text-sm transition-all duration-200',
-                          filters.course.includes(course)
-                            ? 'bg-secondary text-white'
-                            : 'bg-surface border border-border text-textSecondary hover:text-text'
-                        )}
-                      >
-                        {course}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
 
             </div>
           </motion.div>

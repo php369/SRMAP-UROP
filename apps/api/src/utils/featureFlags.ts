@@ -32,7 +32,6 @@ export interface UserFeatureContext {
   userId?: string;
   email?: string;
   role?: string;
-  cohort?: string;
 }
 
 class FeatureFlagService {

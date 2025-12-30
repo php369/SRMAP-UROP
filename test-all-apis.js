@@ -172,19 +172,13 @@ async function runAPITests() {
   await testEndpoint('Get Users', `${API_V1_URL}/users`, 401); // Should fail without token
   await testEndpoint('Get Profile', `${API_V1_URL}/users/profile`, 401); // Should fail without token
   
-  console.log('\n4. 🎓 Cohort Management Endpoints');
-  console.log('-'.repeat(50));
-  
-  await testEndpoint('Get Cohorts', `${API_V1_URL}/cohorts`, 401); // Should fail without token
-  await testEndpoint('Create Cohort', `${API_V1_URL}/cohorts`, 401, { method: 'POST' }); // Should fail without token
-  
-  console.log('\n5. 📚 Project Management Endpoints');
+  console.log('\n4. 📚 Project Management Endpoints');
   console.log('-'.repeat(50));
   
   await testEndpoint('Get Projects', `${API_V1_URL}/projects`, 401); // Should fail without token
   await testEndpoint('Create Project', `${API_V1_URL}/projects`, 401, { method: 'POST' }); // Should fail without token
   
-  console.log('\n6. 👥 Group Management Endpoints');
+  console.log('\n5. 👥 Group Management Endpoints');
   console.log('-'.repeat(50));
   
   await testEndpoint('Get Groups', `${API_V1_URL}/groups`, 401); // Should fail without token
@@ -217,7 +211,6 @@ async function runAPITests() {
   console.log('\n11. 🌐 CORS Configuration Tests');
   console.log('-'.repeat(50));
   
-  await testCORS('Cohorts', `${API_V1_URL}/cohorts`);
   await testCORS('Projects', `${API_V1_URL}/projects`);
   await testCORS('Users', `${API_V1_URL}/users`);
   await testCORS('Auth', `${API_V1_URL}/auth/status`);

@@ -20,13 +20,6 @@ jest.mock('../services/googleAuth', () => ({
   verifyDomainRestriction: jest.fn(),
   generateAuthUrl: jest.fn(),
   exchangeCodeForTokens: jest.fn(),
-  exchangeCodeForCalendarTokens: jest.fn(),
-}));
-
-jest.mock('../services/googleCalendar', () => ({
-  createCalendarEvent: jest.fn(),
-  updateCalendarEvent: jest.fn(),
-  deleteCalendarEvent: jest.fn(),
 }));
 
 jest.mock('../services/storageService', () => ({

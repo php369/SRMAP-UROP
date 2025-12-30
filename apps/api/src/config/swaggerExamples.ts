@@ -58,7 +58,6 @@ export const swaggerExamples = {
         description: 'Create a full-stack web application using React, Node.js, and MongoDB. The application should include user authentication, CRUD operations, and real-time features.',
         courseId: '65789abcdef1234567890def',
         dueAt: '2024-12-31T23:59:59.000Z',
-        cohortIds: ['65789abcdef1234567890ghi'],
         settings: {
           allowLateSubmissions: false,
           maxFileSize: 10485760,
@@ -80,7 +79,6 @@ export const swaggerExamples = {
           meetUrl: 'https://meet.google.com/abc-defg-hij',
           calendarEventId: 'abc123def456ghi789',
           visibility: {
-            cohortIds: ['65789abcdef1234567890ghi'],
             courseIds: ['65789abcdef1234567890def'],
           },
           settings: {

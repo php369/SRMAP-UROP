@@ -21,7 +21,6 @@ export function usePermissions() {
     hasRole,
     hasPermission,
     canManageUsers: hasPermission('users.write'),
-    canManageCourses: hasPermission('courses.write'),
     canManageAssessments: hasPermission('assessments.write'),
     canGradeSubmissions: hasPermission('grades.write'),
     canViewReports: hasPermission('reports.read'),

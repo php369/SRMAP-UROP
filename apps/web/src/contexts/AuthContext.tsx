@@ -83,9 +83,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         'users.read',
         'users.write',
         'users.delete',
-        'courses.read',
-        'courses.write',
-        'courses.delete',
         'assessments.read',
         'assessments.write',
         'assessments.delete',
@@ -103,7 +100,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         'submissions.read',
         'grades.read',
         'grades.write',
-        'courses.read',
         'reports.read',
       ],
       student: [

@@ -118,8 +118,7 @@ export function generateAuthUrl(state?: string): string {
   const scopes = [
     'openid',
     'email',
-    'profile',
-    'https://www.googleapis.com/auth/calendar.events'
+    'profile'
   ];
 
   const authUrl = oauth2Client.generateAuthUrl({
@@ -184,67 +183,6 @@ export async function exchangeCodeForTokens(code: string) {
     }
     
     throw new Error(`Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Exchange authorization code for calendar tokens (for faculty)
- * @param code - Authorization code from Google
- * @param facultyId - Faculty member ID
- * @returns Token information
- */
-export async function exchangeCodeForCalendarTokens(code: string, facultyId?: string) {
-  try {
-    const { tokens } = await oauth2Client.getToken(code);
-    
-    if (!tokens.access_token) {
-      throw new Error('No access token received');
-    }
-
-    // Store tokens if facultyId is provided
-    if (facultyId && tokens.access_token) {
-      const { storeOAuthTokens } = await import('./googleCalendar');
-      await storeOAuthTokens(facultyId, {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token || undefined,
-        expiryDate: tokens.expiry_date || undefined,
-      });
-    }
-
-    return {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiryDate: tokens.expiry_date,
-      idToken: tokens.id_token,
-    };
-
-  } catch (error) {
-    logger.error('Calendar token exchange failed:', error);
-    throw new Error(`Calendar token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Refresh access token using refresh token
- * @param refreshToken - Google refresh token
- * @returns New access token information
- */
-export async function refreshAccessToken(refreshToken: string) {
-  try {
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-    });
-
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    
-    return {
-      accessToken: credentials.access_token,
-      expiryDate: credentials.expiry_date,
-    };
-
-  } catch (error) {
-    logger.error('Token refresh failed:', error);
-    throw new Error(`Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

@@ -75,21 +75,6 @@ export interface ActivityLog {
   userAgent?: string;
 }
 
-export interface Course {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-  department: string;
-  credits: number;
-  semester: string;
-  year: number;
-  instructor: User;
-  students: User[];
-  assessments: string[]; // Assessment IDs
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface UserManagementFilter {
   role?: User['role'][];
@@ -117,7 +102,6 @@ export interface ReportFilter {
     start: string;
     end: string;
   };
-  courses?: string[];
   assessments?: string[];
   departments?: string[];
   userRoles?: User['role'][];
@@ -129,7 +113,6 @@ export interface SubmissionReport {
   studentName: string;
   studentEmail: string;
   assessmentTitle: string;
-  courseName: string;
   submittedAt?: string;
   gradedAt?: string;
   score?: number;
@@ -152,19 +135,7 @@ export interface GradingLatencyReport {
   pendingSubmissions: number;
 }
 
-export interface CourseAnalyticsReport {
-  courseId: string;
-  courseName: string;
-  courseCode: string;
-  instructor: string;
-  totalStudents: number;
-  totalAssessments: number;
-  totalSubmissions: number;
-  averageScore: number;
-  passRate: number; // percentage of students with score >= 60%
-  completionRate: number; // percentage of submitted vs total possible submissions
-  gradingLatency: number;
-}
+
 
 export interface SystemUsageReport {
   date: string;

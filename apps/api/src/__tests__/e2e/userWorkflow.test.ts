@@ -4,15 +4,12 @@ import mongoose from 'mongoose';
 import { connectDatabase } from '../../config/database';
 import { User } from '../../models/User';
 import { Assessment } from '../../models/Assessment';
-import { Course } from '../../models/Course';
-import { Cohort } from '../../models/Cohort';
 import { setupRoutes } from '../../routes';
 import { generateTokenPair } from '../../services/jwtService';
 import { afterEach } from 'node:test';
 
 // Mock external services
 const mockGoogleAuth = require('../../services/googleAuth');
-const mockGoogleCalendar = require('../../services/googleCalendar');
 const mockStorage = require('../../services/storageService');
 
 describe('E2E User Workflows', () => {
@@ -20,8 +17,6 @@ describe('E2E User Workflows', () => {
   let studentUser: any;
   let facultyUser: any;
   let adminUser: any;
-  let course: any;
-  let cohort: any;
   let studentToken: string;
   let facultyToken: string;
   let adminToken: string;
@@ -33,7 +28,7 @@ describe('E2E User Workflows', () => {
     app.use(express.json());
     setupRoutes(app);
 
-    // Create test users first (needed for course facultyId)
+    // Create test users first
     facultyUser = new User({
       googleId: 'faculty123',
       name: 'Faculty User',
@@ -42,33 +37,12 @@ describe('E2E User Workflows', () => {
     });
     await facultyUser.save();
 
-    // Create test data
-    course = new Course({
-      title: 'Web Development',
-      code: 'CS301',
-      description: 'Full-stack web development course',
-      credits: 3,
-      facultyId: facultyUser._id,
-      semester: 'Fall',
-      year: 2024,
-    });
-    await course.save();
-
-    cohort = new Cohort({
-      name: 'CS 2024',
-      year: 2024,
-      department: 'Computer Science',
-      courseIds: [course._id],
-    });
-    await cohort.save();
-
     // Create test users
     studentUser = new User({
       googleId: 'student123',
       name: 'Student User',
       email: 'student@srmap.edu.in',
       role: 'student',
-      profile: { cohortIds: [cohort._id] },
     });
     await studentUser.save();
 
@@ -103,10 +77,6 @@ describe('E2E User Workflows', () => {
     }).accessToken;
 
     // Mock external services
-    mockGoogleCalendar.createCalendarEvent.mockResolvedValue({
-      id: 'calendar-event-123',
-      meetUrl: 'https://meet.google.com/test-meet-link',
-    });
     mockStorage.uploadFile.mockResolvedValue({
       url: 'https://supabase.co/storage/test-file.pdf',
       path: 'submissions/test-file.pdf',
@@ -120,8 +90,6 @@ describe('E2E User Workflows', () => {
 
   afterAll(async () => {
     await User.deleteMany({});
-    await Course.deleteMany({});
-    await Cohort.deleteMany({});
     await Assessment.deleteMany({});
     await mongoose.connection.close();
   });
@@ -135,9 +103,7 @@ describe('E2E User Workflows', () => {
         .send({
           title: 'Final Project',
           description: 'Create a full-stack web application',
-          courseId: course._id.toString(),
           dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-          cohortIds: [cohort._id.toString()],
           settings: {
             allowLateSubmissions: false,
             maxFileSize: 10485760, // 10MB
@@ -210,9 +176,7 @@ describe('E2E User Workflows', () => {
         .send({
           title: 'Test Assessment',
           description: 'Test description',
-          courseId: course._id.toString(),
           dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          cohortIds: [cohort._id.toString()],
         })
         .expect(201);
 
@@ -225,9 +189,7 @@ describe('E2E User Workflows', () => {
         .send({
           title: 'Unauthorized Assessment',
           description: 'This should fail',
-          courseId: course._id.toString(),
           dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          cohortIds: [cohort._id.toString()],
         })
         .expect(403);
 

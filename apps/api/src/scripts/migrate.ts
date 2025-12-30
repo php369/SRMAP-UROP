@@ -83,7 +83,7 @@ const migrations: Migration[] = [
           dueAt: 1 
         });
         await Assessment.collection.createIndex({ 
-          'visibility.cohortIds': 1, 
+          courseId: 1, 
           status: 1, 
           dueAt: 1 
         });

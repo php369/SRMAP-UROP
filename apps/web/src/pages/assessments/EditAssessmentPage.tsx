@@ -3,22 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AssessmentForm, AssessmentFormData } from '../../components/assessments/AssessmentForm';
 import { LoadingSpinner } from '../../components/ui';
 
-// Mock data - in real app this would come from API
-const mockCourses = [
-  'CS 1332 - Data Structures',
-  'CS 3510 - Algorithms',
-  'CS 4400 - Database Systems',
-  'CS 4641 - Machine Learning',
-  'CS 3300 - Software Engineering',
-];
-
-
-
 const mockAssessmentData: Partial<AssessmentFormData> = {
   title: 'Machine Learning Fundamentals Quiz',
   description: 'Test your understanding of basic ML concepts including supervised learning, unsupervised learning, and neural networks.',
   course: 'CS 4641 - Machine Learning',
-
   dueDate: '2024-01-15',
   dueTime: '23:59',
   timezone: 'America/New_York',
@@ -115,7 +103,6 @@ export function EditAssessmentPage() {
     <div className="min-h-screen py-8">
       <AssessmentForm
         initialData={assessmentData}
-        availableCourses={mockCourses}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}

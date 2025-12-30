@@ -16,7 +16,7 @@ import { Window, IWindow } from '../models/Window';
 
 /**
  * Comprehensive seed data script for SRM Project Portal
- * Creates demo users, courses, cohorts, assessments, submissions, and grades
+ * Creates demo users, projects, groups, applications, and evaluations
  */
 
 interface SeedData {

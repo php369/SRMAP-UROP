@@ -171,46 +171,6 @@ export async function getSystemStats(): Promise<{
 }
 
 /**
- * Create a new cohort (DISABLED - model removed)
- * @param cohortData - Cohort data
- * @param adminId - Admin creating the cohort
- * @returns Error - functionality disabled
- */
-export async function createCohort(
-  cohortData: {
-    name: string;
-    year: number;
-    department: string;
-    studentIds?: string[];
-    facultyIds?: string[];
-  },
-  adminId: string
-): Promise<any> {
-  throw new Error('Cohort functionality has been disabled - model removed');
-}
-
-/**
- * Update a cohort (DISABLED - model removed)
- * @param cohortId - Cohort ID
- * @param updates - Updates to apply
- * @param adminId - Admin updating the cohort
- * @returns Error - functionality disabled
- */
-export async function updateCohort(
-  cohortId: string,
-  updates: {
-    name?: string;
-    year?: number;
-    semester?: number;
-    type?: 'IDP' | 'UROP' | 'CAPSTONE';
-    status?: 'active' | 'inactive';
-  },
-  adminId: string
-): Promise<any> {
-  throw new Error('Cohort functionality has been disabled - model removed');
-}
-
-/**
  * Create a new course (DISABLED - model removed)
  * @param courseData - Course data
  * @param adminId - Admin creating the course
@@ -223,7 +183,6 @@ export async function createCourse(
     description?: string;
     credits: number;
     facultyId: string;
-    cohortIds?: string[];
     semester: 'Fall' | 'Spring' | 'Summer';
     year: number;
   },

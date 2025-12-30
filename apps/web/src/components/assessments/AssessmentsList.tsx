@@ -31,16 +31,11 @@ export function AssessmentsList({
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     status: [],
-    course: [],
     sortBy: 'dueDate',
     sortOrder: 'asc',
   });
 
-  // Extract unique values for filter options
-  const availableCourses = useMemo(() => 
-    [...new Set(assessments.map(a => a.course))].sort(),
-    [assessments]
-  );
+  // Extract unique values for filter options (removed courses)
 
 
 
@@ -65,14 +60,7 @@ export function AssessmentsList({
       );
     }
 
-    // Course filter
-    if (filters.course.length > 0) {
-      filtered = filtered.filter(assessment =>
-        filters.course.includes(assessment.course)
-      );
-    }
-
-
+    // Course filter (removed)
 
     // Sort
     filtered.sort((a, b) => {
@@ -172,7 +160,6 @@ export function AssessmentsList({
       <AssessmentFilters
         filters={filters}
         onFiltersChange={setFilters}
-        availableCourses={availableCourses}
         userRole={userRole}
       />
 
@@ -186,7 +173,6 @@ export function AssessmentsList({
             onClick={() => setFilters({
               search: '',
               status: [],
-              course: [],
               sortBy: 'dueDate',
               sortOrder: 'asc',
             })}

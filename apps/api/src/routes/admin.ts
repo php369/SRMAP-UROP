@@ -32,17 +32,6 @@ const updateRoleSchema = z.object({
 
 // Cohort schemas removed - functionality disabled
 
-const createCourseSchema = z.object({
-  code: z.string().min(1, 'Course code is required').max(20, 'Code too long'),
-  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  description: z.string().max(1000, 'Description too long').optional(),
-  credits: z.number().min(1).max(6),
-  facultyId: z.string().min(1, 'Faculty ID is required'),
-  cohortIds: z.array(z.string()).optional(),
-  semester: z.enum(['Fall', 'Spring', 'Summer']),
-  year: z.number().min(2020).max(2030),
-});
-
 const reportDateRangeSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
@@ -299,75 +288,9 @@ router.post('/cohorts', authenticate, authorize('admin'), asyncHandler(async (_r
   });
 }));
 
-/**
- * PATCH /admin/cohorts/:cohortId
- * Cohorts functionality disabled - model removed
- */
-router.patch('/cohorts/:cohortId', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  res.status(410).json({
-    success: false,
-    error: {
-      code: 'FEATURE_DISABLED',
-      message: 'Cohorts functionality has been disabled',
-    },
-  });
-}));
 
-/**
- * POST /admin/cohorts/:cohortId/members
- * Cohorts functionality disabled - model removed
- */
-router.post('/cohorts/:cohortId/members', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  res.status(410).json({
-    success: false,
-    error: {
-      code: 'FEATURE_DISABLED',
-      message: 'Cohorts functionality has been disabled',
-    },
-  });
-}));
 
-/**
- * DELETE /admin/cohorts/:cohortId/members/:userId
- * Cohorts functionality disabled - model removed
- */
-router.delete('/cohorts/:cohortId/members/:userId', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  res.status(410).json({
-    success: false,
-    error: {
-      code: 'FEATURE_DISABLED',
-      message: 'Cohorts functionality has been disabled',
-    },
-  });
-}));
 
-/**
- * GET /admin/courses
- * Courses functionality disabled - model removed
- */
-router.get('/courses', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  res.status(410).json({
-    success: false,
-    error: {
-      code: 'FEATURE_DISABLED',
-      message: 'Courses functionality has been disabled',
-    },
-  });
-}));
-
-/**
- * POST /admin/courses
- * Courses functionality disabled - model removed
- */
-router.post('/courses', authenticate, authorize('admin'), asyncHandler(async (_req: Request, res: Response) => {
-  res.status(410).json({
-    success: false,
-    error: {
-      code: 'FEATURE_DISABLED',
-      message: 'Courses functionality has been disabled',
-    },
-  });
-}));
 
 /**
  * GET /admin/reports

@@ -2,17 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AssessmentForm, AssessmentFormData } from '../../components/assessments/AssessmentForm';
 
-// Mock data - in real app this would come from API
-const mockCourses = [
-  'CS 1332 - Data Structures',
-  'CS 3510 - Algorithms',
-  'CS 4400 - Database Systems',
-  'CS 4641 - Machine Learning',
-  'CS 3300 - Software Engineering',
-];
-
-
-
 export function CreateAssessmentPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -44,7 +33,6 @@ export function CreateAssessmentPage() {
   return (
     <div className="min-h-screen py-8">
       <AssessmentForm
-        availableCourses={mockCourses}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}

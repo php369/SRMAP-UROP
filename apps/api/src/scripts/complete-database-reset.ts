@@ -21,7 +21,6 @@ import { Assessment } from '../models/Assessment';
 import { MeetingLog } from '../models/MeetingLog';
 import { Notification } from '../models/Notification';
 import { Window } from '../models/Window';
-import { TokenStore } from '../models/TokenStore';
 import { GroupMemberDetails } from '../models/GroupMemberDetails';
 import { logger } from '../utils/logger';
 
@@ -62,7 +61,9 @@ const COLLECTIONS_TO_DROP = [
   'facultyrosters',
   'studentmetas',
   'avatarpools',
-  'courses'
+  'courses',
+  'onlinestatuses',
+  'tokenstores'
 ];
 
 async function completeReset() {
@@ -111,7 +112,6 @@ async function completeReset() {
       { model: MeetingLog, name: 'Meeting Logs' },
       { model: Notification, name: 'Notifications' },
       { model: Window, name: 'Windows' },
-      { model: TokenStore, name: 'Token Store' },
       { model: GroupMemberDetails, name: 'Group Member Details' }
     ];
 

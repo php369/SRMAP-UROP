@@ -204,19 +204,12 @@ const options: swaggerJsdoc.Options = {
             },
             calendarEventId: {
               type: 'string',
-              description: 'Google Calendar event ID',
+              description: 'Calendar event ID (deprecated)',
               example: 'abc123def456ghi789',
             },
             visibility: {
               type: 'object',
               properties: {
-                cohortIds: {
-                  type: 'array',
-                  items: {
-                    type: 'string',
-                  },
-                  description: 'Cohort IDs that can see this assessment',
-                },
                 courseIds: {
                   type: 'array',
                   items: {
@@ -295,15 +288,6 @@ const options: swaggerJsdoc.Options = {
               description: 'Assessment due date',
               example: '2024-12-31T23:59:59.000Z',
             },
-            cohortIds: {
-              type: 'array',
-              items: {
-                type: 'string',
-              },
-              minItems: 1,
-              description: 'Cohort IDs that can see this assessment',
-              example: ['507f1f77bcf86cd799439014'],
-            },
             settings: {
               type: 'object',
               properties: {
@@ -328,7 +312,7 @@ const options: swaggerJsdoc.Options = {
               },
             },
           },
-          required: ['title', 'description', 'courseId', 'dueAt', 'cohortIds'],
+          required: ['title', 'description', 'courseId', 'dueAt'],
         },
         
         // Submission schemas
@@ -539,7 +523,7 @@ const options: swaggerJsdoc.Options = {
       },
       {
         name: 'Assessments',
-        description: 'Assessment creation, management, and Google Calendar integration',
+        description: 'Assessment creation and management',
       },
       {
         name: 'Submissions',

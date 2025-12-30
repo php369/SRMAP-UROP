@@ -608,70 +608,7 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
   }
 }));
 
-/**
- * POST /auth/google/calendar
- * Exchange Google authorization code for calendar tokens (faculty only)
- */
-router.post('/google/calendar', authenticate, authorize('faculty'), asyncHandler(async (req: Request, res: Response) => {
-  const { code, assessmentId } = req.body;
-  const facultyId = req.user!.id;
 
-  if (!code) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Authorization code is required',
-      },
-    });
-  }
-
-  try {
-    const { exchangeCodeForCalendarTokens } = await import('../services/googleAuth');
-    
-    // Exchange code for calendar tokens and store them
-    await exchangeCodeForCalendarTokens(code, facultyId);
-
-    logger.info(`Calendar tokens stored for faculty: ${facultyId}`);
-
-    // If assessmentId is provided, try to complete the assessment setup
-    if (assessmentId) {
-      try {
-        const { completeCalendarAuth } = await import('../services/assessmentService');
-        const assessment = await completeCalendarAuth(facultyId, assessmentId, code);
-        
-        return res.json({
-          success: true,
-          data: {
-            message: 'Calendar authentication completed and assessment updated',
-            assessment,
-          },
-        });
-      } catch (assessmentError) {
-        logger.error(`Failed to complete assessment setup after calendar auth:`, assessmentError);
-        // Continue with success response even if assessment update fails
-      }
-    }
-
-    res.json({
-      success: true,
-      data: {
-        message: 'Calendar authentication completed successfully',
-      },
-    });
-
-  } catch (error) {
-    logger.error(`Calendar authentication failed for faculty ${facultyId}:`, error);
-    
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'CALENDAR_AUTH_FAILED',
-        message: 'Failed to authenticate with Google Calendar',
-      },
-    });
-  }
-}));
 
 /**
  * POST /auth/logout

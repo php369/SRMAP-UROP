@@ -105,7 +105,6 @@ app.get('/api/v1/auth/google/url', (req, res) => {
 
 // Protected endpoints (return 401 for now)
 const protectedRoutes = [
-  '/api/v1/cohorts',
   '/api/v1/projects', 
   '/api/v1/groups',
   '/api/v1/users',

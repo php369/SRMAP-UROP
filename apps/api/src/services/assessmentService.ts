@@ -11,8 +11,7 @@ export class AssessmentService {
     description: string,
     type: 'IDP' | 'UROP' | 'CAPSTONE',
     dueDate: Date,
-    facultyId: mongoose.Types.ObjectId,
-    cohortIds: mongoose.Types.ObjectId[]
+    facultyId: mongoose.Types.ObjectId
   ): Promise<IAssessment> {
     try {
       const assessment = new Assessment({
@@ -21,7 +20,6 @@ export class AssessmentService {
         type,
         dueDate,
         facultyId,
-        cohortIds,
         status: 'draft'
       });
 
@@ -41,7 +39,6 @@ export class AssessmentService {
   static async getAssessmentsByFaculty(facultyId: mongoose.Types.ObjectId): Promise<IAssessment[]> {
     try {
       const assessments = await Assessment.find({ facultyId })
-        .populate('cohortIds', 'name year semester type')
         .sort({ createdAt: -1 });
 
       return assessments;
@@ -104,8 +101,7 @@ export async function createAssessmentWithMeetLink(
       assessmentData.description,
       assessmentData.type || 'IDP',
       new Date(assessmentData.dueDate),
-      new mongoose.Types.ObjectId(facultyId),
-      assessmentData.cohortIds?.map((id: string) => new mongoose.Types.ObjectId(id)) || []
+      new mongoose.Types.ObjectId(facultyId)
     );
 
     // Add needsCalendarAuth property for compatibility
@@ -130,9 +126,6 @@ export async function updateAssessmentWithCalendar(
   try {
     // Convert string arrays to ObjectId arrays if needed
     const processedUpdates = { ...updates };
-    if (processedUpdates.cohortIds && Array.isArray(processedUpdates.cohortIds)) {
-      processedUpdates.cohortIds = processedUpdates.cohortIds.map((id: string) => new mongoose.Types.ObjectId(id));
-    }
 
     const assessment = await Assessment.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(assessmentId), facultyId: new mongoose.Types.ObjectId(facultyId) },

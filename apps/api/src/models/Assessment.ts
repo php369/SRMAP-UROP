@@ -7,7 +7,6 @@ export interface IAssessment extends Document {
   type: 'IDP' | 'UROP' | 'CAPSTONE';
   dueDate: Date;
   facultyId: mongoose.Types.ObjectId;
-  cohortIds: mongoose.Types.ObjectId[];
   status: 'draft' | 'published' | 'archived';
   createdAt: Date;
   updatedAt: Date;

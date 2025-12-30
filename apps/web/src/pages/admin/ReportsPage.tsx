@@ -7,7 +7,6 @@ import {
   ExportProgress 
 } from '../../types';
 import { GlassCard, Badge, Input, GlowButton, ProgressIndicator } from '../../components/ui';
-import { AnimatedLineChart } from '../../components/charts';
 import { cn } from '../../utils/cn';
 
 // Mock data
@@ -17,7 +16,6 @@ const mockSubmissionReports: SubmissionReport[] = [
     studentName: 'Alice Johnson',
     studentEmail: 'alice@srmap.edu.in',
     assessmentTitle: 'ML Assignment 1',
-    courseName: 'Machine Learning',
     submittedAt: '2024-01-25T14:30:00Z',
     gradedAt: '2024-01-26T10:15:00Z',
     score: 85,
@@ -45,7 +43,7 @@ const mockGradingLatency: GradingLatencyReport[] = [
 ];
 
 export function ReportsPage() {
-  const [activeReport, setActiveReport] = useState<'submissions' | 'grading' | 'courses' | 'usage'>('submissions');
+  const [activeReport, setActiveReport] = useState<'submissions' | 'grading' | 'usage'>('submissions');
   const [filters, setFilters] = useState<ReportFilter>({
     dateRange: {
       start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -57,7 +55,6 @@ export function ReportsPage() {
   const reportTypes = [
     { id: 'submissions', label: 'Submissions', icon: '📤', description: 'Student submission analytics' },
     { id: 'grading', label: 'Grading Latency', icon: '⏱️', description: 'Faculty grading performance' },
-    { id: 'courses', label: 'Course Analytics', icon: '📚', description: 'Course performance metrics' },
     { id: 'usage', label: 'System Usage', icon: '📊', description: 'Platform usage statistics' },
   ];
 
@@ -132,7 +129,7 @@ export function ReportsPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {reportTypes.map((type) => (
               <button
                 key={type.id}
@@ -284,17 +281,9 @@ export function ReportsPage() {
               {/* Submissions Chart */}
               <GlassCard variant="elevated" className="p-6">
                 <h3 className="text-lg font-semibold text-text mb-4">Submissions Over Time</h3>
-                <AnimatedLineChart
-                  data={[
-                    { name: '2024-01-01', submissions: 45 },
-                    { name: '2024-01-02', submissions: 52 },
-                    { name: '2024-01-03', submissions: 38 },
-                    { name: '2024-01-04', submissions: 61 },
-                    { name: '2024-01-05', submissions: 73 },
-                  ]}
-                  lines={[{ dataKey: 'submissions', color: '#3B82F6' }]}
-                  height={300}
-                />
+                <div className="h-64 flex items-center justify-center bg-surface/50 rounded-lg border border-border">
+                  <p className="text-textSecondary">Chart visualization would appear here</p>
+                </div>
               </GlassCard>
             </div>
           )}

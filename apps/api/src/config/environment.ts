@@ -21,11 +21,10 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   
-  // Google OAuth & Calendar
+  // Google OAuth
   GOOGLE_CLIENT_ID: z.string().min(1, 'Google Client ID is required'),
   GOOGLE_CLIENT_SECRET: z.string().min(1, 'Google Client Secret is required'),
   GOOGLE_REDIRECT_URI: z.string().url('Invalid Google Redirect URI'),
-  GOOGLE_CALENDAR_API_KEY: z.string().optional(),
   
   // Supabase
   SUPABASE_URL: z.string().min(1, 'Supabase URL is required'),
@@ -96,7 +95,6 @@ export const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI,
-  GOOGLE_CALENDAR_API_KEY,
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_ANON_KEY,

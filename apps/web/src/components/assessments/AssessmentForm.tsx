@@ -24,7 +24,6 @@ interface AssessmentFormData {
 
 interface AssessmentFormProps {
   initialData?: Partial<AssessmentFormData>;
-  availableCourses: string[];
   onSubmit: (data: AssessmentFormData) => void;
   onCancel: () => void;
   loading?: boolean;
@@ -34,7 +33,6 @@ interface AssessmentFormProps {
 
 export function AssessmentForm({
   initialData,
-  availableCourses,
   onSubmit,
   onCancel,
   loading = false,
@@ -45,7 +43,6 @@ export function AssessmentForm({
     title: '',
     description: '',
     course: '',
-
     dueDate: '',
     dueTime: '23:59',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -222,23 +219,13 @@ export function AssessmentForm({
                   <label className="block text-sm font-medium text-text mb-2">
                     Course *
                   </label>
-                  <select
+                  <Input
                     value={formData.course}
                     onChange={(e) => updateField('course', e.target.value)}
-                    className={cn(
-                      'w-full px-4 py-3 bg-surface border border-border rounded-lg text-text',
-                      'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                      errors.course && 'border-error focus:ring-error'
-                    )}
-                  >
-                    <option value="">Select a course</option>
-                    {availableCourses.map(course => (
-                      <option key={course} value={course}>{course}</option>
-                    ))}
-                  </select>
-                  {errors.course && (
-                    <p className="mt-1 text-sm text-error">{errors.course}</p>
-                  )}
+                    placeholder="e.g., CS 101 - Introduction to Programming"
+                    error={errors.course}
+                    className="w-full"
+                  />
                 </div>
 
 

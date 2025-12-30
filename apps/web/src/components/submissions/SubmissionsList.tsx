@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { SubmissionCard, Submission, SubmissionFile } from './SubmissionCard';
+import { Submission, SubmissionFile } from '../../types';
 import { LoadingSpinner } from '../ui';
 import { cn } from '../../utils/cn';
 
@@ -15,7 +15,6 @@ interface SubmissionsListProps {
 
 interface FilterOptions {
   status: string[];
-  course: string[];
   search: string;
   sortBy: 'submittedAt' | 'dueDate' | 'assessmentTitle' | 'score';
   sortOrder: 'asc' | 'desc';
@@ -31,17 +30,10 @@ export function SubmissionsList({
 }: SubmissionsListProps) {
   const [filters, setFilters] = useState<FilterOptions>({
     status: [],
-    course: [],
     search: '',
     sortBy: 'submittedAt',
     sortOrder: 'desc',
   });
-
-  // Extract unique values for filter options
-  const availableCourses = useMemo(() => 
-    [...new Set(submissions.map(s => s.course))].sort(),
-    [submissions]
-  );
 
   const statusOptions = [
     { value: 'submitted', label: 'Submitted', color: 'bg-info' },
@@ -68,13 +60,6 @@ export function SubmissionsList({
     if (filters.status.length > 0) {
       filtered = filtered.filter(submission =>
         filters.status.includes(submission.status)
-      );
-    }
-
-    // Course filter
-    if (filters.course.length > 0) {
-      filtered = filtered.filter(submission =>
-        filters.course.includes(submission.course)
       );
     }
 
@@ -124,24 +109,16 @@ export function SubmissionsList({
     updateFilters({ status: newStatus });
   };
 
-  const toggleCourse = (course: string) => {
-    const newCourse = filters.course.includes(course)
-      ? filters.course.filter(c => c !== course)
-      : [...filters.course, course];
-    updateFilters({ course: newCourse });
-  };
-
   const clearAllFilters = () => {
     updateFilters({
       status: [],
-      course: [],
       search: '',
       sortBy: 'submittedAt',
       sortOrder: 'desc',
     });
   };
 
-  const activeFilterCount = filters.status.length + filters.course.length + (filters.search ? 1 : 0);
+  const activeFilterCount = filters.status.length + (filters.search ? 1 : 0);
 
   // Group submissions by status
   const groupedSubmissions = useMemo(() => {
@@ -268,29 +245,6 @@ export function SubmissionsList({
             ))}
           </div>
         </div>
-
-        {/* Course Filters */}
-        {availableCourses.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-text mb-2">Filter by Course</h4>
-            <div className="flex flex-wrap gap-2">
-              {availableCourses.map(course => (
-                <button
-                  key={course}
-                  onClick={() => toggleCourse(course)}
-                  className={cn(
-                    'px-3 py-1 rounded-lg text-sm transition-all duration-200',
-                    filters.course.includes(course)
-                      ? 'bg-secondary text-textPrimary'
-                      : 'bg-surface border border-border text-textSecondary hover:text-text'
-                  )}
-                >
-                  {course}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Results Summary */}
@@ -330,13 +284,83 @@ export function SubmissionsList({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <AnimatePresence>
                     {statusSubmissions.map((submission) => (
-                      <SubmissionCard
+                      <div
                         key={submission.id}
-                        submission={submission}
+                        className="bg-surface border border-border rounded-lg p-6 hover:bg-surface/80 transition-colors cursor-pointer"
                         onClick={() => onSubmissionClick(submission)}
-                        onDownload={onDownloadFile}
-                        onResubmit={() => onResubmit(submission)}
-                      />
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-text mb-1">
+                              {submission.assessmentTitle}
+                            </h3>
+                            <p className="text-textSecondary text-sm">
+                              Course: {submission.course}
+                            </p>
+                          </div>
+                          <div className={cn(
+                            'px-3 py-1 rounded-lg text-sm font-medium',
+                            statusOptions.find(s => s.value === submission.status)?.color || 'bg-gray-500'
+                          )}>
+                            {statusOptions.find(s => s.value === submission.status)?.label || submission.status}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-textSecondary">Submitted:</span>
+                            <p className="text-text">{new Date(submission.submittedAt).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <span className="text-textSecondary">Due:</span>
+                            <p className="text-text">{new Date(submission.dueDate).toLocaleDateString()}</p>
+                          </div>
+                          {submission.score !== undefined && (
+                            <div>
+                              <span className="text-textSecondary">Score:</span>
+                              <p className="text-text">{submission.score}/{submission.maxScore}</p>
+                            </div>
+                          )}
+                          <div>
+                            <span className="text-textSecondary">Attempt:</span>
+                            <p className="text-text">{submission.attempt}/{submission.maxAttempts}</p>
+                          </div>
+                        </div>
+
+                        {submission.files.length > 0 && (
+                          <div className="mt-4">
+                            <span className="text-textSecondary text-sm">Files:</span>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {submission.files.map((file) => (
+                                <button
+                                  key={file.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDownloadFile(file);
+                                  }}
+                                  className="text-primary hover:text-primary/80 text-sm underline"
+                                >
+                                  {file.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {submission.attempt < submission.maxAttempts && (
+                          <div className="mt-4 pt-4 border-t border-border">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onResubmit(submission);
+                              }}
+                              className="text-primary hover:text-primary/80 text-sm font-medium"
+                            >
+                              Resubmit Assignment
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </AnimatePresence>
                 </div>

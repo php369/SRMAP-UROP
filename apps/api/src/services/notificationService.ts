@@ -182,14 +182,12 @@ export function notifyGradeReceived(
  * @param title - Assessment title
  * @param changes - List of changes made
  * @param facultyName - Faculty who made changes
- * @param cohortIds - Cohort IDs to notify
  */
 export function notifyAssessmentUpdate(
   assessmentId: string,
   title: string,
   changes: string[],
-  facultyName: string,
-  _cohortIds: string[]
+  facultyName: string
 ): void {
   const changeText = changes.length > 1 
     ? `${changes.length} changes made`
@@ -209,8 +207,8 @@ export function notifyAssessmentUpdate(
     priority: 'normal',
   });
 
-  // Note: In a full implementation, we would also notify students in the cohorts
-  // This would require additional logic to map cohorts to users
+  // Note: In a full implementation, we would notify specific students
+  // This would require additional logic to determine which students should be notified
 }
 
 /**
@@ -219,14 +217,12 @@ export function notifyAssessmentUpdate(
  * @param title - Assessment title
  * @param dueDate - Due date
  * @param facultyName - Faculty who created it
- * @param cohortIds - Cohort IDs to notify
  */
 export function notifyNewAssessment(
   assessmentId: string,
   title: string,
   dueDate: Date,
-  facultyName: string,
-  cohortIds: string[]
+  facultyName: string
 ): void {
   const dueDateText = dueDate.toLocaleDateString();
   
@@ -240,7 +236,6 @@ export function notifyNewAssessment(
       title,
       dueDate: dueDate.toISOString(),
       facultyName,
-      cohortIds,
     },
     priority: 'high',
   }, 'student');

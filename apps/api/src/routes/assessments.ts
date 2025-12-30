@@ -22,7 +22,6 @@ const createAssessmentSchema = z.object({
   description: z.string().min(1, 'Description is required').max(2000, 'Description too long'),
   courseId: z.string().min(1, 'Course ID is required'),
   dueAt: z.string().datetime('Invalid due date format'),
-  cohortIds: z.array(z.string()).min(1, 'At least one cohort is required'),
   settings: z.object({
     allowLateSubmissions: z.boolean().optional(),
     maxFileSize: z.number().min(1024).max(100 * 1024 * 1024).optional(), // 1KB to 100MB
@@ -35,7 +34,7 @@ const updateAssessmentSchema = createAssessmentSchema.partial();
 const querySchema = z.object({
   courseId: z.string().optional(),
   status: z.enum(['draft', 'published', 'closed']).optional(),
-  scope: z.enum(['mine', 'course', 'cohort']).optional(),
+  scope: z.enum(['mine', 'course']).optional(),
   limit: z.string().transform(Number).optional(),
   skip: z.string().transform(Number).optional(),
 });
@@ -45,7 +44,7 @@ const querySchema = z.object({
  * /api/v1/assessments:
  *   post:
  *     summary: Create a new assessment with automatic Meet link generation
- *     description: Creates a new assessment and automatically generates Google Meet link and calendar event (faculty only)
+ *     description: Creates a new assessment and automatically generates Google Meet link (faculty only)
  *     tags: [Assessments]
  *     security:
  *       - bearerAuth: []
@@ -92,7 +91,7 @@ const querySchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Course or cohort not found
+ *         description: Course not found
  *         content:
  *           application/json:
  *             schema:
@@ -176,7 +175,7 @@ router.post('/', authenticate, authorize('faculty'), asyncHandler(async (req: Re
  * /api/v1/assessments:
  *   get:
  *     summary: Get assessments based on user role and query parameters
- *     description: Returns assessments visible to the current user based on their role (students see cohort assessments, faculty see their own, admins see all)
+ *     description: Returns assessments visible to the current user based on their role (students see published assessments, faculty see their own, admins see all)
  *     tags: [Assessments]
  *     security:
  *       - bearerAuth: []
@@ -196,7 +195,7 @@ router.post('/', authenticate, authorize('faculty'), asyncHandler(async (req: Re
  *         name: scope
  *         schema:
  *           type: string
- *           enum: [mine, course, cohort]
+ *           enum: [mine, course]
  *         description: Filter scope (faculty only)
  *       - in: query
  *         name: limit
@@ -296,7 +295,7 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
         skip,
       });
     } else if (user.role.endsWith('-student')) {
-      // Students can see assessments assigned to their cohorts
+      // Students can see published assessments
       assessments = await getStudentAssessments(user.id, {
         courseId,
         status: status as 'published' | 'closed' | undefined,
@@ -385,8 +384,8 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
 
     // Check permissions
     if (user.role.endsWith('-student')) {
-      // Students can only see published assessments assigned to their cohorts
-      // This would require checking cohort membership - simplified for now
+      // Students can only see published assessments
+      // Access control is handled by the service layer
       if (assessment.status !== 'published') {
         return res.status(403).json({
           success: false,
@@ -513,7 +512,7 @@ router.patch('/:id', authenticate, authorize('faculty'), asyncHandler(async (req
 
 /**
  * DELETE /assessments/:id
- * Delete an assessment and its calendar event
+ * Delete an assessment
  */
 router.delete('/:id', authenticate, authorize('faculty', 'admin'), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -557,7 +556,6 @@ router.delete('/:id', authenticate, authorize('faculty', 'admin'), asyncHandler(
       data: {
         message: 'Assessment deleted successfully',
         deleted: true,
-        calendarEventDeleted: true,
       },
     });
 
