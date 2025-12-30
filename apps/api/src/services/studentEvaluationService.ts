@@ -321,37 +321,11 @@ export class StudentEvaluationService {
           projectId: group.assignedProjectId
         }).populate('studentId', 'name email studentId');
 
-        // Create evaluation records for students who don't have them yet
-        const existingStudentIds = studentEvaluations.map(evaluation => evaluation.studentId._id.toString());
-        const missingStudents = group.members.filter((member: any) => 
-          !existingStudentIds.includes(member._id.toString())
-        );
-
-        for (const student of missingStudents) {
-          const newEvaluation = new StudentEvaluation({
-            studentId: student._id,
-            groupId: group._id,
-            projectId: group.assignedProjectId,
-            facultyId: group.assignedFacultyId,
-            internal: {
-              cla1: { conduct: 0, convert: 0 },
-              cla2: { conduct: 0, convert: 0 },
-              cla3: { conduct: 0, convert: 0 }
-            },
-            external: {
-              reportPresentation: { conduct: 0, convert: 0 }
-            },
-            totalInternal: 0,
-            totalExternal: 0,
-            total: 0,
-            isPublished: false
-          });
-          await newEvaluation.save();
-          
-          const populatedEvaluation = await StudentEvaluation.findById(newEvaluation._id)
-            .populate('studentId', 'name email studentId');
-          studentEvaluations.push(populatedEvaluation!);
-        }
+        // Map existing evaluations to students
+        const evaluationMap = new Map();
+        studentEvaluations.forEach(evaluation => {
+          evaluationMap.set(evaluation.studentId._id.toString(), evaluation);
+        });
 
         submissions.push({
           _id: submission._id,
