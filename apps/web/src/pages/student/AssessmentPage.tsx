@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
+import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -316,22 +316,8 @@ export function AssessmentPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      {submission.isGradeReleased ? (
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Graded</span>
-                        </div>
-                      ) : submission.isComplete ? (
-                        <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-full">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Awaiting Release</span>
-                        </div>
-                      ) : submission.isGraded ? (
-                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-2 rounded-full">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Partially Graded</span>
-                        </div>
-                      ) : (
+                      {/* Only show status when no grading has started */}
+                      {!submission.isGraded && (
                         <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-full">
                           <AlertCircle className="w-5 h-5" />
                           <span className="font-medium">Under Review</span>
@@ -433,6 +419,59 @@ export function AssessmentPage() {
                     </div>
                   )}
 
+                  {/* Faculty Comments Section - Show immediately when faculty grades */}
+                  {submission.evaluation && (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-blue-500" />
+                        Faculty Feedback
+                      </h4>
+                      <div className="space-y-3">
+                        {/* CLA-1 Comments */}
+                        {submission.evaluation.internal?.cla1?.comments && (
+                          <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <h5 className="font-medium text-blue-700 mb-2 text-sm">CLA-1 Assessment Feedback</h5>
+                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla1.comments}"</p>
+                          </div>
+                        )}
+
+                        {/* CLA-2 Comments */}
+                        {submission.evaluation.internal?.cla2?.comments && (
+                          <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+                            <h5 className="font-medium text-green-700 mb-2 text-sm">CLA-2 Assessment Feedback</h5>
+                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla2.comments}"</p>
+                          </div>
+                        )}
+
+                        {/* CLA-3 Comments */}
+                        {submission.evaluation.internal?.cla3?.comments && (
+                          <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+                            <h5 className="font-medium text-purple-700 mb-2 text-sm">CLA-3 Assessment Feedback</h5>
+                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla3.comments}"</p>
+                          </div>
+                        )}
+
+                        {/* External Comments */}
+                        {submission.evaluation.external?.reportPresentation?.comments && (
+                          <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                            <h5 className="font-medium text-orange-700 mb-2 text-sm">External Evaluation Feedback</h5>
+                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.external.reportPresentation.comments}"</p>
+                          </div>
+                        )}
+
+                        {/* Show message when no comments exist yet */}
+                        {!submission.evaluation.internal?.cla1?.comments && 
+                         !submission.evaluation.internal?.cla2?.comments && 
+                         !submission.evaluation.internal?.cla3?.comments && 
+                         !submission.evaluation.external?.reportPresentation?.comments && (
+                          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                            <p className="text-gray-500 text-sm">No feedback provided yet by faculty</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Assessment Progress & Feedback */}
                   {submission.evaluation && (
                     <div className="space-y-4">
@@ -462,11 +501,6 @@ export function AssessmentPage() {
                               <p className="text-sm text-green-700 font-medium">
                                 ✅ Graded
                               </p>
-                              {submission.isGradeReleased && submission.evaluation.internal.cla1.comments && (
-                                <p className="text-xs text-gray-600 mt-2 italic">
-                                  "{submission.evaluation.internal.cla1.comments}"
-                                </p>
-                              )}
                             </div>
                           ) : (
                             <p className="text-sm text-gray-500">Not graded yet</p>
@@ -492,11 +526,6 @@ export function AssessmentPage() {
                               <p className="text-sm text-green-700 font-medium">
                                 ✅ Graded
                               </p>
-                              {submission.isGradeReleased && submission.evaluation.internal.cla2.comments && (
-                                <p className="text-xs text-gray-600 mt-2 italic">
-                                  "{submission.evaluation.internal.cla2.comments}"
-                                </p>
-                              )}
                             </div>
                           ) : (
                             <p className="text-sm text-gray-500">Not graded yet</p>
@@ -522,11 +551,6 @@ export function AssessmentPage() {
                               <p className="text-sm text-green-700 font-medium">
                                 ✅ Graded
                               </p>
-                              {submission.isGradeReleased && submission.evaluation.internal.cla3.comments && (
-                                <p className="text-xs text-gray-600 mt-2 italic">
-                                  "{submission.evaluation.internal.cla3.comments}"
-                                </p>
-                              )}
                             </div>
                           ) : (
                             <p className="text-sm text-gray-500">Not graded yet</p>
@@ -552,11 +576,6 @@ export function AssessmentPage() {
                               <p className="text-sm text-green-700 font-medium">
                                 ✅ Graded
                               </p>
-                              {submission.isGradeReleased && submission.evaluation.external.reportPresentation.comments && (
-                                <p className="text-xs text-gray-600 mt-2 italic">
-                                  "{submission.evaluation.external.reportPresentation.comments}"
-                                </p>
-                              )}
                             </div>
                           ) : (
                             <p className="text-sm text-gray-500">Not graded yet</p>
