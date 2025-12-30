@@ -166,8 +166,16 @@ MeetingLogSchema.pre('save', function (next) {
 
 // Validate endedAt is after startedAt if provided
 MeetingLogSchema.pre('save', function (next) {
-  if (this.endedAt && this.endedAt <= this.startedAt) {
-    next(new Error('Meeting end time must be after start time'));
+  if (this.endedAt && this.startedAt && this.endedAt <= this.startedAt) {
+    const error = new Error(`Meeting end time must be after start time. Start: ${this.startedAt.toISOString()}, End: ${this.endedAt.toISOString()}`);
+    console.error('MeetingLog validation error:', {
+      startedAt: this.startedAt.toISOString(),
+      endedAt: this.endedAt.toISOString(),
+      startedAtLocal: this.startedAt.toString(),
+      endedAtLocal: this.endedAt.toString(),
+      timeDifference: (this.endedAt.getTime() - this.startedAt.getTime()) / (1000 * 60) // minutes
+    });
+    next(error);
   } else {
     next();
   }

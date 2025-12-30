@@ -42,6 +42,17 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             });
         }
 
+        // Log timezone conversion for debugging
+        const meetingDateObj = new Date(meetingDate);
+        logger.info('Meeting scheduling timezone conversion:', {
+            received: meetingDate,
+            parsedAsDate: meetingDateObj.toString(),
+            parsedAsUTC: meetingDateObj.toISOString(),
+            currentServerTime: new Date().toISOString(),
+            userRole,
+            userId: userId.toString()
+        });
+
         let projectIdToUse: mongoose.Types.ObjectId;
         let facultyId: mongoose.Types.ObjectId;
 
@@ -734,8 +745,19 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
         }
 
         // Update meeting status to completed and set end time
+        const currentTime = new Date();
         meeting.status = 'completed';
-        meeting.endedAt = new Date();
+        meeting.endedAt = currentTime;
+        
+        // Log timezone information for debugging
+        logger.info('Meeting completion timezone info:', {
+            meetingId: id,
+            startedAt: meeting.startedAt?.toISOString(),
+            endedAt: currentTime.toISOString(),
+            startedAtLocal: meeting.startedAt?.toString(),
+            endedAtLocal: currentTime.toString(),
+            timeDifference: meeting.startedAt ? (currentTime.getTime() - meeting.startedAt.getTime()) / (1000 * 60) : null // minutes
+        });
         
         // Save the meeting
         const savedMeeting = await meeting.save();

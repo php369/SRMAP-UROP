@@ -165,9 +165,19 @@ export function FacultyMeetingsPage() {
     }
 
     try {
+      // Convert datetime-local to proper UTC timestamp
+      // datetime-local format: "2025-12-08T13:00" (no timezone info)
+      // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
+      const meetingDateObj = new Date(scheduleData.meetingDate);
+      const meetingDateUTC = meetingDateObj.toISOString();
+      
+      console.log('Faculty meeting scheduling - Local time:', scheduleData.meetingDate);
+      console.log('Faculty meeting scheduling - Parsed as Date:', meetingDateObj.toString());
+      console.log('Faculty meeting scheduling - Converted to UTC:', meetingDateUTC);
+      
       const response = await api.post('/meetings', {
         projectId: scheduleData.projectId,
-        meetingDate: scheduleData.meetingDate,
+        meetingDate: meetingDateUTC,
         meetingLink: scheduleData.meetUrl,
         mode: scheduleData.mode
       });

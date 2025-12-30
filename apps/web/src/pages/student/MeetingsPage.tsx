@@ -298,8 +298,18 @@ export function MeetingsPage() {
 
     setLoading(true);
     try {
+      // Convert datetime-local to proper UTC timestamp
+      // datetime-local format: "2025-12-08T13:00" (no timezone info)
+      // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
+      const meetingDateObj = new Date(scheduleForm.meetingDate);
+      const meetingDateUTC = meetingDateObj.toISOString();
+      
+      console.log('Meeting scheduling - Local time:', scheduleForm.meetingDate);
+      console.log('Meeting scheduling - Parsed as Date:', meetingDateObj.toString());
+      console.log('Meeting scheduling - Converted to UTC:', meetingDateUTC);
+      
       const response = await api.post('/meetings', {
-        meetingDate: scheduleForm.meetingDate,
+        meetingDate: meetingDateUTC,
         meetingLink: scheduleForm.meetUrl,
         mode: scheduleForm.mode,
         location: scheduleForm.location
