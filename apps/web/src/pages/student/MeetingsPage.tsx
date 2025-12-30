@@ -11,6 +11,8 @@ export function MeetingsPage() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [isLeader, setIsLeader] = useState(false);
   const [canSubmitLogs, setCanSubmitLogs] = useState(false); // New state for log submission permission
+  const [canScheduleNewMeeting, setCanScheduleNewMeeting] = useState(true); // New state for scheduling permission
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
@@ -129,12 +131,43 @@ export function MeetingsPage() {
     try {
       const response = await api.get('/meetings/student');
       if (response.success && response.data) {
-        setMeetings(response.data as any[]);
+        const meetingsData = response.data as any[];
+        setMeetings(meetingsData);
+        
+        // Check if user can schedule new meetings
+        // User can schedule if there are no pending meetings or all meetings have approved logs
+        const hasPendingMeetings = meetingsData.some(meeting => 
+          meeting.status === 'scheduled' || 
+          meeting.status === 'completed' || 
+          meeting.status === 'pending'
+        );
+        
+        setCanScheduleNewMeeting(!hasPendingMeetings);
       }
     } catch (error) {
       console.error('Error fetching meetings:', error);
       toast.error('Failed to load meetings');
     }
+  };
+
+  // Helper functions to filter meetings
+  const getUpcomingMeetings = () => {
+    return meetings.filter(meeting => 
+      meeting.status === 'scheduled' || 
+      meeting.status === 'completed' || 
+      meeting.status === 'pending'
+    );
+  };
+
+  const getPastMeetings = () => {
+    return meetings.filter(meeting => meeting.status === 'approved');
+  };
+
+  const getStatusIndicator = (meeting: any) => {
+    if (meeting.status === 'approved') return 'Approved';
+    if (meeting.status === 'pending') return 'Resubmission Required';
+    if (meeting.status === 'completed') return 'Pending Review';
+    return '';
   };
 
   const hasMeetingPassed = (meetingDate: string) => {
@@ -367,203 +400,266 @@ export function MeetingsPage() {
           
           {/* Schedule Meeting Button - Show for all students with assigned projects */}
           {isLeader && (
-            <button
-              onClick={() => setShowScheduleModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Schedule Meeting
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => canScheduleNewMeeting ? setShowScheduleModal(true) : null}
+                disabled={!canScheduleNewMeeting}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                  canScheduleNewMeeting 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                title={!canScheduleNewMeeting ? "Please get your last meeting's logs approved to schedule another meeting" : ""}
+              >
+                <Plus className="w-4 h-4" />
+                Schedule Meeting
+              </button>
+            </div>
           )}
         </motion.div>
 
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'upcoming'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Upcoming Meetings ({getUpcomingMeetings().length})
+            </button>
+            <button
+              onClick={() => setActiveTab('past')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'past'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              Past Meetings ({getPastMeetings().length})
+            </button>
+          </div>
+        </div>
+
         {/* Meeting List */}
         <div className="space-y-4">
-          {meetings.map((meeting) => {
-            const hasLog = meeting.minutesOfMeeting || meeting.mom;
-            const canResubmit = meeting.status === 'rejected' || meeting.status === 'pending';
-            const participantNames = getParticipantNames(meeting);
+          {(() => {
+            const displayMeetings = activeTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
+            
+            return displayMeetings.map((meeting) => {
+              const hasLog = meeting.minutesOfMeeting || meeting.mom;
+              const canResubmit = meeting.status === 'rejected' || meeting.status === 'pending';
+              const participantNames = getParticipantNames(meeting);
+              const statusIndicator = getStatusIndicator(meeting);
 
-            return (
-              <motion.div
-                key={meeting._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-lg p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`p-3 rounded-lg ${meeting.mode === 'online' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                      {meeting.mode === 'online' ? (
-                        <Video className="w-6 h-6 text-blue-600" />
-                      ) : (
-                        <Users className="w-6 h-6 text-green-600" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold mb-1">
-                        {meeting.mode === 'online' ? 'Online Meeting' : 'In-Person Meeting'}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(meeting.meetingDate).toLocaleString()}
-                      </div>
-                      {meeting.projectId && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          Project: {meeting.projectId.title} ({meeting.projectId.projectId})
-                        </p>
-                      )}
-                      {meeting.location && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          {meeting.location}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2">
-                    {meeting.status === 'approved' && (
-                      <span className="flex items-center gap-1 text-green-600 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        Approved
-                      </span>
-                    )}
-                    {meeting.status === 'scheduled' && (
-                      <span className="flex items-center gap-1 text-blue-600 text-sm">
-                        <Clock className="w-4 h-4" />
-                        Scheduled
-                      </span>
-                    )}
-                    {meeting.status === 'completed' && (
-                      <span className="flex items-center gap-1 text-yellow-600 text-sm">
-                        <Clock className="w-4 h-4" />
-                        Pending Review
-                      </span>
-                    )}
-                    {meeting.status === 'rejected' && (
-                      <span className="flex items-center gap-1 text-red-600 text-sm">
-                        <XCircle className="w-4 h-4" />
-                        Rejected
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Participants */}
-                <div className="mb-4">
-                  <h4 className="font-medium text-sm text-gray-600 mb-2">Participants</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {participantNames.map((name, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Meeting Link */}
-                {meeting.meetUrl && meeting.status === 'scheduled' && (
-                  <a
-                    href={meeting.meetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
-                  >
-                    <Video className="w-4 h-4" />
-                    Join Meeting
-                  </a>
-                )}
-
-                {/* Rejection Reason */}
-                {(meeting.status === 'rejected' || meeting.status === 'pending') && meeting.rejectionReason && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-                    <h4 className="font-medium mb-2 flex items-center gap-2 text-red-700">
-                      <XCircle className="w-4 h-4" />
-                      Faculty Feedback - Requires Resubmission
-                    </h4>
-                    <p className="text-sm text-red-700 whitespace-pre-wrap">
-                      {meeting.rejectionReason}
-                    </p>
-                  </div>
-                )}
-
-                {/* Meeting Minutes */}
-                {hasLog && meeting.status !== 'rejected' && (
-                  <div className="p-4 bg-gray-50 rounded-lg mb-4">
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Minutes of Meeting
-                    </h4>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {meeting.minutesOfMeeting || meeting.mom}
-                    </p>
-                  </div>
-                )}
-
-                {/* Log Meeting Button */}
-                {/* Show button if: user can submit logs AND (meeting is completed OR pending for resubmission) AND (no log OR can resubmit) */}
-                {(canSubmitLogs && (meeting.status === 'completed' || meeting.status === 'pending') && (!hasLog || canResubmit)) && (
-                  <button
-                    onClick={() => handleLogMeeting(meeting)}
-                    className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
-                  >
-                    <FileText className="w-4 h-4" />
-                    {canResubmit ? 'Resubmit Meeting Minutes' : 'Log Meeting Minutes'}
-                  </button>
-                )}
-
-                {meeting.status !== 'completed' && (
-                  <p className="text-sm text-gray-500 italic">
-                    Meeting minutes can be logged after the faculty ends the meeting
-                  </p>
-                )}
-
-                {(meeting.status === 'completed' && hasLog && !canResubmit) && (
-                  <p className="text-sm text-green-600 italic flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" />
-                    Meeting minutes submitted, awaiting faculty review
-                  </p>
-                )}
-
-                {meeting.status === 'approved' && (
-                  <p className="text-sm text-green-600 italic flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" />
-                    Meeting minutes approved by faculty
-                  </p>
-                )}
-              </motion.div>
-            );
-          })}
-
-          {meetings.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">No Meetings Yet</h3>
-              <p className="text-gray-600 mb-4">
-                {isLeader 
-                  ? "Schedule your first meeting with your faculty mentor"
-                  : "No meetings scheduled yet"
-                }
-              </p>
-              {isLeader && (
-                <button
-                  onClick={() => setShowScheduleModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+              return (
+                <motion.div
+                  key={meeting._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-xl shadow-lg p-6"
                 >
-                  <Plus className="w-4 h-4" />
-                  Schedule Meeting
-                </button>
-              )}
-            </motion.div>
-          )}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`p-3 rounded-lg ${meeting.mode === 'online' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                        {meeting.mode === 'online' ? (
+                          <Video className="w-6 h-6 text-blue-600" />
+                        ) : (
+                          <Users className="w-6 h-6 text-green-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold">
+                            {meeting.mode === 'online' ? 'Online Meeting' : 'In-Person Meeting'}
+                          </h3>
+                          {activeTab === 'past' && statusIndicator && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              meeting.status === 'approved' 
+                                ? 'bg-green-100 text-green-800'
+                                : meeting.status === 'pending'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {statusIndicator}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(meeting.meetingDate).toLocaleString()}
+                        </div>
+                        {meeting.projectId && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            Project: {meeting.projectId.title} ({meeting.projectId.projectId})
+                          </p>
+                        )}
+                        {meeting.location && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            {meeting.location}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      {meeting.status === 'approved' && (
+                        <span className="flex items-center gap-1 text-green-600 text-sm">
+                          <CheckCircle className="w-4 h-4" />
+                          Approved
+                        </span>
+                      )}
+                      {meeting.status === 'scheduled' && (
+                        <span className="flex items-center gap-1 text-blue-600 text-sm">
+                          <Clock className="w-4 h-4" />
+                          Scheduled
+                        </span>
+                      )}
+                      {meeting.status === 'completed' && (
+                        <span className="flex items-center gap-1 text-yellow-600 text-sm">
+                          <Clock className="w-4 h-4" />
+                          Pending Review
+                        </span>
+                      )}
+                      {meeting.status === 'rejected' && (
+                        <span className="flex items-center gap-1 text-red-600 text-sm">
+                          <XCircle className="w-4 h-4" />
+                          Rejected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Participants */}
+                  <div className="mb-4">
+                    <h4 className="font-medium text-sm text-gray-600 mb-2">Participants</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {participantNames.map((name, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Meeting Link - Only show for upcoming scheduled meetings */}
+                  {activeTab === 'upcoming' && meeting.meetUrl && meeting.status === 'scheduled' && (
+                    <a
+                      href={meeting.meetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
+                    >
+                      <Video className="w-4 h-4" />
+                      Join Meeting
+                    </a>
+                  )}
+
+                  {/* Rejection Reason */}
+                  {(meeting.status === 'rejected' || meeting.status === 'pending') && meeting.rejectionReason && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-red-700">
+                        <XCircle className="w-4 h-4" />
+                        Faculty Feedback - Requires Resubmission
+                      </h4>
+                      <p className="text-sm text-red-700 whitespace-pre-wrap">
+                        {meeting.rejectionReason}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Meeting Minutes */}
+                  {hasLog && meeting.status !== 'rejected' && (
+                    <div className="p-4 bg-gray-50 rounded-lg mb-4">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Minutes of Meeting
+                      </h4>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {meeting.minutesOfMeeting || meeting.mom}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Log Meeting Button - Only show for upcoming meetings */}
+                  {activeTab === 'upcoming' && (canSubmitLogs && (meeting.status === 'completed' || meeting.status === 'pending') && (!hasLog || canResubmit)) && (
+                    <button
+                      onClick={() => handleLogMeeting(meeting)}
+                      className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      {canResubmit ? 'Resubmit Meeting Minutes' : 'Log Meeting Minutes'}
+                    </button>
+                  )}
+
+                  {activeTab === 'upcoming' && meeting.status !== 'completed' && (
+                    <p className="text-sm text-gray-500 italic">
+                      Meeting minutes can be logged after the faculty ends the meeting
+                    </p>
+                  )}
+
+                  {activeTab === 'upcoming' && (meeting.status === 'completed' && hasLog && !canResubmit) && (
+                    <p className="text-sm text-green-600 italic flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Meeting minutes submitted, awaiting faculty review
+                    </p>
+                  )}
+
+                  {meeting.status === 'approved' && (
+                    <p className="text-sm text-green-600 italic flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Meeting minutes approved by faculty
+                    </p>
+                  )}
+                </motion.div>
+              );
+            });
+          })()}
+
+          {(() => {
+            const displayMeetings = activeTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
+            
+            if (displayMeetings.length === 0) {
+              return (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2">
+                    No {activeTab === 'upcoming' ? 'Upcoming' : 'Past'} Meetings
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    {activeTab === 'upcoming' 
+                      ? (isLeader 
+                          ? "Schedule your first meeting with your faculty mentor"
+                          : "No upcoming meetings scheduled yet"
+                        )
+                      : "Past meetings will appear here after logs are approved"
+                    }
+                  </p>
+                  {activeTab === 'upcoming' && isLeader && canScheduleNewMeeting && (
+                    <button
+                      onClick={() => setShowScheduleModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Schedule Meeting
+                    </button>
+                  )}
+                </motion.div>
+              );
+            }
+            return null;
+          })()}
         </div>
       </div>
 

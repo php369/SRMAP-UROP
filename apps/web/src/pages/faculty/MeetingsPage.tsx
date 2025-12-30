@@ -81,6 +81,8 @@ export function FacultyMeetingsPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedLog, setSelectedLog] = useState<MeetingLog | null>(null);
   const [activeTab, setActiveTab] = useState<'meetings' | 'logs'>('meetings');
+  const [meetingsSubTab, setMeetingsSubTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [logsSubTab, setLogsSubTab] = useState<'pending' | 'approved'>('pending');
   const [hasAssignments, setHasAssignments] = useState<boolean | null>(null);
 
   const [scheduleData, setScheduleData] = useState({
@@ -93,6 +95,7 @@ export function FacultyMeetingsPage() {
   const [approvalData, setApprovalData] = useState({
     facultyNotes: ''
   });
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   useEffect(() => {
     checkAssignments();
@@ -119,13 +122,9 @@ export function FacultyMeetingsPage() {
     setLoading(true);
     try {
       const response = await api.get('/meetings/faculty');
-      // Filter out meetings that have passed by more than 1 hour
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      const activeMeetings = Array.isArray(response.data)
-        ? response.data.filter((meeting: Meeting) => new Date(meeting.meetingDate) > oneHourAgo)
-        : [];
-      setMeetings(activeMeetings);
+      // Don't filter by time - let the UI handle upcoming vs past
+      const allMeetings = Array.isArray(response.data) ? response.data : [];
+      setMeetings(allMeetings);
     } catch (error) {
       toast.error('Failed to fetch meetings');
       setMeetings([]); // Set empty array on error
@@ -200,29 +199,80 @@ export function FacultyMeetingsPage() {
     }
   };
 
+  // Helper functions to filter meetings and logs
+  const getUpcomingMeetings = () => {
+    return meetings.filter(meeting => 
+      meeting.status === 'scheduled' || 
+      (meeting.status === 'completed' && !meeting.attendees?.some(a => a.present))
+    );
+  };
+
+  const getPastMeetings = () => {
+    return meetings.filter(meeting => meeting.status === 'approved');
+  };
+
+  const getPendingLogs = () => {
+    return meetingLogs.filter(log => 
+      log.status === 'completed' || log.status === 'pending'
+    );
+  };
+
+  const getApprovedLogs = () => {
+    return meetingLogs.filter(log => log.status === 'approved');
+  };
+
   const handleApproveLog = async (logId: string, approved: boolean) => {
-    // If rejecting, require feedback
-    if (!approved && !approvalData.facultyNotes.trim()) {
-      toast.error('Feedback is required when rejecting a meeting log');
+    // If rejecting, show feedback modal
+    if (!approved) {
+      setShowRejectModal(true);
       return;
     }
 
+    // Direct approval without feedback
     try {
       const response = await api.put(`/meetings/logs/${logId}/approve`, {
-        approved,
-        facultyNotes: approvalData.facultyNotes.trim()
+        approved: true,
+        facultyNotes: '' // No feedback required for approval
       });
 
       if (response.success) {
-        toast.success(`Meeting log ${approved ? 'approved' : 'rejected'}`);
+        toast.success('Meeting log approved');
         setSelectedLog(null);
         setApprovalData({ facultyNotes: '' });
         fetchMeetingLogs();
       } else {
-        toast.error((response as any).error?.message || 'Failed to update meeting log');
+        toast.error((response as any).error?.message || 'Failed to approve meeting log');
       }
     } catch (error) {
-      toast.error('Failed to update meeting log');
+      toast.error('Failed to approve meeting log');
+    }
+  };
+
+  const handleRejectWithFeedback = async () => {
+    if (!approvalData.facultyNotes.trim()) {
+      toast.error('Feedback is required when rejecting a meeting log');
+      return;
+    }
+
+    if (!selectedLog) return;
+
+    try {
+      const response = await api.put(`/meetings/logs/${selectedLog._id}/approve`, {
+        approved: false,
+        facultyNotes: approvalData.facultyNotes.trim()
+      });
+
+      if (response.success) {
+        toast.success('Meeting log rejected');
+        setSelectedLog(null);
+        setShowRejectModal(false);
+        setApprovalData({ facultyNotes: '' });
+        fetchMeetingLogs();
+      } else {
+        toast.error((response as any).error?.message || 'Failed to reject meeting log');
+      }
+    } catch (error) {
+      toast.error('Failed to reject meeting log');
     }
   };
 
@@ -333,7 +383,7 @@ export function FacultyMeetingsPage() {
                 : 'bg-transparent text-textSecondary hover:bg-white/5'
                 }`}
             >
-              Scheduled Meetings ({meetings.length})
+              Schedule Meetings ({meetings.length})
             </button>
             <button
               onClick={() => setActiveTab('logs')}
@@ -347,201 +397,276 @@ export function FacultyMeetingsPage() {
           </div>
         </GlassCard>
 
+        {/* Sub-tabs */}
+        {activeTab === 'meetings' && (
+          <GlassCard className="p-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMeetingsSubTab('upcoming')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'upcoming'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  }`}
+              >
+                Upcoming Meetings ({getUpcomingMeetings().length})
+              </button>
+              <button
+                onClick={() => setMeetingsSubTab('past')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'past'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  }`}
+              >
+                Past Meetings ({getPastMeetings().length})
+              </button>
+            </div>
+          </GlassCard>
+        )}
+
+        {activeTab === 'logs' && (
+          <GlassCard className="p-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLogsSubTab('pending')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'pending'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  }`}
+              >
+                Pending Logs ({getPendingLogs().length})
+              </button>
+              <button
+                onClick={() => setLogsSubTab('approved')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'approved'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  }`}
+              >
+                Approved Logs ({getApprovedLogs().length})
+              </button>
+            </div>
+          </GlassCard>
+        )}
+
         {/* Content */}
         {activeTab === 'meetings' ? (
           loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : meetings.length === 0 ? (
-            <GlassCard className="p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-8 h-8 text-primary" />
+          ) : (() => {
+            const displayMeetings = meetingsSubTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
+            return displayMeetings.length === 0 ? (
+              <GlassCard className="p-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-text mb-2">
+                    No {meetingsSubTab === 'upcoming' ? 'Upcoming' : 'Past'} Meetings
+                  </h3>
+                  <p className="text-textSecondary mb-6">
+                    {meetingsSubTab === 'upcoming' 
+                      ? "Schedule a meeting with your project groups"
+                      : "Past meetings will appear here after logs are approved"
+                    }
+                  </p>
+                  {meetingsSubTab === 'upcoming' && (
+                    <GlowButton
+                      onClick={() => setShowScheduleModal(true)}
+                      variant="primary"
+                      glow
+                    >
+                      Schedule Meeting
+                    </GlowButton>
+                  )}
                 </div>
-                <h3 className="text-xl font-semibold text-text mb-2">No Meetings Scheduled</h3>
-                <p className="text-textSecondary mb-6">
-                  Schedule a meeting with your project groups
-                </p>
-                <GlowButton
-                  onClick={() => setShowScheduleModal(true)}
-                  variant="primary"
-                  glow
-                >
-                  Schedule Meeting
-                </GlowButton>
-              </div>
-            </GlassCard>
-          ) : (
-            <div className="grid gap-4">
-              {meetings.map((meeting) => (
-                <motion.div
-                  key={meeting._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <GlassCard className="p-6 hover:bg-white/10 transition-all">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Calendar className="w-5 h-5 text-primary" />
-                          <h3 className="text-lg font-semibold text-text">
-                            {meeting.groupId
-                              ? `Group ${meeting.groupId.groupCode}`
-                              : meeting.studentId?.name}
-                          </h3>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${meeting.mode === 'online'
-                            ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30'
-                            : 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30'
-                            }`}>
-                            {meeting.mode === 'online' ? 'Online' : 'In-Person'}
-                          </span>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm text-textSecondary">
-                            <Clock className="w-4 h-4" />
-                            <span>{new Date(meeting.meetingDate).toLocaleString()}</span>
-                          </div>
-                          {meeting.meetUrl && meeting.status !== 'completed' && (
-                            <a
-                              href={meeting.meetUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            >
-                              <Video className="w-4 h-4" />
-                              Join Meeting
-                            </a>
-                          )}
-                          {meeting.status === 'completed' && (
-                            <div className="flex items-center gap-2 text-sm text-green-600">
-                              <CheckCircle className="w-4 h-4" />
-                              Meeting Completed
-                            </div>
-                          )}
-                          {meeting.groupId && (
-                            <div className="text-sm text-textSecondary">
-                              Members: {meeting.attendees ? meeting.attendees.length : meeting.groupId.members.length} students
-                            </div>
-                          )}
-                          {meeting.attendees && meeting.attendees.length > 0 && (
-                            <div className="text-sm text-textSecondary">
-                              Participants: {meeting.attendees.map(a => a.studentId.name).join(', ')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Meeting Actions */}
-                      <div className="flex flex-col gap-2">
-                        {meeting.status === 'scheduled' && (
-                          <button
-                            onClick={() => handleCompleteMeeting(meeting._id)}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            End Meeting
-                          </button>
-                        )}
-                        {meeting.status === 'completed' && (
-                          <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Meeting Ended
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </div>
-          )
-        ) : (
-          meetingLogs.length === 0 ? (
-            <GlassCard className="p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-text mb-2">No Meeting Logs</h3>
-                <p className="text-textSecondary">
-                  Meeting logs will appear here after students submit them
-                </p>
-              </div>
-            </GlassCard>
-          ) : (
-            <div className="grid gap-4">
-              {meetingLogs.map((log) => (
-                <motion.div
-                  key={log._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <GlassCard className="p-6 hover:bg-white/10 transition-all">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-text">
-                            {log.groupId
-                              ? `Group ${log.groupId.groupCode}`
-                              : log.studentId?.name}
-                          </h3>
-                          {getStatusBadge(log.status)}
-                        </div>
-
-                        <div className="space-y-2 mb-4">
-                          {log.meetingDate && (
-                            <div>
-                              <span className="text-sm font-medium text-text">Meeting Date: </span>
-                              <span className="text-sm text-textSecondary">
-                                {new Date(log.meetingDate).toLocaleString()}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <span className="text-sm font-medium text-text">Attendees: </span>
-                            <span className="text-sm text-textSecondary">
-                              {log.attendees && log.attendees.length > 0 
-                                ? log.attendees
-                                    .filter((attendee: any) => attendee.present)
-                                    .map((attendee: any) => attendee.studentId?.name || 'Unknown')
-                                    .join(', ') || 'No attendees marked present'
-                                : 'No attendees recorded'
-                              }
+              </GlassCard>
+            ) : (
+              <div className="grid gap-4">
+                {displayMeetings.map((meeting) => (
+                  <motion.div
+                    key={meeting._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <GlassCard className="p-6 hover:bg-white/10 transition-all">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Calendar className="w-5 h-5 text-primary" />
+                            <h3 className="text-lg font-semibold text-text">
+                              {meeting.groupId
+                                ? `Group ${meeting.groupId.groupCode}`
+                                : meeting.studentId?.name}
+                            </h3>
+                            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${meeting.mode === 'online'
+                              ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30'
+                              : 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30'
+                              }`}>
+                              {meeting.mode === 'online' ? 'Online' : 'In-Person'}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-sm font-medium text-text">Minutes: </span>
-                            <p className="text-sm text-textSecondary mt-1 line-clamp-2">
-                              {log.minutesOfMeeting || log.mom || 'No minutes recorded'}
-                            </p>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-textSecondary">
+                              <Clock className="w-4 h-4" />
+                              <span>{new Date(meeting.meetingDate).toLocaleString()}</span>
+                            </div>
+                            {meeting.meetUrl && meeting.status !== 'completed' && meeting.status !== 'approved' && (
+                              <a
+                                href={meeting.meetUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-primary hover:underline"
+                              >
+                                <Video className="w-4 h-4" />
+                                Join Meeting
+                              </a>
+                            )}
+                            {meeting.status === 'completed' && (
+                              <div className="flex items-center gap-2 text-sm text-green-600">
+                                <CheckCircle className="w-4 h-4" />
+                                Meeting Completed
+                              </div>
+                            )}
+                            {meeting.status === 'approved' && (
+                              <div className="flex items-center gap-2 text-sm text-green-600">
+                                <CheckCircle className="w-4 h-4" />
+                                Meeting Approved
+                              </div>
+                            )}
+                            {meeting.groupId && (
+                              <div className="text-sm text-textSecondary">
+                                Members: {meeting.attendees ? meeting.attendees.length : meeting.groupId.members.length} students
+                              </div>
+                            )}
+                            {meeting.attendees && meeting.attendees.length > 0 && (
+                              <div className="text-sm text-textSecondary">
+                                Participants: {meeting.attendees.map(a => a.studentId.name).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Meeting Actions */}
+                        <div className="flex flex-col gap-2">
+                          {meeting.status === 'scheduled' && (
+                            <button
+                              onClick={() => handleCompleteMeeting(meeting._id)}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              End Meeting
+                            </button>
+                          )}
+                          {meeting.status === 'completed' && (
+                            <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4" />
+                              Meeting Ended
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </motion.div>
+                ))}
+              </div>
+            );
+          })()
+        ) : (
+          (() => {
+            const displayLogs = logsSubTab === 'pending' ? getPendingLogs() : getApprovedLogs();
+            return displayLogs.length === 0 ? (
+              <GlassCard className="p-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-text mb-2">
+                    No {logsSubTab === 'pending' ? 'Pending' : 'Approved'} Meeting Logs
+                  </h3>
+                  <p className="text-textSecondary">
+                    {logsSubTab === 'pending' 
+                      ? "Meeting logs will appear here after students submit them"
+                      : "Approved meeting logs will appear here"
+                    }
+                  </p>
+                </div>
+              </GlassCard>
+            ) : (
+              <div className="grid gap-4">
+                {displayLogs.map((log) => (
+                  <motion.div
+                    key={log._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <GlassCard className="p-6 hover:bg-white/10 transition-all">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="text-lg font-semibold text-text">
+                              {log.groupId
+                                ? `Group ${log.groupId.groupCode}`
+                                : log.studentId?.name}
+                            </h3>
+                            {getStatusBadge(log.status)}
+                          </div>
+
+                          <div className="space-y-2 mb-4">
+                            {log.meetingDate && (
+                              <div>
+                                <span className="text-sm font-medium text-text">Meeting Date: </span>
+                                <span className="text-sm text-textSecondary">
+                                  {new Date(log.meetingDate).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-sm font-medium text-text">Attendees: </span>
+                              <span className="text-sm text-textSecondary">
+                                {log.attendees && log.attendees.length > 0 
+                                  ? log.attendees
+                                      .filter((attendee: any) => attendee.present)
+                                      .map((attendee: any) => attendee.studentId?.name || 'Unknown')
+                                      .join(', ') || 'No attendees marked present'
+                                  : 'No attendees recorded'
+                                }
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-text">Minutes: </span>
+                              <p className="text-sm text-textSecondary mt-1 line-clamp-2">
+                                {log.minutesOfMeeting || log.mom || 'No minutes recorded'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-textSecondary">
+                            Submitted: {new Date(log.createdAt).toLocaleString()}
                           </div>
                         </div>
 
-                        <div className="text-xs text-textSecondary">
-                          Submitted: {new Date(log.createdAt).toLocaleString()}
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setApprovalData({ facultyNotes: log.facultyNotes || '' });
+                            }}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4 text-text" />
+                          </button>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setApprovalData({ facultyNotes: log.facultyNotes || '' });
-                          }}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-all"
-                          title="View details"
-                        >
-                          <Eye className="w-4 h-4 text-text" />
-                        </button>
-                      </div>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </div>
-          )
+                    </GlassCard>
+                  </motion.div>
+                ))}
+              </div>
+            );
+          })()
         )}
       </motion.div>
 
@@ -741,23 +866,6 @@ export function FacultyMeetingsPage() {
                     <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
                   </div>
 
-                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && 
-                   (selectedLog.minutesOfMeeting || selectedLog.mom) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Faculty Notes 
-                        <span className="text-red-500 text-xs ml-1">(Required for rejection, optional for approval)</span>
-                      </label>
-                      <textarea
-                        value={approvalData.facultyNotes}
-                        onChange={(e) => setApprovalData({ facultyNotes: e.target.value })}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
-                        placeholder="Add notes or feedback..."
-                      />
-                    </div>
-                  )}
-
                   {selectedLog.facultyNotes && (
                     <div>
                       <label className="text-sm font-medium text-gray-600">Faculty Notes</label>
@@ -795,6 +903,69 @@ export function FacultyMeetingsPage() {
                       </button>
                     </>
                   )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rejection Feedback Modal */}
+      <AnimatePresence>
+        {showRejectModal && selectedLog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowRejectModal(false);
+              setApprovalData({ facultyNotes: '' });
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md"
+            >
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Reject Meeting Log</h2>
+                <p className="text-gray-600 mb-4">
+                  Please provide feedback explaining why this meeting log is being rejected:
+                </p>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Feedback *
+                  </label>
+                  <textarea
+                    value={approvalData.facultyNotes}
+                    onChange={(e) => setApprovalData({ facultyNotes: e.target.value })}
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    rows={4}
+                    placeholder="Explain what needs to be improved or corrected..."
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowRejectModal(false);
+                      setApprovalData({ facultyNotes: '' });
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRejectWithFeedback}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all"
+                  >
+                    Confirm Rejection
+                  </button>
                 </div>
               </div>
             </motion.div>
