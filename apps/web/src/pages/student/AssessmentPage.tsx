@@ -204,7 +204,17 @@ export function AssessmentPage() {
       }
 
       // Sort by submission date (most recent first)
-      allSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+      allSubmissions.sort((a, b) => {
+        // First, prioritize by submission type: legacy submissions (solo/group) first, then evaluations
+        if (a.submissionType !== 'evaluation' && b.submissionType === 'evaluation') {
+          return -1; // a (legacy) comes before b (evaluation)
+        }
+        if (a.submissionType === 'evaluation' && b.submissionType !== 'evaluation') {
+          return 1; // b (legacy) comes before a (evaluation)
+        }
+        // If same type, sort by date (most recent first)
+        return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
+      });
 
       setSubmissions(allSubmissions);
     } catch (error) {
@@ -332,7 +342,17 @@ export function AssessmentPage() {
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">Partially Graded</span>
                         </div>
-                      ) : submission.isGraded || submission.facultyComments || submission.facultyGrade ? (
+                      ) : submission.isGraded || submission.facultyComments || submission.facultyGrade || (() => {
+                        // Check if this legacy submission has been graded in the evaluation system
+                        const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
+                        if (evaluation && submission.submissionType !== 'evaluation') {
+                          if (submission.assessmentType === 'CLA-1' && evaluation.internal?.cla1?.conduct > 0) return true;
+                          if (submission.assessmentType === 'CLA-2' && evaluation.internal?.cla2?.conduct > 0) return true;
+                          if (submission.assessmentType === 'CLA-3' && evaluation.internal?.cla3?.conduct > 0) return true;
+                          if (submission.assessmentType === 'External' && evaluation.external?.reportPresentation?.conduct > 0) return true;
+                        }
+                        return false;
+                      })() ? (
                         <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
                           <CheckCircle className="w-5 h-5" />
                           <span className="font-medium">Graded</span>
@@ -440,73 +460,53 @@ export function AssessmentPage() {
                   )}
 
                   {/* Faculty Feedback Section - Show for non-evaluation submissions when faculty provides feedback */}
-                  {submission.submissionType !== 'evaluation' && submission.facultyComments && (
+                  {submission.submissionType !== 'evaluation' && (
                     <div className="mb-6">
-                      <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-blue-500" />
-                        Faculty Feedback
-                      </h4>
-                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <h5 className="font-medium text-blue-700 mb-2 text-sm">{submission.assessmentType} Assessment Feedback</h5>
-                        <p className="text-gray-700 text-sm italic">"{submission.facultyComments}"</p>
-                      </div>
+                      {/* Check if there's corresponding evaluation feedback for this assessment type */}
+                      {submissions.some(s => s.submissionType === 'evaluation' && s.evaluation) && (() => {
+                        const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
+                        let feedbackComment = '';
+                        let feedbackTitle = '';
+                        
+                        // Match assessment type to evaluation component
+                        if (submission.assessmentType === 'CLA-1' && evaluation?.internal?.cla1?.comments) {
+                          feedbackComment = evaluation.internal.cla1.comments;
+                          feedbackTitle = 'CLA-1 Assessment Feedback';
+                        } else if (submission.assessmentType === 'CLA-2' && evaluation?.internal?.cla2?.comments) {
+                          feedbackComment = evaluation.internal.cla2.comments;
+                          feedbackTitle = 'CLA-2 Assessment Feedback';
+                        } else if (submission.assessmentType === 'CLA-3' && evaluation?.internal?.cla3?.comments) {
+                          feedbackComment = evaluation.internal.cla3.comments;
+                          feedbackTitle = 'CLA-3 Assessment Feedback';
+                        } else if (submission.assessmentType === 'External' && evaluation?.external?.reportPresentation?.comments) {
+                          feedbackComment = evaluation.external.reportPresentation.comments;
+                          feedbackTitle = 'External Evaluation Feedback';
+                        } else if (submission.facultyComments) {
+                          // Fallback to legacy faculty comments
+                          feedbackComment = submission.facultyComments;
+                          feedbackTitle = `${submission.assessmentType} Assessment Feedback`;
+                        }
+                        
+                        if (feedbackComment) {
+                          return (
+                            <div>
+                              <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-blue-500" />
+                                Faculty Feedback
+                              </h4>
+                              <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                                <h5 className="font-medium text-blue-700 mb-2 text-sm">{feedbackTitle}</h5>
+                                <p className="text-gray-700 text-sm italic">"{feedbackComment}"</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   )}
 
                   {/* Faculty Comments Section - Show immediately when faculty grades */}
-                  {submission.evaluation && (
-                    <div className="mb-6">
-                      <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-blue-500" />
-                        Faculty Feedback
-                      </h4>
-                      <div className="space-y-3">
-                        {/* CLA-1 Comments */}
-                        {submission.evaluation.internal?.cla1?.comments && (
-                          <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                            <h5 className="font-medium text-blue-700 mb-2 text-sm">CLA-1 Assessment Feedback</h5>
-                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla1.comments}"</p>
-                          </div>
-                        )}
-
-                        {/* CLA-2 Comments */}
-                        {submission.evaluation.internal?.cla2?.comments && (
-                          <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
-                            <h5 className="font-medium text-green-700 mb-2 text-sm">CLA-2 Assessment Feedback</h5>
-                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla2.comments}"</p>
-                          </div>
-                        )}
-
-                        {/* CLA-3 Comments */}
-                        {submission.evaluation.internal?.cla3?.comments && (
-                          <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-400">
-                            <h5 className="font-medium text-purple-700 mb-2 text-sm">CLA-3 Assessment Feedback</h5>
-                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.internal.cla3.comments}"</p>
-                          </div>
-                        )}
-
-                        {/* External Comments */}
-                        {submission.evaluation.external?.reportPresentation?.comments && (
-                          <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
-                            <h5 className="font-medium text-orange-700 mb-2 text-sm">External Evaluation Feedback</h5>
-                            <p className="text-gray-700 text-sm italic">"{submission.evaluation.external.reportPresentation.comments}"</p>
-                          </div>
-                        )}
-
-                        {/* Show message when no comments exist yet */}
-                        {!submission.evaluation.internal?.cla1?.comments && 
-                         !submission.evaluation.internal?.cla2?.comments && 
-                         !submission.evaluation.internal?.cla3?.comments && 
-                         !submission.evaluation.external?.reportPresentation?.comments && (
-                          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                            <p className="text-gray-500 text-sm">No feedback provided yet by faculty</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Assessment Progress & Feedback */}
                   {submission.evaluation && (
                     <div className="space-y-4">
                       <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">

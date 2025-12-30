@@ -132,11 +132,13 @@ export class StudentEvaluationService {
 
       logger.info(`${component.toUpperCase()} score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
 
-      return await StudentEvaluation.findById(evaluation._id)
+      const populatedEvaluation = await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')
         .populate('groupId', 'groupCode members')
         .populate('projectId', 'title type')
-        .populate('facultyId', 'name email') as IStudentEvaluation;
+        .populate('facultyId', 'name email');
+      
+      return populatedEvaluation!;
 
     } catch (error) {
       logger.error('Error updating student internal score:', error);
@@ -205,12 +207,14 @@ export class StudentEvaluationService {
 
       logger.info(`External score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
 
-      return await StudentEvaluation.findById(evaluation._id)
+      const populatedEvaluation = await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')
         .populate('groupId', 'groupCode members')
         .populate('projectId', 'title type')
         .populate('facultyId', 'name email')
-        .populate('externalFacultyId', 'name email') as IStudentEvaluation;
+        .populate('externalFacultyId', 'name email');
+      
+      return populatedEvaluation!;
 
     } catch (error) {
       logger.error('Error updating student external score:', error);
