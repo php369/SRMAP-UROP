@@ -32,28 +32,28 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
         let projectIdToUse: mongoose.Types.ObjectId;
         let facultyId: mongoose.Types.ObjectId;
 
-        if (userRole === 'student') {
+        if (userRole.endsWith('-student')) {
             // For students, we need to find their project and faculty
             const { Application } = await import('../models/Application');
             
             // Check if student is in a group
             const group = await Group.findOne({ members: userId });
             
-            if (group && group.assignedProjectId) {
-                // Group project
-                projectIdToUse = group.assignedProjectId;
-                
-                // Check if user is group leader
-                if (group.leaderId.toString() !== userId.toString()) {
-                    return res.status(403).json({
+            if (group) {
+                // User is in a group - all group members can schedule meetings
+                // Check if group has assigned project
+                if (!group.assignedProjectId) {
+                    return res.status(404).json({
                         success: false,
                         error: {
-                            code: 'ACCESS_DENIED',
-                            message: 'Only group leaders can schedule meetings',
+                            code: 'NO_ASSIGNED_PROJECT',
+                            message: 'Group has no assigned project',
                             timestamp: new Date().toISOString(),
                         },
                     });
                 }
+                
+                projectIdToUse = group.assignedProjectId;
             } else {
                 // Solo student
                 const application = await Application.findOne({

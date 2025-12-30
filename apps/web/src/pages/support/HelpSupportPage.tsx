@@ -48,7 +48,7 @@ const faqs = [
             },
             {
                 q: 'How do I join assessment meetings?',
-                a: 'You can schedule meetings with your faculty mentor from the Meetings page. For group projects, only the group leader can schedule meetings. Once scheduled, a Google Meet button will appear for online meetings.'
+                a: 'Any student can schedule meetings with their faculty mentor from the Meetings page. Once scheduled, a Google Meet button will appear for online meetings. However, only group leaders (or solo students) can submit meeting minutes after the meeting.'
             }
         ]
     }

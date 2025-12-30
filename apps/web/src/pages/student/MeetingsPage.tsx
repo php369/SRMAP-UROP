@@ -10,6 +10,7 @@ export function MeetingsPage() {
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [isLeader, setIsLeader] = useState(false);
+  const [canSubmitLogs, setCanSubmitLogs] = useState(false); // New state for log submission permission
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
@@ -78,19 +79,48 @@ export function MeetingsPage() {
         const groupData = response.data as any;
         const userId = (user as any)?._id || (user as any)?.id;
         const userIsLeader = groupData.leaderId === userId || groupData.leaderId?._id === userId;
-        setIsLeader(userIsLeader);
-        setGroupMembers(groupData.members || []);
-        console.log('Group data:', { groupData, userIsLeader, userId });
-      } else {
-        // Solo student - always a leader
-        console.log('No group found - treating as solo student (leader)');
+        
+        // All group members can schedule meetings
         setIsLeader(true);
+        // Only group leaders can submit meeting logs
+        setCanSubmitLogs(userIsLeader);
+        setGroupMembers(groupData.members || []);
+        
+        console.log('Group data:', { 
+          groupData, 
+          userIsLeader, 
+          userId,
+          canSchedule: true,
+          canSubmitLogs: userIsLeader
+        });
+      } else {
+        // No group found - check if user has approved solo application
+        console.log('No group found - checking for solo application');
+        try {
+          const appResponse = await api.get('/applications/my-application');
+          if (appResponse.success && appResponse.data) {
+            const applications = appResponse.data as any[];
+            const hasApprovedApp = applications.some(app => app.status === 'approved');
+            // Solo students with approved applications can both schedule and submit logs
+            setIsLeader(hasApprovedApp);
+            setCanSubmitLogs(hasApprovedApp);
+            console.log('Solo student status:', { hasApprovedApp });
+          } else {
+            setIsLeader(false);
+            setCanSubmitLogs(false);
+          }
+        } catch (appError) {
+          console.error('Error checking applications:', appError);
+          setIsLeader(false);
+          setCanSubmitLogs(false);
+        }
         setGroupMembers([]);
       }
     } catch (error) {
       console.error('Error checking user role:', error);
-      // Default to solo student (leader)
-      setIsLeader(true);
+      // Default to not having any permissions (safer default)
+      setIsLeader(false);
+      setCanSubmitLogs(false);
       setGroupMembers([]);
     }
   };
@@ -325,7 +355,7 @@ export function MeetingsPage() {
             </p>
           </div>
           
-          {/* Schedule Meeting Button - Only show for group leaders or solo students */}
+          {/* Schedule Meeting Button - Show for all students with assigned projects */}
           {isLeader && (
             <button
               onClick={() => setShowScheduleModal(true)}
@@ -460,8 +490,8 @@ export function MeetingsPage() {
                 )}
 
                 {/* Log Meeting Button */}
-                {/* Show button if: user is leader OR it's a solo meeting, AND (no log OR rejected) */}
-                {((isLeader || meeting.studentId) && meetingPassed && (!hasLog || canResubmit)) && (
+                {/* Show button if: user can submit logs AND meeting has passed AND (no log OR rejected) */}
+                {(canSubmitLogs && meetingPassed && (!hasLog || canResubmit)) && (
                   <button
                     onClick={() => handleLogMeeting(meeting)}
                     className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
@@ -491,7 +521,7 @@ export function MeetingsPage() {
               <p className="text-gray-600 mb-4">
                 {isLeader 
                   ? "Schedule your first meeting with your faculty mentor"
-                  : "Your group leader or faculty mentor will schedule meetings for your project"
+                  : "No meetings scheduled yet"
                 }
               </p>
               {isLeader && (
