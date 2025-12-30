@@ -44,9 +44,16 @@ export function MeetingsPage() {
     try {
       const response = await api.get('/applications/my-application');
       if (response.success && response.data) {
-        // Check if application is approved
-        const appData = response.data as any;
-        setHasProject(appData.status === 'approved');
+        // response.data is an array of applications
+        const applications = response.data as any[];
+        // Check if there's at least one approved application
+        const hasApprovedApplication = applications.some(app => app.status === 'approved');
+        setHasProject(hasApprovedApplication);
+        console.log('Project assignment check:', { 
+          applicationsCount: applications.length, 
+          hasApprovedApplication,
+          applicationStatuses: applications.map(app => app.status)
+        });
       } else {
         setHasProject(false);
       }
