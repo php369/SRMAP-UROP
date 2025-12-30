@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye, AlertCircle } from 'lucide-react';
+import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye, AlertCircle, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -26,6 +26,7 @@ interface Meeting {
   meetingDate: string;
   meetUrl?: string;
   mode: 'online' | 'in-person';
+  location?: string;
   status: 'scheduled' | 'completed' | 'pending' | 'approved' | 'rejected';
   attendees?: Array<{
     studentId: {
@@ -89,7 +90,8 @@ export function FacultyMeetingsPage() {
     projectId: '',
     meetingDate: '',
     meetUrl: '',
-    mode: 'online' as 'online' | 'in-person'
+    mode: 'online' as 'online' | 'in-person',
+    location: ''
   });
 
   const [approvalData, setApprovalData] = useState({
@@ -163,6 +165,11 @@ export function FacultyMeetingsPage() {
       return;
     }
 
+    if (scheduleData.mode === 'in-person' && !scheduleData.location.trim()) {
+      toast.error('Please provide a location for in-person meetings');
+      return;
+    }
+
     try {
       // Convert datetime-local to proper UTC timestamp
       // datetime-local format: "2025-12-08T13:00" (no timezone info)
@@ -178,7 +185,8 @@ export function FacultyMeetingsPage() {
         projectId: scheduleData.projectId,
         meetingDate: meetingDateUTC,
         meetingLink: scheduleData.meetUrl,
-        mode: scheduleData.mode
+        mode: scheduleData.mode,
+        location: scheduleData.location
       });
 
       if (response.success) {
@@ -188,7 +196,8 @@ export function FacultyMeetingsPage() {
           projectId: '',
           meetingDate: '',
           meetUrl: '',
-          mode: 'online'
+          mode: 'online',
+          location: ''
         });
         fetchMeetings();
       } else {
@@ -301,9 +310,9 @@ export function FacultyMeetingsPage() {
   const getStatusBadge = (status: string) => {
     if (status === 'completed' || status === 'scheduled') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-500/30">
           <Clock className="w-3 h-3" />
-          {status === 'scheduled' ? 'Scheduled' : 'Pending Review'}
+          {status === 'scheduled' ? 'Scheduled' : 'Awaiting Log Submission'}
         </span>
       );
     }
@@ -513,6 +522,12 @@ export function FacultyMeetingsPage() {
                               <Clock className="w-4 h-4" />
                               <span>{new Date(meeting.meetingDate).toLocaleString()}</span>
                             </div>
+                            {meeting.location && meeting.mode === 'in-person' && (
+                              <div className="flex items-center gap-2 text-sm text-textSecondary">
+                                <MapPin className="w-4 h-4" />
+                                <span>{meeting.location}</span>
+                              </div>
+                            )}
                             {meeting.meetUrl && meeting.status !== 'completed' && meeting.status !== 'approved' && (
                               <a
                                 href={meeting.meetUrl}
@@ -525,9 +540,9 @@ export function FacultyMeetingsPage() {
                               </a>
                             )}
                             {meeting.status === 'completed' && (
-                              <div className="flex items-center gap-2 text-sm text-green-600">
-                                <CheckCircle className="w-4 h-4" />
-                                Meeting Completed
+                              <div className="flex items-center gap-2 text-sm text-orange-600">
+                                <Clock className="w-4 h-4" />
+                                Awaiting meeting's log for review
                               </div>
                             )}
                             {meeting.status === 'approved' && (
@@ -767,6 +782,22 @@ export function FacultyMeetingsPage() {
                         onChange={(e) => setScheduleData({ ...scheduleData, meetUrl: e.target.value })}
                         className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="https://meet.google.com/..."
+                      />
+                    </div>
+                  )}
+
+                  {scheduleData.mode === 'in-person' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location *
+                      </label>
+                      <input
+                        type="text"
+                        value={scheduleData.location}
+                        onChange={(e) => setScheduleData({ ...scheduleData, location: e.target.value })}
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Room number, building, etc."
+                        required
                       />
                     </div>
                   )}

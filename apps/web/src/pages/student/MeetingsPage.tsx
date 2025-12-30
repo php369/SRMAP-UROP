@@ -166,7 +166,7 @@ export function MeetingsPage() {
   const getStatusIndicator = (meeting: any) => {
     if (meeting.status === 'approved') return 'Approved';
     if (meeting.status === 'pending') return 'Resubmission Required';
-    if (meeting.status === 'completed') return 'Pending Review';
+    if (meeting.status === 'completed') return 'Awaiting Log Submission';
     return '';
   };
 
@@ -520,9 +520,9 @@ export function MeetingsPage() {
                         </span>
                       )}
                       {meeting.status === 'completed' && (
-                        <span className="flex items-center gap-1 text-yellow-600 text-sm">
+                        <span className="flex items-center gap-1 text-orange-600 text-sm">
                           <Clock className="w-4 h-4" />
-                          Pending Review
+                          Awaiting meeting's log for review
                         </span>
                       )}
                       {meeting.status === 'rejected' && (
