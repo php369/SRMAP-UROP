@@ -10,11 +10,13 @@ const router = express.Router();
 /**
  * POST /api/meetings
  * Schedule a meeting
- * Accessible by: faculty, coordinator
+ * Accessible by: students, faculty, coordinator
  */
-router.post('/', authenticate, authorize('faculty', 'coordinator'), async (req, res) => {
+router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), async (req, res) => {
     try {
         const { projectId, meetingDate, meetingLink, mode, location } = req.body;
+        const userId = new mongoose.Types.ObjectId(req.user!.id);
+        const userRole = req.user!.role;
 
         if (!meetingDate) {
             return res.status(400).json({
@@ -27,38 +29,107 @@ router.post('/', authenticate, authorize('faculty', 'coordinator'), async (req, 
             });
         }
 
-        if (!projectId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'MISSING_REQUIRED_FIELDS',
-                    message: 'Project ID is required',
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
+        let projectIdToUse: mongoose.Types.ObjectId;
+        let facultyId: mongoose.Types.ObjectId;
 
-        // Verify project exists and belongs to faculty
-        const { Project } = await import('../models/Project');
-        const project = await Project.findOne({
-            _id: new mongoose.Types.ObjectId(projectId),
-            facultyId: new mongoose.Types.ObjectId(req.user!.id),
-            status: 'assigned'
-        });
+        if (userRole === 'student') {
+            // For students, we need to find their project and faculty
+            const { Application } = await import('../models/Application');
+            
+            // Check if student is in a group
+            const group = await Group.findOne({ members: userId });
+            
+            if (group && group.assignedProjectId) {
+                // Group project
+                projectIdToUse = group.assignedProjectId;
+                
+                // Check if user is group leader
+                if (group.leaderId.toString() !== userId.toString()) {
+                    return res.status(403).json({
+                        success: false,
+                        error: {
+                            code: 'ACCESS_DENIED',
+                            message: 'Only group leaders can schedule meetings',
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
+                }
+            } else {
+                // Solo student
+                const application = await Application.findOne({
+                    studentId: userId,
+                    status: 'approved'
+                });
 
-        if (!project) {
-            return res.status(404).json({
-                success: false,
-                error: {
-                    code: 'PROJECT_NOT_FOUND',
-                    message: 'Project not found or not assigned to you',
-                    timestamp: new Date().toISOString(),
-                },
+                if (!application) {
+                    return res.status(404).json({
+                        success: false,
+                        error: {
+                            code: 'NO_APPROVED_APPLICATION',
+                            message: 'No approved application found',
+                            timestamp: new Date().toISOString(),
+                        },
+                    });
+                }
+
+                projectIdToUse = application.projectId;
+            }
+
+            // Get project to find faculty
+            const { Project } = await import('../models/Project');
+            const project = await Project.findById(projectIdToUse);
+            
+            if (!project) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        code: 'PROJECT_NOT_FOUND',
+                        message: 'Project not found',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+
+            facultyId = project.facultyId;
+        } else {
+            // Faculty/coordinator scheduling
+            if (!projectId) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'MISSING_REQUIRED_FIELDS',
+                        message: 'Project ID is required',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+
+            projectIdToUse = new mongoose.Types.ObjectId(projectId);
+            
+            // Verify project exists and belongs to faculty
+            const { Project } = await import('../models/Project');
+            const project = await Project.findOne({
+                _id: projectIdToUse,
+                facultyId: userId,
+                status: 'assigned'
             });
+
+            if (!project) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        code: 'PROJECT_NOT_FOUND',
+                        message: 'Project not found or not assigned to you',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+
+            facultyId = userId;
         }
 
         // Find the group or student assigned to this project
-        const group = await Group.findOne({ assignedProjectId: new mongoose.Types.ObjectId(projectId) }).populate('members');
+        const group = await Group.findOne({ assignedProjectId: projectIdToUse }).populate('members');
 
         let attendees: Array<{ studentId: mongoose.Types.ObjectId; present: boolean }> = [];
         let groupId: mongoose.Types.ObjectId | undefined;
@@ -71,29 +142,37 @@ router.post('/', authenticate, authorize('faculty', 'coordinator'), async (req, 
                 studentId: new mongoose.Types.ObjectId(memberId.toString()),
                 present: false,
             }));
-        } else if (project.assignedTo) {
-            // Solo project
-            studentId = project.assignedTo as mongoose.Types.ObjectId;
-            attendees = [{
-                studentId: studentId,
-                present: false,
-            }];
         } else {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'NO_ASSIGNEE',
-                    message: 'Project has no assigned student or group',
-                    timestamp: new Date().toISOString(),
-                },
+            // Solo project - find the student from application
+            const { Application } = await import('../models/Application');
+            const application = await Application.findOne({
+                projectId: projectIdToUse,
+                status: 'approved'
             });
+
+            if (application && application.studentId) {
+                studentId = application.studentId;
+                attendees = [{
+                    studentId: studentId,
+                    present: false,
+                }];
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'NO_ASSIGNEE',
+                        message: 'Project has no assigned student or group',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
         }
 
         const meetingLog = new MeetingLog({
             groupId,
             studentId,
-            projectId: new mongoose.Types.ObjectId(projectId),
-            facultyId: new mongoose.Types.ObjectId(req.user!.id),
+            projectId: projectIdToUse,
+            facultyId: facultyId,
             meetingDate: new Date(meetingDate),
             startedAt: new Date(meetingDate),
             meetUrl: meetingLink,
@@ -102,17 +181,18 @@ router.post('/', authenticate, authorize('faculty', 'coordinator'), async (req, 
             status: 'submitted',
             attendees,
             minutesOfMeeting: '',
-            createdBy: new mongoose.Types.ObjectId(req.user!.id),
+            createdBy: userId,
         });
 
         await meetingLog.save();
 
         logger.info(`Meeting scheduled by ${req.user!.email}:`, {
             meetingId: meetingLog._id,
-            projectId,
+            projectId: projectIdToUse,
             groupId,
             studentId,
             date: meetingDate,
+            scheduledBy: userRole
         });
 
         res.status(201).json({

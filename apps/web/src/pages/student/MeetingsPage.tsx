@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin } from 'lucide-react';
+import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -15,10 +15,18 @@ export function MeetingsPage() {
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [hasProject, setHasProject] = useState<boolean | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   const [logForm, setLogForm] = useState({
     minutesOfMeeting: '',
     attendees: [] as string[]
+  });
+
+  const [scheduleForm, setScheduleForm] = useState({
+    meetingDate: '',
+    meetUrl: '',
+    mode: 'online' as 'online' | 'in-person',
+    location: ''
   });
 
   useEffect(() => {
@@ -240,6 +248,54 @@ export function MeetingsPage() {
     return names;
   };
 
+  const handleScheduleMeeting = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!scheduleForm.meetingDate) {
+      toast.error('Please select a meeting date and time');
+      return;
+    }
+
+    if (scheduleForm.mode === 'online' && !scheduleForm.meetUrl) {
+      toast.error('Please provide a Google Meet URL for online meetings');
+      return;
+    }
+
+    if (scheduleForm.mode === 'in-person' && !scheduleForm.location) {
+      toast.error('Please provide a location for in-person meetings');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/meetings', {
+        meetingDate: scheduleForm.meetingDate,
+        meetingLink: scheduleForm.meetUrl,
+        mode: scheduleForm.mode,
+        location: scheduleForm.location
+      });
+
+      if (response.success) {
+        toast.success('Meeting scheduled successfully');
+        setShowScheduleModal(false);
+        setScheduleForm({
+          meetingDate: '',
+          meetUrl: '',
+          mode: 'online',
+          location: ''
+        });
+        fetchMeetings();
+      } else {
+        toast.error(response.error?.message || 'Failed to schedule meeting');
+      }
+    } catch (error: any) {
+      console.error('Error scheduling meeting:', error);
+      toast.error(error.message || 'Failed to schedule meeting');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Show loading while initializing
   if (initializing || hasProject === null) {
     return (
@@ -260,12 +316,25 @@ export function MeetingsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex justify-between items-start"
         >
-          <h1 className="text-3xl font-bold mb-2">Meetings</h1>
-          <p className="text-gray-600">
-            View scheduled meetings and log meeting minutes
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Meetings</h1>
+            <p className="text-gray-600">
+              View scheduled meetings and log meeting minutes
+            </p>
+          </div>
+          
+          {/* Schedule Meeting Button - Only show for group leaders or solo students */}
+          {isLeader && (
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Schedule Meeting
+            </button>
+          )}
         </motion.div>
 
         {/* Meeting List */}
@@ -419,9 +488,21 @@ export function MeetingsPage() {
             >
               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">No Meetings Yet</h3>
-              <p className="text-gray-600">
-                Your faculty mentor will schedule meetings for your project
+              <p className="text-gray-600 mb-4">
+                {isLeader 
+                  ? "Schedule your first meeting with your faculty mentor"
+                  : "Your group leader or faculty mentor will schedule meetings for your project"
+                }
               </p>
+              {isLeader && (
+                <button
+                  onClick={() => setShowScheduleModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Schedule Meeting
+                </button>
+              )}
             </motion.div>
           )}
         </div>
@@ -508,6 +589,105 @@ export function MeetingsPage() {
                   Cancel
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Schedule Meeting Modal */}
+      <AnimatePresence>
+        {showScheduleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowScheduleModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Meeting</h2>
+
+              <form onSubmit={handleScheduleMeeting} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meeting Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleForm.meetingDate}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, meetingDate: e.target.value })}
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meeting Mode
+                  </label>
+                  <select
+                    value={scheduleForm.mode}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, mode: e.target.value as 'online' | 'in-person' })}
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="online">Online (Google Meet)</option>
+                    <option value="in-person">In-Person</option>
+                  </select>
+                </div>
+
+                {scheduleForm.mode === 'online' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Google Meet URL
+                    </label>
+                    <input
+                      type="url"
+                      value={scheduleForm.meetUrl}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, meetUrl: e.target.value })}
+                      placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={scheduleForm.location}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, location: e.target.value })}
+                      placeholder="Room number, building, etc."
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {loading ? 'Scheduling...' : 'Schedule Meeting'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="flex-1 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

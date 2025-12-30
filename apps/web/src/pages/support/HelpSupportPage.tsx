@@ -48,7 +48,7 @@ const faqs = [
             },
             {
                 q: 'How do I join assessment meetings?',
-                a: 'Once your faculty schedules a meeting, a Google Meet button will appear on your Assessment page.'
+                a: 'You can schedule meetings with your faculty mentor from the Meetings page. For group projects, only the group leader can schedule meetings. Once scheduled, a Google Meet button will appear for online meetings.'
             }
         ]
     }
