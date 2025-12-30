@@ -26,7 +26,7 @@ interface Meeting {
   meetingDate: string;
   meetUrl?: string;
   mode: 'online' | 'in-person';
-  status: 'submitted' | 'completed' | 'approved' | 'rejected';
+  status: 'scheduled' | 'completed' | 'approved' | 'rejected';
   attendees?: Array<{
     studentId: {
       _id: string;
@@ -53,7 +53,7 @@ interface MeetingLog {
   participants?: any[];
   minutesOfMeeting?: string;
   mom?: string;
-  status: 'submitted' | 'completed' | 'approved' | 'rejected';
+  status: 'scheduled' | 'completed' | 'approved' | 'rejected';
   rejectionReason?: string;
   facultyNotes?: string;
   facultyApproved?: boolean;
@@ -216,21 +216,28 @@ export function FacultyMeetingsPage() {
 
       if (response.success) {
         toast.success('Meeting marked as completed');
-        fetchMeetings(); // Refresh the meetings list
+        // Refresh both meetings and logs to show updated status
+        await Promise.all([
+          fetchMeetings(),
+          fetchMeetingLogs()
+        ]);
       } else {
-        toast.error((response as any).error?.message || 'Failed to complete meeting');
+        const errorMessage = response.error?.message || 'Failed to complete meeting';
+        console.error('Complete meeting error:', response.error);
+        toast.error(errorMessage);
       }
-    } catch (error) {
-      toast.error('Failed to complete meeting');
+    } catch (error: any) {
+      console.error('Complete meeting exception:', error);
+      toast.error(error.message || 'Failed to complete meeting');
     }
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'completed' || status === 'submitted') {
+    if (status === 'completed' || status === 'scheduled') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30">
           <Clock className="w-3 h-3" />
-          Pending
+          {status === 'scheduled' ? 'Scheduled' : 'Pending Review'}
         </span>
       );
     }
@@ -311,7 +318,7 @@ export function FacultyMeetingsPage() {
                 : 'bg-transparent text-textSecondary hover:bg-white/5'
                 }`}
             >
-              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'submitted').length : 0} pending)
+              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'scheduled').length : 0} pending)
             </button>
           </div>
         </GlassCard>
@@ -404,7 +411,7 @@ export function FacultyMeetingsPage() {
                       
                       {/* Meeting Actions */}
                       <div className="flex flex-col gap-2">
-                        {meeting.status !== 'completed' && (
+                        {meeting.status === 'scheduled' && (
                           <button
                             onClick={() => handleCompleteMeeting(meeting._id)}
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
@@ -412,6 +419,12 @@ export function FacultyMeetingsPage() {
                             <CheckCircle className="w-4 h-4" />
                             End Meeting
                           </button>
+                        )}
+                        {meeting.status === 'completed' && (
+                          <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            Meeting Ended
+                          </span>
                         )}
                       </div>
                     </div>

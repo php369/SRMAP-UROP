@@ -1,13 +1,11 @@
 services:
   - type: web
     name: srm-portal-api
-    env: node
     runtime: node
     region: singapore
     plan: free
-    rootDirectory: apps/api
-    buildCommand: npm install --legacy-peer-deps && npm run build
-    startCommand: npm start
+    buildCommand: cd ../.. && npm install -g pnpm@9 && pnpm install --recursive && pnpm --filter @srm-portal/api build
+    startCommand: node dist/index.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -31,6 +29,12 @@ services:
       - key: GOOGLE_REDIRECT_URI
         value: https://srmap-urop-web.vercel.app/auth/callback
       - key: GOOGLE_CALENDAR_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false

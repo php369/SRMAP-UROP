@@ -176,10 +176,12 @@ async function startServer() {
     
     // Start server
     const PORT = config.PORT || 3001;
-    server.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📊 Health check: http://localhost:${PORT}/health`);
-      logger.info(`📚 API docs: http://localhost:${PORT}/docs`);
+    const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+    
+    server.listen(PORT, HOST, () => {
+      logger.info(`🚀 Server running on ${HOST}:${PORT}`);
+      logger.info(`📊 Health check: http://${HOST}:${PORT}/health`);
+      logger.info(`📚 API docs: http://${HOST}:${PORT}/docs`);
     });
     
     // Graceful shutdown

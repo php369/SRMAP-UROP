@@ -321,7 +321,7 @@ router.get('/faculty/pending', authenticate, async (req, res) => {
       // Faculty can only see meeting logs for their projects
       meetingLogs = await MeetingLogService.getFacultyMeetingLogs(
         new mongoose.Types.ObjectId(userId),
-        'submitted'
+        'completed'
       );
     } else {
       // Coordinators and admins can see all pending meeting logs

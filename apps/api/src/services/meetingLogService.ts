@@ -99,7 +99,7 @@ export class MeetingLogService {
         endedAt: data.endedAt,
         location: data.location,
         minutesOfMeeting: data.notes,
-        status: 'submitted'
+        status: 'scheduled'
       });
 
       await meetingLog.save();
@@ -211,9 +211,9 @@ export class MeetingLogService {
         });
       }
 
-      // Reset status to submitted if it was rejected
+      // Reset status to scheduled if it was rejected
       if (meetingLog.status === 'rejected') {
-        meetingLog.status = 'submitted';
+        meetingLog.status = 'scheduled';
         meetingLog.reviewedBy = undefined;
         meetingLog.reviewedAt = undefined;
       }
@@ -263,7 +263,7 @@ export class MeetingLogService {
    */
   static async getFacultyMeetingLogs(
     facultyId: mongoose.Types.ObjectId,
-    status?: 'submitted' | 'approved' | 'rejected'
+    status?: 'scheduled' | 'completed' | 'approved' | 'rejected'
   ): Promise<IMeetingLog[]> {
     try {
       const query: any = { facultyId };
@@ -300,8 +300,8 @@ export class MeetingLogService {
         throw new Error('Meeting log not found');
       }
 
-      if (meetingLog.status !== 'submitted') {
-        throw new Error('Meeting log is not in submitted state');
+      if (meetingLog.status !== 'completed') {
+        throw new Error('Meeting log is not in completed state');
       }
 
       // Verify faculty has permission to approve this meeting log
@@ -363,8 +363,8 @@ export class MeetingLogService {
         throw new Error('Meeting log not found');
       }
 
-      if (meetingLog.status !== 'submitted') {
-        throw new Error('Meeting log is not in submitted state');
+      if (meetingLog.status !== 'completed') {
+        throw new Error('Meeting log is not in completed state');
       }
 
       // Verify faculty has permission to reject this meeting log
@@ -469,8 +469,8 @@ export class MeetingLogService {
         return false;
       }
 
-      // Can only edit if status is submitted or rejected
-      return meetingLog.status === 'submitted' || meetingLog.status === 'rejected';
+      // Can only edit if status is scheduled or rejected
+      return meetingLog.status === 'scheduled' || meetingLog.status === 'rejected';
     } catch (error) {
       logger.error('Error checking meeting log edit permission:', error);
       return false;

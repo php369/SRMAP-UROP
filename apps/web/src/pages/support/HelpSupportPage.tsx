@@ -55,7 +55,7 @@ const faqs = [
 ];
 
 export function HelpSupportPage() {
-    const { user } = useAuth();
+  useAuth(); // Keep for authentication check
     const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
     const [contactForm, setContactForm] = useState({
         subject: '',

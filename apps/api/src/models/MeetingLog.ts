@@ -18,7 +18,7 @@ export interface IMeetingLog extends Document {
   location?: string; // For in-person meetings
   meetUrl?: string; // Google Meet URL for online meetings
   minutesOfMeeting?: string; // MOM - meeting notes
-  status: 'submitted' | 'completed' | 'approved' | 'rejected';
+  status: 'scheduled' | 'completed' | 'approved' | 'rejected';
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
   rejectionReason?: string; // Faculty notes when rejecting
@@ -99,9 +99,9 @@ const MeetingLogSchema = new Schema<IMeetingLog>({
   },
   status: {
     type: String,
-    enum: ['submitted', 'completed', 'approved', 'rejected'],
+    enum: ['scheduled', 'completed', 'approved', 'rejected'],
     required: true,
-    default: 'submitted'
+    default: 'scheduled'
   },
   reviewedBy: {
     type: Schema.Types.ObjectId,

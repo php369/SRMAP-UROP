@@ -27,6 +27,7 @@
     "verify-db": "tsx src/scripts/verify-db-state.ts",
     "final-cleanup": "tsx src/scripts/final-db-cleanup.ts",
     "reset-db": "tsx src/scripts/reset-database.ts",
+    "migrate-meeting-status": "tsx src/scripts/migrate-meeting-status.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

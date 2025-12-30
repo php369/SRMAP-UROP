@@ -419,10 +419,16 @@ export function MeetingsPage() {
                         Approved
                       </span>
                     )}
-                    {meeting.status === 'submitted' && (
+                    {meeting.status === 'scheduled' && (
+                      <span className="flex items-center gap-1 text-blue-600 text-sm">
+                        <Clock className="w-4 h-4" />
+                        Scheduled
+                      </span>
+                    )}
+                    {meeting.status === 'completed' && (
                       <span className="flex items-center gap-1 text-yellow-600 text-sm">
                         <Clock className="w-4 h-4" />
-                        Pending
+                        Pending Review
                       </span>
                     )}
                     {meeting.status === 'rejected' && (

@@ -225,7 +225,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             meetUrl: meetingLink,
             mode: mode || 'online',
             location,
-            status: 'submitted',
+            status: 'scheduled',
             attendees,
             minutesOfMeeting: '',
             createdBy: userId,
@@ -287,7 +287,7 @@ router.get('/faculty', authenticate, authorize('faculty', 'coordinator'), async 
 
         const meetings = await MeetingLog.find({
             facultyId,
-            status: { $in: ['submitted', 'completed', 'approved'] },
+            status: { $in: ['scheduled', 'completed', 'approved'] },
         })
             .populate('groupId', 'groupCode members')
             .populate('studentId', 'name email studentId')
@@ -476,7 +476,7 @@ router.get('/student', authenticate, authorize('student'), async (req, res) => {
         // Get meetings for this project (include rejected so students can resubmit)
         const meetings = await MeetingLog.find({
             projectId,
-            status: { $in: ['submitted', 'completed', 'approved', 'rejected'] },
+            status: { $in: ['scheduled', 'completed', 'approved', 'rejected'] },
         })
             .populate('facultyId', 'name email')
             .populate('projectId', 'title projectId')
@@ -721,10 +721,30 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
             });
         }
 
+        // Check if meeting is already completed
+        if (meeting.status === 'completed') {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'MEETING_ALREADY_COMPLETED',
+                    message: 'Meeting is already marked as completed',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
         // Update meeting status to completed and set end time
         meeting.status = 'completed';
         meeting.endedAt = new Date();
-        await meeting.save();
+        
+        // Save the meeting
+        const savedMeeting = await meeting.save();
+        
+        logger.info('Meeting status updated successfully:', {
+            meetingId: id,
+            newStatus: savedMeeting.status,
+            endedAt: savedMeeting.endedAt
+        });
 
         logger.info(`Meeting marked as completed by ${req.user!.email}:`, {
             meetingId: id,
@@ -733,11 +753,16 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
 
         res.json({
             success: true,
-            data: meeting,
+            data: savedMeeting,
             message: 'Meeting marked as completed successfully',
         });
     } catch (error: any) {
-        logger.error('Error completing meeting:', error);
+        logger.error('Error completing meeting:', {
+            error: error.message,
+            stack: error.stack,
+            meetingId: req.params.id,
+            facultyId: req.user?.id
+        });
         res.status(500).json({
             success: false,
             error: {
