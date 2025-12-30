@@ -7,12 +7,11 @@ process.on('warning', (warning) => {
   console.warn(warning.name, warning.message);
 });
 
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { config, validateOAuthConfig } from './config/environment';
 import { connectDatabase } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
@@ -175,13 +174,27 @@ async function startServer() {
     app.use(errorHandler);
     
     // Start server
-    const PORT = config.PORT || 3001;
+    const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : config.PORT || 3001;
     const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+    
+    // Debug port configuration
+    logger.info(`🔧 Port Configuration: process.env.PORT=${process.env.PORT}, config.PORT=${config.PORT}, final PORT=${PORT}`);
+    logger.info(`🔧 Host Configuration: NODE_ENV=${process.env.NODE_ENV}, HOST=${HOST}`);
     
     server.listen(PORT, HOST, () => {
       logger.info(`🚀 Server running on ${HOST}:${PORT}`);
       logger.info(`📊 Health check: http://${HOST}:${PORT}/health`);
       logger.info(`📚 API docs: http://${HOST}:${PORT}/docs`);
+    });
+    
+    // Handle server errors
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ Port ${PORT} is already in use`);
+      } else {
+        logger.error('❌ Server error:', error);
+      }
+      process.exit(1);
     });
     
     // Graceful shutdown
