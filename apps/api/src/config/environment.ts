@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from .env file only if not in production
+// This prevents local .env from overriding production environment variables
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // Environment validation schema
 const envSchema = z.object({
