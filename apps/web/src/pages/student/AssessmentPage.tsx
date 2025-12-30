@@ -196,8 +196,9 @@ export function AssessmentPage() {
             githubLink: submission.githubUrl || submission.githubLink,
             reportUrl: submission.reportFile?.url,
             pptUrl: submission.presentationFile?.url || submission.presentationUrl,
-            isGraded: false, // Group submissions don't have grades yet
-            isGradeReleased: false
+            // Fix: Check if submission is actually graded
+            isGraded: submission.isGraded || !!submission.facultyGrade || !!submission.facultyComments,
+            isGradeReleased: submission.isGradeReleased || submission.gradeReleased || false
           });
         });
       }
@@ -316,7 +317,7 @@ export function AssessmentPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      {submission.isGradeReleased ? (
+                      {submission.isGradeReleased || submission.gradeReleased ? (
                         <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
                           <CheckCircle className="w-5 h-5" />
                           <span className="font-medium">Graded</span>
@@ -326,10 +327,15 @@ export function AssessmentPage() {
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">Awaiting Release</span>
                         </div>
-                      ) : submission.isGraded ? (
+                      ) : submission.submissionType === 'evaluation' && submission.isGraded ? (
                         <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-2 rounded-full">
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">Partially Graded</span>
+                        </div>
+                      ) : submission.isGraded || submission.facultyComments || submission.facultyGrade ? (
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                          <CheckCircle className="w-5 h-5" />
+                          <span className="font-medium">Graded</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-full">
@@ -367,7 +373,7 @@ export function AssessmentPage() {
                           >
                             View Repository
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                           </a>
                         </div>
@@ -429,6 +435,20 @@ export function AssessmentPage() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Faculty Feedback Section - Show for non-evaluation submissions when faculty provides feedback */}
+                  {submission.submissionType !== 'evaluation' && submission.facultyComments && (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-blue-500" />
+                        Faculty Feedback
+                      </h4>
+                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                        <h5 className="font-medium text-blue-700 mb-2 text-sm">{submission.assessmentType} Assessment Feedback</h5>
+                        <p className="text-gray-700 text-sm italic">"{submission.facultyComments}"</p>
                       </div>
                     </div>
                   )}
