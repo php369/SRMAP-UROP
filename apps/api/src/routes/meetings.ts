@@ -15,8 +15,21 @@ const router = express.Router();
 router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), async (req, res) => {
     try {
         const { projectId, meetingDate, meetingLink, mode, location } = req.body;
-        const userId = new mongoose.Types.ObjectId(req.user!.id);
-        const userRole = req.user!.role;
+        
+        // Validate user ID
+        if (!req.user?.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_USER_ID',
+                    message: 'Invalid user ID',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+        
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        const userRole = req.user.role;
 
         if (!meetingDate) {
             return res.status(400).json({
@@ -36,11 +49,21 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             // For students, we need to find their project and faculty
             const { Application } = await import('../models/Application');
             
+            logger.info('Student scheduling meeting:', {
+                userId: userId.toString(),
+                userRole
+            });
+            
             // Check if student is in a group
             const group = await Group.findOne({ members: userId });
             
             if (group) {
                 // User is in a group - all group members can schedule meetings
+                logger.info('Found group for student:', {
+                    groupId: group._id.toString(),
+                    assignedProjectId: group.assignedProjectId?.toString()
+                });
+                
                 // Check if group has assigned project
                 if (!group.assignedProjectId) {
                     return res.status(404).json({
@@ -56,6 +79,8 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
                 projectIdToUse = group.assignedProjectId;
             } else {
                 // Solo student
+                logger.info('No group found, checking solo application for student');
+                
                 const application = await Application.findOne({
                     studentId: userId,
                     status: 'approved'
@@ -73,6 +98,10 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
                 }
 
                 projectIdToUse = application.projectId;
+                logger.info('Found solo application:', {
+                    applicationId: application._id.toString(),
+                    projectId: application.projectId.toString()
+                });
             }
 
             // Get project to find faculty
@@ -93,12 +122,30 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             facultyId = project.facultyId;
         } else {
             // Faculty/coordinator scheduling
+            logger.info('Faculty scheduling meeting:', {
+                userId: userId.toString(),
+                userRole,
+                projectId
+            });
+            
             if (!projectId) {
                 return res.status(400).json({
                     success: false,
                     error: {
                         code: 'MISSING_REQUIRED_FIELDS',
                         message: 'Project ID is required',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+
+            // Validate projectId format
+            if (!mongoose.Types.ObjectId.isValid(projectId)) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: 'INVALID_PROJECT_ID',
+                        message: 'Invalid project ID format',
                         timestamp: new Date().toISOString(),
                     },
                 });
@@ -129,7 +176,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
         }
 
         // Find the group or student assigned to this project
-        const group = await Group.findOne({ assignedProjectId: projectIdToUse }).populate('members');
+        const group = await Group.findOne({ assignedProjectId: projectIdToUse });
 
         let attendees: Array<{ studentId: mongoose.Types.ObjectId; present: boolean }> = [];
         let groupId: mongoose.Types.ObjectId | undefined;
@@ -138,8 +185,8 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
         if (group) {
             // Group project
             groupId = group._id;
-            attendees = group.members.map((memberId: any) => ({
-                studentId: new mongoose.Types.ObjectId(memberId.toString()),
+            attendees = group.members.map((memberId: mongoose.Types.ObjectId) => ({
+                studentId: memberId,
                 present: false,
             }));
         } else {
@@ -184,6 +231,16 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             createdBy: userId,
         });
 
+        logger.info('Creating meeting log with data:', {
+            groupId: groupId?.toString(),
+            studentId: studentId?.toString(),
+            projectId: projectIdToUse.toString(),
+            facultyId: facultyId.toString(),
+            createdBy: userId.toString(),
+            attendeesCount: attendees.length,
+            attendees: attendees.map(a => ({ studentId: a.studentId.toString(), present: a.present }))
+        });
+
         await meetingLog.save();
 
         logger.info(`Meeting scheduled by ${req.user!.email}:`, {
@@ -201,7 +258,13 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             message: 'Meeting scheduled successfully',
         });
     } catch (error: any) {
-        logger.error('Error scheduling meeting:', error);
+        logger.error('Error scheduling meeting:', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.id,
+            userRole: req.user?.role,
+            requestBody: req.body
+        });
         res.status(500).json({
             success: false,
             error: {
