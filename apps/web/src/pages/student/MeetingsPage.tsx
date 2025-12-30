@@ -466,7 +466,7 @@ export function MeetingsPage() {
                 </div>
 
                 {/* Meeting Link */}
-                {meeting.meetUrl && (
+                {meeting.meetUrl && meeting.status === 'scheduled' && (
                   <a
                     href={meeting.meetUrl}
                     target="_blank"

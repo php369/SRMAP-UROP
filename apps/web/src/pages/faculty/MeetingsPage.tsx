@@ -26,7 +26,7 @@ interface Meeting {
   meetingDate: string;
   meetUrl?: string;
   mode: 'online' | 'in-person';
-  status: 'scheduled' | 'completed' | 'approved' | 'rejected';
+  status: 'scheduled' | 'completed' | 'pending' | 'approved' | 'rejected';
   attendees?: Array<{
     studentId: {
       _id: string;
@@ -53,7 +53,7 @@ interface MeetingLog {
   participants?: any[];
   minutesOfMeeting?: string;
   mom?: string;
-  status: 'scheduled' | 'completed' | 'approved' | 'rejected';
+  status: 'scheduled' | 'completed' | 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   facultyNotes?: string;
   facultyApproved?: boolean;
@@ -342,7 +342,7 @@ export function FacultyMeetingsPage() {
                 : 'bg-transparent text-textSecondary hover:bg-white/5'
                 }`}
             >
-              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'scheduled').length : 0} pending)
+              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'pending').length : 0} pending)
             </button>
           </div>
         </GlassCard>
@@ -741,7 +741,7 @@ export function FacultyMeetingsPage() {
                     <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
                   </div>
 
-                  {selectedLog.status !== 'approved' && (
+                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Faculty Notes 
@@ -777,7 +777,7 @@ export function FacultyMeetingsPage() {
                   >
                     Close
                   </button>
-                  {selectedLog.status !== 'approved' && (
+                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && (
                     <>
                       <button
                         onClick={() => handleApproveLog(selectedLog._id, false)}

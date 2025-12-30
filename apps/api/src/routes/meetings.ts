@@ -343,6 +343,7 @@ router.get('/logs/faculty', authenticate, authorize('faculty', 'coordinator'), a
         })
             .populate('groupId', 'groupCode')
             .populate('studentId', 'name email')
+            .populate('attendees.studentId', 'name email studentId')
             .sort({ createdAt: -1 });
 
         res.json({
@@ -508,10 +509,10 @@ router.get('/student', authenticate, authorize('student'), async (req, res) => {
             });
         }
 
-        // Get meetings for this project (include rejected so students can resubmit)
+        // Get meetings for this project (include pending so students can resubmit)
         const meetings = await MeetingLog.find({
             projectId,
-            status: { $in: ['scheduled', 'completed', 'approved', 'rejected'] },
+            status: { $in: ['scheduled', 'completed', 'pending', 'approved', 'rejected'] },
         })
             .populate('facultyId', 'name email')
             .populate('projectId', 'title projectId')
