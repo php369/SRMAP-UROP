@@ -1,6 +1,5 @@
 // Export all models for easy importing
 export { User } from './User';
-export { TokenStore } from './TokenStore';
 export { Project } from './Project';
 export { Group } from './Group';
 export { GroupSubmission } from './GroupSubmission';
@@ -10,14 +9,11 @@ export { Window } from './Window';
 export { StudentEvaluation } from './StudentEvaluation';
 export { Notification } from './Notification';
 export { Assessment } from './Assessment';
-export { Course } from './Course';
 export { MeetingLog } from './MeetingLog';
-export { OnlineStatus } from './OnlineStatus';
 export { Submission } from './Submission';
 
 // Export types separately
 export type { IUser } from './User';
-export type { ITokenStore } from './TokenStore';
 export type { IProject } from './Project';
 export type { IGroup } from './Group';
 export type { IGroupSubmission } from './GroupSubmission';
@@ -27,9 +23,7 @@ export type { IWindow } from './Window';
 export type { IStudentEvaluation } from './StudentEvaluation';
 export type { INotification } from './Notification';
 export type { IAssessment } from './Assessment';
-export type { ICourse } from './Course';
 export type { IMeetingLog } from './MeetingLog';
-export type { IOnlineStatus } from './OnlineStatus';
 export type { ISubmission } from './Submission';
 
 // Re-export mongoose types for convenience
