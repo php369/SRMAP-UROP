@@ -89,11 +89,16 @@ export function SubmissionPage() {
   // Check for existing submission when user role is determined
   useEffect(() => {
     console.log('User role determined:', { userGroup, user: user?.id });
-    // Check submissions for both solo (userGroup === null) and group (userGroup !== null) students
-    if (user?.id) {
-      checkExistingSubmission();
+    // Only check submissions after user role is fully determined
+    // Wait a bit to ensure all state updates are complete
+    if (user?.id && !initializing) {
+      const timer = setTimeout(() => {
+        checkExistingSubmission();
+      }, 100); // Small delay to ensure state is settled
+      
+      return () => clearTimeout(timer);
     }
-  }, [userGroup, user?.id]);
+  }, [userGroup, user?.id, initializing]);
 
   const checkSubmissionWindow = async () => {
     if (!eligibleProjectType) return;
@@ -198,21 +203,51 @@ export function SubmissionPage() {
       let response;
       
       if (userGroup) {
-        // Group student - check GroupSubmission using the my/submissions endpoint
-        // This works for both leaders and members
+        // Group student - try multiple approaches to find the submission
         console.log('Checking group submission for group:', userGroup._id);
-        response = await api.get('/group-submissions/my/submissions');
+        console.log('User is group leader:', isLeader);
         
-        if (response.success && response.data) {
-          setHasSubmitted(true);
-          setCurrentSubmission(response.data);
+        try {
+          // First try: Use the my/submissions endpoint (works for both leaders and members)
+          response = await api.get('/group-submissions/my/submissions');
+          
+          if (response.success && response.data) {
+            console.log('✅ Found group submission via my/submissions:', response.data);
+            setHasSubmitted(true);
+            setCurrentSubmission(response.data);
+            return;
+          }
+        } catch (error: any) {
+          console.log('my/submissions failed:', error?.response?.status, error?.response?.data?.error);
+          
+          // Second try: Direct group ID lookup as fallback
+          try {
+            console.log('Trying direct group ID lookup...');
+            response = await api.get(`/group-submissions/${userGroup._id}`);
+            
+            if (response.success && response.data) {
+              console.log('✅ Found group submission via direct lookup:', response.data);
+              setHasSubmitted(true);
+              setCurrentSubmission(response.data);
+              return;
+            }
+          } catch (directError: any) {
+            console.log('Direct lookup also failed:', directError?.response?.status, directError?.response?.data?.error);
+          }
         }
+        
+        // If both approaches fail, no submission exists
+        console.log('No group submission found via any method');
+        setHasSubmitted(false);
+        setCurrentSubmission(null);
+        
       } else {
         // Solo student - check regular submissions by student ID
         console.log('Checking solo submission for user:', user?.id);
         response = await api.get(`/submissions/student/${user?.id}`);
         
         if (response.success && response.data) {
+          console.log('✅ Found solo submission:', response.data);
           setHasSubmitted(true);
           // Handle both single submission and array of submissions
           const submissionData = Array.isArray(response.data) ? response.data[0] : response.data;
@@ -228,6 +263,11 @@ export function SubmissionPage() {
         setCurrentSubmission(null);
       } else {
         console.error('Unexpected error checking existing submission:', error);
+        console.error('Error details:', {
+          status: error?.response?.status,
+          data: error?.response?.data,
+          message: error?.message
+        });
       }
     }
   };

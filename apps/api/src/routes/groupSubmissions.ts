@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import multer from 'multer';
 import { GroupSubmission } from '../models/GroupSubmission';
 import { Application } from '../models/Application';
+import { Group } from '../models/Group';
 import { StorageService } from '../services/storageService';
 
 const router = express.Router();
@@ -175,8 +176,33 @@ router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinat
   try {
     const { groupId } = req.params;
     
+    logger.info('Direct group submission request:', { groupId, userId: req.user!.id });
+    
+    // For students, verify they are a member of this group
+    if (req.user!.role.includes('student')) {
+      const group = await Group.findById(groupId);
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          error: 'Group not found'
+        });
+      }
+      
+      const isMember = group.leaderId.toString() === req.user!.id || 
+                      group.members.some(memberId => memberId.toString() === req.user!.id);
+      
+      if (!isMember) {
+        return res.status(403).json({
+          success: false,
+          error: 'You are not a member of this group'
+        });
+      }
+    }
+    
     const submission = await GroupSubmission.findOne({ groupId })
       .populate('submittedBy', 'name email');
+    
+    logger.info('Direct group submission result:', submission ? { found: true, id: submission._id } : { found: false });
     
     if (!submission) {
       return res.status(404).json({
@@ -204,13 +230,42 @@ router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinat
  */
 router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, res) => {
   try {
-    // Find user's approved applications to get their group
+    logger.info('Group submission request from user:', req.user!.id);
+    
+    // Find user's approved applications - check both solo and group applications
+    // For group applications, we need to find the group first, then check if user is a member
+    
+    // First, find groups where the user is a member (leader or regular member)
+    const userGroups = await Group.find({
+      $or: [
+        { leaderId: req.user!.id },
+        { members: req.user!.id }
+      ]
+    });
+
+    logger.info('Found user groups:', userGroups.map(g => ({ id: g._id, code: g.groupCode, leader: g.leaderId })));
+
+    if (userGroups.length === 0) {
+      logger.warn('No groups found for user:', req.user!.id);
+      return res.status(404).json({
+        success: false,
+        error: 'No groups found for this user'
+      });
+    }
+
+    // Find approved applications for these groups
+    const groupIds = userGroups.map(group => group._id);
+    logger.info('Searching for applications with group IDs:', groupIds);
+    
     const application = await Application.findOne({
-      studentId: req.user!.id,
+      groupId: { $in: groupIds },
       status: 'approved'
     }).populate('groupId');
 
+    logger.info('Found application:', application ? { id: application._id, groupId: application.groupId, status: application.status } : 'none');
+
     if (!application || !application.groupId) {
+      logger.warn('No approved group application found for user:', req.user!.id);
       return res.status(404).json({
         success: false,
         error: 'No approved group application found'
@@ -218,19 +273,25 @@ router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, re
     }
 
     // Find submission for this group
+    logger.info('Searching for submission with group ID:', application.groupId);
+    
     const submission = await GroupSubmission.findOne({
       groupId: application.groupId
     })
       .populate('submittedBy', 'name email')
       .sort({ submittedAt: -1 });
 
+    logger.info('Found submission:', submission ? { id: submission._id, submittedBy: submission.submittedBy, githubUrl: submission.githubUrl } : 'none');
+
     if (!submission) {
+      logger.warn('No submission found for group:', application.groupId);
       return res.status(404).json({
         success: false,
         error: 'No submission found for your group'
       });
     }
 
+    logger.info('Successfully returning submission for user:', req.user!.id);
     res.json({
       success: true,
       data: submission
