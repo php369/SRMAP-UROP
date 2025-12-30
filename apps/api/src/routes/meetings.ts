@@ -335,8 +335,11 @@ router.get('/logs/faculty', authenticate, authorize('faculty', 'coordinator'), a
 
         const logs = await MeetingLog.find({
             facultyId,
-            status: { $in: ['completed', 'approved', 'rejected'] },
-            mom: { $ne: '' }, // Only logs with minutes
+            status: { $in: ['completed', 'pending', 'approved', 'rejected'] },
+            $or: [
+                { minutesOfMeeting: { $ne: '' } },
+                { mom: { $ne: '' } }
+            ], // Only logs with minutes
         })
             .populate('groupId', 'groupCode')
             .populate('studentId', 'name email')
@@ -406,18 +409,39 @@ router.put('/logs/:id/approve', authenticate, authorize('faculty', 'coordinator'
             });
         }
 
+        // Validate rejection requires feedback
+        if (!approved && (!facultyNotes || !facultyNotes.trim())) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'REJECTION_FEEDBACK_REQUIRED',
+                    message: 'Feedback is required when rejecting a meeting log',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
         logger.info('Approving meeting log:', {
             logId: id,
             currentStatus: log.status,
-            newStatus: approved ? 'approved' : 'rejected',
-            facultyId: req.user!.id
+            newStatus: approved ? 'approved' : 'pending', // Rejected logs go back to pending
+            facultyId: req.user!.id,
+            hasFeedback: !!facultyNotes
         });
 
-        log.status = approved ? 'approved' : 'rejected';
+        // Set status based on approval
+        if (approved) {
+            log.status = 'approved';
+        } else {
+            log.status = 'pending'; // Rejected logs go back to pending for resubmission
+        }
+        
         log.reviewedBy = new mongoose.Types.ObjectId(req.user!.id);
         log.reviewedAt = new Date();
-        if (facultyNotes) {
-            log.rejectionReason = facultyNotes;
+        
+        // Store feedback (required for rejection, optional for approval)
+        if (facultyNotes && facultyNotes.trim()) {
+            log.rejectionReason = facultyNotes.trim();
         }
 
         await log.save();
@@ -579,11 +603,26 @@ router.post('/:id/log', authenticate, authorize('student'), async (req, res) => 
         }
 
         meeting.minutesOfMeeting = mom;
-        meeting.status = 'completed';
+        
+        // Set status based on current state
+        if (meeting.status === 'pending') {
+            // Resubmission after rejection - set to completed for review
+            meeting.status = 'completed';
+            // Clear previous rejection reason since it's being resubmitted
+            meeting.rejectionReason = undefined;
+            meeting.reviewedBy = undefined;
+            meeting.reviewedAt = undefined;
+        } else {
+            // First submission
+            meeting.status = 'completed';
+        }
+        
         await meeting.save();
 
-        logger.info(`Meeting log submitted by ${req.user!.email}:`, {
+        logger.info(`Meeting log ${meeting.status === 'completed' ? 'submitted' : 'resubmitted'} by ${req.user!.email}:`, {
             meetingId: id,
+            previousStatus: meeting.status,
+            newStatus: 'completed'
         });
 
         res.json({

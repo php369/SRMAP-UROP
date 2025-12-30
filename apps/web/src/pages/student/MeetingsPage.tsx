@@ -381,7 +381,7 @@ export function MeetingsPage() {
         <div className="space-y-4">
           {meetings.map((meeting) => {
             const hasLog = meeting.minutesOfMeeting || meeting.mom;
-            const canResubmit = meeting.status === 'rejected';
+            const canResubmit = meeting.status === 'rejected' || meeting.status === 'pending';
             const participantNames = getParticipantNames(meeting);
 
             return (
@@ -479,11 +479,11 @@ export function MeetingsPage() {
                 )}
 
                 {/* Rejection Reason */}
-                {meeting.status === 'rejected' && meeting.rejectionReason && (
+                {(meeting.status === 'rejected' || meeting.status === 'pending') && meeting.rejectionReason && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
                     <h4 className="font-medium mb-2 flex items-center gap-2 text-red-700">
                       <XCircle className="w-4 h-4" />
-                      Rejection Reason
+                      Faculty Feedback - Requires Resubmission
                     </h4>
                     <p className="text-sm text-red-700 whitespace-pre-wrap">
                       {meeting.rejectionReason}
@@ -505,8 +505,8 @@ export function MeetingsPage() {
                 )}
 
                 {/* Log Meeting Button */}
-                {/* Show button if: user can submit logs AND meeting is completed AND (no log OR rejected) */}
-                {(canSubmitLogs && meeting.status === 'completed' && (!hasLog || canResubmit)) && (
+                {/* Show button if: user can submit logs AND (meeting is completed OR pending for resubmission) AND (no log OR can resubmit) */}
+                {(canSubmitLogs && (meeting.status === 'completed' || meeting.status === 'pending') && (!hasLog || canResubmit)) && (
                   <button
                     onClick={() => handleLogMeeting(meeting)}
                     className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}

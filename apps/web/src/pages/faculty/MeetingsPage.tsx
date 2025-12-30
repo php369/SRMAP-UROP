@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye } from 'lucide-react';
+import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -201,10 +201,16 @@ export function FacultyMeetingsPage() {
   };
 
   const handleApproveLog = async (logId: string, approved: boolean) => {
+    // If rejecting, require feedback
+    if (!approved && !approvalData.facultyNotes.trim()) {
+      toast.error('Feedback is required when rejecting a meeting log');
+      return;
+    }
+
     try {
       const response = await api.put(`/meetings/logs/${logId}/approve`, {
         approved,
-        facultyNotes: approvalData.facultyNotes
+        facultyNotes: approvalData.facultyNotes.trim()
       });
 
       if (response.success) {
@@ -248,6 +254,14 @@ export function FacultyMeetingsPage() {
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30">
           <Clock className="w-3 h-3" />
           {status === 'scheduled' ? 'Scheduled' : 'Pending Review'}
+        </span>
+      );
+    }
+    if (status === 'pending') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-500/30">
+          <AlertCircle className="w-3 h-3" />
+          Needs Resubmission
         </span>
       );
     }
@@ -488,7 +502,13 @@ export function FacultyMeetingsPage() {
                           <div>
                             <span className="text-sm font-medium text-text">Attendees: </span>
                             <span className="text-sm text-textSecondary">
-                              {log.attendees?.length || log.participants?.length || 0} present
+                              {log.attendees && log.attendees.length > 0 
+                                ? log.attendees
+                                    .filter((attendee: any) => attendee.present)
+                                    .map((attendee: any) => attendee.studentId?.name || 'Unknown')
+                                    .join(', ') || 'No attendees marked present'
+                                : 'No attendees recorded'
+                              }
                             </span>
                           </div>
                           <div>
@@ -688,7 +708,25 @@ export function FacultyMeetingsPage() {
 
                   <div>
                     <label className="text-sm font-medium text-gray-600">Attendees</label>
-                    <p className="text-gray-900">{selectedLog.attendees?.length || 0} members present</p>
+                    <div className="text-gray-900 mt-1">
+                      {selectedLog.attendees && selectedLog.attendees.length > 0 ? (
+                        <div className="space-y-1">
+                          {selectedLog.attendees.map((attendee: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${attendee.present ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              <span className={attendee.present ? 'text-gray-900' : 'text-gray-500 line-through'}>
+                                {attendee.studentId?.name || 'Unknown Student'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ({attendee.present ? 'Present' : 'Absent'})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500">No attendees recorded</p>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -706,7 +744,8 @@ export function FacultyMeetingsPage() {
                   {selectedLog.status !== 'approved' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Faculty Notes (Optional)
+                        Faculty Notes 
+                        <span className="text-red-500 text-xs ml-1">(Required for rejection, optional for approval)</span>
                       </label>
                       <textarea
                         value={approvalData.facultyNotes}
