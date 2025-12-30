@@ -204,29 +204,36 @@ router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinat
  */
 router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, res) => {
   try {
-    // Find user's approved applications
-    const applications = await Application.find({
-      $or: [
-        { studentId: req.user!.id },
-        { groupId: { $exists: true } } // Will filter by group membership later
-      ],
+    // Find user's approved applications to get their group
+    const application = await Application.findOne({
+      studentId: req.user!.id,
       status: 'approved'
-    });
+    }).populate('groupId');
 
-    const groupIds = applications
-      .filter(app => app.groupId)
-      .map(app => app.groupId);
+    if (!application || !application.groupId) {
+      return res.status(404).json({
+        success: false,
+        error: 'No approved group application found'
+      });
+    }
 
-    // Find submissions for these groups
-    const submissions = await GroupSubmission.find({
-      groupId: { $in: groupIds }
+    // Find submission for this group
+    const submission = await GroupSubmission.findOne({
+      groupId: application.groupId
     })
       .populate('submittedBy', 'name email')
       .sort({ submittedAt: -1 });
 
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: 'No submission found for your group'
+      });
+    }
+
     res.json({
       success: true,
-      data: submissions
+      data: submission
     });
   } catch (error: any) {
     logger.error('Error fetching user group submissions:', error);

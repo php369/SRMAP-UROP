@@ -198,9 +198,10 @@ export function SubmissionPage() {
       let response;
       
       if (userGroup) {
-        // Group student - check GroupSubmission model by group ID
+        // Group student - check GroupSubmission using the my/submissions endpoint
+        // This works for both leaders and members
         console.log('Checking group submission for group:', userGroup._id);
-        response = await api.get(`/group-submissions/${userGroup._id}`);
+        response = await api.get('/group-submissions/my/submissions');
         
         if (response.success && response.data) {
           setHasSubmitted(true);
@@ -213,7 +214,9 @@ export function SubmissionPage() {
         
         if (response.success && response.data) {
           setHasSubmitted(true);
-          setCurrentSubmission(response.data);
+          // Handle both single submission and array of submissions
+          const submissionData = Array.isArray(response.data) ? response.data[0] : response.data;
+          setCurrentSubmission(submissionData);
         }
       }
     } catch (error: any) {
@@ -420,159 +423,233 @@ export function SubmissionPage() {
   // No need to check for userGroup - solo students don't have groups
 
   // Show message if user doesn't have permission to submit
-  if (!isLeader) {
-    if (userGroup) {
-      // Group member (not leader) - show waiting message
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-md mx-auto p-6"
-          >
-            <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
-            <p className="text-gray-600 mb-4">
-              Only the group leader can submit work. Please wait for your leader to submit.
+  if (!isLeader && userGroup && !hasSubmitted) {
+    // Group member (not leader) - show waiting message only if no submission exists
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md mx-auto p-6"
+        >
+          <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
+          <p className="text-gray-600 mb-4">
+            Only the group leader can submit work. Please wait for your leader to submit.
+          </p>
+          
+          <div className="p-4 bg-blue-50 rounded-lg mb-4">
+            <p className="text-sm text-blue-700">
+              <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
             </p>
-            
-            <div className="p-4 bg-blue-50 rounded-lg mb-4">
-              <p className="text-sm text-blue-700">
-                <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
-              </p>
-              <p className="text-sm text-blue-700">
-                <strong>Status:</strong> {(userGroup as any)?.status}
-              </p>
-            </div>
-            
-            {hasSubmitted && currentSubmission ? (
-              <div className="mt-4 p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <p className="text-green-700 font-medium">Your group leader has submitted!</p>
-                <p className="text-sm text-green-600 mt-2">
-                  Submitted on: {new Date(currentSubmission.submittedAt).toLocaleDateString()}
-                </p>
-              </div>
-            ) : (
-              <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
-                <p className="text-yellow-700 text-sm">
-                  Waiting for group leader to submit...
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      );
-    } else {
-      // No approved application or not eligible
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-md mx-auto p-6"
-          >
-            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Application Required</h2>
-            <p className="text-gray-600 mb-4">
-              You need an approved application before you can submit work.
+            <p className="text-sm text-blue-700">
+              <strong>Status:</strong> {(userGroup as any)?.status}
             </p>
-            
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-yellow-700 text-sm">
-                Please apply for a project first, and wait for approval before submitting work.
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      );
-    }
+          </div>
+          
+          <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+            <p className="text-yellow-700 text-sm">
+              Waiting for group leader to submit...
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!isLeader && !userGroup) {
+    // No approved application or not eligible
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md mx-auto p-6"
+        >
+          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Application Required</h2>
+          <p className="text-gray-600 mb-4">
+            You need an approved application before you can submit work.
+          </p>
+          
+          <div className="p-4 bg-yellow-50 rounded-lg">
+            <p className="text-yellow-700 text-sm">
+              Please apply for a project first, and wait for approval before submitting work.
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   if (hasSubmitted && currentSubmission) {
     return (
       <div className="min-h-screen p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold mb-2">Submission Complete</h1>
+            <p className="text-gray-600">
+              Your {userGroup ? 'group' : 'individual'} submission for {submissionWindow.assessmentType} has been recorded.
+            </p>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            className="bg-white rounded-xl shadow-lg overflow-hidden"
           >
-            <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Submission Complete</h2>
-              <p className="text-gray-600">
-                Your {userGroup ? 'group' : 'individual'} submission for {submissionWindow.assessmentType} has been recorded.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-bold mb-2">GitHub Repository</h3>
-                <a
-                  href={currentSubmission.githubUrl || currentSubmission.githubLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  {currentSubmission.githubUrl || currentSubmission.githubLink}
-                </a>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-bold mb-2">Report PDF</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openPDFModal(currentSubmission.reportUrl, 'Project Report')}
-                    className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
-                  >
-                    📄 View Report
-                  </button>
-                  <span className="text-gray-400">|</span>
-                  <button
-                    onClick={() => downloadFile(currentSubmission.reportUrl, 'project-report.pdf')}
-                    className="text-green-600 hover:underline"
-                  >
-                    ⬇️ Download PDF
-                  </button>
-                </div>
-              </div>
-
-              {currentSubmission.pptUrl && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-bold mb-2">Presentation</h3>
-                  <div className="flex items-center gap-2">
-                    {currentSubmission.pptUrl.toLowerCase().includes('.pdf') ? (
-                      <button
-                        onClick={() => openPDFModal(currentSubmission.pptUrl, 'Presentation')}
-                        className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
-                      >
-                        📄 View Presentation
-                      </button>
+            {/* Header Section */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 border-b">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                    {userGroup ? (
+                      <Users className="w-6 h-6 text-blue-500" />
                     ) : (
-                      <a
-                        href={currentSubmission.pptUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        📊 View Presentation
-                      </a>
+                      <User className="w-6 h-6 text-green-500" />
                     )}
-                    <span className="text-gray-400">|</span>
-                    <button
-                      onClick={() => downloadFile(currentSubmission.pptUrl, 'presentation.pdf')}
-                      className="text-green-600 hover:underline"
-                    >
-                      ⬇️ Download File
-                    </button>
+                    {submissionWindow.assessmentType} Submission
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                    <span>
+                      Submitted on {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleDateString()}
+                    </span>
+                    {userGroup && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Group: {userGroup.groupName || userGroup.groupCode}
+                      </span>
+                    )}
+                    {!userGroup && (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Solo Submission
+                      </span>
+                    )}
                   </div>
                 </div>
-              )}
+                <div className="text-right">
+                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Submitted</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-bold mb-2">Submitted At</h3>
-                <p>{new Date(currentSubmission.submittedAt).toLocaleString()}</p>
+            {/* Content Section */}
+            <div className="p-6">
+              <h4 className="text-lg font-semibold mb-4 text-gray-800">Submitted Work</h4>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* GitHub Repository */}
+                <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-gray-800 rounded-lg">
+                      <Github className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-gray-800">GitHub Repository</h5>
+                      <p className="text-xs text-gray-500">Source code</p>
+                    </div>
+                  </div>
+                  <a
+                    href={currentSubmission.githubUrl || currentSubmission.githubLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View Repository
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+
+                {/* Report PDF */}
+                {(currentSubmission.reportUrl || currentSubmission.reportFile?.url) && (
+                  <div className="bg-red-50 rounded-lg p-4 hover:bg-red-100 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-red-600 rounded-lg">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-gray-800">Project Report</h5>
+                        <p className="text-xs text-gray-500">PDF document</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => openPDFModal(
+                          currentSubmission.reportUrl || currentSubmission.reportFile?.url, 
+                          'Project Report'
+                        )}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        👁️ View
+                      </button>
+                      <button
+                        onClick={() => downloadFile(
+                          currentSubmission.reportUrl || currentSubmission.reportFile?.url, 
+                          currentSubmission.reportFile?.name || 'project-report.pdf'
+                        )}
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                      >
+                        ⬇️ Download
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Presentation */}
+                {(currentSubmission.pptUrl || currentSubmission.presentationFile?.url) && (
+                  <div className="bg-orange-50 rounded-lg p-4 hover:bg-orange-100 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-orange-600 rounded-lg">
+                        <Presentation className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-gray-800">Presentation</h5>
+                        <p className="text-xs text-gray-500">Slides</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => openPDFModal(
+                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url, 
+                          'Presentation'
+                        )}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        👁️ View
+                      </button>
+                      <button
+                        onClick={() => downloadFile(
+                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url, 
+                          currentSubmission.presentationFile?.name || 'presentation.pdf'
+                        )}
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                      >
+                        ⬇️ Download
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Info */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h5 className="font-medium text-gray-800 mb-2">Submission Details</h5>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p><strong>Submitted by:</strong> {currentSubmission.submittedBy?.name || user?.name}</p>
+                  <p><strong>Submission time:</strong> {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleString()}</p>
+                  {userGroup && !isLeader && (
+                    <p className="text-blue-600 font-medium">
+                      ℹ️ This submission was made by your group leader and is visible to all group members.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
