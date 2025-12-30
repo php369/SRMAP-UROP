@@ -292,6 +292,7 @@ router.get('/faculty', authenticate, authorize('faculty', 'coordinator'), async 
             .populate('groupId', 'groupCode members')
             .populate('studentId', 'name email studentId')
             .populate('projectId', 'title projectId')
+            .populate('attendees.studentId', 'name email studentId')
             .sort({ meetingDate: -1 });
 
         res.json({
@@ -479,6 +480,7 @@ router.get('/student', authenticate, authorize('student'), async (req, res) => {
         })
             .populate('facultyId', 'name email')
             .populate('projectId', 'title projectId')
+            .populate('attendees.studentId', 'name email studentId')
             .sort({ meetingDate: -1 });
 
         res.json({
@@ -668,6 +670,79 @@ router.put('/logs/:id/grade', authenticate, authorize('faculty', 'coordinator'),
             error: {
                 code: 'GRADE_LOG_FAILED',
                 message: error.message || 'Failed to grade meeting log',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * PUT /api/meetings/:id/complete
+ * Mark meeting as completed (faculty only)
+ * Accessible by: faculty, coordinator
+ */
+router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_MEETING_ID',
+                    message: 'Invalid meeting ID',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        const meeting = await MeetingLog.findById(id);
+
+        if (!meeting) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'MEETING_NOT_FOUND',
+                    message: 'Meeting not found',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        // Verify faculty owns this meeting
+        if (meeting.facultyId.toString() !== req.user!.id) {
+            return res.status(403).json({
+                success: false,
+                error: {
+                    code: 'ACCESS_DENIED',
+                    message: 'You can only complete your own meetings',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        // Update meeting status to completed and set end time
+        meeting.status = 'completed';
+        meeting.endedAt = new Date();
+        await meeting.save();
+
+        logger.info(`Meeting marked as completed by ${req.user!.email}:`, {
+            meetingId: id,
+            facultyId: req.user!.id
+        });
+
+        res.json({
+            success: true,
+            data: meeting,
+            message: 'Meeting marked as completed successfully',
+        });
+    } catch (error: any) {
+        logger.error('Error completing meeting:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'COMPLETE_MEETING_FAILED',
+                message: error.message || 'Failed to complete meeting',
                 timestamp: new Date().toISOString(),
             },
         });

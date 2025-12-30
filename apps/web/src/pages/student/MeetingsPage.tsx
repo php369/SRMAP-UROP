@@ -263,7 +263,7 @@ export function MeetingsPage() {
     // Add team members or solo student
     if (meeting.attendees && meeting.attendees.length > 0) {
       meeting.attendees.forEach((attendee: any) => {
-        const name = attendee.studentId?.name || attendee.name || 'Team Member';
+        const name = attendee.studentId?.name || 'Team Member';
         names.push(name);
       });
     } else if (meeting.studentId) {
@@ -370,7 +370,6 @@ export function MeetingsPage() {
         {/* Meeting List */}
         <div className="space-y-4">
           {meetings.map((meeting) => {
-            const meetingPassed = hasMeetingPassed(meeting.meetingDate);
             const hasLog = meeting.minutesOfMeeting || meeting.mom;
             const canResubmit = meeting.status === 'rejected';
             const participantNames = getParticipantNames(meeting);
@@ -490,8 +489,8 @@ export function MeetingsPage() {
                 )}
 
                 {/* Log Meeting Button */}
-                {/* Show button if: user can submit logs AND meeting has passed AND (no log OR rejected) */}
-                {(canSubmitLogs && meetingPassed && (!hasLog || canResubmit)) && (
+                {/* Show button if: user can submit logs AND meeting is completed AND (no log OR rejected) */}
+                {(canSubmitLogs && meeting.status === 'completed' && (!hasLog || canResubmit)) && (
                   <button
                     onClick={() => handleLogMeeting(meeting)}
                     className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
@@ -501,9 +500,16 @@ export function MeetingsPage() {
                   </button>
                 )}
 
-                {!meetingPassed && (
+                {meeting.status !== 'completed' && (
                   <p className="text-sm text-gray-500 italic">
-                    Meeting minutes can be logged after the meeting time
+                    Meeting minutes can be logged after the faculty ends the meeting
+                  </p>
+                )}
+
+                {meeting.status === 'completed' && hasLog && !canResubmit && (
+                  <p className="text-sm text-green-600 italic flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Meeting minutes submitted
                   </p>
                 )}
               </motion.div>

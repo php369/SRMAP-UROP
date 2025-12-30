@@ -26,6 +26,15 @@ interface Meeting {
   meetingDate: string;
   meetUrl?: string;
   mode: 'online' | 'in-person';
+  status: 'submitted' | 'completed' | 'approved' | 'rejected';
+  attendees?: Array<{
+    studentId: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+    present: boolean;
+  }>;
   createdAt: string;
 }
 
@@ -201,6 +210,21 @@ export function FacultyMeetingsPage() {
     }
   };
 
+  const handleCompleteMeeting = async (meetingId: string) => {
+    try {
+      const response = await api.put(`/meetings/${meetingId}/complete`);
+
+      if (response.success) {
+        toast.success('Meeting marked as completed');
+        fetchMeetings(); // Refresh the meetings list
+      } else {
+        toast.error((response as any).error?.message || 'Failed to complete meeting');
+      }
+    } catch (error) {
+      toast.error('Failed to complete meeting');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     if (status === 'completed' || status === 'submitted') {
       return (
@@ -348,7 +372,7 @@ export function FacultyMeetingsPage() {
                             <Clock className="w-4 h-4" />
                             <span>{new Date(meeting.meetingDate).toLocaleString()}</span>
                           </div>
-                          {meeting.meetUrl && (
+                          {meeting.meetUrl && meeting.status !== 'completed' && (
                             <a
                               href={meeting.meetUrl}
                               target="_blank"
@@ -359,12 +383,36 @@ export function FacultyMeetingsPage() {
                               Join Meeting
                             </a>
                           )}
+                          {meeting.status === 'completed' && (
+                            <div className="flex items-center gap-2 text-sm text-green-600">
+                              <CheckCircle className="w-4 h-4" />
+                              Meeting Completed
+                            </div>
+                          )}
                           {meeting.groupId && (
                             <div className="text-sm text-textSecondary">
-                              Members: {meeting.groupId.members.length} students
+                              Members: {meeting.attendees ? meeting.attendees.length : meeting.groupId.members.length} students
+                            </div>
+                          )}
+                          {meeting.attendees && meeting.attendees.length > 0 && (
+                            <div className="text-sm text-textSecondary">
+                              Participants: {meeting.attendees.map(a => a.studentId.name).join(', ')}
                             </div>
                           )}
                         </div>
+                      </div>
+                      
+                      {/* Meeting Actions */}
+                      <div className="flex flex-col gap-2">
+                        {meeting.status !== 'completed' && (
+                          <button
+                            onClick={() => handleCompleteMeeting(meeting._id)}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            End Meeting
+                          </button>
+                        )}
                       </div>
                     </div>
                   </GlassCard>
