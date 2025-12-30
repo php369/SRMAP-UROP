@@ -459,53 +459,6 @@ export class StudentEvaluationService {
    */
   static async getStudentOwnEvaluation(studentId: mongoose.Types.ObjectId): Promise<any[]> {
     try {
-      // First, ensure evaluation records exist for this student
-      const { Group } = await import('../models/Group');
-      
-      // Find groups where this student is a member
-      const studentGroups = await Group.find({
-        members: studentId,
-        status: 'approved',
-        assignedProjectId: { $exists: true },
-        assignedFacultyId: { $exists: true }
-      })
-        .populate('assignedProjectId', 'title type')
-        .populate('assignedFacultyId', 'name email');
-
-      // Create evaluation records if they don't exist
-      for (const group of studentGroups) {
-        let evaluation = await StudentEvaluation.findOne({
-          studentId: studentId,
-          groupId: group._id,
-          projectId: group.assignedProjectId
-        });
-
-        if (!evaluation) {
-          // Create new evaluation record
-          evaluation = new StudentEvaluation({
-            studentId: studentId,
-            groupId: group._id,
-            projectId: group.assignedProjectId,
-            facultyId: group.assignedFacultyId,
-            internal: {
-              cla1: { conduct: 0, convert: 0, comments: '' },
-              cla2: { conduct: 0, convert: 0, comments: '' },
-              cla3: { conduct: 0, convert: 0, comments: '' }
-            },
-            external: {
-              reportPresentation: { conduct: 0, convert: 0, comments: '' }
-            },
-            totalInternal: 0,
-            totalExternal: 0,
-            total: 0,
-            isPublished: false
-          });
-          await evaluation.save();
-          logger.info(`Created evaluation record for student ${studentId} in group ${group.groupCode}`);
-        }
-      }
-
-      // Now fetch all evaluations for this student
       const evaluations = await StudentEvaluation.find({
         studentId: studentId
         // Remove isPublished filter to show all evaluations (including graded but not released)
