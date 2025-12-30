@@ -180,11 +180,16 @@ async function startServer() {
     logger.info(`🔧 Port Configuration: process.env.PORT=${process.env.PORT}, final PORT=${PORT}`);
     logger.info(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}`);
     
-    // In production, bind to all interfaces (0.0.0.0) by not specifying host
-    // In development, bind to localhost for security
-    if (process.env.NODE_ENV === 'production') {
+    // Force production behavior on Render (when PORT is set by Render)
+    // Render automatically sets PORT, so if it exists, we're likely on Render
+    const isOnRender = !!process.env.PORT && process.env.PORT !== '3001';
+    const shouldBindToAllInterfaces = process.env.NODE_ENV === 'production' || isOnRender;
+    
+    logger.info(`🔧 Binding Configuration: isOnRender=${isOnRender}, shouldBindToAllInterfaces=${shouldBindToAllInterfaces}`);
+    
+    if (shouldBindToAllInterfaces) {
       server.listen(PORT, () => {
-        logger.info(`🚀 Server running on port ${PORT} (all interfaces)`);
+        logger.info(`🚀 Server running on port ${PORT} (all interfaces - 0.0.0.0)`);
         logger.info(`📊 Health check: /health`);
         logger.info(`📚 API docs: /docs`);
       });
