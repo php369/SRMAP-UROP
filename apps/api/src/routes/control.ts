@@ -432,42 +432,12 @@ router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (re
     console.log('User:', req.user?.id, req.user?.role);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Test database connection first
-    console.log('Testing database connection...');
-    const testCount = await Window.countDocuments();
-    console.log('Total windows in database:', testCount);
+    // Simply find all windows where isActive is false
+    console.log('Finding windows with isActive: false...');
+    const inactiveWindows = await Window.find({ isActive: false });
+    console.log('Found inactive windows:', inactiveWindows.length);
     
-    // Update window statuses first
-    console.log('Updating window statuses...');
-    const now = new Date();
-    
-    const activateResult = await Window.updateMany(
-      {
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-        isActive: false
-      },
-      { isActive: true }
-    );
-    console.log('Activated windows:', activateResult.modifiedCount);
-
-    const deactivateResult = await Window.updateMany(
-      {
-        $or: [
-          { endDate: { $lt: now } },
-          { startDate: { $gt: now } }
-        ],
-        isActive: true
-      },
-      { isActive: false }
-    );
-    console.log('Deactivated windows:', deactivateResult.modifiedCount);
-    
-    // Count inactive windows
-    const inactiveCount = await Window.countDocuments({ isActive: false });
-    console.log('Inactive windows found:', inactiveCount);
-    
-    if (inactiveCount === 0) {
+    if (inactiveWindows.length === 0) {
       console.log('No inactive windows to delete');
       return res.json({
         success: true,
@@ -476,84 +446,37 @@ router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (re
       });
     }
     
-    // Get a sample of inactive windows to check their structure
-    console.log('Getting sample inactive windows...');
-    const sampleWindows = await Window.find({ isActive: false }).limit(3);
-    console.log('Sample inactive windows:', sampleWindows.map(w => ({
-      id: w._id,
+    // Log the windows we're about to delete
+    console.log('Windows to delete:', inactiveWindows.map(w => ({
+      id: w._id.toString(),
       windowType: w.windowType,
       projectType: w.projectType,
-      startDate: w.startDate,
-      endDate: w.endDate,
       isActive: w.isActive
     })));
     
-    // Try deleting in smaller batches to avoid potential issues
-    console.log('Starting batch deletion...');
-    let totalDeleted = 0;
-    const batchSize = 10;
+    // Delete all windows where isActive is false
+    console.log('Deleting windows with isActive: false...');
+    const deleteResult = await Window.deleteMany({ isActive: false });
+    console.log('Delete result:', deleteResult);
     
-    while (true) {
-      // Get a batch of inactive windows
-      const batch = await Window.find({ isActive: false }).limit(batchSize);
-      
-      if (batch.length === 0) {
-        console.log('No more inactive windows to delete');
-        break;
-      }
-      
-      console.log(`Deleting batch of ${batch.length} windows...`);
-      
-      // Delete this batch
-      const batchIds = batch.map(w => w._id);
-      const batchDeleteResult = await Window.deleteMany({ _id: { $in: batchIds } });
-      
-      console.log(`Batch delete result: ${batchDeleteResult.deletedCount} deleted`);
-      totalDeleted += batchDeleteResult.deletedCount;
-      
-      // Safety check - if we didn't delete anything, break to avoid infinite loop
-      if (batchDeleteResult.deletedCount === 0) {
-        console.log('No windows deleted in this batch, stopping');
-        break;
-      }
-      
-      // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    console.log(`=== DELETE OPERATION COMPLETED - Total deleted: ${totalDeleted} ===`);
+    console.log(`=== DELETE COMPLETED - Deleted: ${deleteResult.deletedCount} ===`);
     
     res.json({
       success: true,
-      message: `Deleted ${totalDeleted} inactive windows`,
-      data: { deleted: totalDeleted }
+      message: `Deleted ${deleteResult.deletedCount} inactive windows`,
+      data: { deleted: deleteResult.deletedCount }
     });
     
   } catch (error: any) {
-    console.error('=== DELETE INACTIVE WINDOWS ERROR ===');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error code:', error.code);
-    console.error('Error stack:', error.stack);
-    
-    // Check if it's a specific MongoDB error
-    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-      console.error('MongoDB specific error details:', {
-        code: error.code,
-        codeName: error.codeName,
-        writeErrors: error.writeErrors,
-        result: error.result
-      });
-    }
+    console.error('=== DELETE ERROR ===');
+    console.error('Error:', error);
     
     res.status(500).json({
       success: false,
       error: {
-        code: 'DELETE_INACTIVE_FAILED',
+        code: 'DELETE_FAILED',
         message: 'Failed to delete inactive windows',
-        details: error.message,
-        errorName: error.name,
-        errorCode: error.code
+        details: error.message
       }
     });
   }
