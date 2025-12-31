@@ -19,7 +19,7 @@ import { logger } from './utils/logger';
 import { setupRoutes } from './routes';
 import { setupSocketIO } from './services/socketService';
 import { initializeNotificationService } from './services/notificationService';
-import { WindowService } from './services/windowService';
+import { SchedulerService } from './services/schedulerService';
 import { performanceMonitoring } from './middleware/performanceMonitoring';
 import { developmentLogger } from './middleware/developmentLogger';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -114,24 +114,8 @@ async function startServer() {
     // Start system monitoring
     monitoring.startSystemMonitoring(60000); // Every minute
     
-    // Start window status monitoring (every 5 minutes)
-    setInterval(async () => {
-      try {
-        await WindowService.updateWindowStatuses();
-      } catch (error) {
-        logger.error('Error in scheduled window status update:', error);
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    // Initial window status update
-    setTimeout(async () => {
-      try {
-        await WindowService.updateWindowStatuses();
-        logger.info('Initial window status update completed');
-      } catch (error) {
-        logger.error('Error in initial window status update:', error);
-      }
-    }, 10000); // 10 seconds after startup
+    // Initialize scheduler service for automatic tasks
+    SchedulerService.initialize();
     
     /**
      * @swagger
@@ -234,6 +218,16 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       logger.info('SIGTERM received, shutting down gracefully');
+      SchedulerService.shutdown();
+      server.close(() => {
+        logger.info('Process terminated');
+        process.exit(0);
+      });
+    });
+    
+    process.on('SIGINT', () => {
+      logger.info('SIGINT received, shutting down gracefully');
+      SchedulerService.shutdown();
       server.close(() => {
         logger.info('Process terminated');
         process.exit(0);

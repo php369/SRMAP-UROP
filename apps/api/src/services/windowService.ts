@@ -50,29 +50,40 @@ export class WindowService {
   }
 
   /**
-   * Delete all inactive windows
+   * Delete all ended windows (windows that have passed their end date)
    * @returns Number of deleted windows
    */
-  static async deleteInactiveWindows(): Promise<{ deleted: number }> {
+  static async deleteEndedWindows(): Promise<{ deleted: number }> {
     try {
-      logger.info('Starting deleteInactiveWindows process...');
+      logger.info('Starting deleteEndedWindows process...');
       
       // First update all window statuses to ensure accuracy
       const updateResult = await this.updateWindowStatuses();
       logger.info(`Updated ${updateResult.updated} window statuses before deletion`);
 
-      // Get count of inactive windows before deletion
-      const inactiveCount = await Window.countDocuments({ isActive: false });
-      logger.info(`Found ${inactiveCount} inactive windows to delete`);
-
-      // Delete all inactive windows
-      const result = await Window.deleteMany({ isActive: false });
+      const now = new Date();
       
-      logger.info(`Successfully deleted ${result.deletedCount} inactive windows`);
+      // Only delete windows that have ended (past their end date)
+      // This excludes upcoming windows which are also inactive but haven't started yet
+      const endedWindowsQuery = { endDate: { $lt: now } };
+      
+      // Get count of ended windows before deletion
+      const endedCount = await Window.countDocuments(endedWindowsQuery);
+      logger.info(`Found ${endedCount} ended windows to delete`);
+
+      if (endedCount === 0) {
+        logger.info('No ended windows to delete');
+        return { deleted: 0 };
+      }
+
+      // Delete all ended windows
+      const result = await Window.deleteMany(endedWindowsQuery);
+      
+      logger.info(`Successfully deleted ${result.deletedCount} ended windows`);
       
       return { deleted: result.deletedCount };
     } catch (error) {
-      logger.error('Error deleting inactive windows:', error);
+      logger.error('Error deleting ended windows:', error);
       logger.error('Error details:', {
         name: (error as Error).name,
         message: (error as Error).message,
@@ -83,16 +94,17 @@ export class WindowService {
   }
 
   /**
-   * Get count of inactive windows
+   * Get count of ended windows (windows that have passed their end date)
    */
-  static async getInactiveWindowsCount(): Promise<number> {
+  static async getEndedWindowsCount(): Promise<number> {
     try {
       // First update statuses
       await this.updateWindowStatuses();
       
-      return await Window.countDocuments({ isActive: false });
+      const now = new Date();
+      return await Window.countDocuments({ endDate: { $lt: now } });
     } catch (error) {
-      logger.error('Error getting inactive windows count:', error);
+      logger.error('Error getting ended windows count:', error);
       throw error;
     }
   }
@@ -240,8 +252,8 @@ export class WindowService {
 
 // Export individual functions for backward compatibility
 export const updateWindowStatuses = WindowService.updateWindowStatuses;
-export const deleteInactiveWindows = WindowService.deleteInactiveWindows;
-export const getInactiveWindowsCount = WindowService.getInactiveWindowsCount;
+export const deleteEndedWindows = WindowService.deleteEndedWindows;
+export const getEndedWindowsCount = WindowService.getEndedWindowsCount;
 export const isWindowActive = WindowService.isWindowActive;
 export const createWindow = WindowService.createWindow;
 export const updateWindow = WindowService.updateWindow;

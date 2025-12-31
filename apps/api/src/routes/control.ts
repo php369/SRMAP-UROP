@@ -421,171 +421,30 @@ router.post('/windows/update-statuses', authenticate, isCoordinatorOrAdmin, asyn
   }
 });
 
-/**
- * @route   DELETE /api/v1/control/windows/inactive
- * @desc    Delete all inactive windows
- * @access  Private (Coordinator, Admin)
- */
-router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
-  try {
-    console.log('=== DELETE INACTIVE WINDOWS REQUEST ===');
-    console.log('User:', req.user?.id, req.user?.role);
-    console.log('Timestamp:', new Date().toISOString());
-    
-    // Use the WindowService method which handles status updates and deletion properly
-    const result = await WindowService.deleteInactiveWindows();
-    
-    console.log(`=== DELETE COMPLETED - Deleted: ${result.deleted} ===`);
-    
-    res.json({
-      success: true,
-      message: `Deleted ${result.deleted} inactive windows`,
-      data: { deleted: result.deleted }
-    });
-    
-  } catch (error: any) {
-    console.error('=== DELETE ERROR ===');
-    console.error('Error:', error);
-    
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'DELETE_FAILED',
-        message: 'Failed to delete inactive windows',
-        details: error.message
-      }
-    });
-  }
-});
+
+
 
 /**
- * @route   GET /api/v1/control/test-basic
- * @desc    Basic test endpoint that doesn't use any models
+ * @route   GET /api/v1/control/scheduler/status
+ * @desc    Get scheduler service status
  * @access  Private (Coordinator, Admin)
  */
-router.get('/test-basic', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+router.get('/scheduler/status', authenticate, isCoordinatorOrAdmin, async (_req: Request, res: Response) => {
   try {
-    console.log('=== BASIC TEST ENDPOINT ===');
-    console.log('User:', req.user?.id, req.user?.role);
-    console.log('Timestamp:', new Date().toISOString());
+    const { SchedulerService } = await import('../services/schedulerService');
+    const status = SchedulerService.getStatus();
     
     res.json({
       success: true,
-      message: 'Basic test endpoint working',
-      data: {
-        timestamp: new Date().toISOString(),
-        user: req.user?.id,
-        role: req.user?.role
-      }
+      data: status
     });
-    
   } catch (error: any) {
-    console.error('Basic test error:', error);
+    console.error('Get scheduler status error:', error);
     res.status(500).json({
       success: false,
       error: {
-        code: 'BASIC_TEST_FAILED',
-        message: error.message
-      }
-    });
-  }
-});
-
-/**
- * @route   GET /api/v1/control/windows/test
- * @desc    Test endpoint to verify Window model access
- * @access  Private (Coordinator, Admin)
- */
-router.get('/windows/test', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
-  try {
-    console.log('=== WINDOW MODEL TEST ===');
-    
-    // Test basic model access
-    const totalCount = await Window.countDocuments();
-    console.log('Total windows:', totalCount);
-    
-    // Test finding windows
-    const allWindows = await Window.find().limit(5);
-    console.log('Sample windows:', allWindows.length);
-    
-    // Test current time calculations
-    const now = new Date();
-    console.log('Current time:', now.toISOString());
-    
-    const activeCount = await Window.countDocuments({
-      startDate: { $lte: now },
-      endDate: { $gte: now }
-    });
-    console.log('Should be active:', activeCount);
-    
-    const inactiveCount = await Window.countDocuments({
-      $or: [
-        { endDate: { $lt: now } },
-        { startDate: { $gt: now } }
-      ]
-    });
-    console.log('Should be inactive:', inactiveCount);
-    
-    const currentlyActive = await Window.countDocuments({ isActive: true });
-    const currentlyInactive = await Window.countDocuments({ isActive: false });
-    
-    console.log('Currently marked active:', currentlyActive);
-    console.log('Currently marked inactive:', currentlyInactive);
-    
-    res.json({
-      success: true,
-      data: {
-        totalWindows: totalCount,
-        sampleWindows: allWindows.length,
-        shouldBeActive: activeCount,
-        shouldBeInactive: inactiveCount,
-        currentlyActive,
-        currentlyInactive,
-        currentTime: now.toISOString()
-      }
-    });
-    
-  } catch (error: any) {
-    console.error('Window model test error:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'WINDOW_TEST_FAILED',
-        message: error.message,
-        name: error.name
-      }
-    });
-  }
-});
-
-/**
- * @route   GET /api/v1/control/windows/inactive/count
- * @desc    Get count of inactive windows
- * @access  Private (Coordinator, Admin)
- */
-router.get('/windows/inactive/count', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
-  try {
-    console.log('Getting inactive windows count...');
-    const count = await WindowService.getInactiveWindowsCount();
-    console.log('Inactive windows count:', count);
-    
-    res.json({
-      success: true,
-      data: { count }
-    });
-  } catch (error: any) {
-    console.error('Get inactive windows count error:', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'GET_INACTIVE_COUNT_FAILED',
-        message: 'Failed to get inactive windows count',
-        details: error.message
+        code: 'GET_SCHEDULER_STATUS_FAILED',
+        message: 'Failed to get scheduler status'
       }
     });
   }

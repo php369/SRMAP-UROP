@@ -12,7 +12,6 @@ type AssessmentType = 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
 export function ControlPanel() {
   const [windows, setWindows] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
-  const [inactiveWindowsCount, setInactiveWindowsCount] = useState<number>(0);
   const [releasedGrades, setReleasedGrades] = useState<Record<ProjectType, boolean>>({
     'IDP': false,
     'UROP': false,
@@ -37,8 +36,7 @@ export function ControlPanel() {
       await Promise.all([
         fetchWindows(),
         fetchStats(),
-        checkReleasedGrades(),
-        fetchInactiveWindowsCount()
+        checkReleasedGrades()
       ]);
     };
     
@@ -79,16 +77,7 @@ export function ControlPanel() {
     }
   };
 
-  const fetchInactiveWindowsCount = async () => {
-    try {
-      const response = await api.get('/control/windows/inactive/count');
-      if (response.success) {
-        setInactiveWindowsCount((response.data as any).count);
-      }
-    } catch (error: any) {
-      console.error('Error fetching inactive windows count:', error);
-    }
-  };
+
 
   const checkReleasedGrades = async () => {
     try {
@@ -256,69 +245,7 @@ export function ControlPanel() {
     }
   };
 
-  const handleTestBasic = async () => {
-    try {
-      console.log('Testing basic endpoint...');
-      const response = await api.get('/control/test-basic');
-      console.log('Basic test response:', response);
-      
-      if (response.success) {
-        toast.success('Basic endpoint test successful');
-      } else {
-        toast.error('Basic endpoint test failed');
-      }
-    } catch (error: any) {
-      console.error('Basic test error:', error);
-      toast.error('Basic endpoint test failed');
-    }
-  };
 
-  const handleTestWindowModel = async () => {
-    try {
-      console.log('Testing window model access...');
-      const response = await api.get('/control/windows/test');
-      console.log('Test response:', response);
-      
-      if (response.success) {
-        toast.success('Window model test successful - check console for details');
-      } else {
-        toast.error('Window model test failed');
-      }
-    } catch (error: any) {
-      console.error('Test error:', error);
-      toast.error('Window model test failed');
-    }
-  };
-
-  const handleDeleteInactiveWindows = async () => {
-    if (inactiveWindowsCount === 0) {
-      toast.error('No inactive windows to delete');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete all ${inactiveWindowsCount} inactive windows? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      console.log('Attempting to delete inactive windows...');
-      const response = await api.delete('/control/windows/inactive');
-      console.log('Delete response:', response);
-
-      if (response.success) {
-        const deletedCount = (response.data as any)?.deleted || 0;
-        toast.success(`Successfully deleted ${deletedCount} inactive windows`);
-        await fetchWindows();
-        await fetchInactiveWindowsCount();
-      } else {
-        console.error('Delete failed with response:', response);
-        toast.error(response.error?.message || 'Failed to delete inactive windows');
-      }
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(error.message || 'Failed to delete inactive windows');
-    }
-  };
 
   const handleUpdateWindowStatuses = async () => {
     try {
@@ -327,7 +254,6 @@ export function ControlPanel() {
       if (response.success) {
         toast.success((response as any).message || 'Window statuses updated');
         await fetchWindows();
-        await fetchInactiveWindowsCount();
       } else {
         toast.error(response.error?.message || 'Failed to update window statuses');
       }
@@ -524,30 +450,6 @@ export function ControlPanel() {
               Manage Windows
             </h2>
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleTestBasic}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-                title="Test basic endpoint"
-              >
-                Test Basic
-              </button>
-              <button
-                onClick={handleTestWindowModel}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
-                title="Test window model access"
-              >
-                Test Model
-              </button>
-              {inactiveWindowsCount > 0 && (
-                <button
-                  onClick={handleDeleteInactiveWindows}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2"
-                  title={`Delete ${inactiveWindowsCount} inactive windows`}
-                >
-                  <Trash2 className="w-5 h-5" />
-                  Delete Inactive ({inactiveWindowsCount})
-                </button>
-              )}
               <button
                 onClick={handleUpdateWindowStatuses}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
