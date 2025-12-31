@@ -43,7 +43,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
   { name: 'presentationFile', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const { groupId, studentId, githubUrl, presentationUrl, comments } = req.body;
+    const { groupId, studentId, githubUrl, presentationUrl, comments, assessmentType } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     // Debug logging
@@ -52,6 +52,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       studentId,
       githubUrl,
       presentationUrl,
+      assessmentType,
       hasReportFile: !!(files.reportFile && files.reportFile[0]),
       hasPresentationFile: !!(files.presentationFile && files.presentationFile[0]),
       userId: req.user!.id
@@ -62,6 +63,20 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       logger.warn('Submission failed: Missing GitHub URL');
       return res.status(400).json({
         error: 'GitHub URL is required'
+      });
+    }
+
+    if (!assessmentType) {
+      return res.status(400).json({
+        error: 'Assessment type is required'
+      });
+    }
+
+    // Validate assessment type
+    const validAssessmentTypes = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+    if (!validAssessmentTypes.includes(assessmentType)) {
+      return res.status(400).json({
+        error: 'Invalid assessment type'
       });
     }
     
@@ -104,6 +119,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
 
     // Prepare submission data
     const submissionData: any = {
+      assessmentType,
       githubUrl,
       presentationUrl,
       comments,
@@ -227,11 +243,12 @@ router.get('/group/:groupId', authenticate, rbacGuard('student', 'faculty', 'coo
 
 /**
  * GET /api/submissions/student/:studentId
- * Get submissions for a specific student (both solo and group submissions)
+ * Get submissions for a specific student (both solo and group submissions), optionally filtered by assessment type
  */
 router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 'coordinator'), async (req, res) => {
   try {
     const { studentId } = req.params;
+    const { assessmentType } = req.query;
     
     // For students, they can only access their own submissions
     if (req.user!.role.includes('student') && studentId !== req.user!.id) {
@@ -240,13 +257,16 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
       });
     }
     
-    // Get both solo and group submissions for the student
-    const allSubmissions = await SubmissionService.getAllStudentSubmissions(studentId);
+    // Get both solo and group submissions for the student, optionally filtered by assessment type
+    const allSubmissions = await SubmissionService.getAllStudentSubmissions(studentId, assessmentType as string);
     
     if (!allSubmissions || allSubmissions.length === 0) {
+      const errorMessage = assessmentType 
+        ? `No submissions found for this student for ${assessmentType}`
+        : 'No submissions found for this student';
       return res.status(404).json({
         success: false,
-        error: 'No submissions found for this student'
+        error: errorMessage
       });
     }
 

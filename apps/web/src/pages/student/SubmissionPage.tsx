@@ -6,12 +6,16 @@ import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
+import { getCurrentSubmissionAssessmentType, isSubmissionOpenForAssessmentType } from '../../utils/assessmentHelper';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
 
 
 
 export function SubmissionPage() {
   const { user } = useAuth();
+  const { windows } = useWindowStatus();
   const [submissionWindow, setSubmissionWindow] = useState<any>(null);
+  const [currentAssessmentType, setCurrentAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLeader, setIsLeader] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -67,14 +71,24 @@ export function SubmissionPage() {
   }, [user?.role]);
 
   useEffect(() => {
-    if (eligibleProjectType) {
+    if (eligibleProjectType && windows.length > 0) {
       const initializeData = async () => {
         setInitializing(true);
         try {
-          await Promise.all([
-            checkSubmissionWindow(),
-            checkUserRole()
-          ]);
+          // Get current assessment type from active SUBMISSION windows (not assessment windows)
+          const assessmentType = getCurrentSubmissionAssessmentType(windows, eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE');
+          setCurrentAssessmentType(assessmentType);
+          
+          // Only proceed if there's an active submission window for this project type
+          if (assessmentType) {
+            await Promise.all([
+              checkSubmissionWindow(),
+              checkUserRole()
+            ]);
+          } else {
+            // No active submission window for this project type
+            setSubmissionWindow(null);
+          }
         } catch (error) {
           console.error('Error initializing submission data:', error);
         } finally {
@@ -84,37 +98,40 @@ export function SubmissionPage() {
       
       initializeData();
     }
-  }, [eligibleProjectType]);
+  }, [eligibleProjectType, windows]);
 
-  // Check for existing submission when user role is determined
+  // Check for existing submission when user role and assessment type are determined
   useEffect(() => {
-    console.log('User role determined:', { userGroup, user: user?.id });
-    // Only check submissions after user role is fully determined
-    // Wait a bit to ensure all state updates are complete
-    if (user?.id && !initializing) {
+    console.log('User role and assessment type determined:', { userGroup, user: user?.id, currentAssessmentType });
+    // Only check submissions after user role and assessment type are fully determined
+    if (user?.id && !initializing && currentAssessmentType) {
       const timer = setTimeout(() => {
         checkExistingSubmission();
       }, 100); // Small delay to ensure state is settled
       
       return () => clearTimeout(timer);
     }
-  }, [userGroup, user?.id, initializing]);
+  }, [userGroup, user?.id, initializing, currentAssessmentType]);
 
   const checkSubmissionWindow = async () => {
-    if (!eligibleProjectType) return;
+    if (!eligibleProjectType || !currentAssessmentType) return;
     
     try {
-      const response = await api.get('/windows/active', { 
-        windowType: 'submission',
-        projectType: eligibleProjectType
-      });
-      if (response.success && response.data) {
-        setSubmissionWindow(response.data as any);
+      // Check if submission is open for the current assessment type
+      const isOpen = isSubmissionOpenForAssessmentType(
+        windows, 
+        eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE', 
+        currentAssessmentType
+      );
+      
+      if (isOpen) {
+        setSubmissionWindow({ isActive: true, assessmentType: currentAssessmentType });
+      } else {
+        setSubmissionWindow(null);
       }
     } catch (error) {
       console.error('Error checking submission window:', error);
-      // Set default window for testing
-      setSubmissionWindow({ isActive: true } as any);
+      setSubmissionWindow(null);
     }
   };
 
@@ -199,20 +216,25 @@ export function SubmissionPage() {
   };
 
   const checkExistingSubmission = async () => {
+    if (!currentAssessmentType) return;
+    
     try {
       let response;
       
       if (userGroup) {
-        // Group student - try multiple approaches to find the submission
-        console.log('Checking group submission for group:', userGroup._id);
+        // Group student - check for submission with specific assessment type
+        console.log('Checking group submission for group:', userGroup._id, 'assessment type:', currentAssessmentType);
         console.log('User is group leader:', isLeader);
         
         try {
-          // First try: Use the my/submissions endpoint (works for both leaders and members)
-          response = await api.get('/group-submissions/my/submissions');
+          // Use the my/submissions endpoint with assessment type filter
+          // Note: For CLA-1, there might not be any existing submissions, which is expected
+          response = await api.get('/group-submissions/my/submissions', {
+            assessmentType: currentAssessmentType
+          });
           
           if (response.success && response.data) {
-            console.log('✅ Found group submission via my/submissions:', response.data);
+            console.log('✅ Found group submission for', currentAssessmentType, ':', response.data);
             setHasSubmitted(true);
             setCurrentSubmission(response.data);
             return;
@@ -220,10 +242,20 @@ export function SubmissionPage() {
         } catch (error: any) {
           console.log('my/submissions failed:', error?.response?.status, error?.response?.data?.error);
           
-          // Second try: Direct group ID lookup as fallback
+          // For 404 errors, this is expected for new assessment types - no submission exists yet
+          if (error?.response?.status === 404) {
+            console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
+            setHasSubmitted(false);
+            setCurrentSubmission(null);
+            return;
+          }
+          
+          // Second try: Direct group ID lookup with assessment type filter
           try {
-            console.log('Trying direct group ID lookup...');
-            response = await api.get(`/group-submissions/${userGroup._id}`);
+            console.log('Trying direct group ID lookup with assessment type...');
+            response = await api.get(`/group-submissions/${userGroup._id}`, {
+              assessmentType: currentAssessmentType
+            });
             
             if (response.success && response.data) {
               console.log('✅ Found group submission via direct lookup:', response.data);
@@ -233,42 +265,57 @@ export function SubmissionPage() {
             }
           } catch (directError: any) {
             console.log('Direct lookup also failed:', directError?.response?.status, directError?.response?.data?.error);
+            
+            // 404 is expected for new assessment types
+            if (directError?.response?.status === 404) {
+              console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
+              setHasSubmitted(false);
+              setCurrentSubmission(null);
+              return;
+            }
           }
         }
         
-        // If both approaches fail, no submission exists
-        console.log('No group submission found via any method');
+        // If both approaches fail with non-404 errors, log but don't block
+        console.log('No group submission found for', currentAssessmentType);
         setHasSubmitted(false);
         setCurrentSubmission(null);
         
       } else {
-        // Solo student - check regular submissions by student ID
-        console.log('Checking solo submission for user:', user?.id);
-        response = await api.get(`/submissions/student/${user?.id}`);
+        // Solo student - check regular submissions by student ID and assessment type
+        console.log('Checking solo submission for user:', user?.id, 'assessment type:', currentAssessmentType);
         
-        if (response.success && response.data) {
-          console.log('✅ Found solo submission:', response.data);
-          setHasSubmitted(true);
-          // Handle both single submission and array of submissions
-          const submissionData = Array.isArray(response.data) ? response.data[0] : response.data;
-          setCurrentSubmission(submissionData);
+        try {
+          response = await api.get(`/submissions/student/${user?.id}`, {
+            assessmentType: currentAssessmentType
+          });
+          
+          if (response.success && response.data) {
+            console.log('✅ Found solo submission for', currentAssessmentType, ':', response.data);
+            setHasSubmitted(true);
+            // Handle both single submission and array of submissions
+            const submissionData = Array.isArray(response.data) ? response.data[0] : response.data;
+            setCurrentSubmission(submissionData);
+          }
+        } catch (error: any) {
+          // 404 means no submission exists for this assessment type, which is expected for new assessment types
+          if (error?.response?.status === 404) {
+            console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
+            setHasSubmitted(false);
+            setCurrentSubmission(null);
+          } else {
+            console.error('Unexpected error checking solo submission:', error);
+            // Don't block the UI for unexpected errors
+            setHasSubmitted(false);
+            setCurrentSubmission(null);
+          }
         }
       }
     } catch (error: any) {
-      // 404 means no submission exists, which is fine for new submissions
-      console.log('Submission check error:', error);
-      if (error?.response?.status === 404) {
-        console.log('No existing submission found (expected for new submissions)');
-        setHasSubmitted(false);
-        setCurrentSubmission(null);
-      } else {
-        console.error('Unexpected error checking existing submission:', error);
-        console.error('Error details:', {
-          status: error?.response?.status,
-          data: error?.response?.data,
-          message: error?.message
-        });
-      }
+      console.error('Unexpected error in checkExistingSubmission:', error);
+      // Don't block the UI - assume no submission exists
+      setHasSubmitted(false);
+      setCurrentSubmission(null);
     }
   };
 
@@ -333,15 +380,21 @@ export function SubmissionPage() {
       return;
     }
 
+    if (!currentAssessmentType) {
+      toast.error('Assessment type not determined. Please refresh the page.');
+      return;
+    }
+
     setLoading(true);
     try {
       const formDataToSend = new FormData();
       
       if (userGroup) {
         // Group submission - use group submissions endpoint
-        console.log('Submitting as group leader');
+        console.log('Submitting as group leader for', currentAssessmentType);
         formDataToSend.append('groupId', userGroup._id);
         formDataToSend.append('githubUrl', formData.githubLink);
+        formDataToSend.append('assessmentType', currentAssessmentType);
         formDataToSend.append('reportFile', formData.reportFile!);
         if (formData.pptFile) {
           formDataToSend.append('presentationFile', formData.pptFile);
@@ -350,6 +403,7 @@ export function SubmissionPage() {
         console.log('Sending group submission data:', {
           groupId: userGroup._id,
           githubUrl: formData.githubLink,
+          assessmentType: currentAssessmentType,
           hasReportFile: !!formData.reportFile,
           hasPresentationFile: !!formData.pptFile
         });
@@ -357,9 +411,10 @@ export function SubmissionPage() {
         var response = await api.post('/group-submissions', formDataToSend);
       } else {
         // Solo submission - use regular submissions endpoint
-        console.log('Submitting as solo student');
+        console.log('Submitting as solo student for', currentAssessmentType);
         formDataToSend.append('studentId', user?.id || '');
         formDataToSend.append('githubUrl', formData.githubLink);
+        formDataToSend.append('assessmentType', currentAssessmentType);
         formDataToSend.append('reportFile', formData.reportFile!);
         if (formData.pptFile) {
           formDataToSend.append('presentationFile', formData.pptFile);
@@ -368,6 +423,7 @@ export function SubmissionPage() {
         console.log('Sending solo submission data:', {
           studentId: user?.id,
           githubUrl: formData.githubLink,
+          assessmentType: currentAssessmentType,
           hasReportFile: !!formData.reportFile,
           hasPresentationFile: !!formData.pptFile
         });
@@ -377,7 +433,7 @@ export function SubmissionPage() {
       console.log('Submission response:', response);
 
       if (response.success) {
-        toast.success('Submission successful!');
+        toast.success(`${currentAssessmentType} submission successful!`);
         setHasSubmitted(true);
         setCurrentSubmission(response.data);
         
@@ -442,7 +498,7 @@ export function SubmissionPage() {
     );
   }
 
-  if (!submissionWindow) {
+  if (!submissionWindow || !currentAssessmentType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -453,7 +509,10 @@ export function SubmissionPage() {
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Submission Window Not Open</h2>
           <p className="text-gray-600">
-            The submission window hasn't started yet. Please check back later.
+            {!currentAssessmentType 
+              ? `No active submission window for ${eligibleProjectType} students. Please check back later.`
+              : 'The submission window is not currently active. Please check back later.'
+            }
           </p>
         </motion.div>
       </div>
@@ -758,7 +817,7 @@ export function SubmissionPage() {
           <div className="space-y-6">
             {/* GitHub Link */}
             <div>
-              <label className="block mb-2 font-medium flex items-center gap-2">
+              <label className="mb-2 font-medium flex items-center gap-2">
                 <Github className="w-5 h-5" />
                 GitHub Repository Link *
               </label>
@@ -782,7 +841,7 @@ export function SubmissionPage() {
 
             {/* Report PDF */}
             <div>
-              <label className="block mb-2 font-medium flex items-center gap-2">
+              <label className="mb-2 font-medium flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 Report PDF * (Max 10MB)
               </label>
@@ -816,7 +875,7 @@ export function SubmissionPage() {
             {/* PPT (External only) */}
             {submissionWindow.assessmentType === 'External' && (
               <div>
-                <label className="block mb-2 font-medium flex items-center gap-2">
+                <label className="mb-2 font-medium flex items-center gap-2">
                   <Presentation className="w-5 h-5" />
                   Presentation (PPT/PPTX) * (Max 50MB)
                 </label>

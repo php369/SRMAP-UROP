@@ -55,6 +55,7 @@ export class StudentEvaluationService {
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
     userRole: string,
+    assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3',
     comments?: string
   ): Promise<IStudentEvaluation> {
     try {
@@ -87,20 +88,22 @@ export class StudentEvaluationService {
         throw new Error(`${component.toUpperCase()} conduct score must be between 0 and ${maxScore}`);
       }
 
-      // Find or create student evaluation record
+      // Find or create student evaluation record for this specific assessment type
       let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
         groupId: groupId,
-        projectId: group.assignedProjectId
+        projectId: group.assignedProjectId,
+        assessmentType: assessmentType
       });
 
       if (!evaluation) {
-        // Create new evaluation record
+        // Create new evaluation record for this assessment type
         evaluation = new StudentEvaluation({
           studentId: studentId,
           groupId: groupId,
           projectId: group.assignedProjectId,
           facultyId: group.assignedFacultyId,
+          assessmentType: assessmentType,
           internal: {
             cla1: { conduct: 0, convert: 0, comments: '' },
             cla2: { conduct: 0, convert: 0, comments: '' },
@@ -173,11 +176,12 @@ export class StudentEvaluationService {
         throw new Error('External conduct score must be between 0 and 100');
       }
 
-      // Find evaluation record
+      // Find evaluation record for External assessment type
       const evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
         groupId: groupId,
-        projectId: group.assignedProjectId
+        projectId: group.assignedProjectId,
+        assessmentType: 'External'
       });
 
       if (!evaluation) {
@@ -223,7 +227,7 @@ export class StudentEvaluationService {
   }
 
   /**
-   * Get student evaluations for faculty grading
+   * Get student evaluations for faculty grading (both group and solo students)
    */
   static async getFacultyStudentEvaluations(
     facultyId: mongoose.Types.ObjectId,
@@ -237,7 +241,8 @@ export class StudentEvaluationService {
         ]
       };
 
-      // If project type is specified, filter by group type
+      // If project type is specified, filter by group type for group students
+      // and by user role for solo students
       if (projectType) {
         const groups = await Group.find({ 
           type: projectType,
@@ -246,7 +251,24 @@ export class StudentEvaluationService {
         }).select('_id');
         
         const groupIds = groups.map(g => g._id);
-        matchConditions.groupId = { $in: groupIds };
+        
+        // Update match conditions to include both group and solo students
+        matchConditions = {
+          $and: [
+            {
+              $or: [
+                { facultyId: facultyId },
+                { externalFacultyId: facultyId }
+              ]
+            },
+            {
+              $or: [
+                { groupId: { $in: groupIds } }, // Group students
+                { groupId: { $exists: false } } // Solo students (no groupId)
+              ]
+            }
+          ]
+        };
       }
 
       const evaluations = await StudentEvaluation.find(matchConditions)
@@ -257,31 +279,56 @@ export class StudentEvaluationService {
         .populate('externalFacultyId', 'name email')
         .sort({ createdAt: 1 });
 
-      // Group evaluations by group for easier display
+      // Group evaluations by group for group students, and handle solo students separately
       const groupedEvaluations: any = {};
+      const soloEvaluations: any[] = [];
       
       evaluations.forEach(evaluation => {
-        const groupId = evaluation.groupId._id.toString();
-        if (!groupedEvaluations[groupId]) {
-          groupedEvaluations[groupId] = {
-            groupId: groupId,
-            groupCode: (evaluation.groupId as any).groupCode,
+        if (evaluation.groupId) {
+          // Group student
+          const groupId = evaluation.groupId._id.toString();
+          if (!groupedEvaluations[groupId]) {
+            groupedEvaluations[groupId] = {
+              groupId: groupId,
+              groupCode: (evaluation.groupId as any).groupCode,
+              projectId: evaluation.projectId._id,
+              projectTitle: (evaluation.projectId as any).title,
+              projectType: (evaluation.projectId as any).type,
+              submissionType: 'group',
+              students: []
+            };
+          }
+          
+          groupedEvaluations[groupId].students.push({
+            studentId: evaluation.studentId._id,
+            studentName: (evaluation.studentId as any).name,
+            studentEmail: (evaluation.studentId as any).email,
+            evaluation: evaluation
+          });
+        } else {
+          // Solo student
+          soloEvaluations.push({
+            studentId: evaluation.studentId._id,
+            studentName: (evaluation.studentId as any).name,
+            studentEmail: (evaluation.studentId as any).email,
             projectId: evaluation.projectId._id,
             projectTitle: (evaluation.projectId as any).title,
             projectType: (evaluation.projectId as any).type,
-            students: []
-          };
+            submissionType: 'solo',
+            students: [{
+              studentId: evaluation.studentId._id,
+              studentName: (evaluation.studentId as any).name,
+              studentEmail: (evaluation.studentId as any).email,
+              evaluation: evaluation
+            }]
+          });
         }
-        
-        groupedEvaluations[groupId].students.push({
-          studentId: evaluation.studentId._id,
-          studentName: (evaluation.studentId as any).name,
-          studentEmail: (evaluation.studentId as any).email,
-          evaluation: evaluation
-        });
       });
 
-      return Object.values(groupedEvaluations);
+      // Combine group and solo evaluations
+      const allEvaluations = [...Object.values(groupedEvaluations), ...soloEvaluations];
+      
+      return allEvaluations;
     } catch (error) {
       logger.error('Error getting faculty student evaluations:', error);
       throw error;
@@ -290,78 +337,137 @@ export class StudentEvaluationService {
 
   /**
    * Get submissions with student evaluation data for faculty assessment page
+   * Includes both group submissions and solo submissions
    */
   static async getSubmissionsWithEvaluations(facultyId: mongoose.Types.ObjectId): Promise<any[]> {
     try {
-      // Get groups assigned to this faculty
+      const submissions: any[] = [];
+
+      // 1. Get GROUP submissions for groups assigned to this faculty
       const facultyGroups = await Group.find({ assignedFacultyId: facultyId })
         .populate('members', 'name email studentId')
         .populate('assignedProjectId', 'title projectId type brief facultyName');
 
-      if (facultyGroups.length === 0) {
-        return [];
+      if (facultyGroups.length > 0) {
+        const { GroupSubmission } = await import('../models/GroupSubmission');
+        const groupIds = facultyGroups.map(group => group._id);
+        
+        // Get group submissions
+        const groupSubmissions = await GroupSubmission.find({ 
+          groupId: { $in: groupIds } 
+        })
+          .populate('submittedBy', 'name email')
+          .sort({ submittedAt: -1 });
+
+        // Process each group submission
+        for (const submission of groupSubmissions) {
+          const group = facultyGroups.find(g => g._id.toString() === submission.groupId.toString());
+          if (!group) continue;
+
+          // Get student evaluations for this group
+          const studentEvaluations = await StudentEvaluation.find({
+            groupId: group._id,
+            projectId: group.assignedProjectId
+          }).populate('studentId', 'name email studentId');
+
+          // Map existing evaluations to students
+          const evaluationMap = new Map();
+          studentEvaluations.forEach(evaluation => {
+            evaluationMap.set(evaluation.studentId._id.toString(), evaluation);
+          });
+
+          // Create students array with all group members, including evaluation data if it exists
+          const studentsWithEvaluations = group.members.map((member: any) => {
+            const evaluation = evaluationMap.get(member._id.toString());
+            return {
+              studentId: member._id,
+              studentName: member.name,
+              studentEmail: member.email,
+              evaluation: evaluation || null // null if no evaluation exists yet
+            };
+          });
+
+          submissions.push({
+            _id: submission._id,
+            submissionType: 'group',
+            assessmentType: submission.assessmentType || 'CLA-1', // Default for legacy records
+            githubLink: submission.githubUrl,
+            reportUrl: submission.reportFile?.url,
+            presentationUrl: submission.presentationFile?.url || submission.presentationUrl,
+            submittedAt: submission.submittedAt,
+            submittedBy: submission.submittedBy,
+            groupId: {
+              _id: group._id,
+              groupCode: group.groupCode,
+              members: group.members,
+              assignedProjectId: group.assignedProjectId
+            },
+            projectId: group.assignedProjectId,
+            students: studentsWithEvaluations,
+            comments: submission.comments
+          });
+        }
       }
 
-      const { GroupSubmission } = await import('../models/GroupSubmission');
-      const groupIds = facultyGroups.map(group => group._id);
+      // 2. Get SOLO submissions for students assigned to this faculty
+      const { Submission } = await import('../models/Submission');
       
-      // Get group submissions
-      const groupSubmissions = await GroupSubmission.find({ 
-        groupId: { $in: groupIds } 
-      })
+      // Find solo submissions where faculty is assigned
+      const soloSubmissions = await Submission.find({ facultyId })
+        .populate('studentId', 'name email studentId')
+        .populate('projectId', 'title projectId type brief')
         .populate('submittedBy', 'name email')
         .sort({ submittedAt: -1 });
 
-      const submissions: any[] = [];
+      // Process each solo submission
+      for (const submission of soloSubmissions) {
+        if (!submission.studentId) continue;
 
-      // Process each group submission
-      for (const submission of groupSubmissions) {
-        const group = facultyGroups.find(g => g._id.toString() === submission.groupId.toString());
-        if (!group) continue;
-
-        // Get student evaluations for this group
-        const studentEvaluations = await StudentEvaluation.find({
-          groupId: group._id,
-          projectId: group.assignedProjectId
+        // Get student evaluation for this solo student
+        const studentEvaluation = await StudentEvaluation.findOne({
+          studentId: submission.studentId._id,
+          projectId: submission.projectId,
+          assessmentType: submission.assessmentType
         }).populate('studentId', 'name email studentId');
 
-        // Map existing evaluations to students
-        const evaluationMap = new Map();
-        studentEvaluations.forEach(evaluation => {
-          evaluationMap.set(evaluation.studentId._id.toString(), evaluation);
-        });
-
-        // Create students array with all group members, including evaluation data if it exists
-        const studentsWithEvaluations = group.members.map((member: any) => {
-          const evaluation = evaluationMap.get(member._id.toString());
-          return {
-            studentId: member._id,
-            studentName: member.name,
-            studentEmail: member.email,
-            evaluation: evaluation || null // null if no evaluation exists yet
-          };
-        });
+        // Create student data with evaluation
+        const studentWithEvaluation = {
+          studentId: (submission.studentId as any)._id,
+          studentName: (submission.studentId as any).name,
+          studentEmail: (submission.studentId as any).email,
+          evaluation: studentEvaluation || null
+        };
 
         submissions.push({
           _id: submission._id,
-          submissionType: 'group',
-          assessmentType: 'CLA-1', // Default, will be determined by active window
-          githubLink: submission.githubUrl,
-          reportUrl: submission.reportFile?.url,
-          presentationUrl: submission.presentationFile?.url || submission.presentationUrl,
+          submissionType: 'solo',
+          assessmentType: submission.assessmentType,
+          githubLink: submission.githubLink,
+          reportUrl: submission.reportUrl,
+          presentationUrl: submission.pptUrl || submission.presentationUrl,
           submittedAt: submission.submittedAt,
           submittedBy: submission.submittedBy,
-          groupId: {
-            _id: group._id,
-            groupCode: group.groupCode,
-            members: group.members,
-            assignedProjectId: group.assignedProjectId
+          studentId: {
+            _id: (submission.studentId as any)._id,
+            name: (submission.studentId as any).name,
+            email: (submission.studentId as any).email,
+            assignedProjectId: submission.projectId
           },
-          projectId: group.assignedProjectId,
-          students: studentsWithEvaluations,
-          comments: submission.comments
+          projectId: submission.projectId,
+          students: [studentWithEvaluation], // Solo student as single-item array for consistency
+          comments: submission.comments,
+          facultyGrade: submission.facultyGrade,
+          externalGrade: submission.externalGrade,
+          finalGrade: submission.finalGrade,
+          facultyComments: submission.facultyComments,
+          externalComments: submission.externalComments,
+          isGraded: submission.isGraded,
+          isGradeReleased: submission.isGradeReleased
         });
       }
+
+      // Sort all submissions by submission date (most recent first)
+      submissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
 
       return submissions;
     } catch (error) {

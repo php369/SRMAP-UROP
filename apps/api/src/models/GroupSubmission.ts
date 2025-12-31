@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IGroupSubmission extends Document {
   _id: mongoose.Types.ObjectId;
   groupId: mongoose.Types.ObjectId;
+  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   githubUrl: string; // Required GitHub repository URL
   reportFile?: {
     url: string;
@@ -63,8 +64,12 @@ const GroupSubmissionSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Group',
     required: true,
-    unique: true, // One submission per group
     index: true
+  },
+  assessmentType: {
+    type: String,
+    enum: ['CLA-1', 'CLA-2', 'CLA-3', 'External'],
+    required: true
   },
   githubUrl: {
     type: String,
@@ -197,6 +202,7 @@ GroupSubmissionSchema.pre('save', function(next) {
 // Indexes for performance
 GroupSubmissionSchema.index({ submittedAt: -1 });
 GroupSubmissionSchema.index({ submittedBy: 1 });
+GroupSubmissionSchema.index({ groupId: 1, assessmentType: 1 }, { unique: true }); // One submission per group per assessment type
 
 export const GroupSubmission = mongoose.model<IGroupSubmission>('GroupSubmission', GroupSubmissionSchema);
 export default GroupSubmission;

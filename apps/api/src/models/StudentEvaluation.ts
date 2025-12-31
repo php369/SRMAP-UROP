@@ -7,6 +7,7 @@ export interface IStudentEvaluation extends Document {
   projectId: mongoose.Types.ObjectId;
   facultyId: mongoose.Types.ObjectId;
   externalFacultyId?: mongoose.Types.ObjectId;
+  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   internal: {
     cla1: { conduct: number; convert: number; comments?: string }; // 0-20 → 0-10
     cla2: { conduct: number; convert: number; comments?: string }; // 0-30 → 0-15
@@ -69,6 +70,11 @@ const StudentEvaluationSchema = new Schema<IStudentEvaluation>({
   externalFacultyId: {
     type: Schema.Types.ObjectId,
     ref: 'User'
+  },
+  assessmentType: {
+    type: String,
+    enum: ['CLA-1', 'CLA-2', 'CLA-3', 'External'],
+    required: true
   },
   internal: {
     cla1: {
@@ -159,11 +165,11 @@ StudentEvaluationSchema.pre('save', function(next) {
 });
 
 // Compound indexes for performance optimization
-StudentEvaluationSchema.index({ studentId: 1, groupId: 1, projectId: 1 }, { unique: true });
-StudentEvaluationSchema.index({ facultyId: 1 });
-StudentEvaluationSchema.index({ externalFacultyId: 1 });
-StudentEvaluationSchema.index({ groupId: 1 });
-StudentEvaluationSchema.index({ isPublished: 1 });
+StudentEvaluationSchema.index({ studentId: 1, groupId: 1, projectId: 1, assessmentType: 1 }, { unique: true });
+StudentEvaluationSchema.index({ facultyId: 1, assessmentType: 1 });
+StudentEvaluationSchema.index({ externalFacultyId: 1, assessmentType: 1 });
+StudentEvaluationSchema.index({ groupId: 1, assessmentType: 1 });
+StudentEvaluationSchema.index({ isPublished: 1, assessmentType: 1 });
 
 export const StudentEvaluation = mongoose.model<IStudentEvaluation>('StudentEvaluation', StudentEvaluationSchema);
 export default StudentEvaluation;

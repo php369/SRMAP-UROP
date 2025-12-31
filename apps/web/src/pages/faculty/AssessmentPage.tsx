@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { api } from '../../utils/api';
+import { getCurrentAssessmentType, isAssessmentTypeActive } from '../../utils/assessmentHelper';
 
 interface Submission {
   _id: string;
@@ -78,7 +79,7 @@ interface StudentEvaluation {
 
 export function FacultyAssessmentPage() {
   useAuth(); // Keep for authentication check
-  const { isAssessmentOpen, loading: windowLoading } = useWindowStatus();
+  const { windows } = useWindowStatus();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
@@ -87,6 +88,7 @@ export function FacultyAssessmentPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentEvaluation | null>(null);
   const [showGroupGrading, setShowGroupGrading] = useState(false);
   const [assessmentType, setAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'>('CLA-1');
+  const [currentAssessmentType, setCurrentAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [gradeData, setGradeData] = useState({
     grade: '',
@@ -101,17 +103,15 @@ export function FacultyAssessmentPage() {
   });
 
   // Determine current assessment type based on active windows
-  const getCurrentAssessmentType = (): 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' => {
-    const projectTypes = ['IDP', 'UROP', 'CAPSTONE'];
+  const determineCurrentAssessmentType = (): 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null => {
+    const projectTypes: ('IDP' | 'UROP' | 'CAPSTONE')[] = ['IDP', 'UROP', 'CAPSTONE'];
     
     for (const type of projectTypes) {
-      if (isAssessmentOpen(type, 'CLA-1')) return 'CLA-1';
-      if (isAssessmentOpen(type, 'CLA-2')) return 'CLA-2';
-      if (isAssessmentOpen(type, 'CLA-3')) return 'CLA-3';
-      if (isAssessmentOpen(type, 'External')) return 'External';
+      const activeType = getCurrentAssessmentType(windows, type);
+      if (activeType) return activeType;
     }
     
-    return 'CLA-1'; // Default
+    return null;
   };
 
   // Get max score for current assessment type
@@ -137,18 +137,21 @@ export function FacultyAssessmentPage() {
   };
 
   // Check if any assessment window is open (for any project type)
-  const canGrade = ['IDP', 'UROP', 'CAPSTONE'].some(type => isAssessmentOpen(type, assessmentType));
+  const canGrade = currentAssessmentType && ['IDP', 'UROP', 'CAPSTONE'].some(type => 
+    isAssessmentTypeActive(windows, type as 'IDP' | 'UROP' | 'CAPSTONE', currentAssessmentType)
+  );
 
   useEffect(() => {
     const initializeData = async () => {
       setInitializing(true);
       try {
         // Set current assessment type based on active windows
-        const currentType = getCurrentAssessmentType();
-        setAssessmentType(currentType);
+        const currentType = determineCurrentAssessmentType();
+        setCurrentAssessmentType(currentType);
+        setAssessmentType(currentType || 'CLA-1');
         
         await Promise.all([
-          fetchSubmissions(),
+          fetchSubmissions(currentType),
           fetchMeetingLogs()
         ]);
       } catch (error) {
@@ -158,15 +161,22 @@ export function FacultyAssessmentPage() {
       }
     };
     
-    initializeData();
-  }, []);
+    if (windows.length > 0) {
+      initializeData();
+    }
+  }, [windows]);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = async (assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null) => {
     setLoading(true);
     try {
-      const response = await api.get('/student-evaluations/submissions');
+      const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
+      const response = await api.get(`/student-evaluations/submissions${params}`);
       if (response.success && response.data && Array.isArray(response.data)) {
-        setSubmissions(response.data);
+        // Filter submissions by assessment type if specified
+        const filteredSubmissions = assessmentType 
+          ? response.data.filter((sub: Submission) => sub.assessmentType === assessmentType)
+          : response.data;
+        setSubmissions(filteredSubmissions);
       } else {
         setSubmissions([]);
       }
@@ -484,7 +494,7 @@ export function FacultyAssessmentPage() {
   };
 
   // Show loading while initializing
-  if (initializing || windowLoading) {
+  if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

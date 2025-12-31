@@ -11,6 +11,7 @@ export interface Evaluation {
   projectId: string;
   facultyId: string;
   externalFacultyId?: string;
+  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   internal: {
     cla1: EvaluationComponent;
     cla2: EvaluationComponent;
@@ -42,17 +43,19 @@ export class EvaluationService {
   /**
    * Get evaluations for current user's groups (student view)
    */
-  static async getMyEvaluations(): Promise<StudentEvaluationView[]> {
-    const response = await api.get('/student-evaluations/my');
+  static async getMyEvaluations(assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'): Promise<StudentEvaluationView[]> {
+    const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
+    const response = await api.get(`/student-evaluations/my${params}`);
     return (response.data as any)?.evaluations || [];
   }
 
   /**
    * Get evaluation for a specific group (student view)
    */
-  static async getGroupEvaluation(groupId: string): Promise<StudentEvaluationView | null> {
+  static async getGroupEvaluation(groupId: string, assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'): Promise<StudentEvaluationView | null> {
     try {
-      const response = await api.get(`/student-evaluations/group/${groupId}`);
+      const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
+      const response = await api.get(`/student-evaluations/group/${groupId}${params}`);
       return (response.data as any)?.evaluation || null;
     } catch (error: any) {
       if (error.message?.includes('404')) {
@@ -65,9 +68,17 @@ export class EvaluationService {
   /**
    * Get all evaluations for faculty review
    */
-  static async getFacultyEvaluations(facultyId: string, type?: 'IDP' | 'UROP' | 'CAPSTONE'): Promise<Evaluation[]> {
-    const params = type ? `?type=${type}` : '';
-    const response = await api.get(`/student-evaluations/faculty/${facultyId}${params}`);
+  static async getFacultyEvaluations(
+    facultyId: string, 
+    type?: 'IDP' | 'UROP' | 'CAPSTONE',
+    assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
+  ): Promise<Evaluation[]> {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (assessmentType) params.append('assessmentType', assessmentType);
+    
+    const queryString = params.toString();
+    const response = await api.get(`/student-evaluations/faculty/${facultyId}${queryString ? `?${queryString}` : ''}`);
     return (response.data as any)?.data || [];
   }
 
@@ -77,12 +88,14 @@ export class EvaluationService {
   static async updateInternalScore(
     groupId: string,
     component: 'cla1' | 'cla2' | 'cla3',
-    conductScore: number
+    conductScore: number,
+    assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3'
   ): Promise<Evaluation> {
     const response = await api.put('/student-evaluations/internal/score', {
       groupId,
       component,
-      conductScore
+      conductScore,
+      assessmentType
     });
     return (response.data as any)?.data;
   }

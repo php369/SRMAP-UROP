@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 export interface CreateSubmissionData {
   groupId?: string; // For group submissions
   studentId?: string; // For solo submissions
+  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   githubUrl: string;
   presentationUrl?: string;
   comments?: string;
@@ -232,11 +233,14 @@ export class SubmissionService {
         throw new Error('Only group leader can submit');
       }
 
-      // Check if submission already exists
+      // Check if submission already exists for this assessment type
       const groupObjectId = new mongoose.Types.ObjectId(data.groupId);
-      const existingSubmission = await Submission.findOne({ groupId: groupObjectId });
+      const existingSubmission = await Submission.findOne({ 
+        groupId: groupObjectId,
+        assessmentType: data.assessmentType
+      });
       if (existingSubmission) {
-        throw new Error('Group has already submitted');
+        throw new Error(`Group has already submitted for ${data.assessmentType}`);
       }
 
       projectType = group.projectType;
@@ -249,10 +253,13 @@ export class SubmissionService {
         throw new Error('You can only submit for yourself');
       }
 
-      // Check if submission already exists
-      const existingSubmission = await Submission.findOne({ studentId: studentObjectId });
+      // Check if submission already exists for this assessment type
+      const existingSubmission = await Submission.findOne({ 
+        studentId: studentObjectId,
+        assessmentType: data.assessmentType
+      });
       if (existingSubmission) {
-        throw new Error('You have already submitted');
+        throw new Error(`You have already submitted for ${data.assessmentType}`);
       }
 
       // Get user to determine project type
@@ -302,14 +309,14 @@ export class SubmissionService {
     }
     
     // Generate unique submission ID
-    const submissionId = await this.generateSubmissionId(projectType, 'CLA-1');
+    const submissionId = await this.generateSubmissionId(projectType, data.assessmentType);
     
     // Create submission
     const submissionData: any = {
       submissionId,
       projectId,
       projectType,
-      assessmentType: 'CLA-1', // Default to CLA-1, can be updated later
+      assessmentType: data.assessmentType,
       githubLink: data.githubUrl,
       reportUrl: data.reportFile?.url || '',
       pptUrl: data.presentationUrl || data.presentationFile?.url || '',
@@ -530,14 +537,20 @@ export class SubmissionService {
   }
 
   /**
-   * Get all submissions for a student (both solo and group submissions)
+   * Get all submissions for a student (both solo and group submissions), optionally filtered by assessment type
    */
-  static async getAllStudentSubmissions(studentId: string): Promise<any[]> {
+  static async getAllStudentSubmissions(studentId: string, assessmentType?: string): Promise<any[]> {
     try {
       const allSubmissions: any[] = [];
 
+      // Build query for assessment type filtering
+      const assessmentQuery = assessmentType ? { assessmentType } : {};
+
       // 1. Get solo submissions from Submission model
-      const soloSubmissions = await Submission.find({ studentId })
+      const soloSubmissions = await Submission.find({ 
+        studentId,
+        ...assessmentQuery
+      })
         .populate('projectId')
         .populate('facultyId')
         .populate('externalEvaluatorId')
@@ -576,9 +589,13 @@ export class SubmissionService {
       if (userGroups.length > 0) {
         const groupIds = userGroups.map(group => group._id);
         
-        const groupSubmissions = await GroupSubmission.find({ 
-          groupId: { $in: groupIds } 
-        })
+        // Build query for group submissions with assessment type filtering
+        const groupQuery: any = { groupId: { $in: groupIds } };
+        if (assessmentType) {
+          groupQuery.assessmentType = assessmentType;
+        }
+        
+        const groupSubmissions = await GroupSubmission.find(groupQuery)
           .populate('submittedBy', 'name email')
           .populate('groupId')
           .sort({ submittedAt: -1 });
@@ -588,7 +605,7 @@ export class SubmissionService {
           allSubmissions.push({
             _id: submission._id,
             submissionType: 'group',
-            assessmentType: 'CLA-1', // GroupSubmissions are typically CLA-1 assessments
+            assessmentType: submission.assessmentType || 'CLA-1', // Default for legacy records
             githubLink: submission.githubUrl,
             reportUrl: submission.reportFile?.url,
             pptUrl: submission.presentationFile?.url || submission.presentationUrl,

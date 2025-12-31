@@ -42,13 +42,14 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
   { name: 'presentationFile', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const { groupId, githubUrl, presentationUrl, comments } = req.body;
+    const { groupId, githubUrl, presentationUrl, comments, assessmentType } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     logger.info('Group submission request received:', {
       groupId,
       githubUrl,
       presentationUrl,
+      assessmentType,
       hasReportFile: !!(files.reportFile && files.reportFile[0]),
       hasPresentationFile: !!(files.presentationFile && files.presentationFile[0]),
       userId: req.user!.id
@@ -69,6 +70,22 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       });
     }
 
+    if (!assessmentType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Assessment type is required'
+      });
+    }
+
+    // Validate assessment type
+    const validAssessmentTypes = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+    if (!validAssessmentTypes.includes(assessmentType)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid assessment type'
+      });
+    }
+
     // Check if user is authorized to submit for this group
     const application = await Application.findOne({
       groupId,
@@ -82,18 +99,22 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       });
     }
 
-    // Check if group already has a submission
-    const existingSubmission = await GroupSubmission.findOne({ groupId });
+    // Check if group already has a submission for this assessment type
+    const existingSubmission = await GroupSubmission.findOne({ 
+      groupId, 
+      assessmentType 
+    });
     if (existingSubmission) {
       return res.status(409).json({
         success: false,
-        error: 'Group has already submitted'
+        error: `Group has already submitted for ${assessmentType}`
       });
     }
 
     // Prepare submission data
     const submissionData: any = {
       groupId,
+      assessmentType,
       githubUrl,
       presentationUrl,
       comments,
@@ -170,13 +191,14 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
 
 /**
  * GET /api/group-submissions/:groupId
- * Get submission for a specific group
+ * Get submission for a specific group and assessment type
  */
 router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinator'), async (req, res) => {
   try {
     const { groupId } = req.params;
+    const { assessmentType } = req.query;
     
-    logger.info('Direct group submission request:', { groupId, userId: req.user!.id });
+    logger.info('Direct group submission request:', { groupId, assessmentType, userId: req.user!.id });
     
     // For students, verify they are a member of this group
     if (req.user!.role.includes('student')) {
@@ -199,15 +221,24 @@ router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinat
       }
     }
     
-    const submission = await GroupSubmission.findOne({ groupId })
-      .populate('submittedBy', 'name email');
+    // Build query - include assessment type if provided
+    const query: any = { groupId };
+    if (assessmentType) {
+      query.assessmentType = assessmentType;
+    }
     
-    logger.info('Direct group submission result:', submission ? { found: true, id: submission._id } : { found: false });
+    const submission = await GroupSubmission.findOne(query)
+      .populate('submittedBy', 'name email')
+      .sort({ submittedAt: -1 }); // Get most recent if multiple
+    
+    logger.info('Direct group submission result:', submission ? { found: true, id: submission._id, assessmentType: submission.assessmentType } : { found: false });
     
     if (!submission) {
       return res.status(404).json({
         success: false,
-        error: 'No submission found for this group'
+        error: assessmentType 
+          ? `No submission found for this group for ${assessmentType}`
+          : 'No submission found for this group'
       });
     }
 
@@ -226,11 +257,13 @@ router.get('/:groupId', authenticate, rbacGuard('student', 'faculty', 'coordinat
 
 /**
  * GET /api/group-submissions/my/submissions
- * Get submissions for current user's groups
+ * Get submissions for current user's groups, optionally filtered by assessment type
  */
 router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, res) => {
   try {
-    logger.info('Group submission request from user:', req.user!.id);
+    const { assessmentType } = req.query;
+    
+    logger.info('Group submission request from user:', req.user!.id, 'assessmentType:', assessmentType);
     
     // Find user's approved applications - check both solo and group applications
     // For group applications, we need to find the group first, then check if user is a member
@@ -272,22 +305,29 @@ router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, re
       });
     }
 
-    // Find submission for this group
-    logger.info('Searching for submission with group ID:', application.groupId);
-    
-    const submission = await GroupSubmission.findOne({
-      groupId: application.groupId
-    })
-      .populate('submittedBy', 'name email')
-      .sort({ submittedAt: -1 });
+    // Build query for submission
+    const submissionQuery: any = { groupId: application.groupId };
+    if (assessmentType) {
+      submissionQuery.assessmentType = assessmentType;
+    }
 
-    logger.info('Found submission:', submission ? { id: submission._id, submittedBy: submission.submittedBy, githubUrl: submission.githubUrl } : 'none');
+    // Find submission for this group (optionally filtered by assessment type)
+    logger.info('Searching for submission with query:', submissionQuery);
+    
+    const submission = await GroupSubmission.findOne(submissionQuery)
+      .populate('submittedBy', 'name email')
+      .sort({ submittedAt: -1 }); // Get most recent if multiple
+
+    logger.info('Found submission:', submission ? { id: submission._id, assessmentType: submission.assessmentType, submittedBy: submission.submittedBy, githubUrl: submission.githubUrl } : 'none');
 
     if (!submission) {
-      logger.warn('No submission found for group:', application.groupId);
+      const errorMessage = assessmentType 
+        ? `No submission found for your group for ${assessmentType}`
+        : 'No submission found for your group';
+      logger.warn(errorMessage, 'Group ID:', application.groupId);
       return res.status(404).json({
         success: false,
-        error: 'No submission found for your group'
+        error: errorMessage
       });
     }
 

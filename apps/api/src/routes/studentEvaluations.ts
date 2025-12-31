@@ -25,6 +25,7 @@ const updateInternalScoreSchema = Joi.object({
   }),
   component: Joi.string().valid('cla1', 'cla2', 'cla3').required(),
   conductScore: Joi.number().min(0).required(),
+  assessmentType: Joi.string().valid('CLA-1', 'CLA-2', 'CLA-3').required(),
   comments: Joi.string().max(1000).allow('').optional()
 });
 
@@ -56,7 +57,7 @@ router.put(
   validateRequest(updateInternalScoreSchema),
   async (req, res) => {
     try {
-      const { studentId, groupId, component, conductScore, comments } = req.body;
+      const { studentId, groupId, component, conductScore, assessmentType, comments } = req.body;
       const facultyId = req.user!.id;
 
       const result = await StudentEvaluationService.updateStudentInternalScore(
@@ -66,6 +67,7 @@ router.put(
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
         req.user!.role,
+        assessmentType as 'CLA-1' | 'CLA-2' | 'CLA-3',
         comments
       );
 
