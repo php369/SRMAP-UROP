@@ -7,9 +7,10 @@ interface SmartDateTimeInputProps {
   label: string;
   className?: string;
   disabled?: boolean;
+  minDateTime?: string; // For end date to be after start date
 }
 
-export function SmartDateTimeInput({ value, onChange, label, className = '', disabled = false }: SmartDateTimeInputProps) {
+export function SmartDateTimeInput({ value, onChange, label, className = '', disabled = false, minDateTime }: SmartDateTimeInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState({ hours: '12', minutes: '00' });
@@ -46,6 +47,19 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
 
   // Format current time to datetime-local format
   const getCurrentDateTime = () => {
+    // If minDateTime is provided (for end date), use one minute after that
+    if (minDateTime) {
+      const minDate = new Date(minDateTime);
+      minDate.setMinutes(minDate.getMinutes() + 1);
+      const year = minDate.getFullYear();
+      const month = String(minDate.getMonth() + 1).padStart(2, '0');
+      const day = String(minDate.getDate()).padStart(2, '0');
+      const hours = String(minDate.getHours()).padStart(2, '0');
+      const minutes = String(minDate.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    // Otherwise use current time
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -53,6 +67,14 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Get minimum datetime (current time or minDateTime)
+  const getMinDateTime = () => {
+    if (minDateTime) {
+      return minDateTime;
+    }
+    return getCurrentDateTime();
   };
 
   // Format display value
@@ -99,6 +121,7 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
 
     const days = [];
     const today = new Date();
+    const minDate = minDateTime ? new Date(minDateTime) : today;
     const currentValue = value ? new Date(value) : null;
 
     for (let i = 0; i < 42; i++) {
@@ -108,7 +131,7 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
       const isCurrentMonth = date.getMonth() === month;
       const isToday = date.toDateString() === today.toDateString();
       const isSelected = currentValue && date.toDateString() === currentValue.toDateString();
-      const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const isPast = date < new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
 
       days.push({
         date,
@@ -125,8 +148,9 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
 
   // Handle date selection
   const handleDateSelect = (date: Date) => {
-    if (date < new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) {
-      return; // Don't allow past dates
+    const minDate = minDateTime ? new Date(minDateTime) : new Date();
+    if (date < new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate())) {
+      return; // Don't allow dates before minimum
     }
     
     setSelectedDate(date);
@@ -308,7 +332,6 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
 
       {/* Helper text */}
       <div className="mt-1 text-xs text-gray-500">
-        {!value && 'Will default to current time when clicked'}
         {value && (
           <span>
             Selected: {formatDisplayValue(value)}

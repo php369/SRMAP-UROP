@@ -3,6 +3,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import {
     createWindow,
     updateWindow,
+    deleteWindow,
     getWindowsByProjectType,
     getActiveWindow,
     getUpcomingWindows,
@@ -225,6 +226,46 @@ router.put('/:id', authenticate, authorize('coordinator'), async (req, res) => {
             error: {
                 code: 'UPDATE_WINDOW_FAILED',
                 message: 'Failed to update window',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * DELETE /api/windows/:id
+ * Delete a window
+ * Accessible by: coordinator only
+ */
+router.delete('/:id', authenticate, authorize('coordinator'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deleted = await deleteWindow(id);
+
+        if (!deleted) {
+            res.status(404).json({
+                success: false,
+                error: {
+                    code: 'WINDOW_NOT_FOUND',
+                    message: 'Window not found',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        res.json({
+            success: true,
+            message: 'Window deleted successfully',
+        });
+    } catch (error) {
+        logger.error('Error deleting window:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'DELETE_WINDOW_FAILED',
+                message: 'Failed to delete window',
                 timestamp: new Date().toISOString(),
             },
         });
