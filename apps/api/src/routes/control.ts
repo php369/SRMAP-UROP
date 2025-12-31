@@ -432,39 +432,15 @@ router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (re
     console.log('User:', req.user?.id, req.user?.role);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Simply find all windows where isActive is false
-    console.log('Finding windows with isActive: false...');
-    const inactiveWindows = await Window.find({ isActive: false });
-    console.log('Found inactive windows:', inactiveWindows.length);
+    // Use the WindowService method which handles status updates and deletion properly
+    const result = await WindowService.deleteInactiveWindows();
     
-    if (inactiveWindows.length === 0) {
-      console.log('No inactive windows to delete');
-      return res.json({
-        success: true,
-        message: 'No inactive windows to delete',
-        data: { deleted: 0 }
-      });
-    }
-    
-    // Log the windows we're about to delete
-    console.log('Windows to delete:', inactiveWindows.map(w => ({
-      id: w._id.toString(),
-      windowType: w.windowType,
-      projectType: w.projectType,
-      isActive: w.isActive
-    })));
-    
-    // Delete all windows where isActive is false
-    console.log('Deleting windows with isActive: false...');
-    const deleteResult = await Window.deleteMany({ isActive: false });
-    console.log('Delete result:', deleteResult);
-    
-    console.log(`=== DELETE COMPLETED - Deleted: ${deleteResult.deletedCount} ===`);
+    console.log(`=== DELETE COMPLETED - Deleted: ${result.deleted} ===`);
     
     res.json({
       success: true,
-      message: `Deleted ${deleteResult.deletedCount} inactive windows`,
-      data: { deleted: deleteResult.deletedCount }
+      message: `Deleted ${result.deleted} inactive windows`,
+      data: { deleted: result.deleted }
     });
     
   } catch (error: any) {
