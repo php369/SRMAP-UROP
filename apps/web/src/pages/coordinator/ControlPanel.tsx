@@ -151,23 +151,26 @@ export function ControlPanel() {
   };
 
   const handleCreateWindow = async () => {
-    if (!windowForm.startDate || !windowForm.endDate) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
+    // Validate window and project type selections
     if (windowForm.windowTypes.length === 0 || windowForm.projectTypes.length === 0) {
       toast.error('Please select at least one window type and one project type');
       return;
     }
 
-    if (new Date(windowForm.endDate) <= new Date(windowForm.startDate)) {
-      toast.error('End date must be after start date');
-      return;
-    }
+    // Validate dates based on mode
+    if (windowForm.useCommonDates) {
+      // For common dates mode, validate the common date fields
+      if (!windowForm.startDate || !windowForm.endDate) {
+        toast.error('Please fill all required fields');
+        return;
+      }
 
-    // Validate individual dates if using individual timing
-    if (!windowForm.useCommonDates) {
+      if (new Date(windowForm.endDate) <= new Date(windowForm.startDate)) {
+        toast.error('End date must be after start date');
+        return;
+      }
+    } else {
+      // For individual dates mode, validate each window combination
       const windowCombinations = [];
       for (const windowType of windowForm.windowTypes) {
         for (const projectType of windowForm.projectTypes) {
@@ -191,14 +194,23 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
-      // Convert datetime-local values to ISO strings
-      const startDateObj = new Date(windowForm.startDate);
-      const endDateObj = new Date(windowForm.endDate);
-      const startDate = startDateObj.toISOString();
-      const endDate = endDateObj.toISOString();
+      // Convert datetime-local values to ISO strings (only for common dates mode)
+      let startDate, endDate;
+      if (windowForm.useCommonDates) {
+        const startDateObj = new Date(windowForm.startDate);
+        const endDateObj = new Date(windowForm.endDate);
+        startDate = startDateObj.toISOString();
+        endDate = endDateObj.toISOString();
+      }
       
       if (editingWindow) {
         // For editing, use single window approach (existing functionality)
+        // When editing, we should always use common dates
+        if (!windowForm.useCommonDates || !startDate || !endDate) {
+          toast.error('Please use common dates mode when editing a window');
+          return;
+        }
+        
         const payload = {
           windowType: windowForm.windowTypes[0],
           projectType: windowForm.projectTypes[0],
