@@ -1,41 +1,41 @@
-const cron = require('node-cron');
 import { WindowService } from './windowService';
 import { logger } from '../utils/logger';
 
 /**
- * Scheduler service to handle automatic cleanup tasks
+ * Simple scheduler service using setTimeout/setInterval
+ * Fallback implementation without external dependencies
  */
-export class SchedulerService {
+export class SimpleSchedulerService {
   private static isInitialized = false;
-  private static tasks: any[] = [];
+  private static intervals: NodeJS.Timeout[] = [];
 
   /**
    * Initialize all scheduled tasks
    */
   static initialize() {
     if (this.isInitialized) {
-      logger.warn('SchedulerService already initialized');
+      logger.warn('SimpleSchedulerService already initialized');
       return;
     }
 
-    logger.info('Initializing SchedulerService...');
+    logger.info('Initializing SimpleSchedulerService...');
 
-    // Schedule window cleanup every hour
+    // Schedule window cleanup every hour (3600000 ms)
     this.scheduleWindowCleanup();
 
-    // Schedule window status updates every 5 minutes
+    // Schedule window status updates every 5 minutes (300000 ms)
     this.scheduleWindowStatusUpdates();
 
     this.isInitialized = true;
-    logger.info('SchedulerService initialized successfully');
+    logger.info('SimpleSchedulerService initialized successfully');
   }
 
   /**
    * Schedule automatic cleanup of ended windows
-   * Runs every hour at minute 0
+   * Runs every hour
    */
   private static scheduleWindowCleanup() {
-    const task = cron.schedule('0 * * * *', async () => {
+    const interval = setInterval(async () => {
       try {
         logger.info('Running scheduled window cleanup...');
         const result = await WindowService.deleteEndedWindows();
@@ -48,10 +48,10 @@ export class SchedulerService {
       } catch (error) {
         logger.error('Error in scheduled window cleanup:', error);
       }
-    });
+    }, 60 * 60 * 1000); // 1 hour
 
-    this.tasks.push(task);
-    logger.info('Scheduled window cleanup task: Every hour at minute 0');
+    this.intervals.push(interval);
+    logger.info('Scheduled window cleanup task: Every hour');
   }
 
   /**
@@ -59,7 +59,7 @@ export class SchedulerService {
    * Runs every 5 minutes
    */
   private static scheduleWindowStatusUpdates() {
-    const task = cron.schedule('*/5 * * * *', async () => {
+    const interval = setInterval(async () => {
       try {
         logger.debug('Running scheduled window status update...');
         const result = await WindowService.updateWindowStatuses();
@@ -70,9 +70,9 @@ export class SchedulerService {
       } catch (error) {
         logger.error('Error in scheduled window status update:', error);
       }
-    });
+    }, 5 * 60 * 1000); // 5 minutes
 
-    this.tasks.push(task);
+    this.intervals.push(interval);
     logger.info('Scheduled window status updates: Every 5 minutes');
   }
 
@@ -84,18 +84,16 @@ export class SchedulerService {
       return;
     }
 
-    logger.info('Shutting down SchedulerService...');
+    logger.info('Shutting down SimpleSchedulerService...');
     
-    // Stop all tasks
-    this.tasks.forEach((task) => {
-      if (task && typeof task.destroy === 'function') {
-        task.destroy();
-      }
+    // Clear all intervals
+    this.intervals.forEach((interval) => {
+      clearInterval(interval);
     });
     
-    this.tasks = [];
+    this.intervals = [];
     this.isInitialized = false;
-    logger.info('SchedulerService shut down successfully');
+    logger.info('SimpleSchedulerService shut down successfully');
   }
 
   /**
@@ -104,11 +102,12 @@ export class SchedulerService {
   static getStatus() {
     return {
       initialized: this.isInitialized,
-      taskCount: this.tasks.length,
-      tasks: this.tasks.map((_, index) => ({
+      taskCount: this.intervals.length,
+      tasks: this.intervals.map((_, index) => ({
         id: index,
         name: index === 0 ? 'window-cleanup' : 'status-updates',
-        status: 'active'
+        status: 'active',
+        type: 'interval'
       }))
     };
   }

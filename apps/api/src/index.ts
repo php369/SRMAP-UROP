@@ -115,7 +115,14 @@ async function startServer() {
     monitoring.startSystemMonitoring(60000); // Every minute
     
     // Initialize scheduler service for automatic tasks
-    SchedulerService.initialize();
+    try {
+      SchedulerService.initialize();
+    } catch (error) {
+      logger.error('Failed to initialize SchedulerService, using fallback:', error);
+      // Fallback to simple interval-based scheduling
+      const { SimpleSchedulerService } = await import('./services/simpleSchedulerService');
+      SimpleSchedulerService.initialize();
+    }
     
     /**
      * @swagger
@@ -218,7 +225,11 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       logger.info('SIGTERM received, shutting down gracefully');
-      SchedulerService.shutdown();
+      try {
+        SchedulerService.shutdown();
+      } catch (error) {
+        logger.warn('Error shutting down SchedulerService:', error);
+      }
       server.close(() => {
         logger.info('Process terminated');
         process.exit(0);
@@ -227,7 +238,11 @@ async function startServer() {
     
     process.on('SIGINT', () => {
       logger.info('SIGINT received, shutting down gracefully');
-      SchedulerService.shutdown();
+      try {
+        SchedulerService.shutdown();
+      } catch (error) {
+        logger.warn('Error shutting down SchedulerService:', error);
+      }
       server.close(() => {
         logger.info('Process terminated');
         process.exit(0);
