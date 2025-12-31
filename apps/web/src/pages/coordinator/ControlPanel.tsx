@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Award, Users, FileText, Plus, Edit2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
@@ -12,6 +12,7 @@ type AssessmentType = 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
 export function ControlPanel() {
   const [windows, setWindows] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [showInactiveWindows, setShowInactiveWindows] = useState(false);
   const [releasedGrades, setReleasedGrades] = useState<Record<ProjectType, boolean>>({
     'IDP': false,
     'UROP': false,
@@ -299,6 +300,83 @@ export function ControlPanel() {
     return combinations;
   };
 
+  // Helper function to check workflow prerequisites for a window type
+  const getWorkflowPrerequisites = (windowType: WindowType, assessmentType?: string): string[] => {
+    const workflow: Record<WindowType, string[]> = {
+      'proposal': [],
+      'application': ['proposal'],
+      'submission': ['proposal', 'application'],
+      'assessment': ['proposal', 'application', 'submission'],
+      'grade_release': ['proposal', 'application', 'submission', 'assessment']
+    };
+
+    let prerequisites: string[] = [...(workflow[windowType] || [])];
+
+    // For CLA assessments, need to check sequential order
+    if ((windowType === 'submission' || windowType === 'assessment') && assessmentType) {
+      const claOrder: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+      const currentIndex = claOrder.indexOf(assessmentType as AssessmentType);
+      
+      if (currentIndex > 0) {
+        // Need previous CLA stages to be completed
+        for (let i = 0; i < currentIndex; i++) {
+          const prevAssessment = claOrder[i];
+          if (prevAssessment) {
+            prerequisites.push(`${windowType}-${prevAssessment}`);
+          }
+        }
+      }
+    }
+
+    return prerequisites;
+  };
+
+  // Helper function to check if a window type is available based on existing windows
+  const isWindowTypeAvailable = (windowType: WindowType, projectType: ProjectType, assessmentType?: string) => {
+    if (editingWindow) return true; // Allow editing existing windows
+
+    const prerequisites = getWorkflowPrerequisites(windowType, assessmentType);
+    
+    // Check if all prerequisites exist in the database
+    for (const prereq of prerequisites) {
+      if (prereq.includes('-')) {
+        // This is a specific assessment type prerequisite
+        const [prereqWindowType, prereqAssessmentType] = prereq.split('-');
+        const hasPrereq = windows.some(w => 
+          w.windowType === prereqWindowType && 
+          w.projectType === projectType && 
+          w.assessmentType === prereqAssessmentType
+        );
+        if (!hasPrereq) return false;
+      } else {
+        // This is a general window type prerequisite
+        const hasPrereq = windows.some(w => 
+          w.windowType === prereq && 
+          w.projectType === projectType
+        );
+        if (!hasPrereq) return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Helper function to get available assessment types for submission/assessment
+  const getAvailableAssessmentTypes = (windowType: WindowType, projectType: ProjectType) => {
+    if (windowType !== 'submission' && windowType !== 'assessment') return [];
+
+    const allTypes = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+    const availableTypes = [];
+
+    for (const assessmentType of allTypes) {
+      if (isWindowTypeAvailable(windowType, projectType, assessmentType)) {
+        availableTypes.push(assessmentType);
+      }
+    }
+
+    return availableTypes;
+  };
+
   // Helper function to update individual dates
   const updateIndividualDate = (windowKey: string, field: 'startDate' | 'endDate', value: string) => {
     setWindowForm(prev => ({
@@ -350,24 +428,7 @@ export function ControlPanel() {
     });
   };
 
-  const handleDeleteWindow = async (windowId: string) => {
-    if (!confirm('Are you sure you want to delete this window?')) {
-      return;
-    }
 
-    try {
-      const response = await api.delete(`/control/windows/${windowId}`);
-
-      if (response.success) {
-        toast.success('Window deleted successfully');
-        fetchWindows();
-      } else {
-        toast.error(response.error?.message || 'Failed to delete window');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete window');
-    }
-  };
 
 
 
@@ -623,31 +684,52 @@ export function ControlPanel() {
                       <option value="grade_release">Grade Release</option>
                     </select>
                   ) : (
-                    // Multi-select for creating
+                    // Multi-select for creating with workflow validation
                     <div className="space-y-2">
-                      {(['proposal', 'application', 'submission', 'assessment', 'grade_release'] as WindowType[]).map((type) => (
-                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={windowForm.windowTypes.includes(type)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setWindowForm({ 
-                                  ...windowForm, 
-                                  windowTypes: [...windowForm.windowTypes, type] 
-                                });
-                              } else {
-                                setWindowForm({ 
-                                  ...windowForm, 
-                                  windowTypes: windowForm.windowTypes.filter(t => t !== type) 
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm capitalize">{type.replace('_', ' ')}</span>
-                        </label>
-                      ))}
+                      {(['proposal', 'application', 'submission', 'assessment', 'grade_release'] as WindowType[]).map((type) => {
+                        // Check if this window type is available for any selected project type
+                        const isAvailable = windowForm.projectTypes.length === 0 || 
+                          windowForm.projectTypes.some(projectType => 
+                            isWindowTypeAvailable(type, projectType)
+                          );
+                        
+                        return (
+                          <label 
+                            key={type} 
+                            className={`flex items-center space-x-2 ${
+                              isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={windowForm.windowTypes.includes(type)}
+                              disabled={!isAvailable}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setWindowForm({ 
+                                    ...windowForm, 
+                                    windowTypes: [...windowForm.windowTypes, type] 
+                                  });
+                                } else {
+                                  setWindowForm({ 
+                                    ...windowForm, 
+                                    windowTypes: windowForm.windowTypes.filter(t => t !== type) 
+                                  });
+                                }
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                            />
+                            <span className={`text-sm capitalize ${!isAvailable ? 'text-gray-400' : ''}`}>
+                              {type.replace('_', ' ')}
+                              {!isAvailable && (
+                                <span className="text-xs text-red-500 ml-1">
+                                  (Prerequisites missing)
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -702,18 +784,54 @@ export function ControlPanel() {
                 {/* Assessment Type - Show if any selected window type needs it */}
                 {(windowForm.windowTypes.some(type => type === 'submission' || type === 'assessment')) && (
                   <div className="md:col-span-2">
-                    <label className="block mb-2 text-sm font-medium">Assessment Type</label>
-                    <select
-                      value={windowForm.assessmentType}
-                      onChange={(e) => setWindowForm({ ...windowForm, assessmentType: e.target.value as AssessmentType })}
-                      className="w-full px-4 py-2 border rounded-lg"
-                    >
-                      <option value="">Select...</option>
-                      <option value="CLA-1">CLA-1</option>
-                      <option value="CLA-2">CLA-2</option>
-                      <option value="CLA-3">CLA-3</option>
-                      <option value="External">External</option>
-                    </select>
+                    <label className="block mb-2 text-sm font-medium">
+                      Assessment Type
+                      {!editingWindow && (
+                        <span className="text-xs text-gray-500 ml-1">
+                          (Only available types shown based on workflow)
+                        </span>
+                      )}
+                    </label>
+                    {editingWindow ? (
+                      <select
+                        value={windowForm.assessmentType}
+                        onChange={(e) => setWindowForm({ ...windowForm, assessmentType: e.target.value as AssessmentType })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      >
+                        <option value="">Select...</option>
+                        <option value="CLA-1">CLA-1</option>
+                        <option value="CLA-2">CLA-2</option>
+                        <option value="CLA-3">CLA-3</option>
+                        <option value="External">External</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={windowForm.assessmentType}
+                        onChange={(e) => setWindowForm({ ...windowForm, assessmentType: e.target.value as AssessmentType })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      >
+                        <option value="">Select...</option>
+                        {/* Show only available assessment types based on workflow */}
+                        {windowForm.projectTypes.length > 0 && 
+                          windowForm.windowTypes.some(type => type === 'submission' || type === 'assessment') && 
+                          (() => {
+                            // Get intersection of available types across all selected project types
+                            const availableTypes = windowForm.projectTypes.reduce((acc, projectType) => {
+                              const typesForProject = windowForm.windowTypes
+                                .filter(wt => wt === 'submission' || wt === 'assessment')
+                                .flatMap(wt => getAvailableAssessmentTypes(wt, projectType));
+                              
+                              if (acc.length === 0) return typesForProject;
+                              return acc.filter(type => typesForProject.includes(type));
+                            }, [] as string[]);
+                            
+                            return [...new Set(availableTypes)].map(type => (
+                              <option key={type} value={type}>{type}</option>
+                            ));
+                          })()
+                        }
+                      </select>
+                    )}
                   </div>
                 )}
 
@@ -927,7 +1045,43 @@ export function ControlPanel() {
 
           {/* Windows List */}
           <div className="space-y-4">
-            {windows.map((window) => {
+            {/* Show/Hide Inactive Windows Toggle */}
+            <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-gray-700">Window Display Options:</span>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showInactiveWindows}
+                    onChange={(e) => setShowInactiveWindows(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">Show inactive windows</span>
+                </label>
+              </div>
+              <div className="text-xs text-gray-500">
+                {windows.filter(w => {
+                  const now = new Date();
+                  const start = new Date(w.startDate);
+                  const end = new Date(w.endDate);
+                  const isActive = now >= start && now <= end;
+                  return showInactiveWindows || isActive || now < start;
+                }).length} of {windows.length} windows shown
+              </div>
+            </div>
+
+            {windows
+              .filter(window => {
+                const now = new Date();
+                const start = new Date(window.startDate);
+                const end = new Date(window.endDate);
+                const isActive = now >= start && now <= end;
+                const hasEnded = now > end;
+                
+                // Show active and upcoming windows always, inactive only if toggle is on
+                return showInactiveWindows || isActive || !hasEnded;
+              })
+              .map((window) => {
               const now = new Date();
               const start = new Date(window.startDate);
               const end = new Date(window.endDate);
@@ -995,13 +1149,6 @@ export function ControlPanel() {
                         title={hasEnded ? 'Cannot edit ended window' : 'Edit window'}
                       >
                         <Edit2 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteWindow(window._id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded"
-                        title="Delete window"
-                      >
-                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>

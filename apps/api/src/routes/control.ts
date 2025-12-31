@@ -220,40 +220,7 @@ router.put('/windows/:id', authenticate, isCoordinatorOrAdmin, async (req: Reque
   }
 });
 
-/**
- * @route   DELETE /api/v1/control/windows/:id
- * @desc    Delete a window
- * @access  Private (Coordinator, Admin)
- */
-router.delete('/windows/:id', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
-  try {
-    const window = await Window.findByIdAndDelete(req.params.id);
-    
-    if (!window) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'WINDOW_NOT_FOUND',
-          message: 'Window not found'
-        }
-      });
-    }
 
-    res.json({
-      success: true,
-      message: 'Window deleted successfully'
-    });
-  } catch (error: any) {
-    console.error('Delete window error:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'DELETE_WINDOW_FAILED',
-        message: 'Failed to delete window'
-      }
-    });
-  }
-});
 
 /**
  * @route   POST /api/v1/control/grades/release

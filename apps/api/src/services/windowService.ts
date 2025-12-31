@@ -172,18 +172,7 @@ export class WindowService {
     }
   }
 
-  /**
-   * Delete a window
-   */
-  static async deleteWindow(windowId: string) {
-    try {
-      const result = await Window.findByIdAndDelete(windowId);
-      return result;
-    } catch (error) {
-      logger.error('Error deleting window:', error);
-      throw error;
-    }
-  }
+
 
   /**
    * Get windows by project type
@@ -257,7 +246,6 @@ export const getEndedWindowsCount = WindowService.getEndedWindowsCount;
 export const isWindowActive = WindowService.isWindowActive;
 export const createWindow = WindowService.createWindow;
 export const updateWindow = WindowService.updateWindow;
-export const deleteWindow = WindowService.deleteWindow;
 export const getWindowsByProjectType = WindowService.getWindowsByProjectType;
 export const getActiveWindow = WindowService.getActiveWindow;
 export const getUpcomingWindows = WindowService.getUpcomingWindows;

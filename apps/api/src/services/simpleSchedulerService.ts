@@ -20,39 +20,14 @@ export class SimpleSchedulerService {
 
     logger.info('Initializing SimpleSchedulerService...');
 
-    // Schedule window cleanup every hour (3600000 ms)
-    this.scheduleWindowCleanup();
-
-    // Schedule window status updates every 5 minutes (300000 ms)
+    // Only schedule window status updates (no deletion)
     this.scheduleWindowStatusUpdates();
 
     this.isInitialized = true;
     logger.info('SimpleSchedulerService initialized successfully');
   }
 
-  /**
-   * Schedule automatic cleanup of ended windows
-   * Runs every hour
-   */
-  private static scheduleWindowCleanup() {
-    const interval = setInterval(async () => {
-      try {
-        logger.info('Running scheduled window cleanup...');
-        const result = await WindowService.deleteEndedWindows();
-        
-        if (result.deleted > 0) {
-          logger.info(`Scheduled cleanup: Deleted ${result.deleted} ended windows`);
-        } else {
-          logger.debug('Scheduled cleanup: No ended windows to delete');
-        }
-      } catch (error) {
-        logger.error('Error in scheduled window cleanup:', error);
-      }
-    }, 60 * 60 * 1000); // 1 hour
 
-    this.intervals.push(interval);
-    logger.info('Scheduled window cleanup task: Every hour');
-  }
 
   /**
    * Schedule automatic window status updates

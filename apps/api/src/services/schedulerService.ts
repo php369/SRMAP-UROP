@@ -20,39 +20,14 @@ export class SchedulerService {
 
     logger.info('Initializing SchedulerService...');
 
-    // Schedule window cleanup every hour
-    this.scheduleWindowCleanup();
-
-    // Schedule window status updates every 5 minutes
+    // Only schedule window status updates (no deletion)
     this.scheduleWindowStatusUpdates();
 
     this.isInitialized = true;
     logger.info('SchedulerService initialized successfully');
   }
 
-  /**
-   * Schedule automatic cleanup of ended windows
-   * Runs every hour at minute 0
-   */
-  private static scheduleWindowCleanup() {
-    const task = cron.schedule('0 * * * *', async () => {
-      try {
-        logger.info('Running scheduled window cleanup...');
-        const result = await WindowService.deleteEndedWindows();
-        
-        if (result.deleted > 0) {
-          logger.info(`Scheduled cleanup: Deleted ${result.deleted} ended windows`);
-        } else {
-          logger.debug('Scheduled cleanup: No ended windows to delete');
-        }
-      } catch (error) {
-        logger.error('Error in scheduled window cleanup:', error);
-      }
-    });
 
-    this.tasks.push(task);
-    logger.info('Scheduled window cleanup task: Every hour at minute 0');
-  }
 
   /**
    * Schedule automatic window status updates
