@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
@@ -267,16 +267,21 @@ export function ControlPanel() {
     }
 
     try {
+      console.log('Attempting to delete inactive windows...');
       const response = await api.delete('/control/windows/inactive');
+      console.log('Delete response:', response);
 
       if (response.success) {
-        toast.success((response as any).message || `Deleted ${(response.data as any).deleted} inactive windows`);
+        const deletedCount = (response.data as any)?.deleted || 0;
+        toast.success(`Successfully deleted ${deletedCount} inactive windows`);
         await fetchWindows();
         await fetchInactiveWindowsCount();
       } else {
+        console.error('Delete failed with response:', response);
         toast.error(response.error?.message || 'Failed to delete inactive windows');
       }
     } catch (error: any) {
+      console.error('Delete error:', error);
       toast.error(error.message || 'Failed to delete inactive windows');
     }
   };
@@ -512,21 +517,6 @@ export function ControlPanel() {
               </button>
             </div>
           </div>
-
-          {/* Inactive Windows Alert */}
-          {inactiveWindowsCount > 0 && (
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <div className="flex items-center gap-2 text-amber-800">
-                <AlertTriangle className="w-5 h-5" />
-                <span className="font-medium">
-                  {inactiveWindowsCount} inactive window{inactiveWindowsCount > 1 ? 's' : ''} found
-                </span>
-              </div>
-              <p className="text-sm text-amber-700 mt-1">
-                These windows have ended or are scheduled for the future. You can delete them to clean up the database.
-              </p>
-            </div>
-          )}
 
           {/* Window Form */}
           {showWindowForm && (

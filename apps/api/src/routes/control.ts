@@ -428,7 +428,9 @@ router.post('/windows/update-statuses', authenticate, isCoordinatorOrAdmin, asyn
  */
 router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
+    console.log('Starting delete inactive windows request...');
     const result = await WindowService.deleteInactiveWindows();
+    console.log('Delete result:', result);
     
     res.json({
       success: true,
@@ -437,11 +439,17 @@ router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (re
     });
   } catch (error: any) {
     console.error('Delete inactive windows error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       error: {
         code: 'DELETE_INACTIVE_FAILED',
-        message: 'Failed to delete inactive windows'
+        message: 'Failed to delete inactive windows',
+        details: error.message
       }
     });
   }
@@ -454,7 +462,9 @@ router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (re
  */
 router.get('/windows/inactive/count', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
+    console.log('Getting inactive windows count...');
     const count = await WindowService.getInactiveWindowsCount();
+    console.log('Inactive windows count:', count);
     
     res.json({
       success: true,
@@ -462,11 +472,17 @@ router.get('/windows/inactive/count', authenticate, isCoordinatorOrAdmin, async 
     });
   } catch (error: any) {
     console.error('Get inactive windows count error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       error: {
         code: 'GET_INACTIVE_COUNT_FAILED',
-        message: 'Failed to get inactive windows count'
+        message: 'Failed to get inactive windows count',
+        details: error.message
       }
     });
   }

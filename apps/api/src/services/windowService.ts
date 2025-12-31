@@ -55,17 +55,29 @@ export class WindowService {
    */
   static async deleteInactiveWindows(): Promise<{ deleted: number }> {
     try {
+      logger.info('Starting deleteInactiveWindows process...');
+      
       // First update all window statuses to ensure accuracy
-      await this.updateWindowStatuses();
+      const updateResult = await this.updateWindowStatuses();
+      logger.info(`Updated ${updateResult.updated} window statuses before deletion`);
+
+      // Get count of inactive windows before deletion
+      const inactiveCount = await Window.countDocuments({ isActive: false });
+      logger.info(`Found ${inactiveCount} inactive windows to delete`);
 
       // Delete all inactive windows
       const result = await Window.deleteMany({ isActive: false });
       
-      logger.info(`Deleted ${result.deletedCount} inactive windows`);
+      logger.info(`Successfully deleted ${result.deletedCount} inactive windows`);
       
       return { deleted: result.deletedCount };
     } catch (error) {
       logger.error('Error deleting inactive windows:', error);
+      logger.error('Error details:', {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        stack: (error as Error).stack
+      });
       throw error;
     }
   }
