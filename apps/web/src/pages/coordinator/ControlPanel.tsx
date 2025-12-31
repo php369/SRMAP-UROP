@@ -4,6 +4,7 @@ import { Calendar, Clock, Award, Users, FileText, Plus, Edit2, RefreshCw, Trash2
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 
 type WindowType = 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
@@ -24,6 +25,8 @@ export function ControlPanel() {
   const [editingWindow, setEditingWindow] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [windowToDelete, setWindowToDelete] = useState<any>(null);
+  const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
+  const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
 
   const [windowForm, setWindowForm] = useState({
     windowTypes: ['proposal'] as WindowType[],
@@ -467,16 +470,19 @@ export function ControlPanel() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to release FINAL grades for ${projectType}? This will make all completed evaluations (CLA-1, CLA-2, CLA-3, and External) visible to students.`)) {
-      return;
-    }
+    setGradeReleaseProjectType(projectType);
+    setShowGradeReleaseModal(true);
+  };
+
+  const confirmGradeRelease = async () => {
+    if (!gradeReleaseProjectType) return;
 
     try {
-      const response = await api.post('/control/grades/release-final', { projectType });
+      const response = await api.post('/control/grades/release-final', { projectType: gradeReleaseProjectType });
 
       if (response.success) {
         toast.success((response as any).message || 'Final grades released successfully');
-        setReleasedGrades(prev => ({ ...prev, [projectType]: true }));
+        setReleasedGrades(prev => ({ ...prev, [gradeReleaseProjectType]: true }));
         fetchStats();
       } else {
         toast.error(response.error?.message || 'Failed to release final grades');
@@ -1347,6 +1353,22 @@ export function ControlPanel() {
             </div>
           </div>
         )}
+
+        {/* Grade Release Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showGradeReleaseModal}
+          onClose={() => {
+            setShowGradeReleaseModal(false);
+            setGradeReleaseProjectType(null);
+          }}
+          onConfirm={confirmGradeRelease}
+          title="Release Final Grades"
+          message={`Are you sure you want to release FINAL grades for ${gradeReleaseProjectType}?`}
+          details="This will make all completed evaluations (CLA-1, CLA-2, CLA-3, and External) visible to students. This action cannot be undone."
+          confirmText="Yes, Release Grades"
+          cancelText="Cancel"
+          type="warning"
+        />
       </div>
     </div>
   );

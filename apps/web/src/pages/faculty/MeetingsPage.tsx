@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, GlowButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
+import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
 import { api } from '../../utils/api';
 
 interface Meeting {
@@ -730,18 +731,11 @@ export function FacultyMeetingsPage() {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Meeting Date & Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={scheduleData.meetingDate}
-                      onChange={(e) => setScheduleData({ ...scheduleData, meetingDate: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  <SmartDateTimeInput
+                    value={scheduleData.meetingDate}
+                    onChange={(value) => setScheduleData({ ...scheduleData, meetingDate: value })}
+                    label="Meeting Date & Time"
+                  />
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -59,8 +59,9 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
     
-    // Otherwise use current time
+    // For start date or any field without minDateTime, use next minute from now
     const now = new Date();
+    now.setMinutes(now.getMinutes() + 1); // Add 1 minute to current time
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');

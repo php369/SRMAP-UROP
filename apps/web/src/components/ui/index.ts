@@ -10,6 +10,7 @@ export { Card } from './Card';
 export { Textarea } from './Textarea';
 export { Progress } from './Progress';
 export { Modal } from './Modal';
+export { ConfirmationModal } from './ConfirmationModal';
 export { Breadcrumb } from './Breadcrumb';
 export { CommandPalette } from './CommandPalette';
 export { RichTextEditor } from './RichTextEditor';
