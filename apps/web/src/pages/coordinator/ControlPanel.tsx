@@ -29,8 +29,8 @@ export function ControlPanel() {
   const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
 
   const [windowForm, setWindowForm] = useState({
-    windowTypes: ['proposal'] as WindowType[],
-    projectTypes: ['IDP'] as ProjectType[],
+    windowTypes: [] as WindowType[],
+    projectTypes: [] as ProjectType[],
     assessmentType: '' as AssessmentType | '',
     startDate: '',
     endDate: '',
@@ -85,7 +85,72 @@ export function ControlPanel() {
     }
   };
 
+  // Check if a window combination already exists (active or upcoming)
+  const isWindowCombinationDisabled = (windowType: WindowType, projectType: ProjectType, assessmentType?: AssessmentType) => {
+    const now = new Date();
+    
+    // Find existing windows that are active or upcoming for this combination
+    const existingWindow = windows.find(window => {
+      const end = new Date(window.endDate);
+      const isActiveOrUpcoming = now <= end; // Active (now between start-end) or upcoming (now < start)
+      
+      return window.windowType === windowType &&
+             window.projectType === projectType &&
+             window.assessmentType === assessmentType &&
+             isActiveOrUpcoming;
+    });
 
+    if (existingWindow) {
+      const start = new Date(existingWindow.startDate);
+      const end = new Date(existingWindow.endDate);
+      const isActive = now >= start && now <= end;
+      
+      return {
+        disabled: true,
+        reason: isActive ? 'Active window exists' : 'Upcoming window exists',
+        window: existingWindow,
+        status: isActive ? 'active' : 'upcoming'
+      };
+    }
+
+    return { disabled: false };
+  };
+
+  // Auto-deselect invalid window types when project types change
+  const handleProjectTypeChange = (projectType: ProjectType, isChecked: boolean) => {
+    let newProjectTypes: ProjectType[];
+    
+    if (isChecked) {
+      newProjectTypes = [...windowForm.projectTypes, projectType];
+    } else {
+      newProjectTypes = windowForm.projectTypes.filter(t => t !== projectType);
+    }
+
+    // Filter out invalid window types based on new project type selection
+    const validWindowTypes = windowForm.windowTypes.filter(windowType => {
+      // If no project types selected, keep all window types
+      if (newProjectTypes.length === 0) return true;
+      
+      // Check if this window type is valid for at least one selected project type
+      return newProjectTypes.some(projType => {
+        // Check workflow availability
+        const isWorkflowAvailable = isWindowTypeAvailable(windowType, projType);
+        
+        // Check for existing windows
+        const existingCheck = isWindowCombinationDisabled(windowType, projType, 
+          windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined
+        );
+        
+        return isWorkflowAvailable && !existingCheck.disabled;
+      });
+    });
+
+    setWindowForm({
+      ...windowForm,
+      projectTypes: newProjectTypes,
+      windowTypes: validWindowTypes
+    });
+  };
 
   const checkReleasedGrades = async () => {
     try {
@@ -157,9 +222,35 @@ export function ControlPanel() {
 
   const handleCreateWindow = async () => {
     // Validate window and project type selections
-    if (windowForm.windowTypes.length === 0 || windowForm.projectTypes.length === 0) {
-      toast.error('Please select at least one window type and one project type');
+    if (windowForm.projectTypes.length === 0) {
+      toast.error('Please select at least one project type');
       return;
+    }
+
+    if (windowForm.windowTypes.length === 0) {
+      toast.error('Please select at least one window type');
+      return;
+    }
+
+    // Additional validation: Check if selected combinations are still valid
+    for (const windowType of windowForm.windowTypes) {
+      for (const projectType of windowForm.projectTypes) {
+        // Check workflow availability
+        const isWorkflowAvailable = isWindowTypeAvailable(windowType, projectType);
+        if (!isWorkflowAvailable) {
+          toast.error(`${windowType.replace('_', ' ')} is not available for ${projectType} due to workflow prerequisites`);
+          return;
+        }
+
+        // Check for existing windows
+        const existingCheck = isWindowCombinationDisabled(windowType, projectType, 
+          windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined
+        );
+        if (existingCheck.disabled) {
+          toast.error(`Cannot create ${windowType.replace('_', ' ')} for ${projectType}: ${existingCheck.reason}`);
+          return;
+        }
+      }
     }
 
     // Validate dates based on mode
@@ -435,8 +526,8 @@ export function ControlPanel() {
 
   const resetForm = () => {
     setWindowForm({
-      windowTypes: ['proposal'],
-      projectTypes: ['IDP'],
+      windowTypes: [],
+      projectTypes: [],
       assessmentType: '',
       startDate: '',
       endDate: '',
@@ -715,6 +806,32 @@ export function ControlPanel() {
                   <span>{new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</span>
                 </div>
               </div>
+
+              {/* Validation Info */}
+              {!editingWindow && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="w-5 h-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-blue-800">Window Creation Rules</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        • <strong>Select project types first</strong> to enable window type selection
+                        <br />
+                        • Only one active or upcoming window allowed per combination (e.g., IDP Proposal)
+                        <br />
+                        • Invalid window types are automatically deselected when project types change
+                        <br />
+                        • Workflow sequence must be followed: Proposal → Application → Submission → Assessment → Grade Release
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Window Types Multi-Select */}
                 <div>
@@ -738,50 +855,79 @@ export function ControlPanel() {
                   ) : (
                     // Multi-select for creating with workflow validation
                     <div className="space-y-2">
-                      {(['proposal', 'application', 'submission', 'assessment', 'grade_release'] as WindowType[]).map((type) => {
-                        // Check if this window type is available for any selected project type
-                        const isAvailable = windowForm.projectTypes.length === 0 || 
-                          windowForm.projectTypes.some(projectType => 
+                      {windowForm.projectTypes.length === 0 ? (
+                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                          <p className="text-sm text-gray-500">
+                            Please select project type(s) first to enable window type selection
+                          </p>
+                        </div>
+                      ) : (
+                        (['proposal', 'application', 'submission', 'assessment', 'grade_release'] as WindowType[]).map((type) => {
+                          // Check workflow availability
+                          const isWorkflowAvailable = windowForm.projectTypes.some(projectType => 
                             isWindowTypeAvailable(type, projectType)
                           );
-                        
-                        return (
-                          <label 
-                            key={type} 
-                            className={`flex items-center space-x-2 ${
-                              isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={windowForm.windowTypes.includes(type)}
-                              disabled={!isAvailable}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setWindowForm({ 
-                                    ...windowForm, 
-                                    windowTypes: [...windowForm.windowTypes, type] 
-                                  });
-                                } else {
-                                  setWindowForm({ 
-                                    ...windowForm, 
-                                    windowTypes: windowForm.windowTypes.filter(t => t !== type) 
-                                  });
-                                }
-                              }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                            />
-                            <span className={`text-sm capitalize ${!isAvailable ? 'text-gray-400' : ''}`}>
-                              {type.replace('_', ' ')}
-                              {!isAvailable && (
-                                <span className="text-xs text-red-500 ml-1">
-                                  (Prerequisites missing)
-                                </span>
-                              )}
-                            </span>
-                          </label>
-                        );
-                      })}
+                          
+                          // Check for existing windows for each selected project type
+                          let existingWindowInfo = null;
+                          let hasExistingWindow = false;
+                          
+                          for (const projectType of windowForm.projectTypes) {
+                            const checkResult = isWindowCombinationDisabled(type, projectType, 
+                              type === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined
+                            );
+                            if (checkResult.disabled) {
+                              hasExistingWindow = true;
+                              existingWindowInfo = checkResult;
+                              break;
+                            }
+                          }
+                          
+                          const isDisabled = !isWorkflowAvailable || hasExistingWindow;
+                          
+                          return (
+                            <label 
+                              key={type} 
+                              className={`flex items-center space-x-2 ${
+                                isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={windowForm.windowTypes.includes(type)}
+                                disabled={isDisabled}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setWindowForm({ 
+                                      ...windowForm, 
+                                      windowTypes: [...windowForm.windowTypes, type] 
+                                    });
+                                  } else {
+                                    setWindowForm({ 
+                                      ...windowForm, 
+                                      windowTypes: windowForm.windowTypes.filter(t => t !== type) 
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                              />
+                              <span className={`text-sm capitalize ${isDisabled ? 'text-gray-400' : ''}`}>
+                                {type.replace('_', ' ')}
+                                {!isWorkflowAvailable && (
+                                  <span className="text-xs text-red-500 ml-1">
+                                    (Prerequisites missing)
+                                  </span>
+                                )}
+                                {hasExistingWindow && existingWindowInfo && (
+                                  <span className="text-xs text-amber-600 ml-1">
+                                    ({existingWindowInfo.reason})
+                                  </span>
+                                )}
+                              </span>
+                            </label>
+                          );
+                        })
+                      )}
                     </div>
                   )}
                 </div>
@@ -806,29 +952,49 @@ export function ControlPanel() {
                   ) : (
                     // Multi-select for creating
                     <div className="space-y-2">
-                      {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => (
-                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={windowForm.projectTypes.includes(type)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setWindowForm({ 
-                                  ...windowForm, 
-                                  projectTypes: [...windowForm.projectTypes, type] 
-                                });
-                              } else {
-                                setWindowForm({ 
-                                  ...windowForm, 
-                                  projectTypes: windowForm.projectTypes.filter(t => t !== type) 
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm">{type}</span>
-                        </label>
-                      ))}
+                      {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => {
+                        // Check for existing windows for each selected window type
+                        let existingWindowInfo = null;
+                        let hasExistingWindow = false;
+                        
+                        if (windowForm.windowTypes.length > 0) {
+                          for (const windowType of windowForm.windowTypes) {
+                            const checkResult = isWindowCombinationDisabled(windowType, type, 
+                              windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined
+                            );
+                            if (checkResult.disabled) {
+                              hasExistingWindow = true;
+                              existingWindowInfo = checkResult;
+                              break;
+                            }
+                          }
+                        }
+                        
+                        return (
+                          <label 
+                            key={type} 
+                            className={`flex items-center space-x-2 ${
+                              hasExistingWindow ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={windowForm.projectTypes.includes(type)}
+                              disabled={hasExistingWindow}
+                              onChange={(e) => handleProjectTypeChange(type, e.target.checked)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                            />
+                            <span className={`text-sm ${hasExistingWindow ? 'text-gray-400' : ''}`}>
+                              {type}
+                              {hasExistingWindow && existingWindowInfo && (
+                                <span className="text-xs text-amber-600 ml-1">
+                                  ({existingWindowInfo.reason})
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
