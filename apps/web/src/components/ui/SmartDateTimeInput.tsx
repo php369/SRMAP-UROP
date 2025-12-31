@@ -1,4 +1,5 @@
 import { Calendar } from 'lucide-react';
+import { useRef } from 'react';
 
 interface SmartDateTimeInputProps {
   value: string;
@@ -9,6 +10,7 @@ interface SmartDateTimeInputProps {
 }
 
 export function SmartDateTimeInput({ value, onChange, label, className = '', disabled = false }: SmartDateTimeInputProps) {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   // Format current time to datetime-local format
   const getCurrentDateTime = () => {
@@ -26,16 +28,27 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
     return getCurrentDateTime();
   };
 
+  // Handle click on the entire field
+  const handleFieldClick = () => {
+    if (disabled) return;
+    
+    // Set current time if empty
+    if (!value) {
+      onChange(getCurrentDateTime());
+    }
+    
+    // Focus the hidden input to open the picker
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.focus();
+      hiddenInputRef.current.click();
+    }
+  };
+
   // Handle input focus - set current time as default if empty
   const handleFocus = () => {
     if (!value) {
       onChange(getCurrentDateTime());
     }
-  };
-
-  // Handle input blur
-  const handleBlur = () => {
-    // No longer needed since we removed isOpen state
   };
 
   // Format display value
@@ -64,7 +77,7 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
           value={formatDisplayValue(value)}
           readOnly
           disabled={disabled}
-          onClick={() => !disabled && handleFocus()}
+          onClick={handleFieldClick}
           className={`w-full px-4 py-2 pr-10 border rounded-lg cursor-pointer bg-white ${
             disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
           } ${className}`}
@@ -72,20 +85,24 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
         />
         
         {/* Calendar icon */}
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <div 
+          className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+          onClick={handleFieldClick}
+        >
           <Calendar className="w-5 h-5 text-gray-400" />
         </div>
         
-        {/* Hidden datetime-local input covering entire area */}
+        {/* Hidden datetime-local input - positioned off-screen but accessible */}
         <input
+          ref={hiddenInputRef}
           type="datetime-local"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={handleFocus}
-          onBlur={handleBlur}
           min={getMinDateTime()}
           disabled={disabled}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          className="absolute -left-[9999px] opacity-0 pointer-events-none"
+          tabIndex={-1}
         />
       </div>
       
