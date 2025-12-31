@@ -23,8 +23,8 @@ export function ControlPanel() {
   const [editingWindow, setEditingWindow] = useState<any>(null);
 
   const [windowForm, setWindowForm] = useState({
-    windowType: 'proposal' as WindowType,
-    projectType: 'IDP' as ProjectType,
+    windowTypes: ['proposal'] as WindowType[],
+    projectTypes: ['IDP'] as ProjectType[],
     assessmentType: '' as AssessmentType | '',
     startDate: '',
     endDate: ''
@@ -136,8 +136,8 @@ export function ControlPanel() {
     };
     
     setWindowForm({
-      windowType: window.windowType,
-      projectType: window.projectType,
+      windowTypes: [window.windowType],
+      projectTypes: [window.projectType],
       assessmentType: window.assessmentType || '',
       startDate: formatToLocalDateTime(startDate),
       endDate: formatToLocalDateTime(endDate)
@@ -151,6 +151,11 @@ export function ControlPanel() {
       return;
     }
 
+    if (windowForm.windowTypes.length === 0 || windowForm.projectTypes.length === 0) {
+      toast.error('Please select at least one window type and one project type');
+      return;
+    }
+
     if (new Date(windowForm.endDate) <= new Date(windowForm.startDate)) {
       toast.error('End date must be after start date');
       return;
@@ -158,72 +163,92 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
-      // Log the raw input values
-      console.log('Raw form values:', {
-        startDate: windowForm.startDate,
-        endDate: windowForm.endDate
-      });
-      
       // Convert datetime-local values to ISO strings
-      // datetime-local format: "2025-12-08T06:01" (no timezone info)
-      // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
       const startDateObj = new Date(windowForm.startDate);
       const endDateObj = new Date(windowForm.endDate);
-      
-      console.log('Parsed as Date objects:', {
-        start: startDateObj.toString(),
-        end: endDateObj.toString()
-      });
-      
       const startDate = startDateObj.toISOString();
       const endDate = endDateObj.toISOString();
       
-      console.log('Converted to ISO (UTC):', {
-        startDate,
-        endDate
-      });
-      
-      const payload = {
-        windowType: windowForm.windowType,
-        projectType: windowForm.projectType,
-        assessmentType: windowForm.assessmentType || undefined,
-        startDate,
-        endDate
-      };
-      
-      console.log(editingWindow ? 'Updating window' : 'Creating window', 'with payload:', payload);
-      
-      const response = editingWindow
-        ? await api.put(`/control/windows/${editingWindow._id}`, payload)
-        : await api.post('/control/windows', payload);
-
-      console.log('Response:', response);
-      
-      if (response.success) {
-        toast.success(editingWindow ? 'Window updated successfully' : 'Window created successfully');
-        console.log('Window saved, updated data:', response.data);
-        setShowWindowForm(false);
-        setEditingWindow(null);
-        // Refresh windows list
-        await fetchWindows();
-        // Reset form
-        setWindowForm({
-          windowType: 'proposal',
-          projectType: 'IDP',
-          assessmentType: '',
-          startDate: '',
-          endDate: ''
-        });
+      if (editingWindow) {
+        // For editing, use single window approach (existing functionality)
+        const payload = {
+          windowType: windowForm.windowTypes[0],
+          projectType: windowForm.projectTypes[0],
+          assessmentType: windowForm.assessmentType || undefined,
+          startDate,
+          endDate
+        };
+        
+        const response = await api.put(`/control/windows/${editingWindow._id}`, payload);
+        
+        if (response.success) {
+          toast.success('Window updated successfully');
+          setShowWindowForm(false);
+          setEditingWindow(null);
+          await fetchWindows();
+          resetForm();
+        } else {
+          toast.error(response.error?.message || 'Failed to update window');
+        }
       } else {
-        console.error('Server error:', response.error);
-        toast.error(response.error?.message || `Failed to ${editingWindow ? 'update' : 'create'} window`);
+        // For creating, create multiple windows based on selections
+        const windowsToCreate = [];
+        
+        for (const windowType of windowForm.windowTypes) {
+          for (const projectType of windowForm.projectTypes) {
+            windowsToCreate.push({
+              windowType,
+              projectType,
+              assessmentType: windowForm.assessmentType || undefined,
+              startDate,
+              endDate
+            });
+          }
+        }
+        
+        console.log(`Creating ${windowsToCreate.length} windows:`, windowsToCreate);
+        
+        // Create all windows
+        const results = await Promise.allSettled(
+          windowsToCreate.map(payload => api.post('/control/windows', payload))
+        );
+        
+        // Count successful and failed creations
+        const successful = results.filter(result => 
+          result.status === 'fulfilled' && result.value.success
+        ).length;
+        
+        const failed = results.length - successful;
+        
+        if (successful > 0) {
+          if (failed === 0) {
+            toast.success(`Successfully created ${successful} window${successful > 1 ? 's' : ''}`);
+          } else {
+            toast.success(`Created ${successful} window${successful > 1 ? 's' : ''}, ${failed} failed`);
+          }
+          setShowWindowForm(false);
+          await fetchWindows();
+          resetForm();
+        } else {
+          toast.error('Failed to create any windows');
+        }
       }
     } catch (error: any) {
-      console.error('Request error:', error);
+      console.error('Create window error:', error);
       toast.error(error.message || 'Failed to create window');
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setWindowForm({
+      windowTypes: ['proposal'],
+      projectTypes: ['IDP'],
+      assessmentType: '',
+      startDate: '',
+      endDate: ''
+    });
   };
 
   const handleDeleteWindow = async (windowId: string) => {
@@ -479,36 +504,105 @@ export function ControlPanel() {
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
+                {/* Window Types Multi-Select */}
                 <div>
-                  <label className="block mb-2 text-sm font-medium">Window Type *</label>
-                  <select
-                    value={windowForm.windowType}
-                    onChange={(e) => setWindowForm({ ...windowForm, windowType: e.target.value as WindowType })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  >
-                    <option value="proposal">Proposal</option>
-                    <option value="application">Application</option>
-                    <option value="submission">Submission</option>
-                    <option value="assessment">Assessment</option>
-                    <option value="grade_release">Grade Release</option>
-                  </select>
+                  <label className="block mb-2 text-sm font-medium">
+                    Window Type{editingWindow ? '' : 's'} * 
+                    {!editingWindow && <span className="text-xs text-gray-500 ml-1">(Select one or more)</span>}
+                  </label>
+                  {editingWindow ? (
+                    // Single select for editing
+                    <select
+                      value={windowForm.windowTypes[0] || ''}
+                      onChange={(e) => setWindowForm({ ...windowForm, windowTypes: [e.target.value as WindowType] })}
+                      className="w-full px-4 py-2 border rounded-lg"
+                    >
+                      <option value="proposal">Proposal</option>
+                      <option value="application">Application</option>
+                      <option value="submission">Submission</option>
+                      <option value="assessment">Assessment</option>
+                      <option value="grade_release">Grade Release</option>
+                    </select>
+                  ) : (
+                    // Multi-select for creating
+                    <div className="space-y-2">
+                      {(['proposal', 'application', 'submission', 'assessment', 'grade_release'] as WindowType[]).map((type) => (
+                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={windowForm.windowTypes.includes(type)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWindowForm({ 
+                                  ...windowForm, 
+                                  windowTypes: [...windowForm.windowTypes, type] 
+                                });
+                              } else {
+                                setWindowForm({ 
+                                  ...windowForm, 
+                                  windowTypes: windowForm.windowTypes.filter(t => t !== type) 
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm capitalize">{type.replace('_', ' ')}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
+                {/* Project Types Multi-Select */}
                 <div>
-                  <label className="block mb-2 text-sm font-medium">Project Type *</label>
-                  <select
-                    value={windowForm.projectType}
-                    onChange={(e) => setWindowForm({ ...windowForm, projectType: e.target.value as ProjectType })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  >
-                    <option value="IDP">IDP</option>
-                    <option value="UROP">UROP</option>
-                    <option value="CAPSTONE">CAPSTONE</option>
-                  </select>
+                  <label className="block mb-2 text-sm font-medium">
+                    Project Type{editingWindow ? '' : 's'} * 
+                    {!editingWindow && <span className="text-xs text-gray-500 ml-1">(Select one or more)</span>}
+                  </label>
+                  {editingWindow ? (
+                    // Single select for editing
+                    <select
+                      value={windowForm.projectTypes[0] || ''}
+                      onChange={(e) => setWindowForm({ ...windowForm, projectTypes: [e.target.value as ProjectType] })}
+                      className="w-full px-4 py-2 border rounded-lg"
+                    >
+                      <option value="IDP">IDP</option>
+                      <option value="UROP">UROP</option>
+                      <option value="CAPSTONE">CAPSTONE</option>
+                    </select>
+                  ) : (
+                    // Multi-select for creating
+                    <div className="space-y-2">
+                      {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => (
+                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={windowForm.projectTypes.includes(type)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWindowForm({ 
+                                  ...windowForm, 
+                                  projectTypes: [...windowForm.projectTypes, type] 
+                                });
+                              } else {
+                                setWindowForm({ 
+                                  ...windowForm, 
+                                  projectTypes: windowForm.projectTypes.filter(t => t !== type) 
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {(windowForm.windowType === 'submission' || windowForm.windowType === 'assessment') && (
-                  <div>
+                {/* Assessment Type - Show if any selected window type needs it */}
+                {(windowForm.windowTypes.some(type => type === 'submission' || type === 'assessment')) && (
+                  <div className="md:col-span-2">
                     <label className="block mb-2 text-sm font-medium">Assessment Type</label>
                     <select
                       value={windowForm.assessmentType}
@@ -537,6 +631,27 @@ export function ControlPanel() {
                 />
               </div>
 
+              {/* Show preview of windows to be created */}
+              {!editingWindow && windowForm.windowTypes.length > 0 && windowForm.projectTypes.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">
+                    Windows to be created: {windowForm.windowTypes.length * windowForm.projectTypes.length}
+                  </h4>
+                  <div className="text-xs text-blue-600 space-y-1">
+                    {windowForm.windowTypes.map(windowType => 
+                      windowForm.projectTypes.map(projectType => (
+                        <div key={`${windowType}-${projectType}`}>
+                          • {windowType.replace('_', ' ')} - {projectType}
+                          {windowForm.assessmentType && (windowType === 'submission' || windowType === 'assessment') && 
+                            ` (${windowForm.assessmentType})`
+                          }
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-4 mt-4">
                 <button
                   onClick={handleCreateWindow}
@@ -549,13 +664,7 @@ export function ControlPanel() {
                   onClick={() => {
                     setShowWindowForm(false);
                     setEditingWindow(null);
-                    setWindowForm({
-                      windowType: 'proposal',
-                      projectType: 'IDP',
-                      assessmentType: '',
-                      startDate: '',
-                      endDate: ''
-                    });
+                    resetForm();
                   }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >

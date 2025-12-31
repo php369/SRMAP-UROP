@@ -65,7 +65,6 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
         <input
           type="text"
           value={formatDisplayValue(value)}
-          onFocus={handleFocus}
           readOnly
           disabled={disabled}
           className={`w-full px-4 py-2 pr-10 border rounded-lg cursor-pointer bg-white ${
@@ -74,12 +73,15 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
           placeholder="Click to select date and time"
         />
         
-        {/* Calendar icon */}
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        {/* Calendar icon - now clickable */}
+        <div 
+          className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+          onClick={() => !disabled && handleFocus()}
+        >
           <Calendar className="w-5 h-5 text-gray-400" />
         </div>
         
-        {/* Hidden datetime-local input */}
+        {/* Hidden datetime-local input covering entire area */}
         <input
           type="datetime-local"
           value={value}
@@ -88,8 +90,7 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
           onBlur={handleBlur}
           min={getMinDateTime()}
           disabled={disabled}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          style={{ zIndex: isOpen ? 10 : 1 }}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
       </div>
       
