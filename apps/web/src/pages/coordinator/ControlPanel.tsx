@@ -27,7 +27,9 @@ export function ControlPanel() {
     projectTypes: ['IDP'] as ProjectType[],
     assessmentType: '' as AssessmentType | '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    useCommonDates: true, // Toggle between common and individual dates
+    individualDates: {} as Record<string, { startDate: string; endDate: string }> // Individual dates for each combination
   });
 
   useEffect(() => {
@@ -140,7 +142,9 @@ export function ControlPanel() {
       projectTypes: [window.projectType],
       assessmentType: window.assessmentType || '',
       startDate: formatToLocalDateTime(startDate),
-      endDate: formatToLocalDateTime(endDate)
+      endDate: formatToLocalDateTime(endDate),
+      useCommonDates: true,
+      individualDates: {}
     });
     setShowWindowForm(true);
   };
@@ -159,6 +163,29 @@ export function ControlPanel() {
     if (new Date(windowForm.endDate) <= new Date(windowForm.startDate)) {
       toast.error('End date must be after start date');
       return;
+    }
+
+    // Validate individual dates if using individual timing
+    if (!windowForm.useCommonDates) {
+      const windowCombinations = [];
+      for (const windowType of windowForm.windowTypes) {
+        for (const projectType of windowForm.projectTypes) {
+          windowCombinations.push(`${windowType}-${projectType}`);
+        }
+      }
+      
+      for (const windowKey of windowCombinations) {
+        const individualDate = windowForm.individualDates[windowKey];
+        if (!individualDate || !individualDate.startDate || !individualDate.endDate) {
+          toast.error(`Please set dates for ${windowKey.replace('-', ' - ')}`);
+          return;
+        }
+        
+        if (new Date(individualDate.endDate) <= new Date(individualDate.startDate)) {
+          toast.error(`End date must be after start date for ${windowKey.replace('-', ' - ')}`);
+          return;
+        }
+      }
     }
 
     setLoading(true);
@@ -196,12 +223,27 @@ export function ControlPanel() {
         
         for (const windowType of windowForm.windowTypes) {
           for (const projectType of windowForm.projectTypes) {
+            const windowKey = `${windowType}-${projectType}`;
+            
+            // Use individual dates if available, otherwise use common dates
+            let windowStartDate, windowEndDate;
+            
+            if (!windowForm.useCommonDates && windowForm.individualDates[windowKey]) {
+              const individualStart = new Date(windowForm.individualDates[windowKey].startDate);
+              const individualEnd = new Date(windowForm.individualDates[windowKey].endDate);
+              windowStartDate = individualStart.toISOString();
+              windowEndDate = individualEnd.toISOString();
+            } else {
+              windowStartDate = startDate;
+              windowEndDate = endDate;
+            }
+            
             windowsToCreate.push({
               windowType,
               projectType,
               assessmentType: windowForm.assessmentType || undefined,
-              startDate,
-              endDate
+              startDate: windowStartDate,
+              endDate: windowEndDate
             });
           }
         }
@@ -241,13 +283,70 @@ export function ControlPanel() {
     }
   };
 
+  // Helper function to get window combinations
+  const getWindowCombinations = () => {
+    const combinations = [];
+    for (const windowType of windowForm.windowTypes) {
+      for (const projectType of windowForm.projectTypes) {
+        combinations.push({
+          key: `${windowType}-${projectType}`,
+          windowType,
+          projectType,
+          label: `${windowType.replace('_', ' ')} - ${projectType}`
+        });
+      }
+    }
+    return combinations;
+  };
+
+  // Helper function to update individual dates
+  const updateIndividualDate = (windowKey: string, field: 'startDate' | 'endDate', value: string) => {
+    setWindowForm(prev => ({
+      ...prev,
+      individualDates: {
+        ...prev.individualDates,
+        [windowKey]: {
+          ...prev.individualDates[windowKey],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  // Helper function to copy common dates to all individual windows
+  const copyCommonDatesToAll = () => {
+    if (!windowForm.startDate || !windowForm.endDate) {
+      toast.error('Please set common dates first');
+      return;
+    }
+    
+    const combinations = getWindowCombinations();
+    const newIndividualDates: Record<string, { startDate: string; endDate: string }> = {};
+    
+    combinations.forEach(({ key }) => {
+      newIndividualDates[key] = {
+        startDate: windowForm.startDate,
+        endDate: windowForm.endDate
+      };
+    });
+    
+    setWindowForm(prev => ({
+      ...prev,
+      individualDates: newIndividualDates
+    }));
+    
+    toast.success('Common dates copied to all windows');
+  };
+
   const resetForm = () => {
     setWindowForm({
       windowTypes: ['proposal'],
       projectTypes: ['IDP'],
       assessmentType: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      useCommonDates: true,
+      individualDates: {}
     });
   };
 
@@ -618,17 +717,131 @@ export function ControlPanel() {
                   </div>
                 )}
 
-                <SmartDateTimeInput
-                  value={windowForm.startDate}
-                  onChange={(value) => setWindowForm({ ...windowForm, startDate: value })}
-                  label="Start Date"
-                />
+                {/* Date and Time Configuration */}
+                <div className="md:col-span-2">
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium text-gray-900">Date & Time Configuration</h4>
+                      {!editingWindow && windowForm.windowTypes.length > 1 || windowForm.projectTypes.length > 1 ? (
+                        <div className="flex items-center space-x-3">
+                          <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="dateMode"
+                              checked={windowForm.useCommonDates}
+                              onChange={() => setWindowForm({ ...windowForm, useCommonDates: true })}
+                              className="text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">Common dates</span>
+                          </label>
+                          <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="dateMode"
+                              checked={!windowForm.useCommonDates}
+                              onChange={() => setWindowForm({ ...windowForm, useCommonDates: false })}
+                              className="text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">Individual dates</span>
+                          </label>
+                        </div>
+                      ) : null}
+                    </div>
 
-                <SmartDateTimeInput
-                  value={windowForm.endDate}
-                  onChange={(value) => setWindowForm({ ...windowForm, endDate: value })}
-                  label="End Date"
-                />
+                    {/* Common Dates Section */}
+                    {(editingWindow || windowForm.useCommonDates) && (
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <SmartDateTimeInput
+                          value={windowForm.startDate}
+                          onChange={(value) => setWindowForm({ ...windowForm, startDate: value })}
+                          label={windowForm.useCommonDates ? "Common Start Date" : "Start Date"}
+                        />
+                        <SmartDateTimeInput
+                          value={windowForm.endDate}
+                          onChange={(value) => setWindowForm({ ...windowForm, endDate: value })}
+                          label={windowForm.useCommonDates ? "Common End Date" : "End Date"}
+                        />
+                      </div>
+                    )}
+
+                    {/* Individual Dates Section */}
+                    {!editingWindow && !windowForm.useCommonDates && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-sm font-medium text-gray-700">Individual Window Dates</h5>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={copyCommonDatesToAll}
+                              className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              disabled={!windowForm.startDate || !windowForm.endDate}
+                            >
+                              Copy from common dates
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const combinations = getWindowCombinations();
+                                const newIndividualDates: Record<string, { startDate: string; endDate: string }> = {};
+                                
+                                // Set sequential dates (each window starts when the previous ends)
+                                const baseStart = new Date();
+                                baseStart.setHours(baseStart.getHours() + 1); // Start 1 hour from now
+                                
+                                combinations.forEach(({ key }, index) => {
+                                  const startTime = new Date(baseStart.getTime() + (index * 7 * 24 * 60 * 60 * 1000)); // 1 week apart
+                                  const endTime = new Date(startTime.getTime() + (5 * 24 * 60 * 60 * 1000)); // 5 days duration
+                                  
+                                  const formatToLocalDateTime = (date: Date) => {
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const hours = String(date.getHours()).padStart(2, '0');
+                                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                                  };
+                                  
+                                  newIndividualDates[key] = {
+                                    startDate: formatToLocalDateTime(startTime),
+                                    endDate: formatToLocalDateTime(endTime)
+                                  };
+                                });
+                                
+                                setWindowForm(prev => ({
+                                  ...prev,
+                                  individualDates: newIndividualDates
+                                }));
+                                
+                                toast.success('Sequential dates set (1 week apart, 5 days each)');
+                              }}
+                              className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                            >
+                              Quick Fill Sequential
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {getWindowCombinations().map(({ key, label }) => (
+                          <div key={key} className="border rounded p-3 bg-white">
+                            <h6 className="text-sm font-medium text-gray-800 mb-3 capitalize">{label}</h6>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <SmartDateTimeInput
+                                value={windowForm.individualDates[key]?.startDate || ''}
+                                onChange={(value) => updateIndividualDate(key, 'startDate', value)}
+                                label="Start Date"
+                              />
+                              <SmartDateTimeInput
+                                value={windowForm.individualDates[key]?.endDate || ''}
+                                onChange={(value) => updateIndividualDate(key, 'endDate', value)}
+                                label="End Date"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Show preview of windows to be created */}
@@ -637,17 +850,55 @@ export function ControlPanel() {
                   <h4 className="text-sm font-medium text-blue-800 mb-2">
                     Windows to be created: {windowForm.windowTypes.length * windowForm.projectTypes.length}
                   </h4>
-                  <div className="text-xs text-blue-600 space-y-1">
-                    {windowForm.windowTypes.map(windowType => 
-                      windowForm.projectTypes.map(projectType => (
-                        <div key={`${windowType}-${projectType}`}>
-                          • {windowType.replace('_', ' ')} - {projectType}
-                          {windowForm.assessmentType && (windowType === 'submission' || windowType === 'assessment') && 
-                            ` (${windowForm.assessmentType})`
-                          }
+                  <div className="text-xs text-blue-600 space-y-2">
+                    {getWindowCombinations().map(({ key, windowType, projectType }) => {
+                      const individualDate = windowForm.individualDates[key];
+                      const hasIndividualDate = !windowForm.useCommonDates && individualDate?.startDate && individualDate?.endDate;
+                      
+                      return (
+                        <div key={key} className="border-l-2 border-blue-300 pl-2">
+                          <div className="font-medium">
+                            • {windowType.replace('_', ' ')} - {projectType}
+                            {windowForm.assessmentType && (windowType === 'submission' || windowType === 'assessment') && 
+                              ` (${windowForm.assessmentType})`
+                            }
+                          </div>
+                          {hasIndividualDate && (
+                            <div className="text-blue-500 ml-2 mt-1">
+                              {new Date(individualDate.startDate).toLocaleString('en-IN', { 
+                                dateStyle: 'short', 
+                                timeStyle: 'short',
+                                hour12: true 
+                              })} → {new Date(individualDate.endDate).toLocaleString('en-IN', { 
+                                dateStyle: 'short', 
+                                timeStyle: 'short',
+                                hour12: true 
+                              })}
+                            </div>
+                          )}
+                          {windowForm.useCommonDates && windowForm.startDate && windowForm.endDate && (
+                            <div className="text-blue-500 ml-2 mt-1">
+                              {new Date(windowForm.startDate).toLocaleString('en-IN', { 
+                                dateStyle: 'short', 
+                                timeStyle: 'short',
+                                hour12: true 
+                              })} → {new Date(windowForm.endDate).toLocaleString('en-IN', { 
+                                dateStyle: 'short', 
+                                timeStyle: 'short',
+                                hour12: true 
+                              })}
+                            </div>
+                          )}
                         </div>
-                      ))
-                    )}
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Date mode indicator */}
+                  <div className="mt-3 pt-2 border-t border-blue-200">
+                    <span className="text-xs font-medium text-blue-700">
+                      {windowForm.useCommonDates ? '📅 Using common dates for all windows' : '🗓️ Using individual dates per window'}
+                    </span>
                   </div>
                 </div>
               )}
