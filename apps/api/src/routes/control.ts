@@ -428,28 +428,181 @@ router.post('/windows/update-statuses', authenticate, isCoordinatorOrAdmin, asyn
  */
 router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
-    console.log('Starting delete inactive windows request...');
-    const result = await WindowService.deleteInactiveWindows();
-    console.log('Delete result:', result);
+    console.log('=== DELETE INACTIVE WINDOWS REQUEST ===');
+    console.log('User:', req.user?.id, req.user?.role);
+    console.log('Timestamp:', new Date().toISOString());
+    
+    // Test database connection first
+    console.log('Testing database connection...');
+    const testCount = await Window.countDocuments();
+    console.log('Total windows in database:', testCount);
+    
+    // Update window statuses first
+    console.log('Updating window statuses...');
+    const now = new Date();
+    
+    const activateResult = await Window.updateMany(
+      {
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        isActive: false
+      },
+      { isActive: true }
+    );
+    console.log('Activated windows:', activateResult.modifiedCount);
+
+    const deactivateResult = await Window.updateMany(
+      {
+        $or: [
+          { endDate: { $lt: now } },
+          { startDate: { $gt: now } }
+        ],
+        isActive: true
+      },
+      { isActive: false }
+    );
+    console.log('Deactivated windows:', deactivateResult.modifiedCount);
+    
+    // Count inactive windows
+    const inactiveCount = await Window.countDocuments({ isActive: false });
+    console.log('Inactive windows found:', inactiveCount);
+    
+    if (inactiveCount === 0) {
+      console.log('No inactive windows to delete');
+      return res.json({
+        success: true,
+        message: 'No inactive windows to delete',
+        data: { deleted: 0 }
+      });
+    }
+    
+    // Delete inactive windows
+    console.log('Deleting inactive windows...');
+    const deleteResult = await Window.deleteMany({ isActive: false });
+    console.log('Delete result:', deleteResult);
+    
+    console.log('=== DELETE OPERATION COMPLETED ===');
     
     res.json({
       success: true,
-      message: `Deleted ${result.deleted} inactive windows`,
-      data: result
+      message: `Deleted ${deleteResult.deletedCount} inactive windows`,
+      data: { deleted: deleteResult.deletedCount }
     });
+    
   } catch (error: any) {
-    console.error('Delete inactive windows error:', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('=== DELETE INACTIVE WINDOWS ERROR ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', error);
+    
     res.status(500).json({
       success: false,
       error: {
         code: 'DELETE_INACTIVE_FAILED',
         message: 'Failed to delete inactive windows',
-        details: error.message
+        details: error.message,
+        errorName: error.name
+      }
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/control/test-basic
+ * @desc    Basic test endpoint that doesn't use any models
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/test-basic', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('=== BASIC TEST ENDPOINT ===');
+    console.log('User:', req.user?.id, req.user?.role);
+    console.log('Timestamp:', new Date().toISOString());
+    
+    res.json({
+      success: true,
+      message: 'Basic test endpoint working',
+      data: {
+        timestamp: new Date().toISOString(),
+        user: req.user?.id,
+        role: req.user?.role
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('Basic test error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'BASIC_TEST_FAILED',
+        message: error.message
+      }
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/control/windows/test
+ * @desc    Test endpoint to verify Window model access
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/windows/test', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    console.log('=== WINDOW MODEL TEST ===');
+    
+    // Test basic model access
+    const totalCount = await Window.countDocuments();
+    console.log('Total windows:', totalCount);
+    
+    // Test finding windows
+    const allWindows = await Window.find().limit(5);
+    console.log('Sample windows:', allWindows.length);
+    
+    // Test current time calculations
+    const now = new Date();
+    console.log('Current time:', now.toISOString());
+    
+    const activeCount = await Window.countDocuments({
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+    console.log('Should be active:', activeCount);
+    
+    const inactiveCount = await Window.countDocuments({
+      $or: [
+        { endDate: { $lt: now } },
+        { startDate: { $gt: now } }
+      ]
+    });
+    console.log('Should be inactive:', inactiveCount);
+    
+    const currentlyActive = await Window.countDocuments({ isActive: true });
+    const currentlyInactive = await Window.countDocuments({ isActive: false });
+    
+    console.log('Currently marked active:', currentlyActive);
+    console.log('Currently marked inactive:', currentlyInactive);
+    
+    res.json({
+      success: true,
+      data: {
+        totalWindows: totalCount,
+        sampleWindows: allWindows.length,
+        shouldBeActive: activeCount,
+        shouldBeInactive: inactiveCount,
+        currentlyActive,
+        currentlyInactive,
+        currentTime: now.toISOString()
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('Window model test error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'WINDOW_TEST_FAILED',
+        message: error.message,
+        name: error.name
       }
     });
   }

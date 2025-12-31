@@ -256,6 +256,40 @@ export function ControlPanel() {
     }
   };
 
+  const handleTestBasic = async () => {
+    try {
+      console.log('Testing basic endpoint...');
+      const response = await api.get('/control/test-basic');
+      console.log('Basic test response:', response);
+      
+      if (response.success) {
+        toast.success('Basic endpoint test successful');
+      } else {
+        toast.error('Basic endpoint test failed');
+      }
+    } catch (error: any) {
+      console.error('Basic test error:', error);
+      toast.error('Basic endpoint test failed');
+    }
+  };
+
+  const handleTestWindowModel = async () => {
+    try {
+      console.log('Testing window model access...');
+      const response = await api.get('/control/windows/test');
+      console.log('Test response:', response);
+      
+      if (response.success) {
+        toast.success('Window model test successful - check console for details');
+      } else {
+        toast.error('Window model test failed');
+      }
+    } catch (error: any) {
+      console.error('Test error:', error);
+      toast.error('Window model test failed');
+    }
+  };
+
   const handleDeleteInactiveWindows = async () => {
     if (inactiveWindowsCount === 0) {
       toast.error('No inactive windows to delete');
@@ -490,6 +524,20 @@ export function ControlPanel() {
               Manage Windows
             </h2>
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleTestBasic}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                title="Test basic endpoint"
+              >
+                Test Basic
+              </button>
+              <button
+                onClick={handleTestWindowModel}
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+                title="Test window model access"
+              >
+                Test Model
+              </button>
               {inactiveWindowsCount > 0 && (
                 <button
                   onClick={handleDeleteInactiveWindows}
