@@ -1056,20 +1056,27 @@ export function ControlPanel() {
           )}
 
           {/* Windows List */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Show/Hide Inactive Windows Toggle */}
-            <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-medium text-gray-700">Window Display Options:</span>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showInactiveWindows}
-                    onChange={(e) => setShowInactiveWindows(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
+                <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-600">Show inactive windows</span>
-                </label>
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={() => setShowInactiveWindows(!showInactiveWindows)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      showInactiveWindows ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        showInactiveWindows ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
               <div className="text-xs text-gray-500">
                 {windows.filter(w => {
@@ -1077,92 +1084,137 @@ export function ControlPanel() {
                   const start = new Date(w.startDate);
                   const end = new Date(w.endDate);
                   const isActive = now >= start && now <= end;
-                  return showInactiveWindows || isActive || now < start;
+                  const hasEnded = now > end;
+                  return showInactiveWindows || isActive || !hasEnded;
                 }).length} of {windows.length} windows shown
               </div>
             </div>
 
-            {windows
-              .filter(window => {
-                const now = new Date();
-                const start = new Date(window.startDate);
-                const end = new Date(window.endDate);
-                const isActive = now >= start && now <= end;
-                const hasEnded = now > end;
-                
-                // Show active and upcoming windows always, inactive only if toggle is on
-                return showInactiveWindows || isActive || !hasEnded;
-              })
-              .map((window) => {
-              const now = new Date();
-              const start = new Date(window.startDate);
-              const end = new Date(window.endDate);
-              const isActive = now >= start && now <= end;
-              const hasEnded = now > end;
-              const isUpcoming = now < start;
-              
+            {/* Windows organized by project type */}
+            {['IDP', 'UROP', 'CAPSTONE'].map(projectType => {
+              const projectWindows = windows
+                .filter(window => {
+                  const now = new Date();
+                  const start = new Date(window.startDate);
+                  const end = new Date(window.endDate);
+                  const isActive = now >= start && now <= end;
+                  const hasEnded = now > end;
+                  
+                  // Filter by project type and visibility
+                  return window.projectType === projectType && 
+                         (showInactiveWindows || isActive || !hasEnded);
+                })
+                .sort((a, b) => {
+                  const now = new Date();
+                  const aStart = new Date(a.startDate);
+                  const aEnd = new Date(a.endDate);
+                  const bStart = new Date(b.startDate);
+                  const bEnd = new Date(b.endDate);
+                  
+                  const aIsActive = now >= aStart && now <= aEnd;
+                  const aIsUpcoming = now < aStart;
+                  
+                  const bIsActive = now >= bStart && now <= bEnd;
+                  const bIsUpcoming = now < bStart;
+                  
+                  // Priority: Active > Upcoming > Inactive
+                  const aStatus = aIsActive ? 3 : aIsUpcoming ? 2 : 1;
+                  const bStatus = bIsActive ? 3 : bIsUpcoming ? 2 : 1;
+                  
+                  if (aStatus !== bStatus) {
+                    return bStatus - aStatus; // Higher status first
+                  }
+                  
+                  // Within same status, sort by start time (latest first)
+                  return bStart.getTime() - aStart.getTime();
+                });
+
+              if (projectWindows.length === 0) return null;
+
               return (
-                <div
-                  key={window._id}
-                  className={`p-4 border-2 rounded-lg ${
-                    isActive 
-                      ? 'border-green-500 bg-green-50' 
-                      : hasEnded 
-                      ? 'border-gray-300 bg-gray-50' 
-                      : 'border-blue-300 bg-blue-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold capitalize">
-                          {window.windowType.replace('_', ' ')} - {window.projectType}
-                        </h3>
-                        {window.assessmentType && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
-                            {window.assessmentType}
-                          </span>
-                        )}
-                        {isActive && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium flex items-center gap-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            Active
-                          </span>
-                        )}
-                        {hasEnded && (
-                          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm font-medium">
-                            Inactive
-                          </span>
-                        )}
-                        {isUpcoming && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
-                            Upcoming
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        <p>Start: {new Date(window.startDate).toLocaleString('en-IN', { 
-                          dateStyle: 'medium', 
-                          timeStyle: 'short',
-                          hour12: true 
-                        })}</p>
-                        <p>End: {new Date(window.endDate).toLocaleString('en-IN', { 
-                          dateStyle: 'medium', 
-                          timeStyle: 'short',
-                          hour12: true 
-                        })}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEditWindow(window)}
-                        disabled={hasEnded}
-                        className="p-2 text-blue-500 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={hasEnded ? 'Cannot edit ended window' : 'Edit window'}
-                      >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                <div key={projectType} className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <h2 className="text-xl font-bold text-gray-800">{projectType}</h2>
+                    <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
+                      {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {projectWindows.map((window) => {
+                      const now = new Date();
+                      const start = new Date(window.startDate);
+                      const end = new Date(window.endDate);
+                      const isActive = now >= start && now <= end;
+                      const hasEnded = now > end;
+                      const isUpcoming = now < start;
+                      
+                      return (
+                        <div
+                          key={window._id}
+                          className={`p-4 border-2 rounded-lg ${
+                            isActive 
+                              ? 'border-green-500 bg-green-50' 
+                              : hasEnded 
+                              ? 'border-gray-300 bg-gray-50' 
+                              : 'border-blue-300 bg-blue-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-bold capitalize">
+                                  {window.windowType.replace('_', ' ')}
+                                </h3>
+                                {window.assessmentType && (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                                    {window.assessmentType}
+                                  </span>
+                                )}
+                                {isActive && (
+                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                    Active
+                                  </span>
+                                )}
+                                {hasEnded && (
+                                  <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm font-medium">
+                                    Inactive
+                                  </span>
+                                )}
+                                {isUpcoming && (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                                    Upcoming
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                <p>Start: {new Date(window.startDate).toLocaleString('en-IN', { 
+                                  dateStyle: 'medium', 
+                                  timeStyle: 'short',
+                                  hour12: true 
+                                })}</p>
+                                <p>End: {new Date(window.endDate).toLocaleString('en-IN', { 
+                                  dateStyle: 'medium', 
+                                  timeStyle: 'short',
+                                  hour12: true 
+                                })}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEditWindow(window)}
+                                disabled={hasEnded}
+                                className="p-2 text-blue-500 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={hasEnded ? 'Cannot edit ended window' : 'Edit window'}
+                              >
+                                <Edit2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
