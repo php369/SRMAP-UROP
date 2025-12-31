@@ -20,6 +20,8 @@ export function ControlPanel() {
     'CAPSTONE': false
   });
   const [showWindowForm, setShowWindowForm] = useState(false);
+  const [showCreationModeModal, setShowCreationModeModal] = useState(false);
+  const [creationMode, setCreationMode] = useState<'individual' | 'bulk'>('individual');
   const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [editingWindow, setEditingWindow] = useState<any>(null);
@@ -35,7 +37,18 @@ export function ControlPanel() {
     startDate: '',
     endDate: '',
     useCommonDates: true, // Toggle between common and individual dates
-    individualDates: {} as Record<string, { startDate: string; endDate: string }> // Individual dates for each combination
+    individualDates: {} as Record<string, { startDate: string; endDate: string }>, // Individual dates for each combination
+    // Bulk creation settings
+    bulkSettings: {
+      semesterStartDate: '',
+      proposalDuration: 7, // days
+      applicationDuration: 14, // days
+      submissionDuration: 7, // days
+      assessmentDuration: 14, // days
+      gradeReleaseDuration: 3, // days
+      gapBetweenPhases: 1, // days
+      gapBetweenAssessments: 3 // days
+    }
   });
 
   useEffect(() => {
@@ -114,6 +127,266 @@ export function ControlPanel() {
     }
 
     return { disabled: false };
+  };
+
+  // Enhanced sequential window validation
+  const validateSequentialWindows = (windowType: WindowType, projectType: ProjectType, assessmentType?: AssessmentType, proposedStartDate?: Date) => {
+    const now = new Date();
+    
+    // For proposal windows, check if there's already an active IDP proposal
+    if (windowType === 'proposal' && projectType !== 'IDP') {
+      const activeIdpProposal = windows.find(w => 
+        w.windowType === 'proposal' && 
+        w.projectType === 'IDP' && 
+        now >= new Date(w.startDate) && 
+        now <= new Date(w.endDate)
+      );
+      
+      if (activeIdpProposal && proposedStartDate) {
+        const idpEndDate = new Date(activeIdpProposal.endDate);
+        if (proposedStartDate <= idpEndDate) {
+          return {
+            valid: false,
+            reason: `${projectType} proposal must start after IDP proposal ends (${idpEndDate.toLocaleDateString()})`
+          };
+        }
+      }
+    }
+
+    // For application windows, ensure proposal window has ended
+    if (windowType === 'application') {
+      const proposalWindow = windows.find(w => 
+        w.windowType === 'proposal' && 
+        w.projectType === projectType
+      );
+      
+      if (!proposalWindow) {
+        return {
+          valid: false,
+          reason: `Proposal window for ${projectType} must be created first`
+        };
+      }
+      
+      if (proposedStartDate) {
+        const proposalEndDate = new Date(proposalWindow.endDate);
+        if (proposedStartDate <= proposalEndDate) {
+          return {
+            valid: false,
+            reason: `Application window must start after proposal window ends (${proposalEndDate.toLocaleDateString()})`
+          };
+        }
+      }
+    }
+
+    // For submission windows, ensure application window has ended
+    if (windowType === 'submission') {
+      const applicationWindow = windows.find(w => 
+        w.windowType === 'application' && 
+        w.projectType === projectType
+      );
+      
+      if (!applicationWindow) {
+        return {
+          valid: false,
+          reason: `Application window for ${projectType} must be created first`
+        };
+      }
+      
+      if (proposedStartDate) {
+        const applicationEndDate = new Date(applicationWindow.endDate);
+        if (proposedStartDate <= applicationEndDate) {
+          return {
+            valid: false,
+            reason: `Submission window must start after application window ends (${applicationEndDate.toLocaleDateString()})`
+          };
+        }
+      }
+
+      // For CLA assessments, ensure sequential order
+      if (assessmentType && assessmentType !== 'CLA-1') {
+        const claOrder: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+        const currentIndex = claOrder.indexOf(assessmentType);
+        
+        if (currentIndex > 0) {
+          const previousAssessment = claOrder[currentIndex - 1];
+          const previousSubmissionWindow = windows.find(w => 
+            w.windowType === 'submission' && 
+            w.projectType === projectType &&
+            w.assessmentType === previousAssessment
+          );
+          
+          if (!previousSubmissionWindow) {
+            return {
+              valid: false,
+              reason: `${previousAssessment} submission window must be created first`
+            };
+          }
+          
+          if (proposedStartDate) {
+            const previousEndDate = new Date(previousSubmissionWindow.endDate);
+            if (proposedStartDate <= previousEndDate) {
+              return {
+                valid: false,
+                reason: `${assessmentType} submission must start after ${previousAssessment} submission ends (${previousEndDate.toLocaleDateString()})`
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // For assessment windows, ensure submission window has ended
+    if (windowType === 'assessment') {
+      const submissionWindow = windows.find(w => 
+        w.windowType === 'submission' && 
+        w.projectType === projectType &&
+        w.assessmentType === assessmentType
+      );
+      
+      if (!submissionWindow) {
+        return {
+          valid: false,
+          reason: `Submission window for ${projectType} ${assessmentType || ''} must be created first`
+        };
+      }
+      
+      if (proposedStartDate) {
+        const submissionEndDate = new Date(submissionWindow.endDate);
+        if (proposedStartDate <= submissionEndDate) {
+          return {
+            valid: false,
+            reason: `Assessment window must start after submission window ends (${submissionEndDate.toLocaleDateString()})`
+          };
+        }
+      }
+    }
+
+    // For grade release, ensure all assessments are completed
+    if (windowType === 'grade_release') {
+      const requiredAssessments: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+      
+      for (const assessment of requiredAssessments) {
+        const assessmentWindow = windows.find(w => 
+          w.windowType === 'assessment' && 
+          w.projectType === projectType &&
+          w.assessmentType === assessment
+        );
+        
+        if (!assessmentWindow) {
+          return {
+            valid: false,
+            reason: `All assessment windows (${requiredAssessments.join(', ')}) must be completed before grade release`
+          };
+        }
+        
+        if (proposedStartDate) {
+          const assessmentEndDate = new Date(assessmentWindow.endDate);
+          if (proposedStartDate <= assessmentEndDate) {
+            return {
+              valid: false,
+              reason: `Grade release must start after all assessments end. ${assessment} ends on ${assessmentEndDate.toLocaleDateString()}`
+            };
+          }
+        }
+      }
+    }
+
+    return { valid: true };
+  };
+
+  // Generate bulk windows for all project types
+  const generateBulkWindows = () => {
+    const { bulkSettings } = windowForm;
+    const startDate = new Date(bulkSettings.semesterStartDate);
+    const generatedWindows = [];
+    
+    const projectTypes: ProjectType[] = ['IDP', 'UROP', 'CAPSTONE'];
+    const assessmentTypes: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+    
+    let currentDate = new Date(startDate);
+    
+    // Phase 1: IDP Proposal (first)
+    const idpProposalStart = new Date(currentDate);
+    const idpProposalEnd = new Date(currentDate.getTime() + bulkSettings.proposalDuration * 24 * 60 * 60 * 1000);
+    generatedWindows.push({
+      windowType: 'proposal' as WindowType,
+      projectType: 'IDP' as ProjectType,
+      startDate: idpProposalStart,
+      endDate: idpProposalEnd
+    });
+    
+    currentDate = new Date(idpProposalEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
+    
+    // Phase 2: Other project proposals (UROP, CAPSTONE)
+    for (const projectType of ['UROP', 'CAPSTONE'] as ProjectType[]) {
+      const proposalStart = new Date(currentDate);
+      const proposalEnd = new Date(currentDate.getTime() + bulkSettings.proposalDuration * 24 * 60 * 60 * 1000);
+      generatedWindows.push({
+        windowType: 'proposal' as WindowType,
+        projectType,
+        startDate: proposalStart,
+        endDate: proposalEnd
+      });
+      currentDate = new Date(proposalEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
+    }
+    
+    // Phase 3: Application windows for all project types
+    for (const projectType of projectTypes) {
+      const applicationStart = new Date(currentDate);
+      const applicationEnd = new Date(currentDate.getTime() + bulkSettings.applicationDuration * 24 * 60 * 60 * 1000);
+      generatedWindows.push({
+        windowType: 'application' as WindowType,
+        projectType,
+        startDate: applicationStart,
+        endDate: applicationEnd
+      });
+      currentDate = new Date(applicationEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
+    }
+    
+    // Phase 4: Sequential assessment phases
+    for (const assessmentType of assessmentTypes) {
+      for (const projectType of projectTypes) {
+        // Submission window
+        const submissionStart = new Date(currentDate);
+        const submissionEnd = new Date(currentDate.getTime() + bulkSettings.submissionDuration * 24 * 60 * 60 * 1000);
+        generatedWindows.push({
+          windowType: 'submission' as WindowType,
+          projectType,
+          assessmentType,
+          startDate: submissionStart,
+          endDate: submissionEnd
+        });
+        
+        // Assessment window (starts right after submission)
+        const assessmentStart = new Date(submissionEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
+        const assessmentEnd = new Date(assessmentStart.getTime() + bulkSettings.assessmentDuration * 24 * 60 * 60 * 1000);
+        generatedWindows.push({
+          windowType: 'assessment' as WindowType,
+          projectType,
+          assessmentType,
+          startDate: assessmentStart,
+          endDate: assessmentEnd
+        });
+      }
+      
+      // Gap between different assessment types
+      currentDate = new Date(currentDate.getTime() + (bulkSettings.submissionDuration + bulkSettings.assessmentDuration + bulkSettings.gapBetweenAssessments) * 24 * 60 * 60 * 1000);
+    }
+    
+    // Phase 5: Grade release windows
+    for (const projectType of projectTypes) {
+      const gradeReleaseStart = new Date(currentDate);
+      const gradeReleaseEnd = new Date(currentDate.getTime() + bulkSettings.gradeReleaseDuration * 24 * 60 * 60 * 1000);
+      generatedWindows.push({
+        windowType: 'grade_release' as WindowType,
+        projectType,
+        startDate: gradeReleaseStart,
+        endDate: gradeReleaseEnd
+      });
+      currentDate = new Date(gradeReleaseEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
+    }
+    
+    return generatedWindows;
   };
 
   // Auto-deselect invalid window types when project types change
@@ -215,12 +488,26 @@ export function ControlPanel() {
       startDate: formatToLocalDateTime(startDate),
       endDate: formatToLocalDateTime(endDate),
       useCommonDates: true,
-      individualDates: {}
+      individualDates: {},
+      bulkSettings: {
+        semesterStartDate: '',
+        proposalDuration: 7,
+        applicationDuration: 14,
+        submissionDuration: 7,
+        assessmentDuration: 14,
+        gradeReleaseDuration: 3,
+        gapBetweenPhases: 1,
+        gapBetweenAssessments: 3
+      }
     });
     setShowWindowForm(true);
   };
 
   const handleCreateWindow = async () => {
+    if (creationMode === 'bulk' && !editingWindow) {
+      return handleBulkWindowCreation();
+    }
+    
     // Validate window and project type selections
     if (windowForm.projectTypes.length === 0) {
       toast.error('Please select at least one project type');
@@ -249,6 +536,25 @@ export function ControlPanel() {
         if (existingCheck.disabled) {
           toast.error(`Cannot create ${windowType.replace('_', ' ')} for ${projectType}: ${existingCheck.reason}`);
           return;
+        }
+
+        // Enhanced sequential timing validation
+        const proposedStartDate = windowForm.useCommonDates ? 
+          new Date(windowForm.startDate) : 
+          new Date(windowForm.individualDates[`${windowType}-${projectType}`]?.startDate || '');
+          
+        if (proposedStartDate && !isNaN(proposedStartDate.getTime())) {
+          const sequentialCheck = validateSequentialWindows(
+            windowType, 
+            projectType, 
+            windowType === 'assessment' || windowType === 'submission' ? windowForm.assessmentType as AssessmentType : undefined,
+            proposedStartDate
+          );
+          
+          if (!sequentialCheck.valid) {
+            toast.error(`Sequential validation failed: ${sequentialCheck.reason}`);
+            return;
+          }
         }
       }
     }
@@ -387,6 +693,55 @@ export function ControlPanel() {
     } catch (error: any) {
       console.error('Create window error:', error);
       toast.error(error.message || 'Failed to create window');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkWindowCreation = async () => {
+    if (!windowForm.bulkSettings.semesterStartDate) {
+      toast.error('Please select semester start date');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const generatedWindows = generateBulkWindows();
+      
+      console.log(`Creating ${generatedWindows.length} windows for entire semester:`, generatedWindows);
+      
+      // Create all windows
+      const results = await Promise.allSettled(
+        generatedWindows.map(windowData => api.post('/control/windows', {
+          ...windowData,
+          startDate: windowData.startDate.toISOString(),
+          endDate: windowData.endDate.toISOString()
+        }))
+      );
+      
+      // Count successful and failed creations
+      const successful = results.filter(result => 
+        result.status === 'fulfilled' && result.value.success
+      ).length;
+      
+      const failed = results.length - successful;
+      
+      if (successful > 0) {
+        if (failed === 0) {
+          toast.success(`Successfully created all ${successful} windows for the semester! 🎉`);
+        } else {
+          toast.success(`Created ${successful} windows, ${failed} failed. Check existing windows.`);
+        }
+        setShowWindowForm(false);
+        setShowCreationModeModal(false);
+        await fetchWindows();
+        resetForm();
+      } else {
+        toast.error('Failed to create semester windows. Check for existing windows.');
+      }
+    } catch (error: any) {
+      console.error('Bulk window creation error:', error);
+      toast.error(error.message || 'Failed to create semester windows');
     } finally {
       setLoading(false);
     }
@@ -532,8 +887,19 @@ export function ControlPanel() {
       startDate: '',
       endDate: '',
       useCommonDates: true,
-      individualDates: {}
+      individualDates: {},
+      bulkSettings: {
+        semesterStartDate: '',
+        proposalDuration: 7,
+        applicationDuration: 14,
+        submissionDuration: 7,
+        assessmentDuration: 14,
+        gradeReleaseDuration: 3,
+        gapBetweenPhases: 1,
+        gapBetweenAssessments: 3
+      }
     });
+    setCreationMode('individual');
   };
 
 
@@ -787,7 +1153,7 @@ export function ControlPanel() {
                 Update Statuses
               </button>
               <button
-                onClick={() => setShowWindowForm(!showWindowForm)}
+                onClick={() => setShowCreationModeModal(true)}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
@@ -800,37 +1166,196 @@ export function ControlPanel() {
           {showWindowForm && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold">{editingWindow ? 'Edit Window' : 'Create New Window'}</h3>
+                <h3 className="font-bold">
+                  {editingWindow ? 'Edit Window' : 
+                   creationMode === 'bulk' ? 'Create Entire Semester Windows' : 'Create New Window'}
+                </h3>
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">Current Time: </span>
                   <span>{new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: true })}</span>
                 </div>
               </div>
 
-              {/* Validation Info */}
+              {/* Mode indicator */}
               {!editingWindow && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className={`mb-4 p-3 border rounded-lg ${
+                  creationMode === 'bulk' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-blue-50 border-blue-200'
+                }`}>
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
-                      <svg className="w-5 h-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className={`w-5 h-5 mt-0.5 ${
+                        creationMode === 'bulk' ? 'text-green-400' : 'text-blue-400'
+                      }`} fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h4 className="text-sm font-medium text-blue-800">Window Creation Rules</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        • <strong>Select project types first</strong> to enable window type selection
-                        <br />
-                        • Only one active or upcoming window allowed per combination (e.g., IDP Proposal)
-                        <br />
-                        • Invalid window types are automatically deselected when project types change
-                        <br />
-                        • Workflow sequence must be followed: Proposal → Application → Submission → Assessment → Grade Release
+                      <h4 className={`text-sm font-medium ${
+                        creationMode === 'bulk' ? 'text-green-800' : 'text-blue-800'
+                      }`}>
+                        {creationMode === 'bulk' ? 'Bulk Creation Mode' : 'Individual Creation Mode'}
+                      </h4>
+                      <p className={`text-sm mt-1 ${
+                        creationMode === 'bulk' ? 'text-green-700' : 'text-blue-700'
+                      }`}>
+                        {creationMode === 'bulk' ? (
+                          <>
+                            This will create all windows for the entire semester in the correct sequence:
+                            <br />• IDP Proposal → UROP/CAPSTONE Proposals → All Applications
+                            <br />• CLA-1 → CLA-2 → CLA-3 → External (each with submission + assessment)
+                            <br />• Grade Release for all project types
+                          </>
+                        ) : (
+                          <>
+                            • <strong>Select project types first</strong> to enable window type selection
+                            <br />• Only one active or upcoming window allowed per combination
+                            <br />• Workflow sequence enforced: Proposal → Application → Submission → Assessment → Grade Release
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
+
+              {creationMode === 'bulk' && !editingWindow ? (
+                /* Bulk Creation Form */
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-2 text-sm font-medium">
+                        Semester Start Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={windowForm.bulkSettings.semesterStartDate}
+                        onChange={(e) => setWindowForm({
+                          ...windowForm,
+                          bulkSettings: {
+                            ...windowForm.bulkSettings,
+                            semesterStartDate: e.target.value
+                          }
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        IDP proposal will start on this date
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 bg-white">
+                    <h4 className="font-medium text-gray-900 mb-4">Duration Settings (in days)</h4>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Proposal Duration</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={windowForm.bulkSettings.proposalDuration}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              proposalDuration: parseInt(e.target.value) || 7
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Application Duration</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={windowForm.bulkSettings.applicationDuration}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              applicationDuration: parseInt(e.target.value) || 14
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Submission Duration</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={windowForm.bulkSettings.submissionDuration}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              submissionDuration: parseInt(e.target.value) || 7
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Assessment Duration</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={windowForm.bulkSettings.assessmentDuration}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              assessmentDuration: parseInt(e.target.value) || 14
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Grade Release Duration</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={windowForm.bulkSettings.gradeReleaseDuration}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              gradeReleaseDuration: parseInt(e.target.value) || 3
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-sm font-medium">Gap Between Phases</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="7"
+                          value={windowForm.bulkSettings.gapBetweenPhases}
+                          onChange={(e) => setWindowForm({
+                            ...windowForm,
+                            bulkSettings: {
+                              ...windowForm.bulkSettings,
+                              gapBetweenPhases: parseInt(e.target.value) || 1
+                            }
+                          })}
+                          className="w-full px-3 py-2 border rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Individual Creation Form - existing form content */
 
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Window Types Multi-Select */}
@@ -1181,6 +1706,7 @@ export function ControlPanel() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Show preview of windows to be created */}
               {!editingWindow && windowForm.windowTypes.length > 0 && windowForm.projectTypes.length > 0 && (
@@ -1245,14 +1771,23 @@ export function ControlPanel() {
                 <button
                   onClick={handleCreateWindow}
                   disabled={loading}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  className={`px-6 py-2 text-white rounded-lg hover:opacity-90 disabled:opacity-50 ${
+                    creationMode === 'bulk' ? 'bg-green-600' : 'bg-blue-600'
+                  }`}
                 >
-                  {loading ? (editingWindow ? 'Updating...' : 'Creating...') : (editingWindow ? 'Update Window' : 'Create Window')}
+                  {loading ? (
+                    editingWindow ? 'Updating...' : 
+                    creationMode === 'bulk' ? 'Creating Semester...' : 'Creating...'
+                  ) : (
+                    editingWindow ? 'Update Window' : 
+                    creationMode === 'bulk' ? 'Create All Semester Windows' : 'Create Window'
+                  )}
                 </button>
                 <button
                   onClick={() => {
                     setShowWindowForm(false);
                     setEditingWindow(null);
+                    setShowCreationModeModal(false);
                     resetForm();
                   }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
@@ -1442,6 +1977,144 @@ export function ControlPanel() {
             )}
           </div>
         </motion.div>
+
+        {/* Creation Mode Selection Modal */}
+        {showCreationModeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                  <Plus className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Choose Window Creation Method</h3>
+                  <p className="text-sm text-gray-500">Select how you want to create windows</p>
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                {/* Individual Creation */}
+                <div 
+                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                    creationMode === 'individual' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setCreationMode('individual')}
+                >
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="radio"
+                      name="creationMode"
+                      checked={creationMode === 'individual'}
+                      onChange={() => setCreationMode('individual')}
+                      className="text-blue-600 focus:ring-blue-500 mr-3"
+                    />
+                    <h4 className="text-lg font-semibold text-gray-900">Create Individually</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Create specific windows manually with full control over timing and selection.
+                  </p>
+                  <div className="text-xs text-gray-500">
+                    <strong>Best for:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>Creating specific windows as needed</li>
+                      <li>Custom timing requirements</li>
+                      <li>Partial semester scheduling</li>
+                      <li>Testing or special cases</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Bulk Creation */}
+                <div 
+                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                    creationMode === 'bulk' 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setCreationMode('bulk')}
+                >
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="radio"
+                      name="creationMode"
+                      checked={creationMode === 'bulk'}
+                      onChange={() => setCreationMode('bulk')}
+                      className="text-green-600 focus:ring-green-500 mr-3"
+                    />
+                    <h4 className="text-lg font-semibold text-gray-900">Create Entire Semester</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Automatically create all windows for the entire semester with proper sequencing.
+                  </p>
+                  <div className="text-xs text-gray-500">
+                    <strong>Best for:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>Beginning of semester setup</li>
+                      <li>Complete workflow automation</li>
+                      <li>Consistent timing across all projects</li>
+                      <li>Set-and-forget scheduling</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h4 className="text-sm font-medium text-amber-800">Sequential Window Order</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      {creationMode === 'bulk' ? (
+                        <>
+                          <strong>Bulk creation follows this sequence:</strong><br />
+                          1. IDP Proposal → 2. UROP/CAPSTONE Proposals → 3. All Applications → 
+                          4. CLA-1 (Submission + Assessment) → 5. CLA-2 → 6. CLA-3 → 7. External → 8. Grade Release
+                        </>
+                      ) : (
+                        <>
+                          <strong>Individual creation enforces:</strong><br />
+                          • Proposal must come first • Application after proposal ends • 
+                          Submissions in CLA order • Assessments after submissions • Grade release at the end
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCreationModeModal(false);
+                    setCreationMode('individual');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreationModeModal(false);
+                    setShowWindowForm(true);
+                  }}
+                  className={`px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+                    creationMode === 'individual' 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  Continue with {creationMode === 'individual' ? 'Individual' : 'Bulk'} Creation
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
