@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Calendar, Clock, Award, Users, FileText, Plus, Trash2, Edit2, RefreshCw, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
+import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
 
 type WindowType = 'proposal' | 'application' | 'submission' | 'assessment' | 'grade_release';
 type ProjectType = 'IDP' | 'UROP' | 'CAPSTONE';
@@ -11,6 +12,7 @@ type AssessmentType = 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
 export function ControlPanel() {
   const [windows, setWindows] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [inactiveWindowsCount, setInactiveWindowsCount] = useState<number>(0);
   const [releasedGrades, setReleasedGrades] = useState<Record<ProjectType, boolean>>({
     'IDP': false,
     'UROP': false,
@@ -18,6 +20,7 @@ export function ControlPanel() {
   });
   const [showWindowForm, setShowWindowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [editingWindow, setEditingWindow] = useState<any>(null);
 
   const [windowForm, setWindowForm] = useState({
@@ -29,9 +32,17 @@ export function ControlPanel() {
   });
 
   useEffect(() => {
-    fetchWindows();
-    fetchStats();
-    checkReleasedGrades();
+    // Load windows and stats in parallel, but don't block each other
+    const loadData = async () => {
+      await Promise.all([
+        fetchWindows(),
+        fetchStats(),
+        checkReleasedGrades(),
+        fetchInactiveWindowsCount()
+      ]);
+    };
+    
+    loadData();
   }, []);
 
   const fetchWindows = async () => {
@@ -52,6 +63,7 @@ export function ControlPanel() {
   };
 
   const fetchStats = async () => {
+    setStatsLoading(true);
     try {
       const response = await api.get('/control/stats');
       if (response.success) {
@@ -62,6 +74,19 @@ export function ControlPanel() {
       if (error.message?.includes('Too many requests')) {
         toast.error('Rate limit reached. Please wait a moment before refreshing.');
       }
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const fetchInactiveWindowsCount = async () => {
+    try {
+      const response = await api.get('/control/windows/inactive/count');
+      if (response.success) {
+        setInactiveWindowsCount((response.data as any).count);
+      }
+    } catch (error: any) {
+      console.error('Error fetching inactive windows count:', error);
     }
   };
 
@@ -231,6 +256,47 @@ export function ControlPanel() {
     }
   };
 
+  const handleDeleteInactiveWindows = async () => {
+    if (inactiveWindowsCount === 0) {
+      toast.error('No inactive windows to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete all ${inactiveWindowsCount} inactive windows? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await api.delete('/control/windows/inactive');
+
+      if (response.success) {
+        toast.success((response as any).message || `Deleted ${(response.data as any).deleted} inactive windows`);
+        await fetchWindows();
+        await fetchInactiveWindowsCount();
+      } else {
+        toast.error(response.error?.message || 'Failed to delete inactive windows');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete inactive windows');
+    }
+  };
+
+  const handleUpdateWindowStatuses = async () => {
+    try {
+      const response = await api.post('/control/windows/update-statuses');
+
+      if (response.success) {
+        toast.success((response as any).message || 'Window statuses updated');
+        await fetchWindows();
+        await fetchInactiveWindowsCount();
+      } else {
+        toast.error(response.error?.message || 'Failed to update window statuses');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update window statuses');
+    }
+  };
+
   const handleReleaseFinalGrades = async (projectType: ProjectType) => {
     if (releasedGrades[projectType]) {
       toast.error(`Final grades for ${projectType} have already been released.`);
@@ -271,7 +337,28 @@ export function ControlPanel() {
         </motion.div>
 
         {/* Statistics */}
-        {stats && (
+        {statsLoading ? (
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gray-100 rounded-lg animate-pulse">
+                    <div className="w-6 h-6 bg-gray-300 rounded"></div>
+                  </div>
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : stats && (
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -397,14 +484,49 @@ export function ControlPanel() {
               <Calendar className="w-6 h-6" />
               Manage Windows
             </h2>
-            <button
-              onClick={() => setShowWindowForm(!showWindowForm)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Create Window
-            </button>
+            <div className="flex items-center gap-3">
+              {inactiveWindowsCount > 0 && (
+                <button
+                  onClick={handleDeleteInactiveWindows}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2"
+                  title={`Delete ${inactiveWindowsCount} inactive windows`}
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete Inactive ({inactiveWindowsCount})
+                </button>
+              )}
+              <button
+                onClick={handleUpdateWindowStatuses}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
+                title="Update window statuses based on current time"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Update Statuses
+              </button>
+              <button
+                onClick={() => setShowWindowForm(!showWindowForm)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Create Window
+              </button>
+            </div>
           </div>
+
+          {/* Inactive Windows Alert */}
+          {inactiveWindowsCount > 0 && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-800">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-medium">
+                  {inactiveWindowsCount} inactive window{inactiveWindowsCount > 1 ? 's' : ''} found
+                </span>
+              </div>
+              <p className="text-sm text-amber-700 mt-1">
+                These windows have ended or are scheduled for the future. You can delete them to clean up the database.
+              </p>
+            </div>
+          )}
 
           {/* Window Form */}
           {showWindowForm && (
@@ -462,25 +584,17 @@ export function ControlPanel() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Start Date *</label>
-                  <input
-                    type="datetime-local"
-                    value={windowForm.startDate}
-                    onChange={(e) => setWindowForm({ ...windowForm, startDate: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
+                <SmartDateTimeInput
+                  value={windowForm.startDate}
+                  onChange={(value) => setWindowForm({ ...windowForm, startDate: value })}
+                  label="Start Date"
+                />
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium">End Date *</label>
-                  <input
-                    type="datetime-local"
-                    value={windowForm.endDate}
-                    onChange={(e) => setWindowForm({ ...windowForm, endDate: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
+                <SmartDateTimeInput
+                  value={windowForm.endDate}
+                  onChange={(value) => setWindowForm({ ...windowForm, endDate: value })}
+                  label="End Date"
+                />
               </div>
 
               <div className="flex gap-4 mt-4">

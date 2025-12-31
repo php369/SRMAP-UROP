@@ -6,6 +6,7 @@ import { Project } from '../models/Project';
 import { Application } from '../models/Application';
 import { Group } from '../models/Group';
 import { User } from '../models/User';
+import { WindowService } from '../services/windowService';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -29,6 +30,9 @@ const isCoordinatorOrAdmin = (req: Request, res: Response, next: Function) => {
 router.get('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const { projectType, windowType, isActive } = req.query;
+    
+    // Update window statuses before fetching
+    await WindowService.updateWindowStatuses();
     
     const query: any = {};
     if (projectType) query.projectType = projectType;
@@ -386,6 +390,83 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
       error: {
         code: 'RELEASE_FINAL_GRADES_FAILED',
         message: 'Failed to release final grades'
+      }
+    });
+  }
+});
+
+/**
+ * @route   POST /api/v1/control/windows/update-statuses
+ * @desc    Update isActive status for all windows based on current time
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/windows/update-statuses', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const result = await WindowService.updateWindowStatuses();
+    
+    res.json({
+      success: true,
+      message: `Updated ${result.updated} window statuses`,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Update window statuses error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_STATUSES_FAILED',
+        message: 'Failed to update window statuses'
+      }
+    });
+  }
+});
+
+/**
+ * @route   DELETE /api/v1/control/windows/inactive
+ * @desc    Delete all inactive windows
+ * @access  Private (Coordinator, Admin)
+ */
+router.delete('/windows/inactive', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const result = await WindowService.deleteInactiveWindows();
+    
+    res.json({
+      success: true,
+      message: `Deleted ${result.deleted} inactive windows`,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Delete inactive windows error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'DELETE_INACTIVE_FAILED',
+        message: 'Failed to delete inactive windows'
+      }
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/control/windows/inactive/count
+ * @desc    Get count of inactive windows
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/windows/inactive/count', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const count = await WindowService.getInactiveWindowsCount();
+    
+    res.json({
+      success: true,
+      data: { count }
+    });
+  } catch (error: any) {
+    console.error('Get inactive windows count error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_INACTIVE_COUNT_FAILED',
+        message: 'Failed to get inactive windows count'
       }
     });
   }

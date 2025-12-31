@@ -1,253 +1,239 @@
-import { Window, IWindow } from '../models/Window';
-import mongoose from 'mongoose';
+import { Window } from '../models/Window';
 import { logger } from '../utils/logger';
+import mongoose from 'mongoose';
 
 /**
- * Check if a specific window is currently active
- * @param windowType - Type of window to check
- * @param projectType - Project type (IDP, UROP, CAPSTONE)
- * @param assessmentType - Optional assessment type for submission/assessment windows
- * @returns true if window is active, false otherwise
+ * Service to manage window operations and status updates
  */
-export async function isWindowActive(
-    windowType: IWindow['windowType'],
-    projectType: IWindow['projectType'],
-    assessmentType?: IWindow['assessmentType']
-): Promise<boolean> {
+export class WindowService {
+  /**
+   * Update isActive status for all windows based on current time
+   * This should be called periodically to keep the database in sync
+   */
+  static async updateWindowStatuses(): Promise<{ updated: number }> {
     try {
-        const now = new Date();
+      const now = new Date();
+      
+      // Update windows that should be active but aren't marked as active
+      const activateResult = await Window.updateMany(
+        {
+          startDate: { $lte: now },
+          endDate: { $gte: now },
+          isActive: false
+        },
+        { isActive: true }
+      );
 
-        const query: any = {
-            windowType,
-            projectType,
-            startDate: { $lte: now },
-            endDate: { $gte: now }
-        };
+      // Update windows that should be inactive but are marked as active
+      const deactivateResult = await Window.updateMany(
+        {
+          $or: [
+            { endDate: { $lt: now } },
+            { startDate: { $gt: now } }
+          ],
+          isActive: true
+        },
+        { isActive: false }
+      );
 
-        if (assessmentType) {
-            query.assessmentType = assessmentType;
-        }
+      const totalUpdated = activateResult.modifiedCount + deactivateResult.modifiedCount;
+      
+      if (totalUpdated > 0) {
+        logger.info(`Updated ${totalUpdated} window statuses (${activateResult.modifiedCount} activated, ${deactivateResult.modifiedCount} deactivated)`);
+      }
 
-        const window = await Window.findOne(query);
-        return !!window;
+      return { updated: totalUpdated };
     } catch (error) {
-        logger.error('Error checking window status:', error);
-        return false;
+      logger.error('Error updating window statuses:', error);
+      throw error;
     }
-}
+  }
 
-/**
- * Get active window for a specific type and project
- * @param windowType - Type of window
- * @param projectType - Project type
- * @param assessmentType - Optional assessment type
- * @returns Active window or null
- */
-export async function getActiveWindow(
-    windowType: IWindow['windowType'],
-    projectType: IWindow['projectType'],
-    assessmentType?: IWindow['assessmentType']
-): Promise<IWindow | null> {
+  /**
+   * Delete all inactive windows
+   * @returns Number of deleted windows
+   */
+  static async deleteInactiveWindows(): Promise<{ deleted: number }> {
     try {
-        const now = new Date();
+      // First update all window statuses to ensure accuracy
+      await this.updateWindowStatuses();
 
-        const query: any = {
-            windowType,
-            projectType,
-            startDate: { $lte: now },
-            endDate: { $gte: now }
-        };
-
-        if (assessmentType) {
-            query.assessmentType = assessmentType;
-        }
-
-        return await Window.findOne(query);
+      // Delete all inactive windows
+      const result = await Window.deleteMany({ isActive: false });
+      
+      logger.info(`Deleted ${result.deletedCount} inactive windows`);
+      
+      return { deleted: result.deletedCount };
     } catch (error) {
-        logger.error('Error getting active window:', error);
-        return null;
+      logger.error('Error deleting inactive windows:', error);
+      throw error;
     }
-}
+  }
 
-/**
- * Get all windows for a project type
- * @param projectType - Project type
- * @returns Array of windows
- */
-export async function getWindowsByProjectType(
-    projectType: IWindow['projectType']
-): Promise<IWindow[]> {
+  /**
+   * Get count of inactive windows
+   */
+  static async getInactiveWindowsCount(): Promise<number> {
     try {
-        return await Window.find({ projectType }).sort({ startDate: 1 });
+      // First update statuses
+      await this.updateWindowStatuses();
+      
+      return await Window.countDocuments({ isActive: false });
     } catch (error) {
-        logger.error('Error getting windows by project type:', error);
-        return [];
+      logger.error('Error getting inactive windows count:', error);
+      throw error;
     }
-}
+  }
 
-/**
- * Create a new window
- * @param windowData - Window data
- * @returns Created window
- */
-export async function createWindow(windowData: {
-    windowType: IWindow['windowType'];
-    projectType: IWindow['projectType'];
-    assessmentType?: IWindow['assessmentType'];
+  /**
+   * Check if a specific window is active
+   */
+  static async isWindowActive(
+    windowType: string,
+    projectType: string,
+    assessmentType?: string
+  ): Promise<boolean> {
+    try {
+      await this.updateWindowStatuses();
+      
+      const query: any = {
+        windowType,
+        projectType,
+        isActive: true
+      };
+      
+      if (assessmentType) {
+        query.assessmentType = assessmentType;
+      }
+      
+      const window = await Window.findOne(query);
+      return !!window;
+    } catch (error) {
+      logger.error('Error checking window status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Create a new window
+   */
+  static async createWindow(windowData: {
+    windowType: string;
+    projectType: string;
+    assessmentType?: string;
     startDate: Date;
     endDate: Date;
     createdBy: mongoose.Types.ObjectId;
-}): Promise<IWindow> {
+  }) {
     try {
-        // Check for overlapping windows
-        const query: any = {
-            windowType: windowData.windowType,
-            projectType: windowData.projectType,
-            $or: [
-                {
-                    startDate: { $lte: windowData.endDate },
-                    endDate: { $gte: windowData.startDate }
-                }
-            ]
-        };
-        
-        // Only add assessmentType to query if it's provided
-        if (windowData.assessmentType) {
-            query.assessmentType = windowData.assessmentType;
-        } else {
-            // For windows without assessmentType, check for documents where assessmentType is null or undefined
-            query.assessmentType = { $in: [null, undefined] };
-        }
-        
-        const overlapping = await Window.findOne(query);
-
-        if (overlapping) {
-            throw new Error('Window overlaps with existing window');
-        }
-
-        const window = new Window(windowData);
-        await window.save();
-
-        logger.info(`Window created: ${window.windowType} for ${window.projectType}`);
-        return window;
+      const window = new Window(windowData);
+      await window.save();
+      return window;
     } catch (error) {
-        logger.error('Error creating window:', error);
-        throw error;
+      logger.error('Error creating window:', error);
+      throw error;
     }
+  }
+
+  /**
+   * Update a window
+   */
+  static async updateWindow(windowId: string, updateData: any) {
+    try {
+      const window = await Window.findByIdAndUpdate(windowId, updateData, { new: true });
+      return window;
+    } catch (error) {
+      logger.error('Error updating window:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a window
+   */
+  static async deleteWindow(windowId: string) {
+    try {
+      const result = await Window.findByIdAndDelete(windowId);
+      return result;
+    } catch (error) {
+      logger.error('Error deleting window:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get windows by project type
+   */
+  static async getWindowsByProjectType(projectType: string) {
+    try {
+      await this.updateWindowStatuses();
+      return await Window.find({ projectType }).sort({ startDate: -1 });
+    } catch (error) {
+      logger.error('Error getting windows by project type:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get active window for a specific type and project
+   */
+  static async getActiveWindow(windowType: string, projectType: string, assessmentType?: string) {
+    try {
+      await this.updateWindowStatuses();
+      
+      const query: any = {
+        windowType,
+        projectType,
+        isActive: true
+      };
+      
+      if (assessmentType) {
+        query.assessmentType = assessmentType;
+      }
+      
+      return await Window.findOne(query);
+    } catch (error) {
+      logger.error('Error getting active window:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get upcoming windows
+   */
+  static async getUpcomingWindows(projectType?: string, limit?: number) {
+    try {
+      const now = new Date();
+      const query: any = {
+        startDate: { $gt: now }
+      };
+      
+      if (projectType) {
+        query.projectType = projectType;
+      }
+      
+      let windowsQuery = Window.find(query).sort({ startDate: 1 });
+      
+      if (limit) {
+        windowsQuery = windowsQuery.limit(limit);
+      }
+      
+      return await windowsQuery;
+    } catch (error) {
+      logger.error('Error getting upcoming windows:', error);
+      throw error;
+    }
+  }
 }
 
-/**
- * Update a window
- * @param windowId - Window ID
- * @param updates - Updates to apply
- * @returns Updated window
- */
-export async function updateWindow(
-    windowId: string | mongoose.Types.ObjectId,
-    updates: Partial<IWindow>
-): Promise<IWindow | null> {
-    try {
-        const window = await Window.findByIdAndUpdate(
-            windowId,
-            updates,
-            { new: true, runValidators: true }
-        );
-
-        if (window) {
-            logger.info(`Window updated: ${window._id}`);
-        }
-
-        return window;
-    } catch (error) {
-        logger.error('Error updating window:', error);
-        throw error;
-    }
-}
-
-/**
- * Delete a window
- * @param windowId - Window ID
- * @returns true if deleted, false otherwise
- */
-export async function deleteWindow(
-    windowId: string | mongoose.Types.ObjectId
-): Promise<boolean> {
-    try {
-        const result = await Window.findByIdAndDelete(windowId);
-
-        if (result) {
-            logger.info(`Window deleted: ${windowId}`);
-            return true;
-        }
-
-        return false;
-    } catch (error) {
-        logger.error('Error deleting window:', error);
-        return false;
-    }
-}
-
-/**
- * Update all windows' isActive status based on current time
- * This should be run periodically (e.g., via cron job)
- */
-export async function updateWindowStatuses(): Promise<void> {
-    try {
-        const now = new Date();
-
-        // Set active windows
-        await Window.updateMany(
-            {
-                startDate: { $lte: now },
-                endDate: { $gte: now },
-                isActive: false
-            },
-            { isActive: true }
-        );
-
-        // Set inactive windows
-        await Window.updateMany(
-            {
-                $or: [
-                    { endDate: { $lt: now } },
-                    { startDate: { $gt: now } }
-                ],
-                isActive: true
-            },
-            { isActive: false }
-        );
-
-        logger.info('Window statuses updated');
-    } catch (error) {
-        logger.error('Error updating window statuses:', error);
-    }
-}
-
-/**
- * Get upcoming windows
- * @param projectType - Optional project type filter
- * @param limit - Number of windows to return
- * @returns Array of upcoming windows
- */
-export async function getUpcomingWindows(
-    projectType?: IWindow['projectType'],
-    limit: number = 5
-): Promise<IWindow[]> {
-    try {
-        const now = new Date();
-        const query: any = {
-            startDate: { $gt: now }
-        };
-
-        if (projectType) {
-            query.projectType = projectType;
-        }
-
-        return await Window.find(query)
-            .sort({ startDate: 1 })
-            .limit(limit);
-    } catch (error) {
-        logger.error('Error getting upcoming windows:', error);
-        return [];
-    }
-}
+// Export individual functions for backward compatibility
+export const updateWindowStatuses = WindowService.updateWindowStatuses;
+export const deleteInactiveWindows = WindowService.deleteInactiveWindows;
+export const getInactiveWindowsCount = WindowService.getInactiveWindowsCount;
+export const isWindowActive = WindowService.isWindowActive;
+export const createWindow = WindowService.createWindow;
+export const updateWindow = WindowService.updateWindow;
+export const deleteWindow = WindowService.deleteWindow;
+export const getWindowsByProjectType = WindowService.getWindowsByProjectType;
+export const getActiveWindow = WindowService.getActiveWindow;
+export const getUpcomingWindows = WindowService.getUpcomingWindows;
