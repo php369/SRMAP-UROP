@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Award, Users, FileText, Plus, Edit2, RefreshCw, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Award, Users, FileText, Plus, Edit2, RefreshCw, Trash2, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../utils/api';
 import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
@@ -38,16 +38,51 @@ export function ControlPanel() {
     endDate: '',
     useCommonDates: true, // Toggle between common and individual dates
     individualDates: {} as Record<string, { startDate: string; endDate: string }>, // Individual dates for each combination
-    // Bulk creation settings
+    // Bulk creation settings - new tabbed structure
     bulkSettings: {
-      semesterStartDate: '',
-      proposalDuration: 7, // days
-      applicationDuration: 14, // days
-      submissionDuration: 7, // days
-      assessmentDuration: 14, // days
-      gradeReleaseDuration: 3, // days
-      gapBetweenPhases: 1, // days
-      gapBetweenAssessments: 3 // days
+      // Proposal phase
+      proposal: {
+        startDate: '',
+        endDate: ''
+      },
+      // Application phase  
+      application: {
+        startDate: '',
+        endDate: ''
+      },
+      // CLA-1 phase
+      cla1: {
+        submissionStart: '',
+        submissionEnd: '',
+        assessmentStart: '',
+        assessmentEnd: ''
+      },
+      // CLA-2 phase
+      cla2: {
+        submissionStart: '',
+        submissionEnd: '',
+        assessmentStart: '',
+        assessmentEnd: ''
+      },
+      // CLA-3 phase
+      cla3: {
+        submissionStart: '',
+        submissionEnd: '',
+        assessmentStart: '',
+        assessmentEnd: ''
+      },
+      // External phase
+      external: {
+        submissionStart: '',
+        submissionEnd: '',
+        assessmentStart: '',
+        assessmentEnd: ''
+      },
+      // Grade release phase
+      gradeRelease: {
+        startDate: '',
+        endDate: ''
+      }
     }
   });
 
@@ -294,101 +329,6 @@ export function ControlPanel() {
     return { valid: true };
   };
 
-  // Generate bulk windows for all project types
-  const generateBulkWindows = () => {
-    const { bulkSettings } = windowForm;
-    const startDate = new Date(bulkSettings.semesterStartDate);
-    const generatedWindows = [];
-    
-    const projectTypes: ProjectType[] = ['IDP', 'UROP', 'CAPSTONE'];
-    const assessmentTypes: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
-    
-    let currentDate = new Date(startDate);
-    
-    // Phase 1: IDP Proposal (first)
-    const idpProposalStart = new Date(currentDate);
-    const idpProposalEnd = new Date(currentDate.getTime() + bulkSettings.proposalDuration * 24 * 60 * 60 * 1000);
-    generatedWindows.push({
-      windowType: 'proposal' as WindowType,
-      projectType: 'IDP' as ProjectType,
-      startDate: idpProposalStart,
-      endDate: idpProposalEnd
-    });
-    
-    currentDate = new Date(idpProposalEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
-    
-    // Phase 2: Other project proposals (UROP, CAPSTONE)
-    for (const projectType of ['UROP', 'CAPSTONE'] as ProjectType[]) {
-      const proposalStart = new Date(currentDate);
-      const proposalEnd = new Date(currentDate.getTime() + bulkSettings.proposalDuration * 24 * 60 * 60 * 1000);
-      generatedWindows.push({
-        windowType: 'proposal' as WindowType,
-        projectType,
-        startDate: proposalStart,
-        endDate: proposalEnd
-      });
-      currentDate = new Date(proposalEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
-    }
-    
-    // Phase 3: Application windows for all project types
-    for (const projectType of projectTypes) {
-      const applicationStart = new Date(currentDate);
-      const applicationEnd = new Date(currentDate.getTime() + bulkSettings.applicationDuration * 24 * 60 * 60 * 1000);
-      generatedWindows.push({
-        windowType: 'application' as WindowType,
-        projectType,
-        startDate: applicationStart,
-        endDate: applicationEnd
-      });
-      currentDate = new Date(applicationEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
-    }
-    
-    // Phase 4: Sequential assessment phases
-    for (const assessmentType of assessmentTypes) {
-      for (const projectType of projectTypes) {
-        // Submission window
-        const submissionStart = new Date(currentDate);
-        const submissionEnd = new Date(currentDate.getTime() + bulkSettings.submissionDuration * 24 * 60 * 60 * 1000);
-        generatedWindows.push({
-          windowType: 'submission' as WindowType,
-          projectType,
-          assessmentType,
-          startDate: submissionStart,
-          endDate: submissionEnd
-        });
-        
-        // Assessment window (starts right after submission)
-        const assessmentStart = new Date(submissionEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
-        const assessmentEnd = new Date(assessmentStart.getTime() + bulkSettings.assessmentDuration * 24 * 60 * 60 * 1000);
-        generatedWindows.push({
-          windowType: 'assessment' as WindowType,
-          projectType,
-          assessmentType,
-          startDate: assessmentStart,
-          endDate: assessmentEnd
-        });
-      }
-      
-      // Gap between different assessment types
-      currentDate = new Date(currentDate.getTime() + (bulkSettings.submissionDuration + bulkSettings.assessmentDuration + bulkSettings.gapBetweenAssessments) * 24 * 60 * 60 * 1000);
-    }
-    
-    // Phase 5: Grade release windows
-    for (const projectType of projectTypes) {
-      const gradeReleaseStart = new Date(currentDate);
-      const gradeReleaseEnd = new Date(currentDate.getTime() + bulkSettings.gradeReleaseDuration * 24 * 60 * 60 * 1000);
-      generatedWindows.push({
-        windowType: 'grade_release' as WindowType,
-        projectType,
-        startDate: gradeReleaseStart,
-        endDate: gradeReleaseEnd
-      });
-      currentDate = new Date(gradeReleaseEnd.getTime() + bulkSettings.gapBetweenPhases * 24 * 60 * 60 * 1000);
-    }
-    
-    return generatedWindows;
-  };
-
   // Auto-deselect invalid window types when project types change
   const handleProjectTypeChange = (projectType: ProjectType, isChecked: boolean) => {
     let newProjectTypes: ProjectType[];
@@ -490,14 +430,42 @@ export function ControlPanel() {
       useCommonDates: true,
       individualDates: {},
       bulkSettings: {
-        semesterStartDate: '',
-        proposalDuration: 7,
-        applicationDuration: 14,
-        submissionDuration: 7,
-        assessmentDuration: 14,
-        gradeReleaseDuration: 3,
-        gapBetweenPhases: 1,
-        gapBetweenAssessments: 3
+        proposal: {
+          startDate: '',
+          endDate: ''
+        },
+        application: {
+          startDate: '',
+          endDate: ''
+        },
+        cla1: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        cla2: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        cla3: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        external: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        gradeRelease: {
+          startDate: '',
+          endDate: ''
+        }
       }
     });
     setShowWindowForm(true);
@@ -699,24 +667,99 @@ export function ControlPanel() {
   };
 
   const handleBulkWindowCreation = async () => {
-    if (!windowForm.bulkSettings.semesterStartDate) {
-      toast.error('Please select semester start date');
-      return;
+    // Validate that all required fields are filled
+    const { bulkSettings } = windowForm;
+    
+    // Check if all phases have required dates
+    const requiredFields = [
+      { phase: 'proposal', fields: ['startDate', 'endDate'] },
+      { phase: 'application', fields: ['startDate', 'endDate'] },
+      { phase: 'cla1', fields: ['submissionStart', 'submissionEnd', 'assessmentStart', 'assessmentEnd'] },
+      { phase: 'cla2', fields: ['submissionStart', 'submissionEnd', 'assessmentStart', 'assessmentEnd'] },
+      { phase: 'cla3', fields: ['submissionStart', 'submissionEnd', 'assessmentStart', 'assessmentEnd'] },
+      { phase: 'external', fields: ['submissionStart', 'submissionEnd', 'assessmentStart', 'assessmentEnd'] },
+      { phase: 'gradeRelease', fields: ['startDate', 'endDate'] }
+    ];
+
+    for (const { phase, fields } of requiredFields) {
+      const phaseSettings = bulkSettings[phase as keyof typeof bulkSettings];
+      for (const field of fields) {
+        if (!phaseSettings[field as keyof typeof phaseSettings]) {
+          toast.error(`Please fill all required fields in ${phase.replace(/([A-Z])/g, ' $1').toLowerCase()} phase`);
+          return;
+        }
+      }
     }
 
     setLoading(true);
     try {
-      const generatedWindows = generateBulkWindows();
+      const generatedWindows = [];
+      const projectTypes: ProjectType[] = ['IDP', 'UROP', 'CAPSTONE'];
+      
+      // Generate proposal windows
+      for (const projectType of projectTypes) {
+        generatedWindows.push({
+          windowType: 'proposal' as WindowType,
+          projectType,
+          startDate: bulkSettings.proposal.startDate,
+          endDate: bulkSettings.proposal.endDate
+        });
+      }
+      
+      // Generate application windows
+      for (const projectType of projectTypes) {
+        generatedWindows.push({
+          windowType: 'application' as WindowType,
+          projectType,
+          startDate: bulkSettings.application.startDate,
+          endDate: bulkSettings.application.endDate
+        });
+      }
+      
+      // Generate assessment windows (submission + assessment for each CLA type)
+      const assessmentTypes: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
+      const phaseKeys = ['cla1', 'cla2', 'cla3', 'external'] as const;
+      
+      assessmentTypes.forEach((assessmentType, index) => {
+        const phaseKey = phaseKeys[index];
+        const phaseSettings = bulkSettings[phaseKey];
+        
+        for (const projectType of projectTypes) {
+          // Submission window
+          generatedWindows.push({
+            windowType: 'submission' as WindowType,
+            projectType,
+            assessmentType,
+            startDate: phaseSettings.submissionStart,
+            endDate: phaseSettings.submissionEnd
+          });
+          
+          // Assessment window
+          generatedWindows.push({
+            windowType: 'assessment' as WindowType,
+            projectType,
+            assessmentType,
+            startDate: phaseSettings.assessmentStart,
+            endDate: phaseSettings.assessmentEnd
+          });
+        }
+      });
+      
+      // Generate grade release windows
+      for (const projectType of projectTypes) {
+        generatedWindows.push({
+          windowType: 'grade_release' as WindowType,
+          projectType,
+          startDate: bulkSettings.gradeRelease.startDate,
+          endDate: bulkSettings.gradeRelease.endDate
+        });
+      }
       
       console.log(`Creating ${generatedWindows.length} windows for entire semester:`, generatedWindows);
       
       // Create all windows
       const results = await Promise.allSettled(
-        generatedWindows.map(windowData => api.post('/control/windows', {
-          ...windowData,
-          startDate: windowData.startDate.toISOString(),
-          endDate: windowData.endDate.toISOString()
-        }))
+        generatedWindows.map(windowData => api.post('/control/windows', windowData))
       );
       
       // Count successful and failed creations
@@ -889,14 +932,42 @@ export function ControlPanel() {
       useCommonDates: true,
       individualDates: {},
       bulkSettings: {
-        semesterStartDate: '',
-        proposalDuration: 7,
-        applicationDuration: 14,
-        submissionDuration: 7,
-        assessmentDuration: 14,
-        gradeReleaseDuration: 3,
-        gapBetweenPhases: 1,
-        gapBetweenAssessments: 3
+        proposal: {
+          startDate: '',
+          endDate: ''
+        },
+        application: {
+          startDate: '',
+          endDate: ''
+        },
+        cla1: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        cla2: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        cla3: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        external: {
+          submissionStart: '',
+          submissionEnd: '',
+          assessmentStart: '',
+          assessmentEnd: ''
+        },
+        gradeRelease: {
+          startDate: '',
+          endDate: ''
+        }
       }
     });
     setCreationMode('individual');
@@ -1221,139 +1292,17 @@ export function ControlPanel() {
               )}
 
               {creationMode === 'bulk' && !editingWindow ? (
-                /* Bulk Creation Form */
-                <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-2 text-sm font-medium">
-                        Semester Start Date *
-                      </label>
-                      <input
-                        type="date"
-                        value={windowForm.bulkSettings.semesterStartDate}
-                        onChange={(e) => setWindowForm({
-                          ...windowForm,
-                          bulkSettings: {
-                            ...windowForm.bulkSettings,
-                            semesterStartDate: e.target.value
-                          }
-                        })}
-                        className="w-full px-4 py-2 border rounded-lg"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        IDP proposal will start on this date
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4 bg-white">
-                    <h4 className="font-medium text-gray-900 mb-4">Duration Settings (in days)</h4>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Proposal Duration</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={windowForm.bulkSettings.proposalDuration}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              proposalDuration: parseInt(e.target.value) || 7
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Application Duration</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={windowForm.bulkSettings.applicationDuration}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              applicationDuration: parseInt(e.target.value) || 14
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Submission Duration</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={windowForm.bulkSettings.submissionDuration}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              submissionDuration: parseInt(e.target.value) || 7
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Assessment Duration</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={windowForm.bulkSettings.assessmentDuration}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              assessmentDuration: parseInt(e.target.value) || 14
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Grade Release Duration</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={windowForm.bulkSettings.gradeReleaseDuration}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              gradeReleaseDuration: parseInt(e.target.value) || 3
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-sm font-medium">Gap Between Phases</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="7"
-                          value={windowForm.bulkSettings.gapBetweenPhases}
-                          onChange={(e) => setWindowForm({
-                            ...windowForm,
-                            bulkSettings: {
-                              ...windowForm.bulkSettings,
-                              gapBetweenPhases: parseInt(e.target.value) || 1
-                            }
-                          })}
-                          className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <BulkWindowCreationModal 
+                  windowForm={windowForm}
+                  setWindowForm={setWindowForm}
+                  onSubmit={handleBulkWindowCreation}
+                  loading={loading}
+                  onCancel={() => {
+                    setShowWindowForm(false);
+                    setShowCreationModeModal(false);
+                    resetForm();
+                  }}
+                />
               ) : (
                 /* Individual Creation Form - existing form content */
 
@@ -2208,6 +2157,340 @@ export function ControlPanel() {
           cancelText="Cancel"
           type="warning"
         />
+      </div>
+    </div>
+  );
+}
+
+// Bulk Window Creation Modal Component
+interface BulkWindowCreationModalProps {
+  windowForm: any;
+  setWindowForm: (form: any) => void;
+  onSubmit: () => void;
+  loading: boolean;
+  onCancel: () => void;
+}
+
+function BulkWindowCreationModal({ windowForm, setWindowForm, onSubmit, loading, onCancel }: BulkWindowCreationModalProps) {
+  const [activeTab, setActiveTab] = useState(0);
+  const [tabErrors, setTabErrors] = useState<Record<number, boolean>>({});
+
+  const tabs = [
+    { id: 'proposal', label: 'Proposal', phase: 'proposal' },
+    { id: 'application', label: 'Application', phase: 'application' },
+    { id: 'cla1', label: 'CLA-1', phase: 'cla1' },
+    { id: 'cla2', label: 'CLA-2', phase: 'cla2' },
+    { id: 'cla3', label: 'CLA-3', phase: 'cla3' },
+    { id: 'external', label: 'External', phase: 'external' },
+    { id: 'gradeRelease', label: 'Grade Release', phase: 'gradeRelease' }
+  ];
+
+  // Validate tab completion
+  const validateTab = (tabIndex: number) => {
+    const tab = tabs[tabIndex];
+    const phaseSettings = windowForm.bulkSettings[tab.phase];
+    
+    if (tab.phase === 'proposal' || tab.phase === 'application' || tab.phase === 'gradeRelease') {
+      return phaseSettings.startDate && phaseSettings.endDate;
+    } else {
+      return phaseSettings.submissionStart && phaseSettings.submissionEnd && 
+             phaseSettings.assessmentStart && phaseSettings.assessmentEnd;
+    }
+  };
+
+  // Validate sequential timing
+  const validateSequentialTiming = (tabIndex: number) => {
+    const errors: string[] = [];
+    const tab = tabs[tabIndex];
+    const phaseSettings = windowForm.bulkSettings[tab.phase];
+    
+    // Check if current tab dates are valid
+    if (tab.phase === 'proposal' || tab.phase === 'application' || tab.phase === 'gradeRelease') {
+      if (phaseSettings.startDate && phaseSettings.endDate) {
+        if (new Date(phaseSettings.endDate) <= new Date(phaseSettings.startDate)) {
+          errors.push('End date must be after start date');
+        }
+      }
+    } else {
+      // For assessment phases, check submission and assessment windows
+      if (phaseSettings.submissionStart && phaseSettings.submissionEnd) {
+        if (new Date(phaseSettings.submissionEnd) <= new Date(phaseSettings.submissionStart)) {
+          errors.push('Submission end must be after submission start');
+        }
+      }
+      if (phaseSettings.assessmentStart && phaseSettings.assessmentEnd) {
+        if (new Date(phaseSettings.assessmentEnd) <= new Date(phaseSettings.assessmentStart)) {
+          errors.push('Assessment end must be after assessment start');
+        }
+      }
+      if (phaseSettings.submissionEnd && phaseSettings.assessmentStart) {
+        if (new Date(phaseSettings.assessmentStart) <= new Date(phaseSettings.submissionEnd)) {
+          errors.push('Assessment must start after submission ends');
+        }
+      }
+    }
+
+    // Check sequential order with previous phases
+    if (tabIndex > 0) {
+      const prevTab = tabs[tabIndex - 1];
+      const prevPhaseSettings = windowForm.bulkSettings[prevTab.phase];
+      
+      let prevEndDate: string;
+      if (prevTab.phase === 'proposal' || prevTab.phase === 'application' || prevTab.phase === 'gradeRelease') {
+        prevEndDate = prevPhaseSettings.endDate;
+      } else {
+        prevEndDate = prevPhaseSettings.assessmentEnd;
+      }
+      
+      let currentStartDate: string;
+      if (tab.phase === 'proposal' || tab.phase === 'application' || tab.phase === 'gradeRelease') {
+        currentStartDate = phaseSettings.startDate;
+      } else {
+        currentStartDate = phaseSettings.submissionStart;
+      }
+      
+      if (prevEndDate && currentStartDate) {
+        if (new Date(currentStartDate) <= new Date(prevEndDate)) {
+          errors.push(`${tab.label} must start after ${prevTab.label} ends`);
+        }
+      }
+    }
+
+    return errors;
+  };
+
+  // Update tab errors when form changes
+  useEffect(() => {
+    const newTabErrors: Record<number, boolean> = {};
+    tabs.forEach((_, index) => {
+      const errors = validateSequentialTiming(index);
+      newTabErrors[index] = errors.length > 0;
+    });
+    setTabErrors(newTabErrors);
+  }, [windowForm.bulkSettings]);
+
+  // Check if tab can be accessed (previous tabs must be completed)
+  const canAccessTab = (tabIndex: number) => {
+    if (tabIndex === 0) return true;
+    for (let i = 0; i < tabIndex; i++) {
+      if (!validateTab(i)) return false;
+    }
+    return true;
+  };
+
+  // Update phase settings
+  const updatePhaseSettings = (phase: string, field: string, value: string) => {
+    setWindowForm({
+      ...windowForm,
+      bulkSettings: {
+        ...windowForm.bulkSettings,
+        [phase]: {
+          ...windowForm.bulkSettings[phase],
+          [field]: value
+        }
+      }
+    });
+  };
+
+  const renderTabContent = () => {
+    const tab = tabs[activeTab];
+    const phaseSettings = windowForm.bulkSettings[tab.phase];
+    const errors = validateSequentialTiming(activeTab);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">{tab.label} Phase</h3>
+          {errors.length > 0 && (
+            <div className="flex items-center text-red-600">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              <span className="text-sm">{errors.length} error{errors.length > 1 ? 's' : ''}</span>
+            </div>
+          )}
+        </div>
+
+        {errors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-red-800 mb-2">Validation Errors:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              {errors.map((error, index) => (
+                <li key={index} className="flex items-center">
+                  <XCircle className="w-3 h-3 mr-2 flex-shrink-0" />
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {tab.phase === 'proposal' || tab.phase === 'application' || tab.phase === 'gradeRelease' ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            <SmartDateTimeInput
+              value={phaseSettings.startDate}
+              onChange={(value) => updatePhaseSettings(tab.phase, 'startDate', value)}
+              label="Start Date & Time"
+            />
+            <SmartDateTimeInput
+              value={phaseSettings.endDate}
+              onChange={(value) => updatePhaseSettings(tab.phase, 'endDate', value)}
+              label="End Date & Time"
+              minDateTime={phaseSettings.startDate}
+            />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Submission Window</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <SmartDateTimeInput
+                  value={phaseSettings.submissionStart}
+                  onChange={(value) => updatePhaseSettings(tab.phase, 'submissionStart', value)}
+                  label="Submission Start"
+                />
+                <SmartDateTimeInput
+                  value={phaseSettings.submissionEnd}
+                  onChange={(value) => updatePhaseSettings(tab.phase, 'submissionEnd', value)}
+                  label="Submission End"
+                  minDateTime={phaseSettings.submissionStart}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Assessment Window</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <SmartDateTimeInput
+                  value={phaseSettings.assessmentStart}
+                  onChange={(value) => updatePhaseSettings(tab.phase, 'assessmentStart', value)}
+                  label="Assessment Start"
+                  minDateTime={phaseSettings.submissionEnd}
+                />
+                <SmartDateTimeInput
+                  value={phaseSettings.assessmentEnd}
+                  onChange={(value) => updatePhaseSettings(tab.phase, 'assessmentEnd', value)}
+                  label="Assessment End"
+                  minDateTime={phaseSettings.assessmentStart}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Phase Information</h4>
+          <p className="text-sm text-blue-700">
+            {tab.phase === 'proposal' && 'Students submit project proposals during this window.'}
+            {tab.phase === 'application' && 'Students apply for approved projects during this window.'}
+            {tab.phase === 'cla1' && 'First continuous learning assessment - submission and evaluation.'}
+            {tab.phase === 'cla2' && 'Second continuous learning assessment - submission and evaluation.'}
+            {tab.phase === 'cla3' && 'Third continuous learning assessment - submission and evaluation.'}
+            {tab.phase === 'external' && 'External evaluation by industry experts - submission and evaluation.'}
+            {tab.phase === 'gradeRelease' && 'Final grades are released to students during this window.'}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b">
+          <h2 className="text-xl font-bold">Create Entire Semester Windows</h2>
+          <p className="text-gray-600 mt-1">Configure all workflow phases with start and end times</p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="border-b bg-gray-50">
+          <div className="flex overflow-x-auto">
+            {tabs.map((tab, index) => {
+              const isCompleted = validateTab(index);
+              const hasError = tabErrors[index];
+              const canAccess = canAccessTab(index);
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => canAccess && setActiveTab(index)}
+                  disabled={!canAccess}
+                  className={`
+                    flex items-center px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap
+                    ${activeTab === index 
+                      ? 'border-blue-500 text-blue-600 bg-white' 
+                      : canAccess 
+                        ? 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' 
+                        : 'border-transparent text-gray-300 cursor-not-allowed'
+                    }
+                    ${hasError ? 'text-red-600' : ''}
+                  `}
+                >
+                  {isCompleted ? (
+                    <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                  ) : hasError ? (
+                    <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                  ) : (
+                    <div className="w-4 h-4 mr-2 rounded-full border-2 border-gray-300" />
+                  )}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6 overflow-y-auto max-h-[60vh]">
+          {renderTabContent()}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Step {activeTab + 1} of {tabs.length} - Fill all phases in order
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            
+            {activeTab > 0 && (
+              <button
+                onClick={() => setActiveTab(activeTab - 1)}
+                className="px-4 py-2 text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200"
+              >
+                Previous
+              </button>
+            )}
+            
+            {activeTab < tabs.length - 1 ? (
+              <button
+                onClick={() => {
+                  if (validateTab(activeTab)) {
+                    setActiveTab(activeTab + 1);
+                  } else {
+                    toast.error('Please fill all required fields before proceeding');
+                  }
+                }}
+                disabled={!validateTab(activeTab)}
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={onSubmit}
+                disabled={loading || !tabs.every((_, index) => validateTab(index)) || Object.values(tabErrors).some(Boolean)}
+                className="px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Creating...' : 'Create All Windows'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
