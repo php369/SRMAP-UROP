@@ -14,12 +14,12 @@ export function WindowCard({ window, onEdit, onDelete }: WindowCardProps) {
 
   return (
     <div
-      className={`p-4 border-2 rounded-lg ${
+      className={`p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md ${
         isActive 
-          ? 'border-green-500 bg-green-50' 
+          ? 'border-green-500 bg-green-50 hover:bg-green-100' 
           : hasEnded 
-          ? 'border-gray-300 bg-gray-50' 
-          : 'border-blue-300 bg-blue-50'
+          ? 'border-gray-300 bg-gray-50 hover:bg-gray-100' 
+          : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
       }`}
     >
       <div className="flex items-start justify-between">
@@ -59,14 +59,14 @@ export function WindowCard({ window, onEdit, onDelete }: WindowCardProps) {
           <button
             onClick={() => onEdit(window)}
             disabled={hasEnded}
-            className="p-2 text-blue-500 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 text-blue-500 hover:bg-blue-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             title={hasEnded ? 'Cannot edit ended window' : 'Edit window'}
           >
             <Edit2 className="w-5 h-5" />
           </button>
           <button
             onClick={() => onDelete(window)}
-            className="p-2 text-red-500 hover:bg-red-50 rounded"
+            className="p-2 text-red-500 hover:bg-red-100 rounded transition-colors duration-200"
             title="Delete window"
           >
             <Trash2 className="w-5 h-5" />
