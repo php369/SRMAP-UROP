@@ -3,38 +3,10 @@ import { Calendar, Clock, Award, Users, FileText } from 'lucide-react';
 import { Stats } from '../../types';
 
 interface StatsCardsProps {
-  stats: Stats | null;
-  statsLoading: boolean;
+  stats: Stats;
 }
 
-export function StatsCards({ stats, statsLoading }: StatsCardsProps) {
-  if (statsLoading) {
-    return (
-      <div className="grid md:grid-cols-4 gap-6 mb-8">
-        {[1, 2, 3, 4].map((i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gray-100 rounded-lg animate-pulse">
-                <div className="w-6 h-6 bg-gray-300 rounded"></div>
-              </div>
-              <div>
-                <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!stats) return null;
-
+export function StatsCards({ stats }: StatsCardsProps) {
   return (
     <>
       {/* Main Stats Grid */}

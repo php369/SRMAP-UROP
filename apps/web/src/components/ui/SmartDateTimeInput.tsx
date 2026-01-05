@@ -13,7 +13,7 @@ interface SmartDateTimeInputProps {
 export function SmartDateTimeInput({ value, onChange, label, className = '', disabled = false, minDateTime }: SmartDateTimeInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState({ hours: '12', minutes: '00' });
+  const [selectedTime, setSelectedTime] = useState({ hours: '12', minutes: '00', period: 'AM' });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Initialize from value
@@ -21,9 +21,16 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
     if (value) {
       const date = new Date(value);
       setSelectedDate(date);
+      // Convert to 12-hour format for display
+      let hours = date.getHours();
+      const isPM = hours >= 12;
+      if (hours === 0) hours = 12;
+      if (hours > 12) hours -= 12;
+      
       setSelectedTime({
-        hours: String(date.getHours()).padStart(2, '0'),
-        minutes: String(date.getMinutes()).padStart(2, '0')
+        hours: String(hours).padStart(2, '0'),
+        minutes: String(date.getMinutes()).padStart(2, '0'),
+        period: isPM ? 'PM' : 'AM'
       });
     }
   }, [value]);
@@ -70,14 +77,6 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Get minimum datetime (current time or minDateTime)
-  const getMinDateTime = () => {
-    if (minDateTime) {
-      return minDateTime;
-    }
-    return getCurrentDateTime();
-  };
-
   // Format display value
   const formatDisplayValue = (dateTimeValue: string) => {
     if (!dateTimeValue) return '';
@@ -103,9 +102,16 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
       onChange(currentDateTime);
       const date = new Date(currentDateTime);
       setSelectedDate(date);
+      // Convert to 12-hour format
+      let hours = date.getHours();
+      const isPM = hours >= 12;
+      if (hours === 0) hours = 12;
+      if (hours > 12) hours -= 12;
+      
       setSelectedTime({
-        hours: String(date.getHours()).padStart(2, '0'),
-        minutes: String(date.getMinutes()).padStart(2, '0')
+        hours: String(hours).padStart(2, '0'),
+        minutes: String(date.getMinutes()).padStart(2, '0'),
+        period: isPM ? 'PM' : 'AM'
       });
     }
     
@@ -159,24 +165,33 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
   };
 
   // Handle time change
-  const handleTimeChange = (field: 'hours' | 'minutes', value: string) => {
+  const handleTimeChange = (field: 'hours' | 'minutes' | 'period', value: string) => {
     const newTime = { ...selectedTime, [field]: value };
     setSelectedTime(newTime);
     updateDateTime(selectedDate, newTime);
   };
 
   // Update the final datetime value
-  const updateDateTime = (date: Date, time: { hours: string; minutes: string }) => {
+  const updateDateTime = (date: Date, time: { hours: string; minutes: string; period: string }) => {
     const newDate = new Date(date);
-    newDate.setHours(parseInt(time.hours), parseInt(time.minutes), 0, 0);
+    let hours = parseInt(time.hours);
+    
+    // Convert 12-hour to 24-hour format
+    if (time.period === 'AM' && hours === 12) {
+      hours = 0;
+    } else if (time.period === 'PM' && hours !== 12) {
+      hours += 12;
+    }
+    
+    newDate.setHours(hours, parseInt(time.minutes), 0, 0);
     
     const year = newDate.getFullYear();
     const month = String(newDate.getMonth() + 1).padStart(2, '0');
     const day = String(newDate.getDate()).padStart(2, '0');
-    const hours = String(newDate.getHours()).padStart(2, '0');
+    const hours24 = String(newDate.getHours()).padStart(2, '0');
     const minutes = String(newDate.getMinutes()).padStart(2, '0');
     
-    onChange(`${year}-${month}-${day}T${hours}:${minutes}`);
+    onChange(`${year}-${month}-${day}T${hours24}:${minutes}`);
   };
 
   // Navigate months
@@ -286,11 +301,14 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
                 onChange={(e) => handleTimeChange('hours', e.target.value)}
                 className="px-2 py-1 border rounded text-sm"
               >
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={String(i).padStart(2, '0')}>
-                    {String(i).padStart(2, '0')}
-                  </option>
-                ))}
+                {Array.from({ length: 12 }, (_, i) => {
+                  const hour = i === 0 ? 12 : i;
+                  return (
+                    <option key={i} value={String(hour).padStart(2, '0')}>
+                      {String(hour).padStart(2, '0')}
+                    </option>
+                  );
+                })}
               </select>
               <span className="text-sm">:</span>
               <select
@@ -303,6 +321,14 @@ export function SmartDateTimeInput({ value, onChange, label, className = '', dis
                     {String(i).padStart(2, '0')}
                   </option>
                 ))}
+              </select>
+              <select
+                value={selectedTime.period}
+                onChange={(e) => handleTimeChange('period', e.target.value)}
+                className="px-2 py-1 border rounded text-sm"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
               </select>
             </div>
           </div>

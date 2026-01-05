@@ -10,6 +10,7 @@ import { useGradeRelease } from './hooks/useGradeRelease';
 
 // Components
 import { StatsCards } from './components/Dashboard/StatsCards';
+import { LoadingDashboard } from './components/Dashboard/LoadingDashboard';
 import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection';
 import { QuickActions } from './components/Dashboard/QuickActions';
 import { WindowsList } from './components/WindowManagement/WindowsList';
@@ -139,22 +140,33 @@ export function ControlPanel() {
         {currentView === 'dashboard' ? (
           /* Dashboard View */
           <>
-            {/* Statistics */}
-            <StatsCards stats={stats} statsLoading={statsLoading} />
+            {/* Show loading state for entire dashboard or loaded content */}
+            {statsLoading ? (
+              <LoadingDashboard />
+            ) : stats ? (
+              <>
+                {/* Statistics */}
+                <StatsCards stats={stats} />
 
-            {/* Grade Release Section - Only show when grade release window is active */}
-            {isGradeReleaseWindowActive(windows) && (
-              <GradeReleaseSection
-                releasedGrades={releasedGrades}
-                onReleaseGrades={handleReleaseFinalGrades}
-              />
+                {/* Grade Release Section - Only show when grade release window is active */}
+                {isGradeReleaseWindowActive(windows) && (
+                  <GradeReleaseSection
+                    releasedGrades={releasedGrades}
+                    onReleaseGrades={handleReleaseFinalGrades}
+                  />
+                )}
+
+                {/* Quick Actions */}
+                <QuickActions
+                  onManageWindows={() => setCurrentView('windows')}
+                  onUpdateStatuses={updateWindowStatuses}
+                />
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Failed to load dashboard data. Please refresh the page.</p>
+              </div>
             )}
-
-            {/* Quick Actions */}
-            <QuickActions
-              onManageWindows={() => setCurrentView('windows')}
-              onUpdateStatuses={updateWindowStatuses}
-            />
           </>
         ) : (
           /* Windows Management View */

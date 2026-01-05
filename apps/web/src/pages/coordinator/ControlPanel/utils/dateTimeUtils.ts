@@ -1,11 +1,22 @@
-// Convert datetime-local string to ISO string without timezone conversion
+// Convert datetime-local string to ISO string preserving local time
 export const convertLocalDateTimeToISO = (localDateTimeString: string): string => {
   if (!localDateTimeString) return '';
   
-  // For datetime-local strings (YYYY-MM-DDTHH:mm), we can send them directly
-  // The backend will interpret them as local time when creating new Date()
-  // We just need to add seconds to make it a complete ISO format
-  return localDateTimeString + ':00';
+  // Create a date object from the local datetime string
+  // This treats the input as local time, not UTC
+  const localDate = new Date(localDateTimeString);
+  
+  // Format as ISO string but preserve the local time interpretation
+  // We'll send it as a local datetime string with timezone offset
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, '0');
+  const day = String(localDate.getDate()).padStart(2, '0');
+  const hours = String(localDate.getHours()).padStart(2, '0');
+  const minutes = String(localDate.getMinutes()).padStart(2, '0');
+  const seconds = String(localDate.getSeconds()).padStart(2, '0');
+  
+  // Return in local datetime format that the backend can interpret correctly
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
 // Format date to local datetime-local format for input
