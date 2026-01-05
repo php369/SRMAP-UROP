@@ -425,6 +425,42 @@ export function ControlPanel() {
     return errors;
   };
 
+  // Convert datetime-local string to ISO string without timezone conversion
+  const convertLocalDateTimeToISO = (localDateTimeString: string) => {
+    if (!localDateTimeString) return '';
+    
+    // For datetime-local strings (YYYY-MM-DDTHH:mm), we can send them directly
+    // The backend will interpret them as local time when creating new Date()
+    // We just need to add seconds to make it a complete ISO format
+    return localDateTimeString + ':00';
+  };
+
+  // Define workflow order for sorting windows
+  const getWorkflowOrder = (windowType: WindowType, assessmentType?: string) => {
+    const baseOrder = {
+      'proposal': 1,
+      'application': 2,
+      'submission': 3,
+      'assessment': 4,
+      'grade_release': 5
+    };
+
+    // For submission and assessment, add sub-ordering based on assessment type
+    if (windowType === 'submission' || windowType === 'assessment') {
+      const assessmentOrder = {
+        'CLA-1': 0,
+        'CLA-2': 1,
+        'CLA-3': 2,
+        'External': 3
+      };
+      
+      const assessmentSubOrder = assessmentType ? (assessmentOrder[assessmentType as keyof typeof assessmentOrder] || 0) : 0;
+      return baseOrder[windowType] + (assessmentSubOrder * 0.1); // e.g., 3.0, 3.1, 3.2, 3.3 for submissions
+    }
+
+    return baseOrder[windowType] || 999;
+  };
+
   // Auto-deselect invalid window types when project types change
   const handleProjectTypeChange = (projectType: ProjectType, isChecked: boolean) => {
     let newProjectTypes: ProjectType[];
@@ -697,13 +733,11 @@ export function ControlPanel() {
 
     setLoading(true);
     try {
-      // Convert datetime-local values to ISO strings (only for common dates mode)
+      // Convert datetime-local values to ISO strings (preserving local time)
       let startDate, endDate;
       if (windowForm.useCommonDates) {
-        const startDateObj = new Date(windowForm.startDate);
-        const endDateObj = new Date(windowForm.endDate);
-        startDate = startDateObj.toISOString();
-        endDate = endDateObj.toISOString();
+        startDate = convertLocalDateTimeToISO(windowForm.startDate);
+        endDate = convertLocalDateTimeToISO(windowForm.endDate);
       }
       
       if (editingWindow) {
@@ -745,10 +779,8 @@ export function ControlPanel() {
             let windowStartDate, windowEndDate;
             
             if (!windowForm.useCommonDates && windowForm.individualDates[windowKey]) {
-              const individualStart = new Date(windowForm.individualDates[windowKey].startDate);
-              const individualEnd = new Date(windowForm.individualDates[windowKey].endDate);
-              windowStartDate = individualStart.toISOString();
-              windowEndDate = individualEnd.toISOString();
+              windowStartDate = convertLocalDateTimeToISO(windowForm.individualDates[windowKey].startDate);
+              windowEndDate = convertLocalDateTimeToISO(windowForm.individualDates[windowKey].endDate);
             } else {
               windowStartDate = startDate;
               windowEndDate = endDate;
@@ -837,16 +869,16 @@ export function ControlPanel() {
       generatedWindows.push({
         windowType: 'proposal' as WindowType,
         projectType: selectedProjectType,
-        startDate: bulkSettings.proposal.startDate,
-        endDate: bulkSettings.proposal.endDate
+        startDate: convertLocalDateTimeToISO(bulkSettings.proposal.startDate),
+        endDate: convertLocalDateTimeToISO(bulkSettings.proposal.endDate)
       });
       
       // Generate application windows
       generatedWindows.push({
         windowType: 'application' as WindowType,
         projectType: selectedProjectType,
-        startDate: bulkSettings.application.startDate,
-        endDate: bulkSettings.application.endDate
+        startDate: convertLocalDateTimeToISO(bulkSettings.application.startDate),
+        endDate: convertLocalDateTimeToISO(bulkSettings.application.endDate)
       });
       
       // Generate assessment windows (submission + assessment for each CLA type)
@@ -862,8 +894,8 @@ export function ControlPanel() {
           windowType: 'submission' as WindowType,
           projectType: selectedProjectType,
           assessmentType,
-          startDate: phaseSettings.submissionStart,
-          endDate: phaseSettings.submissionEnd
+          startDate: convertLocalDateTimeToISO(phaseSettings.submissionStart),
+          endDate: convertLocalDateTimeToISO(phaseSettings.submissionEnd)
         });
         
         // Assessment window
@@ -871,8 +903,8 @@ export function ControlPanel() {
           windowType: 'assessment' as WindowType,
           projectType: selectedProjectType,
           assessmentType,
-          startDate: phaseSettings.assessmentStart,
-          endDate: phaseSettings.assessmentEnd
+          startDate: convertLocalDateTimeToISO(phaseSettings.assessmentStart),
+          endDate: convertLocalDateTimeToISO(phaseSettings.assessmentEnd)
         });
       });
       
@@ -880,8 +912,8 @@ export function ControlPanel() {
       generatedWindows.push({
         windowType: 'grade_release' as WindowType,
         projectType: selectedProjectType,
-        startDate: bulkSettings.gradeRelease.startDate,
-        endDate: bulkSettings.gradeRelease.endDate
+        startDate: convertLocalDateTimeToISO(bulkSettings.gradeRelease.startDate),
+        endDate: convertLocalDateTimeToISO(bulkSettings.gradeRelease.endDate)
       });
       
       console.log(`Creating ${generatedWindows.length} windows for ${selectedProjectType}:`, generatedWindows);
@@ -1851,28 +1883,18 @@ export function ControlPanel() {
                          (showInactiveWindows || isActive || !hasEnded);
                 })
                 .sort((a, b) => {
-                  const now = new Date();
-                  const aStart = new Date(a.startDate);
-                  const aEnd = new Date(a.endDate);
-                  const bStart = new Date(b.startDate);
-                  const bEnd = new Date(b.endDate);
+                  // First, sort by workflow order (proposal → application → submission → assessment → grade_release)
+                  const aWorkflowOrder = getWorkflowOrder(a.windowType, a.assessmentType);
+                  const bWorkflowOrder = getWorkflowOrder(b.windowType, b.assessmentType);
                   
-                  const aIsActive = now >= aStart && now <= aEnd;
-                  const aIsUpcoming = now < aStart;
-                  
-                  const bIsActive = now >= bStart && now <= bEnd;
-                  const bIsUpcoming = now < bStart;
-                  
-                  // Priority: Active > Upcoming > Inactive
-                  const aStatus = aIsActive ? 3 : aIsUpcoming ? 2 : 1;
-                  const bStatus = bIsActive ? 3 : bIsUpcoming ? 2 : 1;
-                  
-                  if (aStatus !== bStatus) {
-                    return bStatus - aStatus; // Higher status first
+                  if (aWorkflowOrder !== bWorkflowOrder) {
+                    return aWorkflowOrder - bWorkflowOrder; // Ascending workflow order
                   }
                   
-                  // Within same status, sort by start time (latest first - descending order)
-                  return bStart.getTime() - aStart.getTime();
+                  // Within same workflow step, sort by start time (earliest first - ascending order)
+                  const aStart = new Date(a.startDate);
+                  const bStart = new Date(b.startDate);
+                  return aStart.getTime() - bStart.getTime();
                 });
 
               if (projectWindows.length === 0) return null;
@@ -2493,7 +2515,7 @@ function BulkWindowCreationModal({ windowForm, setWindowForm, onSubmit, loading,
                     <div>
                       <h4 className="font-medium">{projectType}</h4>
                       <p className="text-sm text-gray-500">
-                        {projectType === 'IDP' && 'Individual Development Project'}
+                        {projectType === 'IDP' && 'Interdisciplinary Project'}
                         {projectType === 'UROP' && 'Undergraduate Research Opportunity Program'}
                         {projectType === 'CAPSTONE' && 'Capstone Project'}
                       </p>
