@@ -14,6 +14,7 @@ export function ControlPanel() {
   const [windows, setWindows] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [showInactiveWindows, setShowInactiveWindows] = useState(false);
+  const [windowsLoading, setWindowsLoading] = useState(false);
   const [releasedGrades, setReleasedGrades] = useState<Record<ProjectType, boolean>>({
     'IDP': false,
     'UROP': false,
@@ -29,6 +30,7 @@ export function ControlPanel() {
   const [windowToDelete, setWindowToDelete] = useState<any>(null);
   const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
   const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'windows'>('dashboard');
 
   const [windowForm, setWindowForm] = useState({
     windowTypes: [] as WindowType[],
@@ -100,6 +102,7 @@ export function ControlPanel() {
   }, []);
 
   const fetchWindows = async () => {
+    setWindowsLoading(true);
     try {
       const response = await api.get('/control/windows');
       if (response.success && response.data) {
@@ -113,6 +116,8 @@ export function ControlPanel() {
         toast.error('Rate limit reached. Please wait a moment before refreshing.');
       }
       setWindows([]);
+    } finally {
+      setWindowsLoading(false);
     }
   };
 
@@ -141,6 +146,11 @@ export function ControlPanel() {
     const existingWindow = windows.find(window => {
       const end = new Date(window.endDate);
       const isActiveOrUpcoming = now <= end; // Active (now between start-end) or upcoming (now < start)
+      
+      // Skip the window being edited to allow updates
+      if (editingWindow && window._id === editingWindow._id) {
+        return false;
+      }
       
       return window.windowType === windowType &&
              window.projectType === projectType &&
@@ -1199,13 +1209,34 @@ export function ControlPanel() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold mb-2">Control Panel</h1>
-          <p className="text-gray-600">
-            Manage windows, release grades, and view statistics
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                {currentView === 'dashboard' ? 'Control Panel' : 'Manage Windows'}
+              </h1>
+              <p className="text-gray-600">
+                {currentView === 'dashboard' 
+                  ? 'Overview of system statistics and quick actions'
+                  : 'Create, edit, and manage assessment windows'
+                }
+              </p>
+            </div>
+            {currentView === 'windows' && (
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                Back to Dashboard
+              </button>
+            )}
+          </div>
         </motion.div>
 
-        {/* Statistics */}
+        {currentView === 'dashboard' ? (
+          /* Dashboard View */
+          <>
+            {/* Statistics */}
         {statsLoading ? (
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             {[1, 2, 3, 4].map((i) => (
@@ -1228,74 +1259,206 @@ export function ControlPanel() {
             ))}
           </div>
         ) : stats && (
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600" />
+          <>
+            {/* Main Stats Grid */}
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Projects</p>
+                    <p className="text-2xl font-bold">{stats.overview.totalProjects}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Projects</p>
-                  <p className="text-2xl font-bold">{stats.overview.totalProjects}</p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <Users className="w-6 h-6 text-green-600" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Users className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Groups</p>
+                    <p className="text-2xl font-bold">{stats.overview.totalGroups}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Groups</p>
-                  <p className="text-2xl font-bold">{stats.overview.totalGroups}</p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-yellow-600" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <Clock className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Pending Applications</p>
+                    <p className="text-2xl font-bold">{stats.overview.pendingApplications}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Pending Applications</p>
-                  <p className="text-2xl font-bold">{stats.overview.pendingApplications}</p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <Award className="w-6 h-6 text-purple-600" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <Award className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Graded Submissions</p>
+                    <p className="text-2xl font-bold">{stats.overview.gradedSubmissions}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Graded Submissions</p>
-                  <p className="text-2xl font-bold">{stats.overview.gradedSubmissions}</p>
+              </motion.div>
+            </div>
+
+            {/* Enhanced Stats Breakdown */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {/* Projects by Type */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Projects by Type
+                </h3>
+                <div className="space-y-3">
+                  {stats.breakdown?.projectsByType?.map((item: any) => (
+                    <div key={item._id} className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">{item._id || 'Unknown'}</span>
+                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                    </div>
+                  )) || (
+                    <p className="text-sm text-gray-500">No project data available</p>
+                  )}
                 </div>
-              </div>
-            </motion.div>
-          </div>
+              </motion.div>
+
+              {/* Applications by Status */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-yellow-600" />
+                  Applications Status
+                </h3>
+                <div className="space-y-3">
+                  {stats.breakdown?.applicationsByStatus?.map((item: any) => (
+                    <div key={item._id} className="flex justify-between items-center">
+                      <span className={`text-sm font-medium capitalize ${
+                        item._id === 'pending' ? 'text-yellow-700' :
+                        item._id === 'approved' ? 'text-green-700' :
+                        item._id === 'rejected' ? 'text-red-700' : 'text-gray-700'
+                      }`}>
+                        {item._id || 'Unknown'}
+                      </span>
+                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                    </div>
+                  )) || (
+                    <p className="text-sm text-gray-500">No application data available</p>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Submissions by Assessment */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-white rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-600" />
+                  Submissions by Assessment
+                </h3>
+                <div className="space-y-3">
+                  {stats.breakdown?.submissionsByAssessment?.map((item: any) => (
+                    <div key={item._id} className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">{item._id || 'Unknown'}</span>
+                      <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                    </div>
+                  )) || (
+                    <p className="text-sm text-gray-500">No submission data available</p>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Additional Quick Stats */}
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="bg-white rounded-xl shadow-lg p-4"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{stats.overview.activeWindows}</div>
+                  <div className="text-sm text-gray-600">Active Windows</div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="bg-white rounded-xl shadow-lg p-4"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{stats.overview.totalApplications}</div>
+                  <div className="text-sm text-gray-600">Total Applications</div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="bg-white rounded-xl shadow-lg p-4"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{stats.overview.totalSubmissions}</div>
+                  <div className="text-sm text-gray-600">Total Submissions</div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0 }}
+                className="bg-white rounded-xl shadow-lg p-4"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">{stats.overview.releasedGrades}</div>
+                  <div className="text-sm text-gray-600">Released Grades</div>
+                </div>
+              </motion.div>
+            </div>
+          </>
         )}
 
         {/* Grade Release Section - Only show when grade release window is active */}
@@ -1342,12 +1505,76 @@ export function ControlPanel() {
           </motion.div>
         )}
 
-        {/* Windows Management */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg p-6"
-        >
+            {/* Quick Actions Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              className="bg-white rounded-xl shadow-lg p-6"
+            >
+              <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Manage Windows Card */}
+                <div 
+                  onClick={() => setCurrentView('windows')}
+                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                      <Calendar className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Manage Windows</h3>
+                      <p className="text-sm text-gray-600">Create, edit, and manage assessment windows</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    <p>• Create individual or bulk windows</p>
+                    <p>• Edit existing window schedules</p>
+                    <p>• View window status and timeline</p>
+                  </div>
+                  <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
+                    Click to manage windows
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </div>
+                </div>
+
+                {/* System Status Card */}
+                <div className="p-6 border-2 border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <RefreshCw className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
+                      <p className="text-sm text-gray-600">Monitor and update system components</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleUpdateWindowStatuses}
+                      className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Update Window Statuses
+                    </button>
+                    <p className="text-xs text-gray-500 text-center">
+                      Updates window statuses based on current time
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        ) : (
+          /* Windows Management View */
+          <>
+            {/* Windows Management */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl shadow-lg p-6"
+            >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Calendar className="w-6 h-6" />
@@ -1860,19 +2087,56 @@ export function ControlPanel() {
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                {windows.filter(w => {
+                {windowsLoading ? 'Loading...' : `${windows.filter(w => {
                   const now = new Date();
                   const start = new Date(w.startDate);
                   const end = new Date(w.endDate);
                   const isActive = now >= start && now <= end;
                   const hasEnded = now > end;
                   return showInactiveWindows || isActive || !hasEnded;
-                }).length} of {windows.length} windows shown
+                }).length} of ${windows.length} windows shown`}
               </div>
             </div>
 
-            {/* Windows organized by project type */}
-            {['IDP', 'UROP', 'CAPSTONE'].map(projectType => {
+            {/* Loading State */}
+            {windowsLoading ? (
+              <div className="space-y-6">
+                {['IDP', 'UROP', 'CAPSTONE'].map(projectType => (
+                  <div key={projectType} className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div className="space-y-3">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="p-4 border-2 border-gray-200 rounded-lg animate-pulse">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-5 bg-gray-200 rounded w-24"></div>
+                                <div className="h-5 bg-gray-200 rounded w-16"></div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                <div className="h-4 bg-gray-200 rounded w-44"></div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-9 h-9 bg-gray-200 rounded animate-pulse"></div>
+                              <div className="w-9 h-9 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Existing Windows Content */
+              <>
+                {/* Windows organized by project type */}
+                {['IDP', 'UROP', 'CAPSTONE'].map(projectType => {
               const projectWindows = windows
                 .filter(window => {
                   const now = new Date();
@@ -2003,8 +2267,12 @@ export function ControlPanel() {
                 No windows created yet. Create your first window to get started.
               </p>
             )}
+              </>
+            )}
           </div>
         </motion.div>
+          </>
+        )}
 
         {/* Creation Mode Selection Modal */}
         {showCreationModeModal && (
