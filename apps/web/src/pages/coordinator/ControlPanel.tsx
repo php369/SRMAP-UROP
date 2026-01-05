@@ -440,22 +440,25 @@ export function ControlPanel() {
     const baseOrder = {
       'proposal': 1,
       'application': 2,
-      'submission': 3,
-      'assessment': 4,
-      'grade_release': 5
+      'grade_release': 99
     };
 
-    // For submission and assessment, add sub-ordering based on assessment type
+    // Handle submission and assessment pairs in correct sequence
     if (windowType === 'submission' || windowType === 'assessment') {
       const assessmentOrder = {
-        'CLA-1': 0,
-        'CLA-2': 1,
-        'CLA-3': 2,
-        'External': 3
+        'CLA-1': 3,
+        'CLA-2': 5,
+        'CLA-3': 7,
+        'External': 9
       };
       
-      const assessmentSubOrder = assessmentType ? (assessmentOrder[assessmentType as keyof typeof assessmentOrder] || 0) : 0;
-      return baseOrder[windowType] + (assessmentSubOrder * 0.1); // e.g., 3.0, 3.1, 3.2, 3.3 for submissions
+      if (assessmentType && assessmentOrder[assessmentType as keyof typeof assessmentOrder]) {
+        const baseAssessmentOrder = assessmentOrder[assessmentType as keyof typeof assessmentOrder];
+        // Submission comes first (3, 5, 7, 9), then assessment (+1: 4, 6, 8, 10)
+        return windowType === 'submission' ? baseAssessmentOrder : baseAssessmentOrder + 1;
+      }
+      
+      return 50; // Fallback for unknown assessment types
     }
 
     return baseOrder[windowType] || 999;
