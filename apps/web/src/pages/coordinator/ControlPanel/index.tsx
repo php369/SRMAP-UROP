@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useWindowManagement } from './hooks/useWindowManagement';
 import { useStats } from './hooks/useStats';
 import { useGradeRelease } from './hooks/useGradeRelease';
+import { useWindowForm } from './hooks/useWindowForm';
 
 // Components
 import { StatsCards } from './components/Dashboard/StatsCards';
@@ -14,6 +15,8 @@ import { LoadingDashboard } from './components/Dashboard/LoadingDashboard';
 import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection';
 import { QuickActions } from './components/Dashboard/QuickActions';
 import { WindowsList } from './components/WindowManagement/WindowsList';
+import { WindowForm } from './components/WindowManagement/WindowForm';
+import { BulkCreationModal } from './components/WindowManagement/BulkCreationModal';
 import { CreationModeModal } from './components/Modals/CreationModeModal';
 import { DeleteConfirmationModal } from './components/Modals/DeleteConfirmationModal';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
@@ -23,24 +26,32 @@ import { Window, ProjectType } from './types';
 
 export function ControlPanel() {
   // State
-  const [currentView, setCurrentView] = useState<'dashboard' | 'windows'>('dashboard');
+  const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
+  const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
   const [showInactiveWindows, setShowInactiveWindows] = useState(false);
   const [showCreationModeModal, setShowCreationModeModal] = useState(false);
   const [creationMode, setCreationMode] = useState<'individual' | 'bulk'>('individual');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [windowToDelete, setWindowToDelete] = useState<Window | null>(null);
-  const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
-  const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
+  const [showWindowForm, setShowWindowForm] = useState(false);
+  const [showBulkCreationModal, setShowBulkCreationModal] = useState(false);
+  const [editingWindow, setEditingWindow] = useState<Window | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+
+  const [currentView, setCurrentView] = useState<'dashboard' | 'windows'>('dashboard');
 
   // Hooks
   const {
     windows,
     windowsLoading,
     fetchWindows,
+    createWindow,
+    createBulkWindows,
     deleteWindow,
-    updateWindowStatuses
+    updateWindowStatuses,
+    prepareEditWindow
   } = useWindowManagement();
-
+  
   const { stats, statsLoading, fetchStats } = useStats();
   
   const { 
@@ -49,6 +60,13 @@ export function ControlPanel() {
     releaseGrades, 
     isGradeReleaseWindowActive 
   } = useGradeRelease();
+
+  const {
+    windowForm,
+    setWindowForm,
+    resetForm,
+    validateForm
+  } = useWindowForm(windows);
 
   // Load initial data
   useEffect(() => {
@@ -64,9 +82,36 @@ export function ControlPanel() {
   }, [fetchWindows, fetchStats, checkReleasedGrades]);
 
   // Handlers
+  const handleCreateWindow = async () => {
+    if (!validateForm()) return;
+    
+    setFormLoading(true);
+    const success = await createWindow(windowForm, editingWindow);
+    setFormLoading(false);
+    
+    if (success) {
+      setShowWindowForm(false);
+      setEditingWindow(null);
+      resetForm();
+    }
+  };
+
+  const handleBulkWindowCreation = async (selectedProjectType: ProjectType) => {
+    setFormLoading(true);
+    const success = await createBulkWindows(windowForm, selectedProjectType);
+    setFormLoading(false);
+    
+    if (success) {
+      setShowBulkCreationModal(false);
+      resetForm();
+    }
+  };
+
   const handleEditWindow = (window: Window) => {
-    // For now, we'll just show a console log - full edit form would need to be implemented
-    console.log('Edit functionality would open the window form in edit mode for:', window);
+    const editForm = prepareEditWindow(window);
+    setWindowForm(editForm);
+    setEditingWindow(window);
+    setShowWindowForm(true);
   };
 
   const handleDeleteWindow = (window: Window) => {
@@ -213,6 +258,39 @@ export function ControlPanel() {
           </>
         )}
 
+        {/* Individual Window Creation Form */}
+        {showWindowForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <WindowForm
+                windowForm={windowForm}
+                setWindowForm={setWindowForm}
+                editingWindow={editingWindow}
+                onSubmit={handleCreateWindow}
+                onCancel={() => {
+                  setShowWindowForm(false);
+                  setEditingWindow(null);
+                  resetForm();
+                }}
+                loading={formLoading}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Creation Modal */}
+        <BulkCreationModal
+          isOpen={showBulkCreationModal}
+          windowForm={windowForm}
+          setWindowForm={setWindowForm}
+          onSubmit={handleBulkWindowCreation}
+          loading={formLoading}
+          onCancel={() => {
+            setShowBulkCreationModal(false);
+            resetForm();
+          }}
+        />
+
         {/* Creation Mode Selection Modal */}
         <CreationModeModal
           isOpen={showCreationModeModal}
@@ -221,16 +299,15 @@ export function ControlPanel() {
           onContinue={() => {
             setShowCreationModeModal(false);
             if (creationMode === 'individual') {
-              // For now, just show a console log - full form would need to be implemented
-              console.log('Individual creation form would open here');
+              setShowWindowForm(true);
             } else {
-              // For now, just show a console log - bulk creation modal would need to be implemented
-              console.log('Bulk creation form would open here');
+              setShowBulkCreationModal(true);
             }
           }}
           onCancel={() => {
             setShowCreationModeModal(false);
             setCreationMode('individual');
+            resetForm();
           }}
         />
 
