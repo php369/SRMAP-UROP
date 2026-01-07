@@ -1305,7 +1305,7 @@ export function FacultyAssessmentPage() {
                     </div>
                   )}
 
-                  {/* Current Grades Display - Show when viewing submission details */}
+                  {/* Current Grades Display - Show when viewing the submission details */}
                   {!selectedStudent && !showGroupGrading && selectedSubmission.students && (
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Current Grades ({assessmentType})</h3>
