@@ -25,6 +25,8 @@ export const ROUTES = {
   ASSESSMENT_DETAIL: '/dashboard/assessments/:id',
   SUBMISSIONS: '/dashboard/submissions',
   SUBMISSION_DETAIL: '/dashboard/submissions/:id',
+  HELP: '/dashboard/help',
+
 
   FACULTY_PROJECTS: '/dashboard/projects',
 

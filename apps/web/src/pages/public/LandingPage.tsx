@@ -1,239 +1,194 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Users, Award } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, Award, Shield, Monitor, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
 
 export function LandingPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Header */}
-      <header
-        className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-bg/90"
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-100 dark:bg-slate-950 dark:text-slate-100">
+      {/* Minimal Navbar */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+          ? 'py-3 bg-white/80 backdrop-blur-md border-b border-slate-200/50 dark:bg-slate-950/80 dark:border-slate-800/50 shadow-sm'
+          : 'py-5 bg-transparent'
+          }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
               <img
                 src="/branding/srm-icon.svg"
                 alt="SRM University-AP"
                 className="h-8 w-8"
               />
-              <div>
-                <h1
-                  className="text-lg font-semibold text-textPrimary"
-                >
-                  SRM University-AP
-                </h1>
-                <p className="text-xs text-textSecondary">
-                  Project Management Portal
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex items-center space-x-4">
-              {isLoading ? (
-                <div className="w-20 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-              ) : isAuthenticated && user ? (
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                      <span className="text-primary text-xs font-bold">
-                        {user?.name?.charAt(0).toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <span className="text-textPrimary font-medium">{user?.name || 'User'}</span>
-                  </div>
-                  <Link
-                    to={ROUTES.DASHBOARD}
-                    className="px-4 py-2 rounded-lg transition-colors text-white hover:opacity-90 bg-accent"
-                  >
-                    Go to Dashboard
-                  </Link>
-                </div>
-              ) : (
-                <Link
-                  to={ROUTES.LOGIN}
-                  className="px-4 py-2 rounded-lg transition-colors text-white hover:opacity-90 bg-accent"
-                >
-                  Sign In
-                </Link>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <main>
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <div>
-              <img
-                src="/branding/srm-logo.svg"
-                alt="SRM University-AP"
-                className="h-16 mx-auto mb-8"
-              />
-
-              <h1
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-textPrimary"
-              >
-                Project Management
-                <span className="block text-accent">
-                  Made Simple
-                </span>
-              </h1>
-
-              <p
-                className="text-xl mb-12 max-w-2xl mx-auto text-textSecondary"
-              >
-                Streamline your academic projects with our comprehensive portal
-                for IDP, UROP, and CAPSTONE projects at SRM University-AP.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {isLoading ? (
-                  <div className="w-40 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-                ) : isAuthenticated ? (
-                  <Link
-                    to={ROUTES.DASHBOARD}
-                    className="inline-flex items-center justify-center px-8 py-3 text-white rounded-lg hover:opacity-90 transition-opacity text-lg font-medium bg-accent"
-                  >
-                    Go to Dashboard
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                ) : (
-                  <Link
-                    to={ROUTES.LOGIN}
-                    className="inline-flex items-center justify-center px-8 py-3 text-white rounded-lg hover:opacity-90 transition-opacity text-lg font-medium bg-accent"
-                  >
-                    Sign In
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section
-          className="py-16 px-4 sm:px-6 lg:px-8 bg-surface"
-        >
-          <div className="max-w-6xl mx-auto">
-            <div
-              className="text-center mb-16"
-            >
-              <h2
-                className="text-3xl font-bold mb-4 text-textPrimary"
-              >
-                Everything You Need
-              </h2>
-              <p className="text-lg text-textSecondary">
-                Comprehensive project management for students and faculty
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div
-                className="text-center p-6"
-              >
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-border"
-                >
-                  <BookOpen className="h-8 w-8 text-textPrimary" />
-                </div>
-                <h3
-                  className="text-xl font-semibold mb-2 text-textPrimary"
-                >
-                  Project Management
-                </h3>
-                <p className="text-textSecondary">
-                  Streamlined workflow for IDP, UROP, and Capstone projects with faculty proposals and student applications.
-                </p>
-              </div>
-
-              <div
-                className="text-center p-6"
-              >
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-border"
-                >
-                  <Users className="h-8 w-8 text-textPrimary" />
-                </div>
-                <h3
-                  className="text-xl font-semibold mb-2 text-textPrimary"
-                >
-                  Team Collaboration
-                </h3>
-                <p className="text-textSecondary">
-                  Form groups, apply for projects, and collaborate with
-                  integrated Google Meet links and meeting logs.
-                </p>
-              </div>
-
-              <div
-                className="text-center p-6"
-              >
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-border"
-                >
-                  <Award className="h-8 w-8 text-textPrimary" />
-                </div>
-                <h3
-                  className="text-xl font-semibold mb-2 text-textPrimary"
-                >
-                  Assessment & Grading
-                </h3>
-                <p className="text-textSecondary">
-                  Comprehensive evaluation system with internal and external
-                  assessments, grade tracking, and release management.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer
-        className="border-t border-border py-8 px-4 sm:px-6 lg:px-8 bg-bg"
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <img
-                src="/branding/srm-icon.svg"
-                alt="SRM University-AP"
-                className="h-6 w-6"
-              />
-              <span className="text-textSecondary">
-                © 2025 SRM University-AP. All rights reserved.
+              <span className="font-semibold text-lg tracking-tight">
+                Project Portal
               </span>
             </div>
 
-            <div className="flex items-center space-x-6">
-              {isLoading ? (
-                <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
-              ) : isAuthenticated ? (
-                <Link
-                  to={ROUTES.DASHBOARD}
-                  className="transition-colors hover:opacity-80 text-textSecondary"
-                >
-                  Dashboard
-                </Link>
-              ) : (
+            {/* Actions */}
+            <div className="flex items-center gap-4 sm:gap-6">
+              {!isAuthenticated && (
                 <Link
                   to={ROUTES.LOGIN}
-                  className="transition-colors hover:opacity-80 text-textSecondary"
+                  className="text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors dark:text-slate-400 dark:hover:text-amber-400"
                 >
-                  Sign In
+                  Log in
                 </Link>
               )}
+
+              <Link
+                to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
+                className="inline-flex items-center justify-center px-5 py-2 text-sm font-medium transition-all duration-200 rounded-full bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 dark:bg-amber-500 dark:text-slate-900 dark:hover:bg-amber-400"
+              >
+                {isLoading ? 'Loading...' : isAuthenticated ? 'Dashboard' : 'Get Started'}
+              </Link>
             </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="relative pt-32 pb-20 overflow-hidden">
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium mb-8 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30 animate-fade-in-up">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            Academic Year 2025-26
+          </div>
+
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 max-w-4xl mx-auto leading-[1.1] dark:text-white">
+            Transforming Academic
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 pb-2">
+              Project Management
+            </span>
+          </h1>
+
+          <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed dark:text-slate-400">
+            A centralized platform for SRM University-AP students and faculty to manage IDP, UROP, and Capstone projects efficiently.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+            <Link
+              to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
+              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-amber-500 text-white font-medium transition-all hover:bg-amber-600 hover:shadow-xl hover:shadow-amber-500/20 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:text-slate-900"
+            >
+              {isAuthenticated ? 'Go to Dashboard' : 'Start Your Project'}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            <a
+              href="#features"
+              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-slate-100 text-slate-900 font-medium transition-all hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Learn More
+            </a>
+          </div>
+        </div>
+
+        {/* Hero Image Layer */}
+        <div className="relative max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10 dark:ring-slate-100/10 bg-slate-50 dark:bg-slate-900">
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 h-1/2 bottom-0 dark:from-slate-950"></div>
+
+            <img
+              src="/background.webp"
+              alt="Dashboard Preview"
+              className="w-full h-auto object-cover object-bottom"
+              style={{ maxHeight: '800px', minHeight: '400px' }}
+            />
+
+            {/* Overlay for better text integration if needed, currently clean */}
+            <div className="absolute inset-0 bg-slate-900/5 mix-blend-multiply pointer-events-none"></div>
+          </div>
+        </div>
+      </main>
+
+      {/* Features Grid */}
+      <section id="features" className="py-24 bg-slate-50 dark:bg-slate-900/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4 dark:text-white">
+              Everything needed for success
+            </h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400">
+              Streamline every aspect of your academic projects with our comprehensive suite of management tools.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {[
+              {
+                icon: BookOpen,
+                title: 'Project Tracking',
+                desc: 'End-to-end lifecycle management for IDP, UROP, and Capstone projects.'
+              },
+              {
+                icon: Users,
+                title: 'Team Collaboration',
+                desc: 'Form teams, schedule meetings, and collaborate seamlessly with faculty guides.'
+              },
+              {
+                icon: Award,
+                title: 'Smart Assessment',
+                desc: 'Automated grading workflows with transparent evaluation criteria and feedback.'
+              },
+              {
+                icon: Shield,
+                title: 'Secure Access',
+                desc: 'Role-based access control ensures data privacy and secure project submissions.'
+              },
+              {
+                icon: Monitor,
+                title: 'Real-time Dashboard',
+                desc: 'Track progress, deadlines, and notifications in one centralized hub.'
+              },
+              {
+                icon: Globe,
+                title: 'Digital Repository',
+                desc: 'Centralized archive of project reports, presentations, and resources.'
+              }
+            ].map((feature, i) => (
+              <div key={i} className="group p-8 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-100 transition-all dark:bg-slate-800 dark:border-slate-700 dark:hover:border-amber-500/30">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 group-hover:bg-amber-500 group-hover:text-white transition-colors dark:bg-slate-700 dark:text-amber-400">
+                  <feature.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-slate-900 dark:text-white">{feature.title}</h3>
+                <p className="text-slate-600 leading-relaxed dark:text-slate-400">
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-3">
+            <img src="/branding/srm-icon.svg" alt="Logo" className="h-6 w-6 opacity-80" />
+            <p className="text-sm text-slate-500">© 2025 SRM University-AP. All rights reserved.</p>
+          </div>
+          <div className="flex gap-8">
+            <a href="#" className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Privacy Policy</a>
+            <a href="#" className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Terms of Service</a>
+            <Link to={ROUTES.HELP} className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Support</Link>
           </div>
         </div>
       </footer>
