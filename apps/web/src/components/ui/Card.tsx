@@ -9,7 +9,7 @@ interface CardProps {
 }
 
 export function Card({ children, className, variant = 'default', onClick }: CardProps) {
-  const baseClasses = 'rounded-xl border transition-all duration-300';
+  const baseClasses = 'rounded-xl border transition-all duration-300 ease-out-quart hover:-translate-y-1';
 
   const variantClasses = {
     default: 'bg-surface border-border shadow-sm hover:shadow-md',

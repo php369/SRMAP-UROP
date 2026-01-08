@@ -12,6 +12,7 @@ import { AuthGuard } from './components/auth/AuthGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/common/NotificationProvider';
 import { PageLoader } from './components/common/PageLoader';
+import { ScrollProvider } from './components/ui/ScrollProvider';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -75,115 +76,117 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <Router>
-              <div className="min-h-screen bg-background text-text">
-                <NotificationProvider />
+            <ScrollProvider>
+              <Router>
+                <div className="min-h-screen bg-background text-text">
+                  <NotificationProvider />
 
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {/* Public routes */}
-                    <Route path={ROUTES.HOME} element={<LandingPage />} />
-                    <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                    <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path={ROUTES.HOME} element={<LandingPage />} />
+                      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                      <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallbackPage />} />
 
-                    {/* Protected routes */}
-                    <Route
-                      path="/dashboard/*"
-                      element={
-                        <AuthGuard>
-                          <SidebarProvider>
-                            <AppLayout>
-                              <Routes>
-                                <Route path="/" element={<DashboardPage />} />
-                                <Route path="/assessments" element={<AssessmentsPage />} />
-                                <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
-                                <Route path="/submissions" element={<SubmissionsPage />} />
-                                <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
-                                <Route path="/help" element={<HelpSupportPage />} />
-                                <Route path="/application" element={
-                                  <AuthGuard requiredRole="student">
-                                    <ApplicationPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/submission" element={
-                                  <AuthGuard requiredRole="student">
-                                    <SubmissionPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/assessment" element={
-                                  <AuthGuard requiredRole="student">
-                                    <AssessmentPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/meetings" element={
-                                  <AuthGuard requiredRole="student">
-                                    <MeetingsPage />
-                                  </AuthGuard>
-                                } />
+                      {/* Protected routes */}
+                      <Route
+                        path="/dashboard/*"
+                        element={
+                          <AuthGuard>
+                            <SidebarProvider>
+                              <AppLayout>
+                                <Routes>
+                                  <Route path="/" element={<DashboardPage />} />
+                                  <Route path="/assessments" element={<AssessmentsPage />} />
+                                  <Route path="/assessments/:id" element={<AssessmentDetailPage />} />
+                                  <Route path="/submissions" element={<SubmissionsPage />} />
+                                  <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
+                                  <Route path="/help" element={<HelpSupportPage />} />
+                                  <Route path="/application" element={
+                                    <AuthGuard requiredRole="student">
+                                      <ApplicationPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/submission" element={
+                                    <AuthGuard requiredRole="student">
+                                      <SubmissionPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/assessment" element={
+                                    <AuthGuard requiredRole="student">
+                                      <AssessmentPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/meetings" element={
+                                    <AuthGuard requiredRole="student">
+                                      <MeetingsPage />
+                                    </AuthGuard>
+                                  } />
 
-                                {/* Faculty routes */}
-                                <Route path="/projects" element={
-                                  <AuthGuard requiredRole={['faculty', 'coordinator']}>
-                                    <FacultyProjectsPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/faculty/applications" element={
-                                  <AuthGuard requiredRole={['faculty', 'coordinator']}>
-                                    <FacultyApplicationsPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/faculty/assessment" element={
-                                  <AuthGuard requiredRole={['faculty', 'coordinator']}>
-                                    <FacultyAssessmentPage />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/faculty/meetings" element={
-                                  <AuthGuard requiredRole={['faculty', 'coordinator']}>
-                                    <FacultyMeetingsPage />
-                                  </AuthGuard>
-                                } />
+                                  {/* Faculty routes */}
+                                  <Route path="/projects" element={
+                                    <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                      <FacultyProjectsPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/faculty/applications" element={
+                                    <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                      <FacultyApplicationsPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/faculty/assessment" element={
+                                    <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                      <FacultyAssessmentPage />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/faculty/meetings" element={
+                                    <AuthGuard requiredRole={['faculty', 'coordinator']}>
+                                      <FacultyMeetingsPage />
+                                    </AuthGuard>
+                                  } />
 
-                                {/* Coordinator routes */}
+                                  {/* Coordinator routes */}
 
-                                <Route path="/control" element={
-                                  <AuthGuard requiredRole="coordinator">
-                                    <ControlPanel />
-                                  </AuthGuard>
-                                } />
+                                  <Route path="/control" element={
+                                    <AuthGuard requiredRole="coordinator">
+                                      <ControlPanel />
+                                    </AuthGuard>
+                                  } />
 
-                                {/* Admin routes */}
-                                <Route path="/admin/eligibility" element={
-                                  <AuthGuard requiredRole="admin">
-                                    <EligibilityUpload />
-                                  </AuthGuard>
-                                } />
-                                <Route path="/admin/windows" element={
-                                  <AuthGuard requiredRole="admin">
-                                    <WindowManagement />
-                                  </AuthGuard>
-                                } />
+                                  {/* Admin routes */}
+                                  <Route path="/admin/eligibility" element={
+                                    <AuthGuard requiredRole="admin">
+                                      <EligibilityUpload />
+                                    </AuthGuard>
+                                  } />
+                                  <Route path="/admin/windows" element={
+                                    <AuthGuard requiredRole="admin">
+                                      <WindowManagement />
+                                    </AuthGuard>
+                                  } />
 
-                                {/* Catch all route */}
-                                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                              </Routes>
-                            </AppLayout>
-                          </SidebarProvider>
-                        </AuthGuard>
-                      }
-                    />
-                  </Routes>
-                </Suspense>
+                                  {/* Catch all route */}
+                                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                                </Routes>
+                              </AppLayout>
+                            </SidebarProvider>
+                          </AuthGuard>
+                        }
+                      />
+                    </Routes>
+                  </Suspense>
 
-                {/* Toast notifications */}
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 4000,
-                    className: 'bg-surface text-text border border-border',
-                  }}
-                />
-              </div>
-            </Router>
+                  {/* Toast notifications */}
+                  <Toaster
+                    position="top-right"
+                    toastOptions={{
+                      duration: 4000,
+                      className: 'bg-surface text-text border border-border',
+                    }}
+                  />
+                </div>
+              </Router>
+            </ScrollProvider>
 
             {/* React Query DevTools */}
             <ReactQueryDevtools initialIsOpen={false} />
