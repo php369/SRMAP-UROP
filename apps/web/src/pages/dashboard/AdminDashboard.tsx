@@ -2,10 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
 import { GlassCard } from '../../components/ui/GlassCard';
 import {
-    LayoutDashboard,
-    Upload,
-    Calendar
-} from 'lucide-react';
+    HomeIcon,
+    UploadIcon,
+    CalendarIcon
+} from '../../components/ui/Icons';
 
 export function AdminDashboard() {
     const navigate = useNavigate();
@@ -17,7 +17,7 @@ export function AdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <DashboardCard
                         title="Dashboard"
-                        icon={<LayoutDashboard size={20} />}
+                        icon={<HomeIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard')}
@@ -27,7 +27,7 @@ export function AdminDashboard() {
 
                     <DashboardCard
                         title="Eligibility Upload"
-                        icon={<Upload size={20} />}
+                        icon={<UploadIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/admin/eligibility')}
@@ -37,7 +37,7 @@ export function AdminDashboard() {
 
                     <DashboardCard
                         title="Windows"
-                        icon={<Calendar size={20} />}
+                        icon={<CalendarIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/admin/windows')}

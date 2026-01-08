@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { GlassCard } from './GlassCard';
+import { ArrowRightIcon } from './Icons';
 
 interface QuickActionCardProps {
   title: string;
@@ -77,12 +78,10 @@ export function QuickActionCard({
 
       {/* Hover effect */}
       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      
+
       {/* Arrow indicator */}
       <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-        <svg className="w-5 h-5 text-textSecondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
+        <ArrowRightIcon className="w-5 h-5 text-textSecondary" />
       </div>
     </GlassCard>
   );

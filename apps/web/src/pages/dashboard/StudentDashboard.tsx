@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
 import { GlassCard } from '../../components/ui/GlassCard';
 import {
-    LayoutDashboard,
-    FileText,
-    Send,
-    ClipboardList,
-    Video
-} from 'lucide-react';
+    HomeIcon,
+    UsersIcon,
+    UploadIcon,
+    FileTextIcon,
+    CalendarIcon
+} from '../../components/ui/Icons';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -75,7 +75,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <DashboardCard
                         title="Dashboard"
-                        icon={<LayoutDashboard size={20} />}
+                        icon={<HomeIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard')}
@@ -85,7 +85,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
 
                     <DashboardCard
                         title="Application"
-                        icon={<FileText size={20} />}
+                        icon={<UsersIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/application')}
@@ -95,7 +95,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
 
                     <DashboardCard
                         title="Submission"
-                        icon={<Send size={20} />}
+                        icon={<UploadIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/submission')}
@@ -105,7 +105,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
 
                     <DashboardCard
                         title="Assessment"
-                        icon={<ClipboardList size={20} />}
+                        icon={<FileTextIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/assessment')}
@@ -115,7 +115,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
 
                     <DashboardCard
                         title="Meetings"
-                        icon={<Video size={20} />}
+                        icon={<CalendarIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/meetings')}

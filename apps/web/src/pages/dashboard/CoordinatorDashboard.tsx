@@ -2,11 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
 import { GlassCard } from '../../components/ui/GlassCard';
 import {
-    LayoutDashboard,
-    Briefcase,
-    FileText,
-    Settings
-} from 'lucide-react';
+    HomeIcon,
+    FolderOpenIcon,
+    UsersIcon,
+    SettingsIcon
+} from '../../components/ui/Icons';
 
 export function CoordinatorDashboard() {
     const navigate = useNavigate();
@@ -18,7 +18,7 @@ export function CoordinatorDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <DashboardCard
                         title="Dashboard"
-                        icon={<LayoutDashboard size={20} />}
+                        icon={<HomeIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard')}
@@ -28,7 +28,7 @@ export function CoordinatorDashboard() {
 
                     <DashboardCard
                         title="My Projects"
-                        icon={<Briefcase size={20} />}
+                        icon={<FolderOpenIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/projects')}
@@ -40,7 +40,7 @@ export function CoordinatorDashboard() {
 
                     <DashboardCard
                         title="Applications"
-                        icon={<FileText size={20} />}
+                        icon={<UsersIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/faculty/applications')}
@@ -50,7 +50,7 @@ export function CoordinatorDashboard() {
 
                     <DashboardCard
                         title="Control Panel"
-                        icon={<Settings size={20} />}
+                        icon={<SettingsIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/control')}

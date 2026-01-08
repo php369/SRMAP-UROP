@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, RefreshCw, ChevronRight, UserCheck } from 'lucide-react';
+import { CalendarIcon, RefreshCwIcon, ChevronRightIcon, UserCheckIcon } from '../../../../../components/ui/Icons';
 
 interface QuickActionsProps {
   onManageWindows: () => void;
@@ -24,7 +24,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         >
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors">
-              <Calendar className="w-6 h-6 text-primary" />
+              <CalendarIcon className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Manage Windows</h3>
@@ -38,7 +38,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           </div>
           <div className="mt-4 flex items-center text-primary text-sm font-medium">
             Click to manage windows
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <ChevronRightIcon className="w-4 h-4 ml-1" />
           </div>
         </div>
 
@@ -49,7 +49,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         >
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-              <UserCheck className="w-6 h-6 text-purple-600" />
+              <UserCheckIcon className="w-6 h-6 text-purple-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">External Evaluators</h3>
@@ -63,7 +63,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           </div>
           <div className="mt-4 flex items-center text-purple-600 text-sm font-medium">
             Click to manage evaluators
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <ChevronRightIcon className="w-4 h-4 ml-1" />
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         <div className="p-6 border-2 border-gray-200 rounded-lg">
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-green-100 rounded-lg">
-              <RefreshCw className="w-6 h-6 text-green-600" />
+              <RefreshCwIcon className="w-6 h-6 text-green-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
@@ -83,7 +83,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
               onClick={onUpdateStatuses}
               className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCwIcon className="w-4 h-4" />
               Update Window Statuses
             </button>
             <p className="text-xs text-gray-500 text-center">

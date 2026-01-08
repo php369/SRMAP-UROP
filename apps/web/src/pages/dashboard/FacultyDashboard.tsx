@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
 import { GlassCard } from '../../components/ui/GlassCard';
 import {
-    LayoutDashboard,
-    Briefcase,
-    FileText,
-    ClipboardCheck,
-    Video
-} from 'lucide-react';
+    HomeIcon,
+    FolderOpenIcon,
+    UsersIcon,
+    AwardIcon,
+    CalendarIcon
+} from '../../components/ui/Icons';
 
 export function FacultyDashboard() {
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function FacultyDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <DashboardCard
                         title="Dashboard"
-                        icon={<LayoutDashboard size={20} />}
+                        icon={<HomeIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard')}
@@ -29,7 +29,7 @@ export function FacultyDashboard() {
 
                     <DashboardCard
                         title="My Projects"
-                        icon={<Briefcase size={20} />}
+                        icon={<FolderOpenIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/projects')}
@@ -39,7 +39,7 @@ export function FacultyDashboard() {
 
                     <DashboardCard
                         title="Applications"
-                        icon={<FileText size={20} />}
+                        icon={<UsersIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/faculty/applications')}
@@ -49,7 +49,7 @@ export function FacultyDashboard() {
 
                     <DashboardCard
                         title="Assessment"
-                        icon={<ClipboardCheck size={20} />}
+                        icon={<AwardIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/faculty/assessment')}
@@ -59,7 +59,7 @@ export function FacultyDashboard() {
 
                     <DashboardCard
                         title="Meetings"
-                        icon={<Video size={20} />}
+                        icon={<CalendarIcon size={20} />}
                         glass={false}
                         className="hover:scale-[1.02] transition-transform cursor-pointer"
                         onClick={() => navigate('/dashboard/faculty/meetings')}

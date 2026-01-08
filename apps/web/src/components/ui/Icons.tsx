@@ -38,7 +38,9 @@ import {
     ArrowRight,
     ArrowLeft,
     Zap,
-    Lock
+    Lock,
+    RefreshCw,
+    UserCheck,
 } from 'lucide-react';
 
 // Helper to enforce defaults while allowing overrides
@@ -83,8 +85,11 @@ export const FilterIcon = withDefaults(Filter);
 export const MoreVerticalIcon = withDefaults(MoreVertical);
 export const ArrowRightIcon = withDefaults(ArrowRight);
 export const ArrowLeftIcon = withDefaults(ArrowLeft);
+
 export const ZapIcon = withDefaults(Zap);
 export const LockIcon = withDefaults(Lock);
+export const RefreshCwIcon = withDefaults(RefreshCw);
+export const UserCheckIcon = withDefaults(UserCheck);
 
 // Status Icons
 export const AlertTriangleIcon = withDefaults(AlertTriangle);
