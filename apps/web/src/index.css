@@ -4,94 +4,6 @@
 
 @layer base {
   :root {
-    /* Modern Indigo/Slate Palette - Dashboard Theme */
-    /* Primary: Indigo 600 */
-    --color-primary: #4f46e5;
-    --color-primary-foreground: #ffffff;
-
-    /* Secondary: Slate 500 */
-    --color-secondary: #64748b;
-    --color-secondary-foreground: #ffffff;
-
-    /* Accent: Violet 500 */
-    --color-accent: #8b5cf6;
-    --color-accent-foreground: #ffffff;
-
-    /* Backgrounds: Slate 50/100 */
-    --color-background: #f8fafc;
-    --color-surface: #ffffff;
-
-    /* Text */
-    --color-text: #0f172a;
-    /* Slate 900 */
-    --color-textSecondary: #475569;
-    /* Slate 600 */
-
-    /* Borders */
-    --color-border: #e2e8f0;
-    /* Slate 200 */
-
-    /* Semantic Status Colors */
-    --color-success: #10b981;
-    /* Emerald 500 */
-    --color-warning: #f59e0b;
-    /* Amber 500 */
-    --color-error: #ef4444;
-    /* Red 500 */
-    --color-info: #3b82f6;
-    /* Blue 500 */
-    --color-hover: #f1f5f9;
-    /* Slate 100 */
-
-    /* Glass Effects - Light */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --glass-blur: 16px;
-  }
-
-  /* Dark Mode Overrides for Modern Theme */
-  .dark {
-    /* Backgrounds: Slate 900/950 */
-    --color-background: #020617;
-    --color-surface: #0f172a;
-
-    /* Primary: Indigo 500 */
-    --color-primary: #6366f1;
-    --color-primary-foreground: #ffffff;
-
-    /* Secondary: Slate 400 */
-    --color-secondary: #94a3b8;
-    --color-secondary-foreground: #0f172a;
-
-    --color-accent: #a78bfa;
-    --color-accent-foreground: #ffffff;
-
-    /* Text */
-    --color-text: #f8fafc;
-    /* Slate 50 */
-    --color-textSecondary: #cbd5e1;
-    /* Slate 300 */
-
-    --color-border: #1e293b;
-    /* Slate 800 */
-
-    --color-success: #34d399;
-    /* Emerald 400 */
-    --color-warning: #fbbf24;
-    /* Amber 400 */
-    --color-error: #f87171;
-    /* Red 400 */
-    --color-info: #60a5fa;
-    /* Blue 400 */
-    --color-hover: #1e293b;
-
-    /* Glass Effects - Dark */
-    --glass-bg: rgba(15, 23, 42, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.1);
-  }
-
-  /* LANDING PAGE THEME (Original Earth Tones) - Scoped */
-  .theme-landing {
     /* Core Earth Tones */
     --tussock: #ca9a4a;
     --sycamore: #928b42;
@@ -113,16 +25,21 @@
     --color-text: #2d2b1a;
     --color-textSecondary: #4a4724;
     --color-border: rgba(146, 139, 66, 0.3);
+    /* Based on sycamore/green-smoke */
 
     --color-success: var(--sycamore);
     --color-warning: var(--tussock);
     --color-error: #d4704a;
     --color-info: var(--gurkha);
-    --color-hover: rgba(255, 255, 255, 0.2);
+
+    /* Glass Effects - Light */
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-blur: 16px;
   }
 
-  /* Landing Page Dark Mode - Not strictly needed if landing is light only, but good for completeness */
-  .dark .theme-landing {
+  /* Dark Mode Overrides */
+  .dark {
     /* Adjusted Earth Tones for Dark Mode */
     --color-background: #1f1e17;
     --color-surface: #2b2a22;
@@ -138,7 +55,15 @@
     --color-text: #e3dec3;
     --color-textSecondary: #b0ab8c;
     --color-border: rgba(212, 183, 108, 0.2);
-    --color-hover: rgba(255, 255, 255, 0.05);
+
+    --color-success: #bba44a;
+    --color-warning: #d4b76c;
+    --color-error: #e58b6a;
+    --color-info: #b0ab8c;
+
+    /* Glass Effects - Dark */
+    --glass-bg: rgba(0, 0, 0, 0.3);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 
   html {

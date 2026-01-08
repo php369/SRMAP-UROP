@@ -482,10 +482,10 @@ export function FacultyAssessmentPage() {
 
   const getAssessmentBadge = (type: string) => {
     const colors = {
-      'CLA-1': 'bg-primary/10 text-primary border-primary/20',
-      'CLA-2': 'bg-accent/10 text-accent border-accent/20',
-      'CLA-3': 'bg-secondary/10 text-secondary border-secondary/20',
-      External: 'bg-warning/10 text-warning border-warning/20'
+      'CLA-1': 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30',
+      'CLA-2': 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30',
+      'CLA-3': 'bg-pink-100 dark:bg-pink-500/20 text-pink-800 dark:text-pink-300 border-pink-300 dark:border-pink-500/30',
+      External: 'bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-500/30'
     };
 
     return (
@@ -525,13 +525,13 @@ export function FacultyAssessmentPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-border">
+        <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('internal')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'internal'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-textSecondary hover:text-text hover:border-border'
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'internal'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -541,9 +541,9 @@ export function FacultyAssessmentPage() {
             </button>
             <button
               onClick={() => setActiveTab('external')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'external'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-textSecondary hover:text-text hover:border-border'
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'external'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -638,12 +638,12 @@ export function FacultyAssessmentPage() {
                                         <div className="flex items-center gap-3">
                                           <span className="text-base font-semibold text-text">Meeting #{index + 1}</span>
                                           {log.status === 'approved' && (
-                                            <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-lg border border-success/20">
+                                            <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
                                               Approved
                                             </span>
                                           )}
                                           {log.status === 'completed' && (
-                                            <span className="px-2 py-1 bg-info/10 text-info text-xs font-medium rounded-lg border border-info/20">
+                                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-500/30">
                                               Completed
                                             </span>
                                           )}
@@ -687,7 +687,7 @@ export function FacultyAssessmentPage() {
                                               <span
                                                 key={idx}
                                                 className={`px-2 py-1 text-xs rounded-lg ${attendee.present
-                                                  ? 'bg-success/10 text-success border border-success/20'
+                                                  ? 'bg-green-100 dark:bg-success/20 text-green-800 dark:text-success border border-green-300 dark:border-success/30'
                                                   : 'bg-white/5 text-textSecondary border border-white/10'
                                                   }`}
                                               >
@@ -747,10 +747,10 @@ export function FacultyAssessmentPage() {
                                 : submission.studentId?.name}
                             </h3>
                             {getAssessmentBadge(assessmentType)}
-                            <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-lg border border-primary/20">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600 text-blue-800 dark:text-white text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-600">
                               {getProjectInfo(submission).type}
                             </span>
-                            <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-lg border border-success/20">
+                            <span className="px-2 py-1 bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 text-xs font-medium rounded-lg border border-green-300 dark:border-green-500/30">
                               Group Grading
                             </span>
                           </div>

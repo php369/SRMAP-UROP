@@ -7,7 +7,7 @@ export function LandingPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-bg theme-landing">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
       <header
         className="border-b border-border backdrop-blur-sm sticky top-0 z-50 bg-bg/90"

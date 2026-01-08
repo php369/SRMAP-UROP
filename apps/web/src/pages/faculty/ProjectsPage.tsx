@@ -207,8 +207,8 @@ export function FacultyProjectsPage() {
     const Icon = icons[status as keyof typeof icons] || Clock;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles] || styles.draft}`}>
-        <Icon className="w-3.5 h-3.5" />
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles] || styles.draft}`}>
+        <Icon className="w-3 h-3" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -373,9 +373,8 @@ export function FacultyProjectsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-2xl"
             >
-              <div className="bg-surface border border-border/50 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
-                <h2 className="text-2xl font-bold text-text mb-6">
+              <div className="bg-white rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   {editingProject ? 'Edit Project' : 'Create New Project'}
                 </h2>
 
@@ -392,7 +391,7 @@ export function FacultyProjectsPage() {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Type
                     </label>
                     <div className="grid grid-cols-3 gap-3">
@@ -410,8 +409,8 @@ export function FacultyProjectsPage() {
                             className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.projectType === type
                                 ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
                                 : isAvailable
-                                  ? 'bg-surface border-border text-text hover:bg-hover'
-                                  : 'bg-surface/50 border-border/50 text-textSecondary/50 bg-stripe-disabled'
+                                  ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-gray-50 border-gray-200 text-gray-400'
                               }`}
                           >
                             {type}
@@ -423,27 +422,27 @@ export function FacultyProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Title *
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2 bg-background border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       maxLength={200}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Brief Description *
                     </label>
                     <textarea
                       value={formData.brief}
                       onChange={(e) => setFormData({ ...formData, brief: e.target.value })}
-                      className="w-full px-4 py-2 bg-background border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={4}
                       required
                       maxLength={1000}
@@ -451,27 +450,27 @@ export function FacultyProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Prerequisites (Optional)
                     </label>
                     <input
                       type="text"
                       value={formData.prerequisites}
                       onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                      className="w-full px-4 py-2 bg-background border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., Python, Machine Learning basics"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department
                     </label>
                     <input
                       type="text"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full px-4 py-2 bg-background border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -483,7 +482,7 @@ export function FacultyProjectsPage() {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="flex-1 px-4 py-2 bg-surface hover:bg-hover border border-border rounded-xl text-text transition-all font-medium"
+                      className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded-lg text-gray-700 transition-all font-medium"
                     >
                       Cancel
                     </button>
