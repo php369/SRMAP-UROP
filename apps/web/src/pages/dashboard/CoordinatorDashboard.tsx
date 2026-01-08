@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
-import { GlassCard } from '../../components/ui/GlassCard';
+// GlassCard removed
 import {
     HomeIcon,
     FolderOpenIcon,
@@ -14,27 +14,25 @@ export function CoordinatorDashboard() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <GlassCard className="p-6">
-                <h3 className="text-lg font-semibold text-text mb-4">Quick Actions</h3>
+            <div className="border-b border-slate-100 pb-8">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <DashboardCard
                         title="Dashboard"
                         icon={<HomeIcon size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard')}
                     >
-                        <p className="text-xs text-textSecondary mt-1">Overview</p>
+                        <p className="text-xs text-slate-500 mt-1">Overview</p>
                     </DashboardCard>
 
                     <DashboardCard
                         title="My Projects"
                         icon={<FolderOpenIcon size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/projects')}
                     >
-                        <p className="text-xs text-textSecondary mt-1">Manage Projects</p>
+                        <p className="text-xs text-slate-500 mt-1">Manage Projects</p>
                     </DashboardCard>
 
 
@@ -42,43 +40,40 @@ export function CoordinatorDashboard() {
                     <DashboardCard
                         title="Applications"
                         icon={<UsersIcon size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/applications')}
                     >
-                        <p className="text-xs text-textSecondary mt-1">All Applications</p>
+                        <p className="text-xs text-slate-500 mt-1">All Applications</p>
                     </DashboardCard>
 
                     <DashboardCard
                         title="Meetings"
                         icon={<CalendarIcon size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/meetings')}
                     >
-                        <p className="text-xs text-textSecondary mt-1">Schedule Meetings</p>
+                        <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
                     </DashboardCard>
 
                     <DashboardCard
                         title="Control Panel"
                         icon={<SettingsIcon size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/control')}
                     >
-                        <p className="text-xs text-textSecondary mt-1">System Settings</p>
+                        <p className="text-xs text-slate-500 mt-1">System Settings</p>
                     </DashboardCard>
                 </div>
-            </GlassCard>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <GlassCard className="p-6">
-                    <h3 className="text-lg font-semibold text-text mb-4">System Status</h3>
+                <div className="p-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">System Status</h3>
                     <div className="p-4 rounded-lg bg-green-500/10 text-green-500 border border-green-500/20 text-center">
                         <p className="font-semibold">System Operational</p>
                     </div>
-                </GlassCard>
+                </div>
             </div>
         </div>
     );

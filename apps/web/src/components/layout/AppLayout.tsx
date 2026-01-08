@@ -1,9 +1,8 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { TopNavigation } from './TopNavigation';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 import { useUserRefresh } from '../../hooks/useUserRefresh';
+import { MenuIcon } from '../ui/Icons';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,7 +10,6 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const { isCollapsed } = useSidebar();
 
   // Refresh user data every 5 minutes to catch role changes
   useUserRefresh(5 * 60 * 1000);
@@ -30,13 +28,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   // Add swipe gesture support for mobile navigation
   const swipeRef = useSwipeGesture({
     onSwipeRight: () => {
-      // Open mobile sidebar on swipe right from left edge
       if (isMobile) {
         document.dispatchEvent(new CustomEvent('open-mobile-sidebar'));
       }
     },
     onSwipeLeft: () => {
-      // Close mobile sidebar on swipe left
       if (isMobile) {
         document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
       }
@@ -50,49 +46,50 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div
       ref={swipeRef as any}
-      className="min-h-screen bg-slate-50 overflow-x-hidden"
+      className="flex h-screen bg-slate-50 overflow-hidden"
     >
-      {/* Background decoration */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Removed gradient blobs for cleaner look with new palette */}
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
-
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main content area */}
-      <div className={`transition-all duration-300 ${isMobile ? 'pl-0' : isCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+      {/* Main Content Area */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isMobile ? 'pl-0' : 'lg:pl-64'
         }`}>
-        {/* Top navigation */}
-        <TopNavigation />
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="flex items-center px-4 h-16 bg-white border-b border-slate-200 flex-shrink-0 z-30">
+            <button
+              onClick={() => document.dispatchEvent(new CustomEvent('open-mobile-sidebar'))}
+              className="p-2 -ml-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+            >
+              <MenuIcon className="w-6 h-6" />
+            </button>
+            <span className="ml-3 font-semibold text-slate-900">Project Portal</span>
+          </div>
+        )}
 
-        {/* Page content */}
-        <main className={`relative z-10 py-4 sm:py-6 px-4 sm:px-6 transition-all duration-300 ${isMobile ? 'pt-20' : 'lg:pt-6'
+        {/* Framed Canvas */}
+        <main className={`flex-1 relative overflow-y-auto ${isMobile ? 'p-0' : 'p-3'
           }`}>
-          <div className="max-w-7xl mx-auto">
-            {children}
+          <div className={`w-full min-h-full ${isMobile
+              ? 'px-4 py-6'
+              : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
+            }`}>
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
           </div>
         </main>
       </div>
 
       {/* Mobile swipe hint */}
-      {
-        isMobile && (
-          <div className="fixed bottom-4 left-4 right-4 pointer-events-none">
-            <div className="bg-surface/80 backdrop-blur-sm border border-border rounded-lg p-3 text-center text-sm text-textSecondary">
-              <div className="flex items-center justify-center space-x-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-                </svg>
-                <span>Swipe right to open menu</span>
-              </div>
-            </div>
+      {isMobile && (
+        <div className="fixed bottom-4 left-4 right-4 pointer-events-none z-50">
+          <div className="bg-slate-900/80 backdrop-blur-sm text-white rounded-full px-4 py-2 text-center text-xs shadow-lg mx-auto w-max">
+            <span>Swipe right for menu</span>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 }
+

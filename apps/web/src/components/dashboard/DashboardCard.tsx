@@ -1,12 +1,11 @@
 import { cn } from '../../utils/cn';
-import { GlassCard } from '../ui/GlassCard';
+// GlassCard removed
 
 interface DashboardCardProps {
     title: string;
     icon: React.ReactNode;
     children?: React.ReactNode;
     className?: string;
-    glass?: boolean;
     action?: React.ReactNode;
     onClick?: () => void;
 }
@@ -16,7 +15,6 @@ export function DashboardCard({
     icon,
     children,
     className,
-    glass = true,
     action,
     onClick
 }: DashboardCardProps) {
@@ -26,12 +24,12 @@ export function DashboardCard({
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                     {icon && (
-                        <div className="p-2 rounded-lg bg-surface/50 text-primary border border-primary/20">
+                        <div className="p-2 rounded-lg bg-slate-100 text-primary border border-slate-200">
                             {icon}
                         </div>
                     )}
                     <div>
-                        <h3 className="font-semibold text-lg text-text">{title}</h3>
+                        <h3 className="font-semibold text-lg text-slate-900">{title}</h3>
                     </div>
                 </div>
                 {action}
@@ -42,19 +40,11 @@ export function DashboardCard({
         </div>
     );
 
-    if (glass) {
-        return (
-            <GlassCard className={cn('p-6 h-full', className)}>
-                {content}
-            </GlassCard>
-        );
-    }
-
     return (
         <div
             className={cn(
                 'rounded-2xl p-5 border transition-all duration-300',
-                glass ? 'glass' : 'bg-surface border-border shadow-sm',
+                'bg-white border-slate-200 shadow-sm hover:shadow-md',
                 className
             )}
             onClick={onClick}

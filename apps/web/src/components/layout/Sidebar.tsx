@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSidebar } from '../../contexts/SidebarContext';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
-import { GlassCard } from '../ui/GlassCard';
-import { Badge } from '../ui/Badge';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 import {
   HomeIcon,
@@ -20,7 +17,6 @@ import {
   SettingsIcon,
   CheckCircleIcon,
   CalendarIcon,
-  ChevronsLeftIcon,
   MenuIcon,
   XIcon
 } from '../ui/Icons';
@@ -44,7 +40,6 @@ const IconComponents = {
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
-  const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const navigationItems = user ? ROLE_NAVIGATION[user.role] || [] : [];
 
@@ -118,22 +113,14 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const sidebarContent = (
-    <div
-      className={cn(
-        'flex flex-col h-full transition-all duration-300',
-        isCollapsed ? 'w-16' : 'w-64'
-      )}
-    >
-      {/* Logo */}
-      <div className="flex items-center justify-center h-16 px-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
-        {isCollapsed ? (
-          <img
-            src="/branding/srm-icon.svg"
-            alt="SRM University-AP"
-            className="w-8 h-8"
-          />
-        ) : (
+
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-slate-50/50 border-r border-slate-200/50">
+        {/* Logo */}
+        <div className="flex flex-col justify-center h-20 px-6">
           <div className="flex items-center space-x-3">
             <img
               src="/branding/srm-icon.svg"
@@ -141,165 +128,85 @@ export function Sidebar() {
               className="w-8 h-8"
             />
             <div>
-              <h1 className="text-lg font-bold text-slate-900">
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight">
                 Project Portal
               </h1>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)', opacity: 0.8 }}>SRM University-AP</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">SRM University-AP</p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {navigationItems.map(item => {
-          const IconComponent =
-            IconComponents[item.icon as keyof typeof IconComponents];
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={() => {
-                // Check if current path matches exactly or starts with the item path (for nested routes)
-                const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path ||
-                  (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+        {/* Navigation */}
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Menu</div>
+          {navigationItems.map(item => {
+            const IconComponent =
+              IconComponents[item.icon as keyof typeof IconComponents];
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={() => {
+                  // Check if current path matches exactly or starts with the item path (for nested routes)
+                  const currentPath = location.pathname;
+                  const isCurrentPage = currentPath === item.path ||
+                    (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
-                return cn(
-                  'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden theme-transition',
-                  isCurrentPage
-                    ? 'border'
-                    : 'hover:bg-opacity-10',
-                  isCollapsed ? 'justify-center' : 'justify-start'
-                );
-              }}
-              style={() => {
-                const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path ||
-                  (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+                  return cn(
+                    'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+                    isCurrentPage
+                      ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+                  );
+                }}
+              >
+                {() => {
+                  const currentPath = location.pathname;
+                  const isCurrentPage = currentPath === item.path ||
+                    (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
-                return {
-                  backgroundColor: isCurrentPage ? 'var(--color-hover)' : 'transparent',
-                  color: isCurrentPage ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                  borderColor: isCurrentPage ? 'var(--color-accent)' : 'transparent',
-                };
-              }}
-            >
-              {() => {
-                const currentPath = location.pathname;
-                const isCurrentPage = currentPath === item.path ||
-                  (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
-
-                return (
-                  <>
-                    {/* Active indicator */}
-                    {isCurrentPage && (
+                  return (
+                    <>
                       <div
-                        className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full"
-                        style={{ backgroundColor: 'var(--color-accent)' }}
-                      />
-                    )}
-
-                    {/* Icon */}
-                    <div
-                      className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                      style={{
-                        color: isCurrentPage ? 'var(--color-accent)' : 'inherit'
-                      }}
-                    >
-                      {IconComponent && <IconComponent />}
-                    </div>
-
-                    {/* Label */}
-                    {!isCollapsed && (
-                      <span className="ml-3 transition-opacity duration-200">
-                        {item.label}
-                      </span>
-                    )}
-
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && (
-                      <div
-                        className="absolute left-full ml-2 px-2 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
-                        style={{
-                          backgroundColor: 'var(--color-surface)',
-                          border: '1px solid var(--color-border)',
-                          color: 'var(--color-text-primary)'
-                        }}
+                        className={cn(
+                          "flex-shrink-0 transition-colors duration-200",
+                          isCurrentPage ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+                        )}
                       >
-                        {item.label}
+                        {IconComponent && <IconComponent className="w-5 h-5" />}
                       </div>
-                    )}
-                  </>
-                );
-              }}
-            </NavLink>
-          );
-        })}
-      </nav>
+                      <span className="ml-3">{item.label}</span>
+                    </>
+                  );
+                }}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-      {/* User info */}
-      <div className="p-4 border-t border-white/10">
-        <div
-          className={cn(
-            'flex items-center transition-all duration-200',
-            isCollapsed ? 'justify-center' : 'justify-start'
-          )}
-        >
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">
-                {user?.name?.charAt(0).toUpperCase() || '?'}
-              </span>
-            </div>
-          </div>
-
-          {!isCollapsed && (
-            <div className="ml-3 flex-1 min-w-0">
-              <p className="text-sm font-medium text-text truncate">
-                {user?.name || 'Loading...'}
-              </p>
-              <div className="flex items-center space-x-2">
-                <Badge variant="glass" size="sm">
-                  {user?.role || 'user'}
-                </Badge>
+        {/* User info */}
+        <div className="p-4 mt-auto">
+          <div className="flex items-center p-3 rounded-xl bg-white border border-slate-200 shadow-sm">
+            <div className="flex-shrink-0">
+              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                <span className="text-primary text-xs font-bold">
+                  {user?.name?.charAt(0).toUpperCase() || '?'}
+                </span>
               </div>
             </div>
-          )}
+            <div className="ml-3 flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-900 truncate">
+                {user?.name || 'Loading...'}
+              </p>
+              <div className="flex items-center">
+                <span className="text-xs text-slate-500 capitalize">
+                  {user?.role || 'user'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Collapse toggle */}
-      <div className="hidden lg:block p-4 border-t border-white/10">
-        <button
-          onClick={toggleCollapsed}
-          className="w-full flex items-center justify-center p-2 text-textSecondary hover:text-text hover:bg-white/10 rounded-lg transition-colors duration-200"
-        >
-          <ChevronsLeftIcon
-            className={cn(
-              'w-5 h-5 transition-transform duration-200',
-              isCollapsed ? 'rotate-180' : ''
-            )}
-          />
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <GlassCard
-          variant="elevated"
-          className={cn(
-            'fixed left-4 top-4 bottom-4 z-40 transition-all duration-300',
-            isCollapsed ? 'w-16' : 'w-64'
-          )}
-        >
-          {sidebarContent}
-        </GlassCard>
-      </div>
+      </aside>
 
       {/* Mobile Sidebar */}
       <div className="lg:hidden">

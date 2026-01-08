@@ -128,12 +128,12 @@ export function DashboardPage() {
   return (
     <div className="space-y-8 p-6">
       {/* Header with greeting */}
-      <div className="glass p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="bg-slate-50 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 p-6 border border-slate-100">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
             Welcome back, {user?.name?.split(' ')[0]}! 👋
           </h1>
-          <p className="text-textSecondary mt-2">
+          <p className="text-slate-500 mt-2">
             {isStudentRole(user?.role) && 'Track your project progress and collaborate with your team.'}
             {user?.role === 'faculty' && 'Manage your projects, applications and students.'}
             {user?.role === 'coordinator' && 'Oversee project approvals and coordinate activities.'}
@@ -141,8 +141,8 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="text-right hidden sm:block">
-          <p className="text-sm text-textSecondary uppercase tracking-widest font-semibold">Today</p>
-          <p className="text-xl font-mono text-text">
+          <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Today</p>
+          <p className="text-xl font-mono text-slate-700">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
