@@ -877,15 +877,22 @@ router.get('/logs/project/:projectId', authenticate, authorize('faculty', 'coord
         .sort({ meetingDate: -1 });
 
         // Format the logs for external evaluators
-        const formattedLogs = logs.map(log => ({
-            _id: log._id,
-            date: log.meetingDate,
-            duration: log.duration || 60, // Default duration if not specified
-            summary: log.minutesOfMeeting || log.mom || 'No summary available',
-            grade: log.grade,
-            groupCode: log.groupId?.groupCode,
-            createdAt: log.createdAt
-        }));
+        const formattedLogs = logs.map(log => {
+            // Calculate duration from startedAt and endedAt if available
+            const duration = log.endedAt && log.startedAt 
+                ? Math.round((log.endedAt.getTime() - log.startedAt.getTime()) / (1000 * 60)) 
+                : 60; // Default duration if not specified
+            
+            return {
+                _id: log._id,
+                date: log.meetingDate,
+                duration,
+                summary: log.minutesOfMeeting || 'No summary available',
+                grade: log.grade,
+                groupCode: (log.groupId as any)?.groupCode,
+                createdAt: log.createdAt
+            };
+        });
 
         res.json({
             success: true,
