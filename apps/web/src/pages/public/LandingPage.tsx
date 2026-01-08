@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Users, Globe, ChevronRight } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
 import { Reveal } from '../../components/ui/Reveal';
 import TiltedCard from '../../components/ui/TiltedCard';
+
 
 export function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -99,14 +100,6 @@ export function LandingPage() {
                 <span>{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
                 <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
-
-              <a
-                href="#features"
-                className="group flex items-center gap-3 px-8 py-4 rounded-full bg-white/10 backdrop-blur-md border border-slate-200/50 text-slate-600 font-semibold transition-all duration-500 hover:bg-[#f5bb3e] hover:border-[#f5bb3e] hover:text-white hover:shadow-[0_0_20px_rgba(245,187,62,0.3)] dark:border-white/10 dark:text-slate-300 dark:hover:bg-[#f5bb3e] dark:hover:text-white"
-              >
-                <span>More Info</span>
-                <ChevronRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </a>
             </div>
           </Reveal>
         </div>
@@ -146,32 +139,28 @@ export function LandingPage() {
                 desc: 'Showcase your research to a global audience through our open access portal.'
               }
             ].map((feature, i) => (
-              <Reveal key={i} delay={i * 0.1} duration={0.8} direction="up" className="h-[300px]">
+              <Reveal key={i} delay={i * 0.1} duration={0.8} direction="up" className="h-full">
                 <TiltedCard
-                  imageSrc="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-                  altText={feature.title}
-                  captionText={feature.title}
-                  containerHeight="300px"
+                  containerHeight="100%"
                   containerWidth="100%"
-                  imageHeight="300px"
+                  imageHeight="100%"
                   imageWidth="100%"
                   rotateAmplitude={12}
                   scaleOnHover={1.05}
                   showMobileWarning={false}
                   showTooltip={false}
-                  displayOverlayContent={true}
-                  overlayContent={
-                    <div className="w-full h-full flex flex-col items-start p-6 rounded-[15px] bg-white/70 border border-slate-100/50 backdrop-blur-md dark:bg-slate-900/70 dark:border-slate-800 text-left">
-                      <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 dark:bg-slate-800 dark:text-srm-400">
-                        <feature.icon className="h-6 w-6" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-2 dark:text-white">{feature.title}</h3>
-                      <p className="text-sm text-slate-600 leading-relaxed dark:text-slate-400">
-                        {feature.desc}
-                      </p>
+                  displayOverlayContent={false}
+                >
+                  <div className="w-full h-full group flex flex-col items-start p-6 rounded-2xl bg-white/60 border border-slate-100 hover:border-srm-200 transition-colors duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl dark:bg-slate-900/60 dark:border-slate-800 dark:hover:border-srm-900">
+                    <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3 dark:bg-slate-800 dark:text-srm-400">
+                      <feature.icon className="h-6 w-6" />
                     </div>
-                  }
-                />
+                    <h3 className="text-lg font-bold text-slate-900 mb-2 dark:text-white group-hover:text-srm-600 transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed dark:text-slate-400">
+                      {feature.desc}
+                    </p>
+                  </div>
+                </TiltedCard>
               </Reveal>
             ))}
           </div>

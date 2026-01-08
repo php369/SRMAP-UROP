@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 interface TiltedCardProps {
-    imageSrc: React.ComponentProps<'img'>['src'];
+    imageSrc?: React.ComponentProps<'img'>['src'];
     altText?: string;
     captionText?: string;
     containerHeight?: React.CSSProperties['height'];
@@ -16,6 +16,7 @@ interface TiltedCardProps {
     showTooltip?: boolean;
     overlayContent?: React.ReactNode;
     displayOverlayContent?: boolean;
+    children?: React.ReactNode;
 }
 
 const springValues: SpringOptions = {
@@ -37,7 +38,8 @@ export default function TiltedCard({
     showMobileWarning = true,
     showTooltip = true,
     overlayContent = null,
-    displayOverlayContent = false
+    displayOverlayContent = false,
+    children
 }: TiltedCardProps) {
     const ref = useRef<HTMLElement>(null);
     const x = useMotionValue(0);
@@ -116,15 +118,19 @@ export default function TiltedCard({
                     scale
                 }}
             >
-                <motion.img
-                    src={imageSrc}
-                    alt={altText}
-                    className="absolute top-0 left-0 object-cover rounded-[15px] will-change-transform [transform:translateZ(0)]"
-                    style={{
-                        width: imageWidth,
-                        height: imageHeight
-                    }}
-                />
+                {imageSrc && (
+                    <motion.img
+                        src={imageSrc}
+                        alt={altText}
+                        className="absolute top-0 left-0 object-cover rounded-[15px] will-change-transform [transform:translateZ(0)]"
+                        style={{
+                            width: imageWidth,
+                            height: imageHeight
+                        }}
+                    />
+                )}
+
+                {children}
 
                 {displayOverlayContent && overlayContent && (
                     <motion.div className="absolute top-0 left-0 z-[2] will-change-transform [transform:translateZ(30px)]">
