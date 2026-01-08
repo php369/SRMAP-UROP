@@ -5,7 +5,8 @@ import {
     HomeIcon,
     FolderOpenIcon,
     UsersIcon,
-    SettingsIcon
+    SettingsIcon,
+    CalendarIcon
 } from '../../components/ui/Icons';
 
 export function CoordinatorDashboard() {
@@ -46,6 +47,16 @@ export function CoordinatorDashboard() {
                         onClick={() => navigate('/dashboard/faculty/applications')}
                     >
                         <p className="text-xs text-textSecondary mt-1">All Applications</p>
+                    </DashboardCard>
+
+                    <DashboardCard
+                        title="Meetings"
+                        icon={<CalendarIcon size={20} />}
+                        glass={false}
+                        className="hover:scale-[1.02] transition-transform cursor-pointer"
+                        onClick={() => navigate('/dashboard/faculty/meetings')}
+                    >
+                        <p className="text-xs text-textSecondary mt-1">Schedule Meetings</p>
                     </DashboardCard>
 
                     <DashboardCard
