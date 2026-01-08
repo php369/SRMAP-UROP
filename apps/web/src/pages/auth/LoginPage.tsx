@@ -84,7 +84,7 @@ export function LoginPage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full max-w-md mx-auto bg-slate-50/80 p-10 rounded-3xl border border-slate-100/50 backdrop-blur-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+          className="w-full max-w-md mx-auto bg-slate-100 p-10 rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm"
         >
           {/* Header */}
           <div className="mb-10 text-center flex flex-col items-center">
