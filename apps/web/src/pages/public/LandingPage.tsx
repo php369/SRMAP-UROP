@@ -53,7 +53,7 @@ export function LandingPage() {
             Academic Year 2025-26
           </div>
 
-          <Reveal duration={1.0} direction="up">
+          <Reveal duration={1.0} direction="up" fullWidth>
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 leading-[1.1] dark:text-white">
               Excellence in
               <span className="block text-transparent bg-clip-text bg-gradient-to-br from-srm-500 to-amber-700 pb-4">
@@ -62,13 +62,13 @@ export function LandingPage() {
             </h1>
           </Reveal>
 
-          <Reveal duration={1.0} delay={0.2} direction="up">
+          <Reveal duration={1.0} delay={0.2} direction="up" fullWidth>
             <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light dark:text-slate-400">
               A unified platform for IDP, UROP, and Capstone projects, fostering innovation and collaboration across SRM University-AP.
             </p>
           </Reveal>
 
-          <Reveal duration={1.0} delay={0.4} direction="up">
+          <Reveal duration={1.0} delay={0.4} direction="up" fullWidth>
             <div className="flex flex-col sm:flex-row gap-8 justify-center items-center mb-20 relative z-30">
               <Link
                 to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
