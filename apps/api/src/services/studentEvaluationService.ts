@@ -699,11 +699,91 @@ export class StudentEvaluationService {
   }
 
   /**
-   * Auto-assign external evaluators to all unassigned groups and solo students
+   * Validate assignment requirements and constraints
+   */
+  static async validateAssignmentConstraints(): Promise<{
+    isValid: boolean;
+    issues: string[];
+    recommendations: string[];
+  }> {
+    try {
+      const issues: string[] = [];
+      const recommendations: string[] = [];
+
+      // Get all external evaluators
+      const evaluators = await this.getAvailableExternalEvaluators();
+      
+      // Get all assignments
+      const assignments = await this.getExternalEvaluatorAssignments();
+      const totalAssignments = assignments.length;
+      const assignedCount = assignments.filter(a => a.isAssigned).length;
+      const unassignedCount = totalAssignments - assignedCount;
+
+      // Validation 1: Check if there are enough evaluators
+      if (evaluators.length === 0) {
+        issues.push('No external evaluators available in the system');
+        recommendations.push('Assign external evaluator role to faculty members');
+      } else if (evaluators.length < 2 && totalAssignments > 0) {
+        issues.push('Insufficient external evaluators for proper distribution');
+        recommendations.push('Add more external evaluators to ensure no faculty evaluates their own projects');
+      }
+
+      // Validation 2: Check workload distribution
+      if (evaluators.length > 0 && assignedCount > 0) {
+        const maxAssignments = Math.max(...evaluators.map(e => e.assignmentCount));
+        const minAssignments = Math.min(...evaluators.map(e => e.assignmentCount));
+        const imbalance = maxAssignments - minAssignments;
+
+        if (imbalance > 2) {
+          issues.push(`Workload imbalance detected: ${imbalance} assignment difference between evaluators`);
+          recommendations.push('Run auto-assignment to redistribute workload evenly');
+        }
+      }
+
+      // Validation 3: Check for conflicts
+      const conflicts = assignments.filter(a => a.hasConflict);
+      if (conflicts.length > 0) {
+        issues.push(`${conflicts.length} assignment conflicts detected (internal faculty assigned as external evaluator)`);
+        recommendations.push('Reassign conflicting evaluations to different faculty members');
+      }
+
+      // Validation 4: Check minimum assignment rule
+      const activeEvaluators = evaluators.filter(e => e.assignmentCount > 0);
+      const inactiveEvaluators = evaluators.filter(e => e.assignmentCount === 0);
+      
+      if (inactiveEvaluators.length > 0 && unassignedCount > 0) {
+        recommendations.push(`${inactiveEvaluators.length} evaluators have no assignments while ${unassignedCount} projects remain unassigned`);
+      }
+
+      // Validation 5: Check if all evaluators have at least one project (if possible)
+      if (totalAssignments >= evaluators.length && activeEvaluators.length < evaluators.length) {
+        issues.push('Some evaluators have no assignments despite sufficient projects available');
+        recommendations.push('Ensure each evaluator gets at least one project for fair distribution');
+      }
+
+      return {
+        isValid: issues.length === 0,
+        issues,
+        recommendations
+      };
+    } catch (error) {
+      logger.error('Error validating assignment constraints:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced auto-assign with improved distribution algorithm
    */
   static async autoAssignExternalEvaluators(): Promise<any> {
     try {
-      // Get available external evaluators
+      // Validate constraints before assignment
+      const validation = await this.validateAssignmentConstraints();
+      if (!validation.isValid) {
+        throw new Error(`Assignment validation failed: ${validation.issues.join(', ')}`);
+      }
+
+      // Get available external evaluators (sorted by current assignment count)
       const evaluators = await this.getAvailableExternalEvaluators();
       
       if (evaluators.length === 0) {
@@ -716,7 +796,7 @@ export class StudentEvaluationService {
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true },
         externalEvaluatorId: { $exists: false }
-      }).populate('assignedFacultyId', '_id');
+      }).populate('assignedFacultyId', '_id name email');
 
       // Get unassigned solo students
       const unassignedSoloStudents = await User.find({
@@ -724,7 +804,7 @@ export class StudentEvaluationService {
         currentGroupId: { $exists: false },
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true }
-      }).populate('assignedFacultyId', '_id');
+      }).populate('assignedFacultyId', '_id name email');
 
       // Filter out solo students who already have external evaluators
       const soloStudentsWithoutExternal = [];
@@ -738,86 +818,132 @@ export class StudentEvaluationService {
         }
       }
 
+      // Define proper types for assignment entities
+      interface GroupAssignmentEntity {
+        type: 'group';
+        entity: {
+          _id: any;
+          groupCode: string;
+          assignedFacultyId: any;
+        };
+      }
+
+      interface SoloAssignmentEntity {
+        type: 'solo';
+        entity: {
+          _id: any;
+          name: string;
+          assignedFacultyId: any;
+        };
+      }
+
+      type AssignmentEntity = GroupAssignmentEntity | SoloAssignmentEntity;
+
+      // Combine all unassigned entities for better distribution
+      const allUnassigned: AssignmentEntity[] = [
+        ...unassignedGroups.map(g => ({ 
+          type: 'group' as const, 
+          entity: {
+            _id: g._id,
+            groupCode: g.groupCode,
+            assignedFacultyId: g.assignedFacultyId
+          }
+        })),
+        ...soloStudentsWithoutExternal.map(s => ({ 
+          type: 'solo' as const, 
+          entity: {
+            _id: s._id,
+            name: s.name,
+            assignedFacultyId: s.assignedFacultyId
+          }
+        }))
+      ];
+
+      // Shuffle for random distribution
+      for (let i = allUnassigned.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allUnassigned[i], allUnassigned[j]] = [allUnassigned[j], allUnassigned[i]];
+      }
+
       let groupsAssigned = 0;
       let soloStudentsAssigned = 0;
-      let evaluatorIndex = 0;
+      const assignmentFailures: string[] = [];
 
-      // Assign to groups
-      for (const group of unassignedGroups) {
-        // Find an evaluator who is not the internal faculty
-        let attempts = 0;
-        while (attempts < evaluators.length) {
-          const evaluator = evaluators[evaluatorIndex % evaluators.length];
-          
-          if (evaluator._id.toString() !== group.assignedFacultyId?._id.toString()) {
-            // Assign this evaluator
-            await Group.findByIdAndUpdate(group._id, {
-              externalEvaluatorId: evaluator._id
+      // Enhanced assignment algorithm with better distribution
+      for (const item of allUnassigned) {
+        const { type, entity } = item;
+        const internalFacultyId = entity.assignedFacultyId?._id?.toString();
+        
+        // Find the evaluator with the least assignments who is not the internal faculty
+        const availableEvaluators = evaluators
+          .filter(evaluator => evaluator._id.toString() !== internalFacultyId)
+          .sort((a, b) => a.assignmentCount - b.assignmentCount);
+
+        if (availableEvaluators.length === 0) {
+          const entityName = type === 'group' ? entity.groupCode : entity.name;
+          const facultyName = entity.assignedFacultyId?.name || 'Unknown';
+          assignmentFailures.push(`No suitable external evaluator found for ${type} ${entityName} (internal faculty: ${facultyName})`);
+          continue;
+        }
+
+        // Assign to the evaluator with the least assignments
+        const selectedEvaluator = availableEvaluators[0];
+
+        try {
+          if (type === 'group') {
+            // Assign to group
+            await Group.findByIdAndUpdate(entity._id, {
+              externalEvaluatorId: selectedEvaluator._id
             });
 
             // Update student evaluations
             await this.assignExternalEvaluatorToStudents(
-              group._id,
-              evaluator._id,
-              evaluator._id // Using evaluator as assignedBy for auto-assignment
+              entity._id,
+              selectedEvaluator._id,
+              selectedEvaluator._id
             );
 
-            // Update evaluator assignment count
-            evaluator.assignmentCount++;
             groupsAssigned++;
-            break;
-          }
-          
-          evaluatorIndex++;
-          attempts++;
-        }
-        
-        if (attempts >= evaluators.length) {
-          logger.warn(`Could not find suitable external evaluator for group ${group.groupCode}`);
-        }
-        
-        evaluatorIndex++;
-      }
-
-      // Assign to solo students
-      for (const student of soloStudentsWithoutExternal) {
-        // Find an evaluator who is not the internal faculty
-        let attempts = 0;
-        while (attempts < evaluators.length) {
-          const evaluator = evaluators[evaluatorIndex % evaluators.length];
-          
-          if (evaluator._id.toString() !== student.assignedFacultyId?._id.toString()) {
-            // Assign this evaluator
+          } else {
+            // Assign to solo student
             await this.assignExternalEvaluatorToSoloStudent(
-              student._id,
-              evaluator._id,
-              evaluator._id // Using evaluator as assignedBy for auto-assignment
+              entity._id,
+              selectedEvaluator._id,
+              selectedEvaluator._id
             );
 
-            // Update evaluator assignment count
-            evaluator.assignmentCount++;
             soloStudentsAssigned++;
-            break;
           }
-          
-          evaluatorIndex++;
-          attempts++;
+
+          // Update local assignment count for better distribution in this session
+          selectedEvaluator.assignmentCount++;
+
+        } catch (error) {
+          const entityName = type === 'group' ? entity.groupCode : entity.name;
+          assignmentFailures.push(`Failed to assign ${type} ${entityName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          logger.error(`Assignment error for ${type} ${entityName}:`, error);
         }
-        
-        if (attempts >= evaluators.length) {
-          logger.warn(`Could not find suitable external evaluator for solo student ${student.name}`);
-        }
-        
-        evaluatorIndex++;
       }
 
-      logger.info(`Auto-assigned external evaluators: ${groupsAssigned} groups, ${soloStudentsAssigned} solo students`);
+      // Log assignment summary
+      logger.info(`Auto-assignment completed: ${groupsAssigned} groups, ${soloStudentsAssigned} solo students assigned`);
+      
+      if (assignmentFailures.length > 0) {
+        logger.warn(`Assignment failures: ${assignmentFailures.join('; ')}`);
+      }
+
+      // Validate final distribution
+      const finalValidation = await this.validateAssignmentConstraints();
 
       return {
         groupsAssigned,
         soloStudentsAssigned,
         totalAssigned: groupsAssigned + soloStudentsAssigned,
-        evaluatorsUsed: evaluators.length
+        evaluatorsUsed: evaluators.length,
+        failures: assignmentFailures,
+        distributionValid: finalValidation.isValid,
+        distributionIssues: finalValidation.issues,
+        recommendations: finalValidation.recommendations
       };
     } catch (error) {
       logger.error('Error auto-assigning external evaluators:', error);
@@ -831,7 +957,7 @@ export class StudentEvaluationService {
   static async assignExternalEvaluatorToSoloStudent(
     studentId: mongoose.Types.ObjectId,
     externalFacultyId: mongoose.Types.ObjectId,
-    assignedBy: mongoose.Types.ObjectId
+    _assignedBy: mongoose.Types.ObjectId
   ): Promise<any> {
     try {
       // Validate student exists and is solo
@@ -939,8 +1065,143 @@ export class StudentEvaluationService {
   }
 
   /**
-   * Remove external evaluator assignment from a solo student
+   * Validate minimum assignment rule - ensure each evaluator gets at least one project if possible
    */
+  static async validateMinimumAssignmentRule(): Promise<{
+    isValid: boolean;
+    violations: Array<{
+      evaluatorId: string;
+      evaluatorName: string;
+      assignmentCount: number;
+      recommendedMinimum: number;
+    }>;
+  }> {
+    try {
+      const evaluators = await this.getAvailableExternalEvaluators();
+      const assignments = await this.getExternalEvaluatorAssignments();
+      
+      const totalAssignments = assignments.filter(a => a.isAssigned).length;
+      
+      // Calculate minimum assignments per evaluator
+      const minimumPerEvaluator = Math.floor(totalAssignments / evaluators.length);
+      const violations = [];
+
+      for (const evaluator of evaluators) {
+        if (evaluator.assignmentCount < minimumPerEvaluator && totalAssignments >= evaluators.length) {
+          violations.push({
+            evaluatorId: evaluator._id,
+            evaluatorName: evaluator.name,
+            assignmentCount: evaluator.assignmentCount,
+            recommendedMinimum: minimumPerEvaluator
+          });
+        }
+      }
+
+      return {
+        isValid: violations.length === 0,
+        violations
+      };
+    } catch (error) {
+      logger.error('Error validating minimum assignment rule:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rebalance assignments to ensure fair distribution
+   */
+  static async rebalanceAssignments(): Promise<{
+    success: boolean;
+    rebalanced: number;
+    message: string;
+  }> {
+    try {
+      // First validate current state
+      const validation = await this.validateAssignmentConstraints();
+      if (validation.isValid) {
+        return {
+          success: true,
+          rebalanced: 0,
+          message: 'Assignments are already balanced'
+        };
+      }
+
+      // Get current assignments and evaluators
+      const evaluators = await this.getAvailableExternalEvaluators();
+      const assignments = await this.getExternalEvaluatorAssignments();
+      
+      const assignedCount = assignments.filter(a => a.isAssigned).length;
+      
+      // Find over-assigned and under-assigned evaluators
+      const avgAssignments = assignedCount / evaluators.length;
+      const overAssigned = evaluators.filter(e => e.assignmentCount > Math.ceil(avgAssignments));
+      const underAssigned = evaluators.filter(e => e.assignmentCount < Math.floor(avgAssignments));
+
+      let rebalanced = 0;
+
+      // Move assignments from over-assigned to under-assigned evaluators
+      for (const overEvaluator of overAssigned) {
+        if (underAssigned.length === 0) break;
+
+        const excessAssignments = overEvaluator.assignmentCount - Math.ceil(avgAssignments);
+        
+        // Find assignments to move
+        const evaluatorAssignments = assignments.filter(a => 
+          a.isAssigned && 
+          ((a.submissionType === 'group' && a.groupId?.externalEvaluatorId?._id === overEvaluator._id) ||
+           (a.submissionType === 'solo' && a.externalEvaluator?._id === overEvaluator._id))
+        );
+
+        for (let i = 0; i < Math.min(excessAssignments, evaluatorAssignments.length) && underAssigned.length > 0; i++) {
+          const assignment = evaluatorAssignments[i];
+          const targetEvaluator = underAssigned[0];
+
+          // Check if target evaluator can take this assignment (no conflict)
+          const internalFacultyId = assignment.submissionType === 'group' 
+            ? assignment.groupId?.assignedFacultyId?._id 
+            : assignment.studentId?.assignedFacultyId?._id;
+
+          if (targetEvaluator._id !== internalFacultyId) {
+            // Reassign
+            if (assignment.submissionType === 'group' && assignment.groupId) {
+              await Group.findByIdAndUpdate(assignment.groupId._id, {
+                externalEvaluatorId: targetEvaluator._id
+              });
+              
+              await this.assignExternalEvaluatorToStudents(
+                assignment.groupId._id,
+                targetEvaluator._id,
+                targetEvaluator._id
+              );
+            } else if (assignment.submissionType === 'solo' && assignment.studentId) {
+              await this.assignExternalEvaluatorToSoloStudent(
+                assignment.studentId._id,
+                targetEvaluator._id,
+                targetEvaluator._id
+              );
+            }
+
+            rebalanced++;
+            targetEvaluator.assignmentCount++;
+            
+            // Remove from under-assigned if they now have enough
+            if (targetEvaluator.assignmentCount >= Math.floor(avgAssignments)) {
+              underAssigned.shift();
+            }
+          }
+        }
+      }
+
+      return {
+        success: true,
+        rebalanced,
+        message: `Successfully rebalanced ${rebalanced} assignments`
+      };
+    } catch (error) {
+      logger.error('Error rebalancing assignments:', error);
+      throw error;
+    }
+  }
   static async removeExternalEvaluatorFromSoloStudent(
     studentId: mongoose.Types.ObjectId
   ): Promise<any> {

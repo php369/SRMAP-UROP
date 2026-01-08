@@ -9,6 +9,7 @@ interface AssignmentCardProps {
   onAssignEvaluator: (assignmentId: string, evaluatorId: string, submissionType: 'group' | 'solo') => Promise<boolean>;
   onRemoveEvaluator: (assignmentId: string, submissionType: 'group' | 'solo') => Promise<boolean>;
   loading: boolean;
+  isModificationRestricted?: boolean;
 }
 
 export function AssignmentCard({ 
@@ -16,7 +17,8 @@ export function AssignmentCard({
   evaluators, 
   onAssignEvaluator, 
   onRemoveEvaluator, 
-  loading 
+  loading,
+  isModificationRestricted = false
 }: AssignmentCardProps) {
   const [showEvaluatorDropdown, setShowEvaluatorDropdown] = useState(false);
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
@@ -140,9 +142,9 @@ export function AssignmentCard({
             </div>
             <button
               onClick={handleRemoveEvaluator}
-              disabled={loading}
+              disabled={loading || isModificationRestricted}
               className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
-              title="Remove assignment"
+              title={isModificationRestricted ? "Cannot modify during active evaluation window" : "Remove assignment"}
             >
               <X className="w-4 h-4" />
             </button>
@@ -154,7 +156,8 @@ export function AssignmentCard({
               <button
                 onClick={() => setShowEvaluatorDropdown(!showEvaluatorDropdown)}
                 className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                disabled={loading || availableEvaluators.length === 0}
+                disabled={loading || isModificationRestricted || availableEvaluators.length === 0}
+                title={isModificationRestricted ? "Cannot modify during active evaluation window" : "Assign external evaluator"}
               >
                 Assign
                 <ChevronDown className={`w-4 h-4 transition-transform ${
@@ -180,7 +183,7 @@ export function AssignmentCard({
                 <div className="flex gap-2">
                   <button
                     onClick={handleAssignEvaluator}
-                    disabled={!selectedEvaluatorId || loading}
+                    disabled={!selectedEvaluatorId || loading || isModificationRestricted}
                     className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
                   >
                     <Check className="w-4 h-4" />

@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Search, Filter, RefreshCw, Zap, AlertCircle } from 'lucide-react';
 import { useExternalEvaluators } from '../../hooks/useExternalEvaluators';
 import { AssignmentCard } from './AssignmentCard';
 import { EvaluatorStats } from './EvaluatorStats';
-import { ExternalEvaluatorAssignment } from '../../types';
 import { useWindowStatus } from '../../../../../hooks/useWindowStatus';
 
 export function ExternalEvaluatorsTab() {
@@ -15,8 +13,10 @@ export function ExternalEvaluatorsTab() {
     loading,
     assignmentsLoading,
     evaluatorsLoading,
+    validationResult,
     fetchAssignments,
     fetchEvaluators,
+    validateAssignments,
     autoAssignEvaluators,
     assignEvaluatorToGroup,
     assignEvaluatorToSoloStudent,
@@ -28,7 +28,7 @@ export function ExternalEvaluatorsTab() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'unassigned' | 'conflicts'>('all');
   const [filterType, setFilterType] = useState<'all' | 'group' | 'solo'>('all');
 
-  // Check if external evaluation window is active
+  // Check if external evaluation window is active for any project type
   const isExternalEvaluationActive = windows.some(window => 
     window.windowType === 'assessment' && 
     window.assessmentType === 'External' &&
@@ -36,13 +36,16 @@ export function ExternalEvaluatorsTab() {
     new Date() <= new Date(window.endDate)
   );
 
+  // Check if any assignment modification should be restricted
+  const isModificationRestricted = isExternalEvaluationActive;
+
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchAssignments(), fetchEvaluators()]);
+      await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
     };
     loadData();
-  }, [fetchAssignments, fetchEvaluators]);
+  }, [fetchAssignments, fetchEvaluators, validateAssignments]);
 
   // Filter assignments based on search and filters
   const filteredAssignments = assignments.filter(assignment => {
@@ -88,15 +91,24 @@ export function ExternalEvaluatorsTab() {
   };
 
   const handleAutoAssign = async () => {
+    // Validate before auto-assignment
+    const validation = await validateAssignments();
+    if (validation && !validation.isValid) {
+      const proceed = window.confirm(
+        `Assignment validation found issues:\n${validation.issues.join('\n')}\n\nDo you want to proceed anyway?`
+      );
+      if (!proceed) return;
+    }
+
     const success = await autoAssignEvaluators();
     if (success) {
       // Refresh data after successful auto-assignment
-      await Promise.all([fetchAssignments(), fetchEvaluators()]);
+      await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
     }
   };
 
   const handleRefresh = async () => {
-    await Promise.all([fetchAssignments(), fetchEvaluators()]);
+    await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
   };
 
   return (
@@ -118,15 +130,42 @@ export function ExternalEvaluatorsTab() {
           </button>
           <button
             onClick={handleAutoAssign}
-            disabled={loading || isExternalEvaluationActive || assignments.length === 0}
+            disabled={loading || isModificationRestricted || assignments.length === 0}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 disabled:opacity-50"
-            title={isExternalEvaluationActive ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
+            title={isModificationRestricted ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
           >
             <Zap className="w-4 h-4" />
             Auto Assign Evaluators
           </button>
         </div>
       </div>
+
+      {/* Validation Issues Warning */}
+      {validationResult && !validationResult.isValid && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-yellow-800 font-medium mb-2">Assignment Validation Issues</h3>
+              <ul className="text-yellow-700 text-sm space-y-1 mb-3">
+                {validationResult.issues.map((issue: string, index: number) => (
+                  <li key={index}>• {issue}</li>
+                ))}
+              </ul>
+              {validationResult.recommendations.length > 0 && (
+                <>
+                  <h4 className="text-yellow-800 font-medium mb-1">Recommendations:</h4>
+                  <ul className="text-yellow-700 text-sm space-y-1">
+                    {validationResult.recommendations.map((rec: string, index: number) => (
+                      <li key={index}>• {rec}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Warning for active external evaluation window */}
       {isExternalEvaluationActive && (
@@ -204,6 +243,7 @@ export function ExternalEvaluatorsTab() {
                 onAssignEvaluator={handleAssignEvaluator}
                 onRemoveEvaluator={handleRemoveEvaluator}
                 loading={loading}
+                isModificationRestricted={isModificationRestricted}
               />
             ))}
           </div>

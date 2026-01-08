@@ -562,6 +562,32 @@ router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmi
 });
 
 /**
+ * @route   GET /api/v1/control/external-evaluators/validate
+ * @desc    Validate assignment constraints and distribution
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/external-evaluators/validate', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const validation = await StudentEvaluationService.validateAssignmentConstraints();
+    
+    res.json({
+      success: true,
+      data: validation,
+      message: validation.isValid ? 'Assignment constraints are valid' : 'Assignment validation issues found'
+    });
+  } catch (error: any) {
+    console.error('Validate assignment constraints error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: error.message || 'Failed to validate assignment constraints'
+      }
+    });
+  }
+});
+
+/**
  * @route   GET /api/v1/control/external-evaluators/available
  * @desc    Get available external evaluators with assignment counts
  * @access  Private (Coordinator, Admin)
@@ -812,6 +838,32 @@ router.delete('/external-evaluators/assign-solo/:studentId', authenticate, isCoo
       error: {
         code: 'REMOVE_EVALUATOR_SOLO_FAILED',
         message: error.message || 'Failed to remove external evaluator assignment from solo student'
+      }
+    });
+  }
+});
+
+/**
+ * @route   POST /api/v1/control/external-evaluators/rebalance
+ * @desc    Rebalance assignments for fair distribution
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/external-evaluators/rebalance', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const result = await StudentEvaluationService.rebalanceAssignments();
+    
+    res.json({
+      success: true,
+      data: result,
+      message: result.message
+    });
+  } catch (error: any) {
+    console.error('Rebalance assignments error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REBALANCE_FAILED',
+        message: error.message || 'Failed to rebalance assignments'
       }
     });
   }

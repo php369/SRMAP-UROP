@@ -9,6 +9,25 @@ export function useExternalEvaluators() {
   const [loading, setLoading] = useState(false);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [evaluatorsLoading, setEvaluatorsLoading] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
+
+  // Validate assignment constraints
+  const validateAssignments = useCallback(async () => {
+    try {
+      const response = await api.get('/control/external-evaluators/validate');
+      if (response.data && (response.data as any).success) {
+        setValidationResult((response.data as any).data);
+        return (response.data as any).data;
+      } else {
+        toast.error('Failed to validate assignments');
+        return null;
+      }
+    } catch (error: any) {
+      console.error('Error validating assignments:', error);
+      toast.error(error.response?.data?.message || 'Failed to validate assignments');
+      return null;
+    }
+  }, []);
 
   // Fetch all external evaluator assignments
   const fetchAssignments = useCallback(async () => {
@@ -170,8 +189,10 @@ export function useExternalEvaluators() {
     loading,
     assignmentsLoading,
     evaluatorsLoading,
+    validationResult,
     fetchAssignments,
     fetchEvaluators,
+    validateAssignments,
     autoAssignEvaluators,
     assignEvaluatorToGroup,
     assignEvaluatorToSoloStudent,
