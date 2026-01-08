@@ -79,23 +79,23 @@ export function LoginPage() {
       />
 
       {/* Left Column - Login Form */}
-      <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24 bg-white relative z-10 transition-all duration-500 ease-in-out">
+      <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24 bg-[#F2F3F5] relative z-10 transition-all duration-500 ease-in-out">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full max-w-md mx-auto bg-slate-100 p-10 rounded-3xl border border-slate-200 backdrop-blur-sm shadow-sm"
+          className="w-full max-w-md mx-auto bg-[#F2F3F5] p-10 rounded-3xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff]"
         >
           {/* Header */}
           <div className="mb-10 text-center flex flex-col items-center">
             <div className="flex items-center justify-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100">
+              <div className="w-12 h-12 bg-[#F2F3F5] rounded-2xl flex items-center justify-center shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]">
                 <img src="/branding/srm-icon.svg" alt="SRM" className="w-7 h-7" />
               </div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">SRM University-AP</span>
+              <span className="text-xl font-bold text-slate-800 tracking-tight">SRM University-AP</span>
             </div>
 
-            <h1 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">
+            <h1 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">
               Welcome back
             </h1>
             <p className="text-slate-500 text-lg">
@@ -107,7 +107,7 @@ export function LoginPage() {
           <div className="space-y-6">
             <button
               onClick={handleGoogleLogin}
-              className="group w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 text-slate-700 rounded-xl font-semibold transition-all duration-300"
+              className="group w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#F2F3F5] text-slate-700 rounded-xl font-semibold transition-all duration-300 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] hover:shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff] active:translate-y-0.5"
             >
               <svg className="w-6 h-6 transition-transform group-hover:scale-110 duration-200" viewBox="0 0 24 24">
                 <path
@@ -131,7 +131,7 @@ export function LoginPage() {
             </button>
 
             <div className="flex items-center justify-center gap-3 select-none group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${rememberMe ? 'bg-primary border-primary' : 'bg-transparent border-slate-300 group-hover:border-slate-400'}`}>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all shadow-sm ${rememberMe ? 'bg-primary border-primary shadow-none' : 'bg-transparent border-slate-300'}`}>
                 {rememberMe && (
                   <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -143,11 +143,12 @@ export function LoginPage() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-slate-200/60">
-            <div className="flex gap-4 justify-center text-xs text-slate-400 font-medium">
+            <div className="flex flex-nowrap gap-4 justify-center text-xs text-slate-400 font-medium whitespace-nowrap overflow-x-auto">
               <a href="#" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
               <span className="text-slate-300">•</span>
               <a href="#" className="hover:text-slate-600 transition-colors">Terms of Service</a>
-              <span className="ml-auto">© 2025 SRM-AP</span>
+              <span className="text-slate-300">•</span>
+              <span>© 2025 SRM-AP</span>
             </div>
           </div>
         </motion.div>
