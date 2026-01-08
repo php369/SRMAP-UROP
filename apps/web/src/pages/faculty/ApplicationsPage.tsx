@@ -70,7 +70,7 @@ export function FacultyApplicationsPage() {
         setInitializing(false);
       }
     };
-    
+
     initializeData();
   }, []);
 
@@ -146,9 +146,9 @@ export function FacultyApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      pending: 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30',
-      approved: 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 border-green-300 dark:border-green-500/30',
-      rejected: 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border-red-300 dark:border-red-500/30'
+      pending: 'bg-warning/20 text-warning border-warning/30',
+      approved: 'bg-success/20 text-success border-success/30',
+      rejected: 'bg-error/20 text-error border-error/30'
     };
 
     return (
@@ -197,7 +197,7 @@ export function FacultyApplicationsPage() {
                   key={status}
                   onClick={() => setFilterStatus(status)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === status
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-white/5 text-textSecondary hover:bg-white/10'
                     }`}
                 >
@@ -258,7 +258,7 @@ export function FacultyApplicationsPage() {
                           </span>
                         )}
                         {getStatusBadge(application.status)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
+                        <span className="px-2 py-1 bg-secondary/10 text-secondary text-xs font-medium rounded-lg border border-secondary/20">
                           {application.projectType}
                         </span>
                       </div>
@@ -345,31 +345,31 @@ export function FacultyApplicationsPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-2xl max-h-[80vh] overflow-y-auto"
             >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Application Details</h2>
+              <div className="bg-surface border border-border rounded-xl shadow-2xl p-6">
+                <h2 className="text-2xl font-bold text-text mb-6">Application Details</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Type</label>
-                    <p className="text-gray-900 capitalize">{selectedApplication.groupId ? 'Group' : 'Solo'}</p>
+                    <label className="text-sm font-medium text-textSecondary">Type</label>
+                    <p className="text-text capitalize">{selectedApplication.groupId ? 'Group' : 'Solo'}</p>
                   </div>
 
                   {selectedApplication.groupId && (
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
+                      <label className="text-sm font-medium text-textSecondary">
                         Group Members {selectedApplication.groupId?.groupNumber ? `(Group #${selectedApplication.groupId.groupNumber})` : `(${selectedApplication.groupId?.groupCode})`}
                       </label>
                       <div className="mt-2 space-y-2">
                         {selectedApplication.groupId.members.map((member) => (
-                          <div key={member._id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <User className="w-4 h-4 text-gray-500" />
+                          <div key={member._id} className="flex items-center gap-2 p-3 bg-background/50 rounded-lg border border-border">
+                            <User className="w-4 h-4 text-textSecondary" />
                             <div className="flex-1">
-                              <p className="text-sm text-gray-900 font-medium">{member.name}</p>
-                              <p className="text-xs text-gray-600">{member.email}</p>
-                              <p className="text-xs text-gray-500">ID: {member.studentId}</p>
+                              <p className="text-sm text-text font-medium">{member.name}</p>
+                              <p className="text-xs text-textSecondary">{member.email}</p>
+                              <p className="text-xs text-textSecondary">ID: {member.studentId}</p>
                             </div>
                             {member._id === selectedApplication.groupId?.leaderId._id && (
-                              <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
+                              <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-1 rounded font-medium">
                                 Leader
                               </span>
                             )}
@@ -381,21 +381,21 @@ export function FacultyApplicationsPage() {
 
                   {!selectedApplication.groupId && selectedApplication.studentId && (
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Student</label>
-                      <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-900 font-medium">{selectedApplication.studentId.name}</p>
-                        <p className="text-sm text-gray-600">{selectedApplication.studentId.email}</p>
-                        <p className="text-sm text-gray-500">ID: {selectedApplication.studentId.studentId}</p>
+                      <label className="text-sm font-medium text-textSecondary">Student</label>
+                      <div className="mt-2 p-3 bg-background/50 rounded-lg border border-border">
+                        <p className="text-text font-medium">{selectedApplication.studentId.name}</p>
+                        <p className="text-sm text-textSecondary">{selectedApplication.studentId.email}</p>
+                        <p className="text-sm text-textSecondary">ID: {selectedApplication.studentId.studentId}</p>
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Project</label>
-                    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-gray-900 font-medium">{selectedApplication.projectId.title}</p>
+                    <label className="text-sm font-medium text-textSecondary">Project</label>
+                    <div className="mt-2 p-3 bg-background/50 rounded-lg border border-border">
+                      <p className="text-text font-medium">{selectedApplication.projectId.title}</p>
                       {selectedApplication.projectId.brief && (
-                        <p className="text-xs text-gray-600 mt-1">{selectedApplication.projectId.brief}</p>
+                        <p className="text-xs text-textSecondary mt-1">{selectedApplication.projectId.brief}</p>
                       )}
                     </div>
                   </div>
@@ -403,33 +403,33 @@ export function FacultyApplicationsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     {selectedApplication.cgpa && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">CGPA</label>
-                        <p className="text-gray-900">{selectedApplication.cgpa.toFixed(2)}</p>
+                        <label className="text-sm font-medium text-textSecondary">CGPA</label>
+                        <p className="text-text">{selectedApplication.cgpa.toFixed(2)}</p>
                       </div>
                     )}
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Department</label>
-                      <p className="text-gray-900">{selectedApplication.department}</p>
+                      <label className="text-sm font-medium text-textSecondary">Department</label>
+                      <p className="text-text">{selectedApplication.department}</p>
                     </div>
                   </div>
 
                   {selectedApplication.specialization && (
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Specialization</label>
-                      <p className="text-gray-900">{selectedApplication.specialization}</p>
+                      <label className="text-sm font-medium text-textSecondary">Specialization</label>
+                      <p className="text-text">{selectedApplication.specialization}</p>
                     </div>
                   )}
 
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <label className="text-sm font-medium text-textSecondary">Status</label>
                     <div className="mt-1">{getStatusBadge(selectedApplication.status)}</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 mt-6 pt-4 border-t border-border">
                   <button
                     onClick={() => setSelectedApplication(null)}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
+                    className="flex-1 px-4 py-2 bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 rounded-lg text-text font-medium transition-all"
                   >
                     Close
                   </button>
@@ -437,7 +437,7 @@ export function FacultyApplicationsPage() {
                     <>
                       <button
                         onClick={() => handleReject(selectedApplication._id)}
-                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
+                        className="flex-1 px-4 py-2 bg-error/10 hover:bg-error/20 border border-error/20 rounded-lg text-error font-medium transition-all"
                       >
                         Reject
                       </button>
@@ -445,7 +445,7 @@ export function FacultyApplicationsPage() {
                         onClick={() => {
                           handleAccept(selectedApplication._id, selectedApplication.projectId._id);
                         }}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
+                        className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-all"
                       >
                         Accept
                       </button>
