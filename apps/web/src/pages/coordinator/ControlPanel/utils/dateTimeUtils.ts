@@ -2,25 +2,22 @@
 export const convertLocalDateTimeToISO = (localDateTimeString: string): string => {
   if (!localDateTimeString) return '';
   
-  // Create a date object from the local datetime string
-  // This treats the input as local time, not UTC
-  const localDate = new Date(localDateTimeString);
+  // Parse the datetime-local string manually to avoid timezone interpretation issues
+  // Input format: "2024-01-15T14:30"
+  const [datePart, timePart] = localDateTimeString.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
   
-  // Format as ISO string but preserve the local time interpretation
-  // We'll send it as a local datetime string with timezone offset
-  const year = localDate.getFullYear();
-  const month = String(localDate.getMonth() + 1).padStart(2, '0');
-  const day = String(localDate.getDate()).padStart(2, '0');
-  const hours = String(localDate.getHours()).padStart(2, '0');
-  const minutes = String(localDate.getMinutes()).padStart(2, '0');
-  const seconds = String(localDate.getSeconds()).padStart(2, '0');
+  // Create date object using local timezone (this preserves the user's intended time)
+  const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
   
-  // Return in local datetime format that the backend can interpret correctly
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  // Return ISO string with timezone offset to preserve the local time context
+  return localDate.toISOString();
 };
 
 // Format date to local datetime-local format for input
 export const formatToLocalDateTime = (date: Date): string => {
+  // Use local timezone methods to avoid UTC conversion issues
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -33,7 +30,9 @@ export const formatToLocalDateTime = (date: Date): string => {
 export const getDefaultStartDate = (prevEndDate: string): string => {
   if (!prevEndDate) return '';
   
-  const nextDay = new Date(prevEndDate);
+  // Parse the previous end date properly to avoid timezone issues
+  const prevDate = new Date(prevEndDate);
+  const nextDay = new Date(prevDate.getTime());
   nextDay.setDate(nextDay.getDate() + 1);
   nextDay.setHours(9, 0, 0, 0); // Set to 9 AM next day
   
