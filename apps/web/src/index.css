@@ -96,3 +96,78 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-border rounded-full hover:bg-textSecondary transition-colors;
 }
+
+/* Custom Button 89 */
+.button-89 {
+  --b: 3px;
+  /* border thickness */
+  --s: .45em;
+  /* size of the corner */
+  --color: #475569;
+  /* Slate-600 */
+
+  padding: calc(.5em + var(--s)) calc(.9em + var(--s));
+  color: var(--color);
+  --_p: var(--s);
+  background:
+    conic-gradient(from 90deg at var(--b) var(--b), #0000 90deg, var(--color) 0) var(--_p) var(--_p)/calc(100% - var(--b) - 2*var(--_p)) calc(100% - var(--b) - 2*var(--_p));
+  transition: .3s linear, color 0s, background-color 0s;
+  outline: var(--b) solid #0000;
+  outline-offset: .6em;
+  font-size: 16px;
+  font-weight: 600;
+
+  border: 0;
+
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-89:hover,
+.button-89:focus-visible {
+  --_p: 0px;
+  outline-color: var(--color);
+  outline-offset: .05em;
+  background-color: rgba(71, 85, 105, 0.05);
+}
+
+.button-89:active {
+  background: var(--color);
+  color: #fff;
+}
+
+.dark .button-89 {
+  --color: #94a3b8;
+  /* Slate-400 */
+}
+
+/* Glassy Blob Button */
+.btn-blob {
+  position: relative;
+  border: none;
+  background: rgba(245, 187, 62, 0.9);
+  /* SRM-400 Orchard Yellow */
+  color: white;
+  overflow: hidden;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 20px rgba(245, 187, 62, 0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn-blob:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: rgba(245, 187, 62, 1);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+    0 12px 24px rgba(245, 187, 62, 0.4),
+    0 0 0 2px rgba(245, 187, 62, 0.2);
+}
+
+.btn-blob:active {
+  transform: translateY(0) scale(0.98);
+}
