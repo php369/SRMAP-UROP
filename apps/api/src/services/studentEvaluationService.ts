@@ -571,4 +571,406 @@ export class StudentEvaluationService {
       throw error;
     }
   }
+
+  /**
+   * Get all external evaluator assignments (groups and solo students)
+   */
+  static async getExternalEvaluatorAssignments(): Promise<any[]> {
+    try {
+      // Get group assignments
+      const groupAssignments = await Group.find({
+        status: 'approved',
+        assignedProjectId: { $exists: true },
+        assignedFacultyId: { $exists: true }
+      })
+        .populate('members', 'name email')
+        .populate('assignedProjectId', 'title projectId type brief facultyName')
+        .populate('assignedFacultyId', 'name email')
+        .populate('externalEvaluatorId', 'name email')
+        .lean();
+
+      // Get solo student assignments
+      const soloStudents = await User.find({
+        role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
+        currentGroupId: { $exists: false },
+        assignedProjectId: { $exists: true },
+        assignedFacultyId: { $exists: true }
+      })
+        .populate('assignedProjectId', 'title projectId type brief facultyName')
+        .populate('assignedFacultyId', 'name email')
+        .lean();
+
+      // Get external evaluator assignments for solo students
+      const soloEvaluations = await StudentEvaluation.find({
+        studentId: { $in: soloStudents.map(s => s._id) },
+        externalFacultyId: { $exists: true }
+      })
+        .populate('externalFacultyId', 'name email')
+        .lean();
+
+      const soloEvaluationMap = new Map();
+      soloEvaluations.forEach(evaluation => {
+        soloEvaluationMap.set(evaluation.studentId.toString(), evaluation.externalFacultyId);
+      });
+
+      // Format group assignments
+      const formattedGroupAssignments = groupAssignments.map(group => ({
+        _id: group._id,
+        submissionType: 'group' as const,
+        groupId: {
+          _id: group._id,
+          groupCode: group.groupCode,
+          members: group.members,
+          assignedProjectId: group.assignedProjectId,
+          assignedFacultyId: group.assignedFacultyId,
+          externalEvaluatorId: group.externalEvaluatorId
+        },
+        internalFaculty: group.assignedFacultyId,
+        externalEvaluator: group.externalEvaluatorId,
+        hasConflict: group.assignedFacultyId && group.externalEvaluatorId && 
+          group.assignedFacultyId._id.toString() === group.externalEvaluatorId._id.toString(),
+        isAssigned: !!group.externalEvaluatorId
+      }));
+
+      // Format solo student assignments
+      const formattedSoloAssignments = soloStudents.map(student => ({
+        _id: student._id,
+        submissionType: 'solo' as const,
+        studentId: {
+          _id: student._id,
+          name: student.name,
+          email: student.email,
+          assignedProjectId: student.assignedProjectId,
+          assignedFacultyId: student.assignedFacultyId
+        },
+        internalFaculty: student.assignedFacultyId,
+        externalEvaluator: soloEvaluationMap.get(student._id.toString()),
+        hasConflict: student.assignedFacultyId && soloEvaluationMap.get(student._id.toString()) && 
+          student.assignedFacultyId._id.toString() === soloEvaluationMap.get(student._id.toString())._id.toString(),
+        isAssigned: !!soloEvaluationMap.get(student._id.toString())
+      }));
+
+      return [...formattedGroupAssignments, ...formattedSoloAssignments];
+    } catch (error) {
+      logger.error('Error getting external evaluator assignments:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available external evaluators with assignment counts
+   */
+  static async getAvailableExternalEvaluators(): Promise<any[]> {
+    try {
+      // Get all faculty members who can be external evaluators
+      const faculty = await User.find({
+        role: 'faculty',
+        isExternalEvaluator: true
+      }).select('name email').lean();
+
+      // Get assignment counts for each faculty
+      const evaluatorsWithCounts = await Promise.all(
+        faculty.map(async (evaluator) => {
+          // Count group assignments
+          const groupCount = await Group.countDocuments({
+            externalEvaluatorId: evaluator._id
+          });
+
+          // Count solo student assignments
+          const soloCount = await StudentEvaluation.countDocuments({
+            externalFacultyId: evaluator._id
+          });
+
+          return {
+            _id: evaluator._id,
+            name: evaluator.name,
+            email: evaluator.email,
+            assignmentCount: groupCount + soloCount,
+            isExternalEvaluator: true
+          };
+        })
+      );
+
+      return evaluatorsWithCounts.sort((a, b) => a.assignmentCount - b.assignmentCount);
+    } catch (error) {
+      logger.error('Error getting available external evaluators:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Auto-assign external evaluators to all unassigned groups and solo students
+   */
+  static async autoAssignExternalEvaluators(): Promise<any> {
+    try {
+      // Get available external evaluators
+      const evaluators = await this.getAvailableExternalEvaluators();
+      
+      if (evaluators.length === 0) {
+        throw new Error('No external evaluators available');
+      }
+
+      // Get unassigned groups
+      const unassignedGroups = await Group.find({
+        status: 'approved',
+        assignedProjectId: { $exists: true },
+        assignedFacultyId: { $exists: true },
+        externalEvaluatorId: { $exists: false }
+      }).populate('assignedFacultyId', '_id');
+
+      // Get unassigned solo students
+      const unassignedSoloStudents = await User.find({
+        role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
+        currentGroupId: { $exists: false },
+        assignedProjectId: { $exists: true },
+        assignedFacultyId: { $exists: true }
+      }).populate('assignedFacultyId', '_id');
+
+      // Filter out solo students who already have external evaluators
+      const soloStudentsWithoutExternal = [];
+      for (const student of unassignedSoloStudents) {
+        const hasExternal = await StudentEvaluation.findOne({
+          studentId: student._id,
+          externalFacultyId: { $exists: true }
+        });
+        if (!hasExternal) {
+          soloStudentsWithoutExternal.push(student);
+        }
+      }
+
+      let groupsAssigned = 0;
+      let soloStudentsAssigned = 0;
+      let evaluatorIndex = 0;
+
+      // Assign to groups
+      for (const group of unassignedGroups) {
+        // Find an evaluator who is not the internal faculty
+        let attempts = 0;
+        while (attempts < evaluators.length) {
+          const evaluator = evaluators[evaluatorIndex % evaluators.length];
+          
+          if (evaluator._id.toString() !== group.assignedFacultyId?._id.toString()) {
+            // Assign this evaluator
+            await Group.findByIdAndUpdate(group._id, {
+              externalEvaluatorId: evaluator._id
+            });
+
+            // Update student evaluations
+            await this.assignExternalEvaluatorToStudents(
+              group._id,
+              evaluator._id,
+              evaluator._id // Using evaluator as assignedBy for auto-assignment
+            );
+
+            // Update evaluator assignment count
+            evaluator.assignmentCount++;
+            groupsAssigned++;
+            break;
+          }
+          
+          evaluatorIndex++;
+          attempts++;
+        }
+        
+        if (attempts >= evaluators.length) {
+          logger.warn(`Could not find suitable external evaluator for group ${group.groupCode}`);
+        }
+        
+        evaluatorIndex++;
+      }
+
+      // Assign to solo students
+      for (const student of soloStudentsWithoutExternal) {
+        // Find an evaluator who is not the internal faculty
+        let attempts = 0;
+        while (attempts < evaluators.length) {
+          const evaluator = evaluators[evaluatorIndex % evaluators.length];
+          
+          if (evaluator._id.toString() !== student.assignedFacultyId?._id.toString()) {
+            // Assign this evaluator
+            await this.assignExternalEvaluatorToSoloStudent(
+              student._id,
+              evaluator._id,
+              evaluator._id // Using evaluator as assignedBy for auto-assignment
+            );
+
+            // Update evaluator assignment count
+            evaluator.assignmentCount++;
+            soloStudentsAssigned++;
+            break;
+          }
+          
+          evaluatorIndex++;
+          attempts++;
+        }
+        
+        if (attempts >= evaluators.length) {
+          logger.warn(`Could not find suitable external evaluator for solo student ${student.name}`);
+        }
+        
+        evaluatorIndex++;
+      }
+
+      logger.info(`Auto-assigned external evaluators: ${groupsAssigned} groups, ${soloStudentsAssigned} solo students`);
+
+      return {
+        groupsAssigned,
+        soloStudentsAssigned,
+        totalAssigned: groupsAssigned + soloStudentsAssigned,
+        evaluatorsUsed: evaluators.length
+      };
+    } catch (error) {
+      logger.error('Error auto-assigning external evaluators:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Assign external evaluator to a solo student
+   */
+  static async assignExternalEvaluatorToSoloStudent(
+    studentId: mongoose.Types.ObjectId,
+    externalFacultyId: mongoose.Types.ObjectId,
+    assignedBy: mongoose.Types.ObjectId
+  ): Promise<any> {
+    try {
+      // Validate student exists and is solo
+      const student = await User.findById(studentId);
+      if (!student) {
+        throw new Error('Student not found');
+      }
+
+      if (student.currentGroupId) {
+        throw new Error('Student is not a solo student');
+      }
+
+      if (!student.assignedProjectId || !student.assignedFacultyId) {
+        throw new Error('Student must be assigned to a project before external evaluator assignment');
+      }
+
+      // Validate external faculty exists
+      const externalFaculty = await User.findById(externalFacultyId);
+      if (!externalFaculty) {
+        throw new Error('External faculty not found');
+      }
+
+      if (externalFaculty.role !== 'faculty' || !externalFaculty.isExternalEvaluator) {
+        throw new Error('User is not a faculty member or external evaluator');
+      }
+
+      // Check if external faculty is different from internal faculty
+      if (student.assignedFacultyId.equals(externalFacultyId)) {
+        throw new Error('External evaluator cannot be the same as internal faculty');
+      }
+
+      // Find or create student evaluation record
+      let evaluation = await StudentEvaluation.findOne({
+        studentId: studentId,
+        projectId: student.assignedProjectId,
+        assessmentType: 'External'
+      });
+
+      if (!evaluation) {
+        evaluation = new StudentEvaluation({
+          studentId: studentId,
+          groupId: null, // Solo student has no group
+          projectId: student.assignedProjectId,
+          facultyId: student.assignedFacultyId,
+          externalFacultyId: externalFacultyId,
+          assessmentType: 'External'
+        });
+      } else {
+        evaluation.externalFacultyId = externalFacultyId;
+      }
+
+      await evaluation.save();
+
+      logger.info(`External evaluator ${externalFaculty.email} assigned to solo student ${student.name}`);
+
+      return {
+        updated: 1,
+        evaluation: evaluation
+      };
+    } catch (error) {
+      logger.error('Error assigning external evaluator to solo student:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove external evaluator assignment from a group
+   */
+  static async removeExternalEvaluatorAssignment(
+    groupId: mongoose.Types.ObjectId
+  ): Promise<any> {
+    try {
+      // Find the group
+      const group = await Group.findById(groupId);
+      if (!group) {
+        throw new Error('Group not found');
+      }
+
+      // Remove external evaluator from group
+      await Group.findByIdAndUpdate(groupId, {
+        $unset: { externalEvaluatorId: 1 }
+      });
+
+      // Remove external evaluator from all student evaluations in the group
+      const result = await StudentEvaluation.updateMany(
+        {
+          groupId: groupId,
+          projectId: group.assignedProjectId
+        },
+        {
+          $unset: { externalFacultyId: 1 }
+        }
+      );
+
+      logger.info(`External evaluator assignment removed from group ${group.groupCode} and ${result.modifiedCount} student evaluations`);
+
+      return {
+        updated: result.modifiedCount,
+        groupCode: group.groupCode
+      };
+    } catch (error) {
+      logger.error('Error removing external evaluator assignment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove external evaluator assignment from a solo student
+   */
+  static async removeExternalEvaluatorFromSoloStudent(
+    studentId: mongoose.Types.ObjectId
+  ): Promise<any> {
+    try {
+      // Validate student exists
+      const student = await User.findById(studentId);
+      if (!student) {
+        throw new Error('Student not found');
+      }
+
+      // Remove external evaluator from student evaluation
+      const result = await StudentEvaluation.updateMany(
+        {
+          studentId: studentId,
+          externalFacultyId: { $exists: true }
+        },
+        {
+          $unset: { externalFacultyId: 1 }
+        }
+      );
+
+      logger.info(`External evaluator assignment removed from solo student ${student.name}`);
+
+      return {
+        updated: result.modifiedCount,
+        studentName: student.name
+      };
+    } catch (error) {
+      logger.error('Error removing external evaluator from solo student:', error);
+      throw error;
+    }
+  }
 }

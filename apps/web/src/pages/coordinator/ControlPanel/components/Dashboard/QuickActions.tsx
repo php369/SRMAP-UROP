@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
-import { Calendar, RefreshCw, ChevronRight } from 'lucide-react';
+import { Calendar, RefreshCw, ChevronRight, UserCheck } from 'lucide-react';
 
 interface QuickActionsProps {
   onManageWindows: () => void;
   onUpdateStatuses: () => void;
+  onManageExternalEvaluators: () => void;
 }
 
-export function QuickActions({ onManageWindows, onUpdateStatuses }: QuickActionsProps) {
+export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExternalEvaluators }: QuickActionsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -15,7 +16,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses }: QuickActions
       className="bg-white rounded-xl shadow-lg p-6"
     >
       <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         {/* Manage Windows Card */}
         <div 
           onClick={onManageWindows}
@@ -37,6 +38,31 @@ export function QuickActions({ onManageWindows, onUpdateStatuses }: QuickActions
           </div>
           <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
             Click to manage windows
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </div>
+        </div>
+
+        {/* External Evaluators Card */}
+        <div 
+          onClick={onManageExternalEvaluators}
+          className="p-6 border-2 border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all group"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+              <UserCheck className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">External Evaluators</h3>
+              <p className="text-sm text-gray-600">Assign and manage external evaluators</p>
+            </div>
+          </div>
+          <div className="text-sm text-gray-500">
+            <p>• Auto-assign external evaluators</p>
+            <p>• View assignment details</p>
+            <p>• Manage evaluator workload</p>
+          </div>
+          <div className="mt-4 flex items-center text-purple-600 text-sm font-medium">
+            Click to manage evaluators
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
         </div>

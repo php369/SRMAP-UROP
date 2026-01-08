@@ -7,6 +7,7 @@ import { Application } from '../models/Application';
 import { Group } from '../models/Group';
 import { User } from '../models/User';
 import { WindowService } from '../services/windowService';
+import { StudentEvaluationService } from '../services/studentEvaluationService';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -529,6 +530,290 @@ router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (_req: Requ
   } catch (error: any) {
     console.error('Get user stats error:', error);
     res.status(500).json({ message: 'Failed to get user statistics' });
+  }
+});
+
+// ===== EXTERNAL EVALUATOR MANAGEMENT ENDPOINTS =====
+
+/**
+ * @route   GET /api/v1/control/external-evaluators/assignments
+ * @desc    Get all external evaluator assignments (groups and solo students)
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const assignments = await StudentEvaluationService.getExternalEvaluatorAssignments();
+    
+    res.json({
+      success: true,
+      data: assignments,
+      message: `Found ${assignments.length} assignments`
+    });
+  } catch (error: any) {
+    console.error('Get external evaluator assignments error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_ASSIGNMENTS_FAILED',
+        message: error.message || 'Failed to get external evaluator assignments'
+      }
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/control/external-evaluators/available
+ * @desc    Get available external evaluators with assignment counts
+ * @access  Private (Coordinator, Admin)
+ */
+router.get('/external-evaluators/available', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const evaluators = await StudentEvaluationService.getAvailableExternalEvaluators();
+    
+    res.json({
+      success: true,
+      data: evaluators,
+      message: `Found ${evaluators.length} available external evaluators`
+    });
+  } catch (error: any) {
+    console.error('Get available external evaluators error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'GET_EVALUATORS_FAILED',
+        message: error.message || 'Failed to get available external evaluators'
+      }
+    });
+  }
+});
+
+/**
+ * @route   POST /api/v1/control/external-evaluators/auto-assign
+ * @desc    Auto-assign external evaluators to all unassigned groups and solo students
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/external-evaluators/auto-assign', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const result = await StudentEvaluationService.autoAssignExternalEvaluators();
+    
+    res.json({
+      success: true,
+      data: result,
+      message: `Successfully assigned external evaluators to ${result.groupsAssigned + result.soloStudentsAssigned} projects`
+    });
+  } catch (error: any) {
+    console.error('Auto-assign external evaluators error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'AUTO_ASSIGN_FAILED',
+        message: error.message || 'Failed to auto-assign external evaluators'
+      }
+    });
+  }
+});
+
+/**
+ * @route   POST /api/v1/control/external-evaluators/assign
+ * @desc    Assign external evaluator to a specific group
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/external-evaluators/assign', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { groupId, evaluatorId } = req.body;
+
+    if (!groupId || !evaluatorId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_REQUIRED_FIELDS',
+          message: 'Group ID and evaluator ID are required'
+        }
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(evaluatorId)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OBJECT_ID',
+          message: 'Invalid group ID or evaluator ID'
+        }
+      });
+    }
+
+    // Update group with external evaluator
+    const group = await Group.findByIdAndUpdate(
+      groupId,
+      { externalEvaluatorId: new mongoose.Types.ObjectId(evaluatorId) },
+      { new: true }
+    );
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'GROUP_NOT_FOUND',
+          message: 'Group not found'
+        }
+      });
+    }
+
+    // Assign external evaluator to all students in the group
+    const result = await StudentEvaluationService.assignExternalEvaluatorToStudents(
+      new mongoose.Types.ObjectId(groupId),
+      new mongoose.Types.ObjectId(evaluatorId),
+      new mongoose.Types.ObjectId(req.user!.id)
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: `External evaluator assigned to group ${group.groupCode}`
+    });
+  } catch (error: any) {
+    console.error('Assign external evaluator to group error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ASSIGN_EVALUATOR_FAILED',
+        message: error.message || 'Failed to assign external evaluator to group'
+      }
+    });
+  }
+});
+
+/**
+ * @route   POST /api/v1/control/external-evaluators/assign-solo
+ * @desc    Assign external evaluator to a solo student
+ * @access  Private (Coordinator, Admin)
+ */
+router.post('/external-evaluators/assign-solo', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { studentId, evaluatorId } = req.body;
+
+    if (!studentId || !evaluatorId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_REQUIRED_FIELDS',
+          message: 'Student ID and evaluator ID are required'
+        }
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(evaluatorId)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OBJECT_ID',
+          message: 'Invalid student ID or evaluator ID'
+        }
+      });
+    }
+
+    const result = await StudentEvaluationService.assignExternalEvaluatorToSoloStudent(
+      new mongoose.Types.ObjectId(studentId),
+      new mongoose.Types.ObjectId(evaluatorId),
+      new mongoose.Types.ObjectId(req.user!.id)
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'External evaluator assigned to solo student successfully'
+    });
+  } catch (error: any) {
+    console.error('Assign external evaluator to solo student error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'ASSIGN_EVALUATOR_SOLO_FAILED',
+        message: error.message || 'Failed to assign external evaluator to solo student'
+      }
+    });
+  }
+});
+
+/**
+ * @route   DELETE /api/v1/control/external-evaluators/assign/:groupId
+ * @desc    Remove external evaluator assignment from a group
+ * @access  Private (Coordinator, Admin)
+ */
+router.delete('/external-evaluators/assign/:groupId', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OBJECT_ID',
+          message: 'Invalid group ID'
+        }
+      });
+    }
+
+    const result = await StudentEvaluationService.removeExternalEvaluatorAssignment(
+      new mongoose.Types.ObjectId(groupId)
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'External evaluator assignment removed from group'
+    });
+  } catch (error: any) {
+    console.error('Remove external evaluator from group error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REMOVE_EVALUATOR_FAILED',
+        message: error.message || 'Failed to remove external evaluator assignment'
+      }
+    });
+  }
+});
+
+/**
+ * @route   DELETE /api/v1/control/external-evaluators/assign-solo/:studentId
+ * @desc    Remove external evaluator assignment from a solo student
+ * @access  Private (Coordinator, Admin)
+ */
+router.delete('/external-evaluators/assign-solo/:studentId', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { studentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_OBJECT_ID',
+          message: 'Invalid student ID'
+        }
+      });
+    }
+
+    const result = await StudentEvaluationService.removeExternalEvaluatorFromSoloStudent(
+      new mongoose.Types.ObjectId(studentId)
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'External evaluator assignment removed from solo student'
+    });
+  } catch (error: any) {
+    console.error('Remove external evaluator from solo student error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REMOVE_EVALUATOR_SOLO_FAILED',
+        message: error.message || 'Failed to remove external evaluator assignment from solo student'
+      }
+    });
   }
 });
 

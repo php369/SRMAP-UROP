@@ -95,3 +95,79 @@ export interface SequentialValidationResult {
   valid: boolean;
   reason?: string;
 }
+
+// External Evaluator Types
+export interface ExternalEvaluator {
+  _id: string;
+  name: string;
+  email: string;
+  assignmentCount: number;
+  isExternalEvaluator: boolean;
+}
+
+export interface ExternalEvaluatorAssignment {
+  _id: string;
+  submissionType: 'group' | 'solo';
+  groupId?: {
+    _id: string;
+    groupCode: string;
+    members: Array<{
+      _id: string;
+      name: string;
+      email: string;
+    }>;
+    assignedProjectId?: {
+      _id: string;
+      title: string;
+      projectId: string;
+      type: string;
+      brief: string;
+      facultyName: string;
+    };
+    assignedFacultyId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+    externalEvaluatorId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
+  studentId?: {
+    _id: string;
+    name: string;
+    email: string;
+    assignedProjectId?: {
+      _id: string;
+      title: string;
+      projectId: string;
+      type: string;
+      brief: string;
+      facultyName: string;
+    };
+    assignedFacultyId?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
+  projectId?: {
+    _id: string;
+    title: string;
+    projectType: string;
+  };
+  internalFaculty?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  externalEvaluator?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  hasConflict?: boolean;
+  isAssigned: boolean;
+}

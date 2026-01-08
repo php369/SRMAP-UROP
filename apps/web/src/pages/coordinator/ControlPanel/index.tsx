@@ -20,6 +20,7 @@ import { BulkCreationModal } from './components/WindowManagement/BulkCreationMod
 import { CreationModeModal } from './components/Modals/CreationModeModal';
 import { DeleteConfirmationModal } from './components/Modals/DeleteConfirmationModal';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+import { ExternalEvaluatorsTab } from './components/ExternalEvaluators/ExternalEvaluatorsTab';
 
 // Types
 import { Window, ProjectType } from './types';
@@ -38,7 +39,7 @@ export function ControlPanel() {
   const [editingWindow, setEditingWindow] = useState<Window | null>(null);
   const [formLoading, setFormLoading] = useState(false);
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'windows'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'windows' | 'external-evaluators'>('dashboard');
 
   // Hooks
   const {
@@ -161,16 +162,20 @@ export function ControlPanel() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                {currentView === 'dashboard' ? 'Control Panel' : 'Manage Windows'}
+                {currentView === 'dashboard' ? 'Control Panel' : 
+                 currentView === 'windows' ? 'Manage Windows' : 
+                 'External Evaluators'}
               </h1>
               <p className="text-gray-600">
                 {currentView === 'dashboard' 
                   ? 'Overview of system statistics and quick actions'
-                  : 'Create, edit, and manage assessment windows'
+                  : currentView === 'windows'
+                  ? 'Create, edit, and manage assessment windows'
+                  : 'Assign and manage external evaluators for projects'
                 }
               </p>
             </div>
-            {currentView === 'windows' && (
+            {(currentView === 'windows' || currentView === 'external-evaluators') && (
               <button
                 onClick={() => setCurrentView('dashboard')}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
@@ -205,6 +210,7 @@ export function ControlPanel() {
                 <QuickActions
                   onManageWindows={() => setCurrentView('windows')}
                   onUpdateStatuses={updateWindowStatuses}
+                  onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
                 />
               </>
             ) : (
@@ -213,7 +219,7 @@ export function ControlPanel() {
               </div>
             )}
           </>
-        ) : (
+        ) : currentView === 'windows' ? (
           /* Windows Management View */
           <>
             <motion.div
@@ -256,6 +262,9 @@ export function ControlPanel() {
               />
             </motion.div>
           </>
+        ) : (
+          /* External Evaluators View */
+          <ExternalEvaluatorsTab />
         )}
 
         {/* Individual Window Creation Form */}
