@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { GlowButton } from '../ui/GlowButton';
 import { cn } from '../../utils/cn';
+import { ZapIcon, BarChart3Icon, LockIcon } from '../ui/Icons';
 
 interface HeroSectionProps {
   className?: string;
@@ -39,14 +40,14 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
               <br />
               <span>Management Portal</span>
             </motion.h1>
-            
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               className="text-xl sm:text-2xl text-textSecondary max-w-3xl mx-auto leading-relaxed"
             >
-              Streamline your academic projects with comprehensive management tools, 
+              Streamline your academic projects with comprehensive management tools,
               seamless collaboration, and integrated assessment workflows.
             </motion.p>
           </div>
@@ -60,29 +61,17 @@ export function HeroSection({ className, onGetStarted, onLearnMore }: HeroSectio
           >
             {[
               {
-                icon: (
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                ),
+                icon: <ZapIcon className="w-8 h-8" />,
                 title: 'Real-time Collaboration',
                 description: 'Work together seamlessly with live updates and instant feedback'
               },
               {
-                icon: (
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                ),
+                icon: <BarChart3Icon className="w-8 h-8" />,
                 title: 'Advanced Analytics',
                 description: 'Gain insights with powerful data visualization and reporting'
               },
               {
-                icon: (
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ),
+                icon: <LockIcon className="w-8 h-8" />,
                 title: 'Secure & Reliable',
                 description: 'Enterprise-grade security with 99.9% uptime guarantee'
               }

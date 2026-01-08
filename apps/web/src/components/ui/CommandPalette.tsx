@@ -4,6 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Modal } from './Modal';
 import { Badge } from './Badge';
 import { cn } from '../../utils/cn';
+import {
+  SearchIcon, HomeIcon, FileTextIcon, UploadIcon,
+  UsersIcon, BarChart3Icon, LogOutIcon, MoonIcon
+} from './Icons';
 
 interface Command {
   id: string;
@@ -35,7 +39,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       id: 'nav-dashboard',
       label: 'Go to Dashboard',
       description: 'View your main dashboard',
-      icon: <HomeIcon />,
+      icon: <HomeIcon size={16} />,
       action: () => navigate('/dashboard'),
       category: 'navigation',
       keywords: ['dashboard', 'home', 'main'],
@@ -45,7 +49,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       id: 'nav-assessments',
       label: 'Go to Assessments',
       description: 'View and manage assessments',
-      icon: <FileTextIcon />,
+      icon: <FileTextIcon size={16} />,
       action: () => navigate('/dashboard/assessments'),
       category: 'navigation',
       keywords: ['assessments', 'assignments', 'tasks'],
@@ -55,7 +59,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       id: 'nav-submissions',
       label: 'Go to Submissions',
       description: 'View your submissions',
-      icon: <UploadIcon />,
+      icon: <UploadIcon size={16} />,
       action: () => navigate('/dashboard/submissions'),
       category: 'navigation',
       keywords: ['submissions', 'uploads', 'files'],
@@ -67,7 +71,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         id: 'nav-admin-users',
         label: 'Manage Users',
         description: 'Admin: Manage system users',
-        icon: <UsersIcon />,
+        icon: <UsersIcon size={16} />,
         action: () => navigate('/admin/users'),
         category: 'navigation' as const,
         keywords: ['admin', 'users', 'manage'],
@@ -76,7 +80,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         id: 'nav-admin-reports',
         label: 'View Reports',
         description: 'Admin: View system reports',
-        icon: <ChartIcon />,
+        icon: <BarChart3Icon size={16} />,
         action: () => navigate('/admin/reports'),
         category: 'navigation' as const,
         keywords: ['admin', 'reports', 'analytics'],
@@ -87,7 +91,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       id: 'action-logout',
       label: 'Sign Out',
       description: 'Sign out of your account',
-      icon: <LogoutIcon />,
+      icon: <LogOutIcon size={16} />,
       action: () => logout(),
       category: 'actions',
       keywords: ['logout', 'sign out', 'exit'],
@@ -97,7 +101,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       id: 'settings-theme',
       label: 'Toggle Theme',
       description: 'Switch between light and dark mode',
-      icon: <ThemeIcon />,
+      icon: <MoonIcon size={16} />,
       action: () => {
         // This would be handled by the theme toggle
         document.dispatchEvent(new CustomEvent('toggle-theme'));
@@ -135,13 +139,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev < filteredCommands.length - 1 ? prev + 1 : 0
           );
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev > 0 ? prev - 1 : filteredCommands.length - 1
           );
           break;
@@ -228,7 +232,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                   {categoryCommands.map((command) => {
                     const globalIndex = filteredCommands.indexOf(command);
                     const isSelected = globalIndex === selectedIndex;
-                    
+
                     return (
                       <button
                         key={command.id}
@@ -295,74 +299,4 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 }
 
 // Icon components
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
 
-function HomeIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  );
-}
-
-function FileTextIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-    </svg>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  );
-}
-
-function LogoutIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  );
-}
-
-function ThemeIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  );
-}

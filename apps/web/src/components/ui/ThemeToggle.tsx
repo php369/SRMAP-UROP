@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { MoonIcon, SunIcon } from './Icons';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ThemeToggleProps {
@@ -45,20 +45,18 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           onChange={toggleTheme}
         />
         <div className="relative">
-          <div className={`block w-14 h-8 rounded-full transition-colors duration-300 ${
-            mode === 'dark' 
-              ? 'bg-gray-600' 
+          <div className={`block w-14 h-8 rounded-full transition-colors duration-300 ${mode === 'dark'
+              ? 'bg-gray-600'
               : 'bg-gray-300'
-          }`} />
-          <div className={`absolute left-1 top-1 w-6 h-6 rounded-full transition-transform duration-300 flex items-center justify-center ${
-            mode === 'dark' 
-              ? 'transform translate-x-6 bg-gray-800' 
+            }`} />
+          <div className={`absolute left-1 top-1 w-6 h-6 rounded-full transition-transform duration-300 flex items-center justify-center ${mode === 'dark'
+              ? 'transform translate-x-6 bg-gray-800'
               : 'bg-white'
-          }`}>
+            }`}>
             {mode === 'dark' ? (
-              <Moon size={12} className="text-yellow-400" />
+              <MoonIcon size={12} className="text-yellow-400" />
             ) : (
-              <Sun size={12} className="text-yellow-500" />
+              <SunIcon size={12} className="text-yellow-500" />
             )}
           </div>
         </div>
@@ -80,9 +78,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
       >
         {mode === 'dark' ? (
-          <Sun size={iconSizes[size]} className="text-yellow-400" />
+          <SunIcon size={iconSizes[size]} className="text-yellow-400" />
         ) : (
-          <Moon size={iconSizes[size]} className="text-gray-600" />
+          <MoonIcon size={iconSizes[size]} className="text-gray-600" />
         )}
       </button>
     );
@@ -96,9 +94,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
     >
       {mode === 'dark' ? (
-        <Sun size={iconSizes[size]} className="text-yellow-400" />
+        <SunIcon size={iconSizes[size]} className="text-yellow-400" />
       ) : (
-        <Moon size={iconSizes[size]} className="text-gray-600" />
+        <MoonIcon size={iconSizes[size]} className="text-gray-600" />
       )}
       {showLabel && (
         <span className="text-sm font-medium">
