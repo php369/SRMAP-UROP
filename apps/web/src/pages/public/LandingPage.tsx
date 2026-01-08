@@ -40,8 +40,8 @@ export function LandingPage() {
               ) : isAuthenticated && user ? (
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-accent to-highlight rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
+                    <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                      <span className="text-primary text-xs font-bold">
                         {user?.name?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
