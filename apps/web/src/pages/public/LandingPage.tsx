@@ -1,174 +1,137 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Users, Award, Shield, Monitor, Globe } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
 
 export function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-100 dark:bg-slate-950 dark:text-slate-100">
-      {/* Minimal Navbar */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'py-3 bg-white/80 backdrop-blur-md border-b border-slate-200/50 dark:bg-slate-950/80 dark:border-slate-800/50 shadow-sm'
-          : 'py-5 bg-transparent'
-          }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img
-                src="/branding/srm-icon.svg"
-                alt="SRM University-AP"
-                className="h-8 w-8"
-              />
-              <span className="font-semibold text-lg tracking-tight">
-                Project Portal
-              </span>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-4 sm:gap-6">
-              {!isAuthenticated && (
-                <Link
-                  to={ROUTES.LOGIN}
-                  className="text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors dark:text-slate-400 dark:hover:text-amber-400"
-                >
-                  Log in
-                </Link>
-              )}
-
-              <Link
-                to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
-                className="inline-flex items-center justify-center px-5 py-2 text-sm font-medium transition-all duration-200 rounded-full bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 dark:bg-amber-500 dark:text-slate-900 dark:hover:bg-amber-400"
-              >
-                {isLoading ? 'Loading...' : isAuthenticated ? 'Dashboard' : 'Get Started'}
-              </Link>
-            </div>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-srm-100 dark:bg-slate-950 dark:text-slate-100 flex flex-col">
+      {/* 1. Page-Bound Navigation (No Sticky, No Fixed) */}
+      <nav className="w-full px-6 py-8 lg:px-12 flex items-center justify-between bg-transparent z-10">
+        <div className="flex items-center gap-3">
+          <img
+            src="/branding/srm-icon.svg"
+            alt="SRM University-AP"
+            className="h-10 w-10"
+          />
+          <div className="flex flex-col">
+            <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white leading-none">
+              SRM University AP
+            </span>
+            <span className="text-sm text-slate-500 font-medium tracking-wide uppercase mt-1">
+              Andhra Pradesh
+            </span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          {!isAuthenticated && (
+            <Link
+              to={ROUTES.LOGIN}
+              className="text-sm font-semibold text-slate-600 hover:text-srm-600 transition-colors dark:text-slate-400 dark:hover:text-srm-400"
+            >
+              Sign In
+            </Link>
+          )}
+          <Link
+            to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
+            className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg dark:bg-srm-400 dark:text-slate-900 dark:hover:bg-srm-500"
+          >
+            {isLoading ? '...' : isAuthenticated ? 'Dashboard' : 'Portal Access'}
+          </Link>
         </div>
       </nav>
 
-      <main className="relative pt-32 pb-20 overflow-hidden">
-        {/* Hero Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium mb-8 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30 animate-fade-in-up">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-            </span>
+      {/* 2. Hero Content (Text Layer) */}
+      <main className="flex-grow flex flex-col relative w-full pt-12 md:pt-20">
+        <div className="relative z-20 w-full max-w-5xl mx-auto px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 text-xs font-semibold mb-8 animate-fade-in-up dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-srm-500 animate-pulse"></span>
             Academic Year 2025-26
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 max-w-4xl mx-auto leading-[1.1] dark:text-white">
-            Transforming Academic
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 pb-2">
-              Project Management
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 leading-[1.1] dark:text-white">
+            Excellence in
+            <span className="block text-transparent bg-clip-text bg-gradient-to-br from-srm-500 to-amber-700 pb-4">
+              Academic Research
             </span>
           </h1>
 
-          <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed dark:text-slate-400">
-            A centralized platform for SRM University-AP students and faculty to manage IDP, UROP, and Capstone projects efficiently.
+          <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light dark:text-slate-400">
+            A unified platform for IDP, UROP, and Capstone projects, fostering innovation and collaboration across SRM University-AP.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+          <div className="flex flex-col sm:flex-row gap-5 justify-center items-center mb-16 relative z-30">
             <Link
               to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-amber-500 text-white font-medium transition-all hover:bg-amber-600 hover:shadow-xl hover:shadow-amber-500/20 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:text-slate-900"
+              className="inline-flex items-center justify-center h-14 px-10 rounded-xl bg-srm-500 text-white font-bold tracking-wide transition-all hover:bg-srm-600 hover:shadow-xl hover:shadow-srm-500/20 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-srm-500 focus:ring-offset-2 dark:text-slate-900 transform active:scale-95"
             >
-              {isAuthenticated ? 'Go to Dashboard' : 'Start Your Project'}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {isAuthenticated ? 'Enter Dashboard' : 'Start Your Application'}
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
             <a
               href="#features"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-slate-100 text-slate-900 font-medium transition-all hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="inline-flex items-center justify-center h-14 px-10 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold transition-all hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
             >
-              Learn More
+              View Guidelines
             </a>
           </div>
         </div>
 
-        {/* Hero Image Layer */}
-        <div className="relative max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10 dark:ring-slate-100/10 bg-slate-50 dark:bg-slate-900">
-            {/* Background Glow */}
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 h-1/2 bottom-0 dark:from-slate-950"></div>
+        {/* 3. Soft Illustration (Gap Filler & Transition) */}
+        <div className="w-full relative h-[400px] -mt-20 overflow-hidden pointer-events-none">
+          {/* Abstract Gradients/Mesh */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-full opacity-40 blur-3xl bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-srm-100 via-slate-100 to-transparent dark:from-srm-900/20 dark:via-slate-900/40"></div>
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-slate-50/80 dark:to-slate-950/80"></div>
+        </div>
 
-            <img
-              src="/background.webp"
-              alt="Dashboard Preview"
-              className="w-full h-auto object-cover object-bottom"
-              style={{ maxHeight: '800px', minHeight: '400px' }}
-            />
-
-            {/* Overlay for better text integration if needed, currently clean */}
-            <div className="absolute inset-0 bg-slate-900/5 mix-blend-multiply pointer-events-none"></div>
+        {/* 4. Full Width Hero Image (Visual Anchor) */}
+        <div className="w-full relative mt-auto">
+          {/* Gradient Mask for top-to-bottom fade */}
+          <div className="relative w-full overflow-hidden">
+            <div
+              className="w-full h-[60vh] min-h-[500px] bg-cover bg-bottom bg-no-repeat relative"
+              style={{
+                backgroundImage: 'url(/background.webp)',
+                maskImage: 'linear-gradient(to bottom, transparent 0%, transparent 10%, black 50%, black 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, transparent 10%, black 50%, black 100%)'
+              }}
+            >
+              {/* Optional overlay for tinting if raw image is too bright */}
+              <div className="absolute inset-0 bg-slate-900/10 mix-blend-overlay"></div>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* Features Grid */}
-      <section id="features" className="py-24 bg-slate-50 dark:bg-slate-900/50">
+      {/* Features Section - Below the Fold */}
+      <section id="features" className="py-24 bg-white relative z-10 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl mb-4 dark:text-white">
-              Everything needed for success
-            </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
-              Streamline every aspect of your academic projects with our comprehensive suite of management tools.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
             {[
               {
                 icon: BookOpen,
-                title: 'Project Tracking',
-                desc: 'End-to-end lifecycle management for IDP, UROP, and Capstone projects.'
+                title: 'Academic Projects',
+                desc: 'Streamlined submission and approval workflow for IDP and Capstone projects.'
               },
               {
                 icon: Users,
-                title: 'Team Collaboration',
-                desc: 'Form teams, schedule meetings, and collaborate seamlessly with faculty guides.'
-              },
-              {
-                icon: Award,
-                title: 'Smart Assessment',
-                desc: 'Automated grading workflows with transparent evaluation criteria and feedback.'
-              },
-              {
-                icon: Shield,
-                title: 'Secure Access',
-                desc: 'Role-based access control ensures data privacy and secure project submissions.'
-              },
-              {
-                icon: Monitor,
-                title: 'Real-time Dashboard',
-                desc: 'Track progress, deadlines, and notifications in one centralized hub.'
+                title: 'Team Formation',
+                desc: 'Find teammates and faculty guides with our integrated collaboration tools.'
               },
               {
                 icon: Globe,
-                title: 'Digital Repository',
-                desc: 'Centralized archive of project reports, presentations, and resources.'
+                title: 'Research Repository',
+                desc: 'Access a centralized archive of past research papers and project reports.'
               }
             ].map((feature, i) => (
-              <div key={i} className="group p-8 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-100 transition-all dark:bg-slate-800 dark:border-slate-700 dark:hover:border-amber-500/30">
-                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 group-hover:bg-amber-500 group-hover:text-white transition-colors dark:bg-slate-700 dark:text-amber-400">
-                  <feature.icon className="h-6 w-6" />
+              <div key={i} className="flex flex-col items-start p-6 rounded-2xl hover:bg-slate-50 transition-colors dark:hover:bg-slate-800/50">
+                <div className="w-14 h-14 rounded-full bg-srm-50 text-srm-600 flex items-center justify-center mb-6 dark:bg-slate-800 dark:text-srm-400">
+                  <feature.icon className="h-7 w-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-slate-900 dark:text-white">{feature.title}</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-3 dark:text-white">{feature.title}</h3>
                 <p className="text-slate-600 leading-relaxed dark:text-slate-400">
                   {feature.desc}
                 </p>
@@ -178,17 +141,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <img src="/branding/srm-icon.svg" alt="Logo" className="h-6 w-6 opacity-80" />
-            <p className="text-sm text-slate-500">© 2025 SRM University-AP. All rights reserved.</p>
-          </div>
-          <div className="flex gap-8">
-            <a href="#" className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Privacy Policy</a>
-            <a href="#" className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Terms of Service</a>
-            <Link to={ROUTES.HELP} className="text-sm text-slate-500 hover:text-amber-600 transition-colors">Support</Link>
+      {/* Simple Footer */}
+      <footer className="py-12 border-t border-slate-100 bg-white dark:bg-slate-950 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center">
+          <p className="text-slate-400 text-sm">© 2025 SRM University-AP</p>
+          <div className="flex gap-6">
+            <Link to={ROUTES.HELP} className="text-slate-400 hover:text-slate-600 text-sm">Support</Link>
           </div>
         </div>
       </footer>
