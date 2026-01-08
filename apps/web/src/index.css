@@ -11,7 +11,7 @@
     --satin-linen: #e6e5d4;
     --chino: #cbc6a4;
     --gurkha: #98957d;
-    
+
     /* Semantic Colors - Light Mode */
     --color-background: var(--satin-linen);
     --color-surface: var(--chino);
@@ -21,11 +21,12 @@
     --color-secondary-foreground: #ffffff;
     --color-accent: var(--tussock);
     --color-accent-foreground: #ffffff;
-    
+
     --color-text: #2d2b1a;
     --color-textSecondary: #4a4724;
-    --color-border: rgba(146, 139, 66, 0.3); /* Based on sycamore/green-smoke */
-    
+    --color-border: rgba(146, 139, 66, 0.3);
+    /* Based on sycamore/green-smoke */
+
     --color-success: var(--sycamore);
     --color-warning: var(--tussock);
     --color-error: #d4704a;
@@ -42,19 +43,19 @@
     /* Adjusted Earth Tones for Dark Mode */
     --color-background: #1f1e17;
     --color-surface: #2b2a22;
-    
+
     --color-primary: #d4b76c;
     --color-primary-foreground: #1f1e17;
-    --color-secondary: #5e5b4a; 
+    --color-secondary: #5e5b4a;
     --color-secondary-foreground: #e3dec3;
-    
+
     --color-accent: #d4b76c;
     --color-accent-foreground: #1f1e17;
-    
+
     --color-text: #e3dec3;
     --color-textSecondary: #b0ab8c;
     --color-border: rgba(212, 183, 108, 0.2);
-    
+
     --color-success: #bba44a;
     --color-warning: #d4b76c;
     --color-error: #e58b6a;
@@ -75,6 +76,7 @@
 }
 
 @layer components {
+
   /* Modern Glass Class */
   .glass {
     background: var(--glass-bg);
@@ -82,11 +84,11 @@
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
   }
-  
+
   .glass-hover {
     @apply transition-all duration-300;
   }
-  
+
   .glass-hover:hover {
     background: rgba(255, 255, 255, 0.35);
     border-color: rgba(255, 255, 255, 0.5);
@@ -99,9 +101,9 @@
 
   /* Card Variants */
   .card-base {
-    @apply rounded-xl border border-border bg-surface/50 backdrop-blur-sm shadow-sm;
+    @apply rounded-xl border border-border bg-surface backdrop-blur-sm shadow-sm;
   }
-  
+
   .card-glass {
     @apply glass shadow-lg rounded-xl;
   }
@@ -118,5 +120,5 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full hover:bg-textSecondary/50 transition-colors;
+  @apply bg-border rounded-full hover:bg-textSecondary transition-colors;
 }
