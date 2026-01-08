@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/authStore';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
@@ -41,7 +42,23 @@ export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigationItems = user ? ROLE_NAVIGATION[user.role] || [] : [];
+  const logout = useAuthStore(state => state.logout);
+
+  // Handle click outside for profile menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Handle mobile sidebar open/close
   const openMobileSidebar = useCallback(() => {
@@ -118,7 +135,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-slate-50/50 border-r border-slate-200/50">
+      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-slate-50/50">
         {/* Logo */}
         <div className="flex flex-col justify-center h-20 px-6">
           <div className="flex items-center space-x-3">
@@ -184,9 +201,29 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* User info */}
-        <div className="p-4 mt-auto">
-          <div className="flex items-center p-3 rounded-xl bg-white border border-slate-200 shadow-sm">
+        {/* User info - Clickable Profile Menu */}
+        <div className="p-4 mt-auto relative" ref={profileMenuRef}>
+          {/* Profile Menu Popup */}
+          {isProfileMenuOpen && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 p-1 bg-white rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
+              <div className="px-3 py-2 border-b border-slate-100">
+                <p className="text-sm font-semibold text-slate-900 truncate">{user?.name}</p>
+                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className="w-full flex items-center p-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all duration-200 text-left"
+          >
             <div className="flex-shrink-0">
               <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
                 <span className="text-primary text-xs font-bold">
@@ -204,7 +241,7 @@ export function Sidebar() {
                 </span>
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 

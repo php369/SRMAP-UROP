@@ -1,8 +1,9 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, Suspense } from 'react';
 import { Sidebar } from './Sidebar';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
+import { PageLoader } from '../common/PageLoader';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -71,11 +72,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main className={`flex-1 relative overflow-y-auto ${isMobile ? 'p-0' : 'p-3'
           }`}>
           <div className={`w-full min-h-full ${isMobile
-              ? 'px-4 py-6'
-              : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
+            ? 'px-4 py-6'
+            : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
             }`}>
-            <div className="max-w-7xl mx-auto">
-              {children}
+            <div className="max-w-7xl mx-auto h-full">
+              <Suspense fallback={<PageLoader />}>
+                {children}
+              </Suspense>
             </div>
           </div>
         </main>
