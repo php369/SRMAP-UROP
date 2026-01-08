@@ -59,11 +59,8 @@ export function TopNavigation() {
     >
       <div className="px-4 sm:px-6 lg:px-8 py-4">
         <GlassCard
-          variant="default"
-          className={`px-6 py-4 transition-all duration-300 ${isScrolled
-            ? 'shadow-lg bg-surface/80 backdrop-blur-xl border-border/50 mx-4 mt-2 rounded-2xl'
-            : 'border-transparent shadow-none bg-transparent'
-            }`}
+          variant="elevated"
+          className="px-6 py-4 transition-all duration-300 shadow-lg bg-surface/80 backdrop-blur-xl border-border/50 mx-4 mt-2 rounded-2xl"
         >
           <div className="flex justify-between items-center">
             {/* Left side - page title and breadcrumbs */}
