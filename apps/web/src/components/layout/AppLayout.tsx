@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
+import { UserOnboardingModal } from '../modals/UserOnboardingModal';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
@@ -52,6 +54,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       ref={swipeRef as any}
       className="flex h-screen bg-[#f5f4f2] overflow-hidden"
     >
+      {/* User Onboarding Modal - user name check */}
+      {/* We need to access the user from AuthContext/AuthStore. 
+          The Sidebar component uses useAuth, so we should too or useStore directly.
+          Since AppLayout doesn't use useAuth currently, let's add it. 
+      */}
+      <UserOnboardingModal isOpen={!useAuth().user?.name} />
+
       {/* Sidebar */}
       <Sidebar />
 

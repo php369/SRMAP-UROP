@@ -5,7 +5,9 @@ import { Loader } from '../ui/Loader';
  */
 export function PageLoader() {
   return (
-    <Loader fullscreen size="lg" text="Loading..." />
+    <div className="w-full h-full min-h-[60vh] flex items-center justify-center">
+      <Loader size="lg" text="Loading..." />
+    </div>
   );
 }
 

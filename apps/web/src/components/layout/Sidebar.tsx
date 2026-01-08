@@ -207,7 +207,9 @@ export function Sidebar() {
           {isProfileMenuOpen && (
             <div className="absolute bottom-full left-4 right-4 mb-2 p-1 bg-white rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
               <div className="px-3 py-2 border-b border-slate-100">
-                <p className="text-sm font-semibold text-slate-900 truncate">{user?.name}</p>
+                <p className="text-sm font-semibold text-slate-900 truncate">
+                  {user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Unknown'}
+                </p>
                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
               </div>
               <button
@@ -231,7 +233,7 @@ export function Sidebar() {
             </div>
             <div className="ml-3 flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 truncate">
-                {user?.name || 'Loading...'}
+                {user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Loading...'}
               </p>
               <div className="flex items-center">
                 <span className="text-xs text-slate-500 capitalize">
@@ -380,7 +382,7 @@ export function Sidebar() {
                     </div>
                     <div className="ml-3 min-w-0">
                       <p className="text-sm font-bold text-text truncate">
-                        {user?.name || 'Loading...'}
+                        {user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Loading...'}
                       </p>
                       <p className="text-xs text-textSecondary uppercase tracking-wider font-semibold">
                         {user?.role || 'user'}
