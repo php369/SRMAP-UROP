@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Users, Globe, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
 import { Reveal } from '../../components/ui/Reveal';
+import TiltedCard from '../../components/ui/TiltedCard';
 
 export function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -145,16 +146,32 @@ export function LandingPage() {
                 desc: 'Showcase your research to a global audience through our open access portal.'
               }
             ].map((feature, i) => (
-              <Reveal key={i} delay={i * 0.1} duration={0.8} direction="up" className="h-full">
-                <div className="group flex flex-col items-start p-6 rounded-2xl bg-white/70 border border-slate-100 hover:border-srm-200 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 backdrop-blur-md dark:bg-slate-900/70 dark:border-slate-800 dark:hover:border-srm-900 h-full">
-                  <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3 dark:bg-slate-800 dark:text-srm-400">
-                    <feature.icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 dark:text-white group-hover:text-srm-600 transition-colors">{feature.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed dark:text-slate-400">
-                    {feature.desc}
-                  </p>
-                </div>
+              <Reveal key={i} delay={i * 0.1} duration={0.8} direction="up" className="h-[300px]">
+                <TiltedCard
+                  imageSrc="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                  altText={feature.title}
+                  captionText={feature.title}
+                  containerHeight="300px"
+                  containerWidth="100%"
+                  imageHeight="300px"
+                  imageWidth="100%"
+                  rotateAmplitude={12}
+                  scaleOnHover={1.05}
+                  showMobileWarning={false}
+                  showTooltip={false}
+                  displayOverlayContent={true}
+                  overlayContent={
+                    <div className="w-full h-full flex flex-col items-start p-6 rounded-[15px] bg-white/70 border border-slate-100/50 backdrop-blur-md dark:bg-slate-900/70 dark:border-slate-800 text-left">
+                      <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 dark:bg-slate-800 dark:text-srm-400">
+                        <feature.icon className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-2 dark:text-white">{feature.title}</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed dark:text-slate-400">
+                        {feature.desc}
+                      </p>
+                    </div>
+                  }
+                />
               </Reveal>
             ))}
           </div>
