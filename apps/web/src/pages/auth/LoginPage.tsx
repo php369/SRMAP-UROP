@@ -84,18 +84,18 @@ export function LoginPage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full max-w-sm mx-auto"
+          className="w-full max-w-md mx-auto bg-slate-50/80 p-10 rounded-3xl border border-slate-100/50 backdrop-blur-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
           {/* Header */}
-          <div className="mb-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md">
-                <img src="/branding/srm-white.svg" alt="SRM" className="w-6 h-6" />
+          <div className="mb-10 text-center flex flex-col items-center">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100">
+                <img src="/branding/srm-icon.svg" alt="SRM" className="w-7 h-7" />
               </div>
               <span className="text-xl font-bold text-slate-900 tracking-tight">SRM University-AP</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3 tracking-tight">
+            <h1 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">
               Welcome back
             </h1>
             <p className="text-slate-500 text-lg">
@@ -107,7 +107,7 @@ export function LoginPage() {
           <div className="space-y-6">
             <button
               onClick={handleGoogleLogin}
-              className="group w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 hover:border-slate-200 text-slate-700 rounded-xl font-semibold transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm"
+              className="group w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 text-slate-700 rounded-xl font-semibold transition-all duration-300"
             >
               <svg className="w-6 h-6 transition-transform group-hover:scale-110 duration-200" viewBox="0 0 24 24">
                 <path
@@ -130,7 +130,7 @@ export function LoginPage() {
               <span>Continue with Google</span>
             </button>
 
-            <div className="flex items-center gap-3 select-none group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
+            <div className="flex items-center justify-center gap-3 select-none group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${rememberMe ? 'bg-primary border-primary' : 'bg-transparent border-slate-300 group-hover:border-slate-400'}`}>
                 {rememberMe && (
                   <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,9 +142,10 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-100">
-            <div className="flex gap-4 text-xs text-slate-400">
+          <div className="mt-8 pt-6 border-t border-slate-200/60">
+            <div className="flex gap-4 justify-center text-xs text-slate-400 font-medium">
               <a href="#" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+              <span className="text-slate-300">•</span>
               <a href="#" className="hover:text-slate-600 transition-colors">Terms of Service</a>
               <span className="ml-auto">© 2025 SRM-AP</span>
             </div>
