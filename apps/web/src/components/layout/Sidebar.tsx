@@ -172,8 +172,8 @@ export function Sidebar() {
                   return cn(
                     'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
                     isCurrentPage
-                      ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200'
-                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+                      ? 'bg-[#eeedeb] text-primary'
+                      : 'text-slate-600 hover:bg-[#eeedeb] hover:text-slate-900'
                   );
                 }}
               >
@@ -222,13 +222,11 @@ export function Sidebar() {
 
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="w-full flex items-center p-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all duration-200 text-left"
+            className="w-full flex items-center p-2 rounded-xl transition-all duration-200 text-left hover:bg-[#eeedeb]"
           >
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                <span className="text-primary text-xs font-bold">
-                  {user?.name?.charAt(0).toUpperCase() || '?'}
-                </span>
+              <div className="w-9 h-9 bg-[#e2e2e2] rounded-lg flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-slate-700" />
               </div>
             </div>
             <div className="ml-3 flex-1 min-w-0">
