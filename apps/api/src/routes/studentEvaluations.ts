@@ -391,11 +391,17 @@ router.get(
         });
       }
 
-      // For now, return empty array as external evaluator functionality needs to be implemented
+      // Get external evaluator assignments for this faculty
+      const assignments = await StudentEvaluationService.getExternalEvaluatorAssignmentsForFaculty(
+        new mongoose.Types.ObjectId(facultyId)
+      );
+
       res.json({
         success: true,
-        data: [],
-        message: 'You have not been assigned as an external evaluator for any projects yet.'
+        data: assignments,
+        message: assignments.length > 0 
+          ? `Found ${assignments.length} external evaluator assignments`
+          : 'You have not been assigned as an external evaluator for any projects yet.'
       });
 
     } catch (error) {

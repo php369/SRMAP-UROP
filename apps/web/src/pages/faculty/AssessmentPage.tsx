@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users } from 'lucide-react';
+import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, UserCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { api } from '../../utils/api';
 import { getCurrentAssessmentType, isAssessmentTypeActive } from '../../utils/assessmentHelper';
+import { ExternalEvaluatorTab } from './components/ExternalEvaluatorTab';
 
 interface Submission {
   _id: string;
@@ -90,6 +91,7 @@ export function FacultyAssessmentPage() {
   const [assessmentType, setAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'>('CLA-1');
   const [currentAssessmentType, setCurrentAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [activeTab, setActiveTab] = useState<'internal' | 'external'>('internal');
   const [gradeData, setGradeData] = useState({
     grade: '',
     comments: ''
@@ -522,24 +524,60 @@ export function FacultyAssessmentPage() {
           </p>
         </div>
 
-        {/* Submissions List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : submissions.length === 0 ? (
-          <>
-            <GlassCard className="p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
-                <p className="text-textSecondary">
-                  No submissions to grade at the moment
-                </p>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('internal')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'internal'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Internal Grading
               </div>
-            </GlassCard>
+            </button>
+            <button
+              onClick={() => setActiveTab('external')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'external'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4" />
+                External Evaluator
+              </div>
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'internal' ? (
+          /* Internal Grading Tab Content */
+          <div className="space-y-6">
+            {/* Submissions List */}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : submissions.length === 0 ? (
+              <>
+                <GlassCard className="p-12 text-center">
+                  <div className="max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
+                    <p className="text-textSecondary">
+                      No submissions to grade at the moment
+                    </p>
+                  </div>
+                </GlassCard>
 
             {/* Show meeting logs even without submissions */}
             {Object.keys(meetingLogs).length > 0 && (
@@ -980,7 +1018,11 @@ export function FacultyAssessmentPage() {
             ))}
           </div>
         )}
-      </motion.div>
+          </div>
+        ) : (
+          /* External Evaluator Tab Content */
+          <ExternalEvaluatorTab />
+        )}
 
       {/* Grading Modal */}
       <AnimatePresence>
@@ -1392,6 +1434,7 @@ export function FacultyAssessmentPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

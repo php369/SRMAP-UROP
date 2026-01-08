@@ -1202,6 +1202,93 @@ export class StudentEvaluationService {
       throw error;
     }
   }
+
+  /**
+   * Get external evaluator assignments for a specific faculty member
+   */
+  static async getExternalEvaluatorAssignmentsForFaculty(
+    facultyId: mongoose.Types.ObjectId
+  ): Promise<any[]> {
+    try {
+      // Get group assignments where this faculty is the external evaluator
+      const groupAssignments = await Group.find({
+        externalEvaluatorId: facultyId,
+        status: 'approved',
+        assignedProjectId: { $exists: true }
+      })
+        .populate('members', 'name email studentId')
+        .populate('assignedProjectId', 'title projectId type brief facultyName')
+        .populate('assignedFacultyId', 'name email')
+        .lean();
+
+      // Get solo student assignments where this faculty is the external evaluator
+      const soloAssignments = await StudentEvaluation.find({
+        externalFacultyId: facultyId,
+        assessmentType: 'External'
+      })
+        .populate('studentId', 'name email studentId assignedProjectId assignedFacultyId')
+        .populate('projectId', 'title projectId type brief facultyName')
+        .populate('facultyId', 'name email')
+        .lean();
+
+      // Format group assignments
+      const formattedGroupAssignments = groupAssignments.map(group => ({
+        _id: group._id,
+        submissionType: 'group' as const,
+        groupId: {
+          _id: group._id,
+          groupCode: group.groupCode,
+          members: group.members
+        },
+        projectInfo: {
+          _id: group.assignedProjectId?._id,
+          title: (group.assignedProjectId as any)?.title || 'Unknown Project',
+          projectId: (group.assignedProjectId as any)?.projectId || 'N/A',
+          type: (group.assignedProjectId as any)?.type || 'Unknown',
+          brief: (group.assignedProjectId as any)?.brief || 'No description',
+          facultyName: (group.assignedProjectId as any)?.facultyName || 'Unknown Faculty'
+        },
+        internalFaculty: {
+          _id: group.assignedFacultyId?._id,
+          name: (group.assignedFacultyId as any)?.name || 'Unknown Faculty',
+          email: (group.assignedFacultyId as any)?.email || 'unknown@email.com'
+        },
+        assessmentType: 'External' as const
+      }));
+
+      // Format solo assignments
+      const formattedSoloAssignments = soloAssignments.map(assignment => ({
+        _id: assignment._id,
+        submissionType: 'solo' as const,
+        studentInfo: {
+          _id: assignment.studentId._id,
+          name: (assignment.studentId as any)?.name || 'Unknown Student',
+          email: (assignment.studentId as any)?.email || 'unknown@email.com',
+          studentId: (assignment.studentId as any)?.studentId || 'N/A'
+        },
+        projectInfo: {
+          _id: assignment.projectId._id,
+          title: (assignment.projectId as any)?.title || 'Unknown Project',
+          projectId: (assignment.projectId as any)?.projectId || 'N/A',
+          type: (assignment.projectId as any)?.type || 'Unknown',
+          brief: (assignment.projectId as any)?.brief || 'No description',
+          facultyName: (assignment.projectId as any)?.facultyName || 'Unknown Faculty'
+        },
+        internalFaculty: {
+          _id: assignment.facultyId._id,
+          name: (assignment.facultyId as any)?.name || 'Unknown Faculty',
+          email: (assignment.facultyId as any)?.email || 'unknown@email.com'
+        },
+        assessmentType: 'External' as const
+      }));
+
+      return [...formattedGroupAssignments, ...formattedSoloAssignments];
+    } catch (error) {
+      logger.error('Error getting external evaluator assignments for faculty:', error);
+      throw error;
+    }
+  }
+
   static async removeExternalEvaluatorFromSoloStudent(
     studentId: mongoose.Types.ObjectId
   ): Promise<any> {

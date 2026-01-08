@@ -836,4 +836,73 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
     }
 });
 
+/**
+ * GET /api/meetings/logs/project/:projectId
+ * Get meeting logs for a specific project (for external evaluators)
+ * Accessible by: faculty, coordinator
+ */
+router.get('/logs/project/:projectId', authenticate, authorize('faculty', 'coordinator'), async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_PROJECT_ID',
+                    message: 'Invalid project ID',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        // Find groups associated with this project
+        const groups = await Group.find({
+            assignedProjectId: new mongoose.Types.ObjectId(projectId)
+        }).select('_id');
+
+        const groupIds = groups.map(g => g._id);
+
+        // Get meeting logs for these groups
+        const logs = await MeetingLog.find({
+            groupId: { $in: groupIds },
+            status: 'approved', // Only show approved logs to external evaluators
+            $or: [
+                { minutesOfMeeting: { $exists: true, $ne: '', $nin: [null, ''] } },
+                { mom: { $exists: true, $ne: '', $nin: [null, ''] } }
+            ]
+        })
+        .populate('groupId', 'groupCode members')
+        .populate('facultyId', 'name email')
+        .sort({ meetingDate: -1 });
+
+        // Format the logs for external evaluators
+        const formattedLogs = logs.map(log => ({
+            _id: log._id,
+            date: log.meetingDate,
+            duration: log.duration || 60, // Default duration if not specified
+            summary: log.minutesOfMeeting || log.mom || 'No summary available',
+            grade: log.grade,
+            groupCode: log.groupId?.groupCode,
+            createdAt: log.createdAt
+        }));
+
+        res.json({
+            success: true,
+            data: formattedLogs,
+            count: formattedLogs.length,
+        });
+    } catch (error: any) {
+        logger.error('Error fetching project meeting logs:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'FETCH_PROJECT_LOGS_FAILED',
+                message: error.message || 'Failed to fetch project meeting logs',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
 export default router;
