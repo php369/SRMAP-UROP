@@ -142,16 +142,18 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-slate-200/60">
-            <div className="flex flex-nowrap gap-4 justify-center text-xs text-slate-400 font-medium whitespace-nowrap overflow-x-auto">
-              <a href="#" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
-              <span className="text-slate-300">•</span>
-              <a href="#" className="hover:text-slate-600 transition-colors">Terms of Service</a>
-              <span className="text-slate-300">•</span>
-              <span>© 2025 SRM-AP</span>
-            </div>
-          </div>
         </motion.div>
+
+        {/* Footer - Moved outside card to prevent clipping */}
+        <div className="mt-8 w-full max-w-md mx-auto">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center text-xs text-slate-400 font-medium text-center">
+            <a href="#" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <a href="#" className="hover:text-slate-600 transition-colors">Terms of Service</a>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <span>© 2025 SRM-AP</span>
+          </div>
+        </div>
       </div>
 
       {/* Right Column - Visual */}
