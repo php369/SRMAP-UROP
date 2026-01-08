@@ -497,7 +497,7 @@ export function SubmissionPage() {
   if (initializing || !eligibleProjectType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -535,13 +535,13 @@ export function SubmissionPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md mx-auto p-6"
         >
-          <AlertCircle className="w-16 h-16 text-indigo-500 mx-auto mb-4" />
+          <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2 text-slate-900">Group Leader Submission</h2>
           <p className="text-slate-600 mb-4">
             Only the group leader can submit work. Please wait for your leader to submit.
           </p>
 
-          <div className="p-4 bg-indigo-50 rounded-lg mb-4 border border-indigo-100">
+          <div className="p-4 bg-indigo-50 rounded-lg mb-4 border border-primary/10">
             <p className="text-sm text-indigo-700">
               <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
             </p>
@@ -607,7 +607,7 @@ export function SubmissionPage() {
                 <div>
                   <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900">
                     {userGroup ? (
-                      <Users className="w-6 h-6 text-indigo-500" />
+                      <Users className="w-6 h-6 text-primary" />
                     ) : (
                       <User className="w-6 h-6 text-emerald-500" />
                     )}
@@ -657,7 +657,7 @@ export function SubmissionPage() {
                     href={currentSubmission.githubUrl || currentSubmission.githubLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    className="inline-flex items-center gap-2 text-primary hover:text-indigo-800 text-sm font-medium"
                   >
                     View Repository
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -746,7 +746,7 @@ export function SubmissionPage() {
                 <p><strong>Submitted by:</strong> {currentSubmission.submittedBy?.name || user?.name}</p>
                 <p><strong>Submission time:</strong> {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleString()}</p>
                 {userGroup && !isLeader && (
-                  <p className="text-indigo-600 font-medium">
+                  <p className="text-primary font-medium">
                     ℹ️ This submission was made by your group leader and is visible to all group members.
                   </p>
                 )}
@@ -776,15 +776,15 @@ export function SubmissionPage() {
           </p>
 
           {/* Submission Type Indicator */}
-          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-primary/10">
             {userGroup ? (
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600" />
+                <Users className="w-5 h-5 text-primary" />
                 <div>
                   <p className="text-indigo-800 font-medium">
                     Submitting as Group Leader
                   </p>
-                  <p className="text-indigo-600 text-sm">
+                  <p className="text-primary text-sm">
                     Group: {(userGroup as any)?.groupName || (userGroup as any)?.groupCode} ({(userGroup as any)?.members?.length || 0} members)
                   </p>
                 </div>
@@ -792,12 +792,12 @@ export function SubmissionPage() {
             ) : (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <User className="w-5 h-5 text-indigo-600" />
+                  <User className="w-5 h-5 text-primary" />
                   <div>
                     <p className="text-indigo-800 font-medium">
                       Submitting as Individual Student
                     </p>
-                    <p className="text-indigo-600 text-sm">
+                    <p className="text-primary text-sm">
                       Solo submission for {eligibleProjectType}
                     </p>
                   </div>

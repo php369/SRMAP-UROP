@@ -4,7 +4,6 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import {
     LayoutDashboard,
     Briefcase,
-    CheckSquare,
     FileText,
     Settings
 } from 'lucide-react';
@@ -37,15 +36,7 @@ export function CoordinatorDashboard() {
                         <p className="text-xs text-textSecondary mt-1">Manage Projects</p>
                     </DashboardCard>
 
-                    <DashboardCard
-                        title="Approvals"
-                        icon={<CheckSquare size={20} />}
-                        glass={false}
-                        className="hover:scale-[1.02] transition-transform cursor-pointer"
-                        onClick={() => navigate('/dashboard/projects/approvals')}
-                    >
-                        <p className="text-xs text-textSecondary mt-1">Pending Approvals</p>
-                    </DashboardCard>
+
 
                     <DashboardCard
                         title="Applications"
@@ -70,12 +61,7 @@ export function CoordinatorDashboard() {
             </GlassCard>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <GlassCard className="p-6">
-                    <h3 className="text-lg font-semibold text-text mb-4">Pending Approvals</h3>
-                    <div className="text-center py-8 text-textSecondary">
-                        <p>No pending approvals</p>
-                    </div>
-                </GlassCard>
+
                 <GlassCard className="p-6">
                     <h3 className="text-lg font-semibold text-text mb-4">System Status</h3>
                     <div className="p-4 rounded-lg bg-green-500/10 text-green-500 border border-green-500/20 text-center">

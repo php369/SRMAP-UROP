@@ -678,13 +678,13 @@ export function ApplicationPage() {
                     console.log('Manual refresh triggered');
                     fetchExistingApplication();
                   }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm shadow-sm"
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-700 transition-all text-sm shadow-sm"
                 >
                   Refresh Status
                 </button>
                 {eligibleProjectType && (
-                  <div className="px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
-                    <p className="text-sm text-indigo-600 font-medium">Eligible for</p>
+                  <div className="px-4 py-2 bg-indigo-50 border border-primary/10 rounded-lg">
+                    <p className="text-sm text-primary font-medium">Eligible for</p>
                     <p className="text-lg font-bold text-indigo-700">{eligibleProjectType}</p>
                   </div>
                 )}
@@ -708,7 +708,7 @@ export function ApplicationPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       {application.groupId ? (
-                        <Users className="w-6 h-6 text-indigo-500 mr-2" />
+                        <Users className="w-6 h-6 text-primary mr-2" />
                       ) : (
                         <User className="w-6 h-6 text-emerald-500 mr-2" />
                       )}
@@ -766,7 +766,7 @@ export function ApplicationPage() {
 
           <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex items-start">
-              <CheckCircle className="w-6 h-6 text-indigo-500 mr-3 mt-1" />
+              <CheckCircle className="w-6 h-6 text-primary mr-3 mt-1" />
               <div>
                 <h3 className="font-bold text-slate-900 mb-2">Application Status Guide</h3>
                 <div className="space-y-1 text-sm text-slate-600">
@@ -794,7 +794,7 @@ export function ApplicationPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <Loader className="w-16 h-16 text-indigo-500 mx-auto mb-4 animate-spin" />
+          <Loader className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
           <h2 className="text-2xl font-bold mb-2 text-slate-900">Loading Application</h2>
           <p className="text-slate-500">
             Please wait while we load your application data...

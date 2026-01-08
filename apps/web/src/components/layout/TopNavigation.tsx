@@ -168,8 +168,8 @@ export function TopNavigation() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center ring-2 ring-white/20">
-                    <span className="text-textPrimary text-sm font-medium">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center ring-2 ring-white/20">
+                    <span className="text-white text-sm font-medium">
                       {user?.name?.charAt(0).toUpperCase() || '?'}
                     </span>
                   </div>

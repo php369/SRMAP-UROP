@@ -408,7 +408,7 @@ export function MeetingsPage() {
                 onClick={() => canScheduleNewMeeting ? setShowScheduleModal(true) : null}
                 disabled={!canScheduleNewMeeting}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors nav-item ${canScheduleNewMeeting
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                  ? 'bg-primary hover:bg-indigo-700 text-white shadow-sm'
                   : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                   }`}
                 title={!canScheduleNewMeeting ? "Please get your last meeting's logs approved to schedule another meeting" : ""}
@@ -426,7 +426,7 @@ export function MeetingsPage() {
             <button
               onClick={() => setActiveTab('upcoming')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'upcoming'
-                ? 'bg-white text-indigo-600 shadow-sm'
+                ? 'bg-white text-primary shadow-sm'
                 : 'text-slate-600 hover:text-slate-800'
                 }`}
             >
@@ -435,7 +435,7 @@ export function MeetingsPage() {
             <button
               onClick={() => setActiveTab('past')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'past'
-                ? 'bg-white text-indigo-600 shadow-sm'
+                ? 'bg-white text-primary shadow-sm'
                 : 'text-slate-600 hover:text-slate-800'
                 }`}
             >
@@ -462,9 +462,9 @@ export function MeetingsPage() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4 flex-1">
-                      <div className={`p-3 rounded-xl ${meeting.mode === 'online' ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
+                      <div className={`p-3 rounded-xl ${meeting.mode === 'online' ? 'bg-srm-50' : 'bg-emerald-50'}`}>
                         {meeting.mode === 'online' ? (
-                          <Video className="w-6 h-6 text-indigo-600" />
+                          <Video className="w-6 h-6 text-primary" />
                         ) : (
                           <Users className="w-6 h-6 text-emerald-600" />
                         )}
@@ -512,7 +512,7 @@ export function MeetingsPage() {
                         </span>
                       )}
                       {meeting.status === 'scheduled' && (
-                        <span className="flex items-center gap-1 text-indigo-600 text-sm font-medium">
+                        <span className="flex items-center gap-1 text-primary text-sm font-medium">
                           <Clock className="w-4 h-4" />
                           Scheduled
                         </span>

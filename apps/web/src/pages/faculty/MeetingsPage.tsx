@@ -349,7 +349,7 @@ export function FacultyMeetingsPage() {
   if (hasAssignments === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -389,7 +389,7 @@ export function FacultyMeetingsPage() {
             <button
               onClick={() => setActiveTab('meetings')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'meetings'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'bg-transparent text-slate-500 hover:bg-slate-50'
                 }`}
             >
@@ -398,7 +398,7 @@ export function FacultyMeetingsPage() {
             <button
               onClick={() => setActiveTab('logs')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'logs'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-primary text-white shadow-sm'
                 : 'bg-transparent text-slate-500 hover:bg-slate-50'
                 }`}
             >
@@ -414,7 +414,7 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setMeetingsSubTab('upcoming')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'upcoming'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
@@ -423,7 +423,7 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setMeetingsSubTab('past')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'past'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
@@ -462,15 +462,15 @@ export function FacultyMeetingsPage() {
         {activeTab === 'meetings' ? (
           loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (() => {
             const displayMeetings = meetingsSubTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
             return displayMeetings.length === 0 ? (
               <GlassCard className="p-12 text-center bg-white shadow-xl border border-slate-200">
                 <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-8 h-8 text-indigo-600" />
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-2">
                     No {meetingsSubTab === 'upcoming' ? 'Upcoming' : 'Past'} Meetings
@@ -503,7 +503,7 @@ export function FacultyMeetingsPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
-                            <Calendar className="w-5 h-5 text-indigo-600" />
+                            <Calendar className="w-5 h-5 text-primary" />
                             <h3 className="text-lg font-semibold text-slate-900">
                               {meeting.groupId
                                 ? `Group ${meeting.groupId.groupCode}`
@@ -530,7 +530,7 @@ export function FacultyMeetingsPage() {
                                 href={meeting.meetUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
+                                className="flex items-center gap-2 text-sm text-primary hover:underline"
                               >
                                 <Video className="w-4 h-4" />
                                 Join Meeting

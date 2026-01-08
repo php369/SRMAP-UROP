@@ -4,8 +4,9 @@
 
 @layer base {
   :root {
-    /* Core Modern Palette */
-    --indigo-600: #4f46e5;
+    /* Core Modern Palette - SRM Gold */
+    --srm-400: #f5bb3e;
+    --srm-600: #c49b60;
     --slate-900: #0f172a;
     --slate-600: #475569;
     --slate-500: #64748b;
@@ -16,11 +17,11 @@
     /* Semantic Colors - Light Mode Only */
     --color-background: var(--slate-50);
     --color-surface: var(--white);
-    --color-primary: var(--indigo-600);
+    --color-primary: var(--srm-400);
     --color-primary-foreground: #ffffff;
     --color-secondary: var(--slate-500);
     --color-secondary-foreground: #ffffff;
-    --color-accent: var(--indigo-600);
+    --color-accent: var(--srm-600);
     --color-accent-foreground: #ffffff;
 
     --color-text: var(--slate-900);

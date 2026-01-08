@@ -27,17 +27,18 @@ export const ROUTES = {
   SUBMISSION_DETAIL: '/dashboard/submissions/:id',
 
   FACULTY_PROJECTS: '/dashboard/projects',
-  PROJECT_APPROVALS: '/dashboard/projects/approvals',
+
   PROFILE: '/dashboard/profile',
   ADMIN: '/dashboard/admin',
   ADMIN_USERS: '/dashboard/admin/users',
   ADMIN_REPORTS: '/dashboard/admin/reports',
 } as const;
 
-// Modern Indigo/Slate Color Palette
+// Modern SRM Gold Color Palette
 export const MODERN_PALETTE = {
-  INDIGO_600: '#4f46e5',
-  INDIGO_50: '#eef2ff',
+  SRM_400: '#f5bb3e', // Primary Light
+  SRM_600: '#c49b60', // Primary Dark
+  INDIGO_50: '#eef2ff', // Keeping for soft backgrounds if needed, or replace
   SLATE_900: '#0f172a',
   SLATE_800: '#1e293b',
   SLATE_600: '#475569',
@@ -57,10 +58,10 @@ export const THEMES = {
   LIGHT: {
     mode: 'light' as const,
     colors: {
-      primary: MODERN_PALETTE.INDIGO_600,
-      primaryGradient: `linear-gradient(135deg, ${MODERN_PALETTE.INDIGO_600} 0%, #4338ca 100%)`,
+      primary: MODERN_PALETTE.SRM_400,
+      primaryGradient: `linear-gradient(135deg, ${MODERN_PALETTE.SRM_400} 0%, ${MODERN_PALETTE.SRM_600} 100%)`,
       secondary: MODERN_PALETTE.SLATE_500,
-      accent: MODERN_PALETTE.INDIGO_600,
+      accent: MODERN_PALETTE.SRM_600,
       background: MODERN_PALETTE.SLATE_50,
       surface: MODERN_PALETTE.WHITE,
       glass: 'rgba(255, 255, 255, 0.9)', // More opaque for modern clean look
@@ -77,10 +78,10 @@ export const THEMES = {
   DARK: {
     mode: 'light' as const, // Fallback to light
     colors: {
-      primary: MODERN_PALETTE.INDIGO_600,
-      primaryGradient: `linear-gradient(135deg, ${MODERN_PALETTE.INDIGO_600} 0%, #4338ca 100%)`,
+      primary: MODERN_PALETTE.SRM_400,
+      primaryGradient: `linear-gradient(135deg, ${MODERN_PALETTE.SRM_400} 0%, ${MODERN_PALETTE.SRM_600} 100%)`,
       secondary: MODERN_PALETTE.SLATE_500,
-      accent: MODERN_PALETTE.INDIGO_600,
+      accent: MODERN_PALETTE.SRM_600,
       background: MODERN_PALETTE.SLATE_50,
       surface: MODERN_PALETTE.WHITE,
       glass: 'rgba(255, 255, 255, 0.9)',

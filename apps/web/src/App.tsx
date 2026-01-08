@@ -28,7 +28,7 @@ import { SubmissionDetailPage } from './pages/submissions/SubmissionDetailPage';
 import { HelpSupportPage } from './pages/support/HelpSupportPage';
 
 // Lazy loaded pages
-const CoordinatorApprovalsPage = lazy(() => import('./pages/projects/CoordinatorApprovalsPage').then(m => ({ default: m.CoordinatorApprovalsPage })));
+
 const ApplicationPage = lazy(() => import('./pages/student/ApplicationPage').then(m => ({ default: m.ApplicationPage })));
 const SubmissionPage = lazy(() => import('./pages/student/SubmissionPage').then(m => ({ default: m.SubmissionPage })));
 const AssessmentPage = lazy(() => import('./pages/student/AssessmentPage').then(m => ({ default: m.AssessmentPage })));
@@ -144,11 +144,7 @@ function App() {
                                 } />
 
                                 {/* Coordinator routes */}
-                                <Route path="/projects/approvals" element={
-                                  <AuthGuard requiredRole="coordinator">
-                                    <CoordinatorApprovalsPage />
-                                  </AuthGuard>
-                                } />
+
                                 <Route path="/control" element={
                                   <AuthGuard requiredRole="coordinator">
                                     <ControlPanel />

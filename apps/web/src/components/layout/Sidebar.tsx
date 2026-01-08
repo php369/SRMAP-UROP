@@ -298,7 +298,7 @@ export function Sidebar() {
               className="w-8 h-8"
             />
             <div>
-              <h1 className="text-lg font-bold" style={{ color: '#ceb57d' }}>
+              <h1 className="text-lg font-bold text-slate-900">
                 Project Portal
               </h1>
               <p className="text-xs" style={{ color: 'var(--color-text-secondary)', opacity: 0.8 }}>SRM University-AP</p>
@@ -404,8 +404,8 @@ export function Sidebar() {
           )}
         >
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-              <span className="text-textPrimary text-sm font-medium">
+            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-medium">
                 {user?.name?.charAt(0).toUpperCase() || '?'}
               </span>
             </div>
@@ -560,7 +560,7 @@ export function Sidebar() {
                       className="w-10 h-10 shadow-lg rounded-lg"
                     />
                     <div>
-                      <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      <h1 className="text-xl font-bold text-primary">
                         Project Portal
                       </h1>
                     </div>
@@ -620,7 +620,7 @@ export function Sidebar() {
                 {/* User Info Footnote */}
                 <div className="p-4 mt-auto border-t border-border/10 bg-surface/50">
                   <div className="flex items-center p-3 rounded-2xl bg-surface border border-border/30 shadow-sm">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-inner">
+                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-inner">
                       <span className="text-white text-sm font-bold">
                         {user?.name?.charAt(0).toUpperCase() || '?'}
                       </span>

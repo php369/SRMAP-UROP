@@ -20,7 +20,7 @@ export function Button({
 
   const variantClasses = {
     default: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm',
-    primary: 'bg-primary text-primary-foreground hover:bg-indigo-700 shadow-sm shadow-indigo-200',
+    primary: 'bg-primary text-primary-foreground hover:bg-srm-500 shadow-sm shadow-amber-200',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-slate-600 shadow-sm',
     outline: 'border border-border text-slate-700 hover:bg-slate-50',
     ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',

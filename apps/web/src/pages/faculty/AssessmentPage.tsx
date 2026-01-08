@@ -500,7 +500,7 @@ export function FacultyAssessmentPage() {
   if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -531,7 +531,7 @@ export function FacultyAssessmentPage() {
             <button
               onClick={() => setActiveTab('internal')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'internal'
-                ? 'border-indigo-500 text-indigo-600'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
@@ -543,7 +543,7 @@ export function FacultyAssessmentPage() {
             <button
               onClick={() => setActiveTab('external')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'external'
-                ? 'border-indigo-500 text-indigo-600'
+                ? 'border-primary text-primary'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >

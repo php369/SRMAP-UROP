@@ -256,7 +256,7 @@ export function AssessmentPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -297,7 +297,7 @@ export function AssessmentPage() {
                         {submission.submissionType === 'evaluation' ? (
                           <Award className="w-6 h-6 text-purple-500" />
                         ) : submission.submissionType === 'group' ? (
-                          <Users className="w-6 h-6 text-indigo-500" />
+                          <Users className="w-6 h-6 text-primary" />
                         ) : (
                           <FileText className="w-6 h-6 text-emerald-500" />
                         )}
@@ -310,7 +310,7 @@ export function AssessmentPage() {
                             'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
                         </span>
                         {(submission.groupId?.groupCode || submission.groupCode) && (
-                          <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span className="bg-primary/10 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
                             Group: {submission.groupId?.groupCode || submission.groupCode}
                           </span>
                         )}
@@ -358,7 +358,7 @@ export function AssessmentPage() {
                           <span className="font-medium">Graded</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-full border border-indigo-100">
+                        <div className="flex items-center gap-2 text-primary bg-indigo-50 px-3 py-2 rounded-full border border-primary/10">
                           <AlertCircle className="w-5 h-5" />
                           <span className="font-medium">Under Review</span>
                         </div>

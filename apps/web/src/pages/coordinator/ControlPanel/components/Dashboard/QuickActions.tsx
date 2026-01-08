@@ -20,11 +20,11 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         {/* Manage Windows Card */}
         <div
           onClick={onManageWindows}
-          className="p-6 border-2 border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all group"
+          className="p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
         >
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
-              <Calendar className="w-6 h-6 text-indigo-600" />
+            <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors">
+              <Calendar className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Manage Windows</h3>
@@ -36,7 +36,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <p>• Edit existing window schedules</p>
             <p>• View window status and timeline</p>
           </div>
-          <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
+          <div className="mt-4 flex items-center text-primary text-sm font-medium">
             Click to manage windows
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>

@@ -230,7 +230,7 @@ export function ControlPanel() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900">
-                    <Calendar className="w-6 h-6 text-indigo-600" />
+                    <Calendar className="w-6 h-6 text-primary" />
                     Manage Windows
                   </h2>
                   <div className="flex items-center gap-3">
