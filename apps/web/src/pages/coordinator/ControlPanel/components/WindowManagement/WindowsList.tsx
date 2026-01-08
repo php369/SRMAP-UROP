@@ -12,13 +12,13 @@ interface WindowsListProps {
   onDeleteWindow: (window: Window) => void;
 }
 
-export function WindowsList({ 
-  windows, 
-  windowsLoading, 
-  showInactiveWindows, 
+export function WindowsList({
+  windows,
+  windowsLoading,
+  showInactiveWindows,
   onShowInactiveToggle,
   onEditWindow,
-  onDeleteWindow 
+  onDeleteWindow
 }: WindowsListProps) {
   if (windowsLoading) {
     return (
@@ -53,7 +53,7 @@ export function WindowsList({
               <div className="h-7 bg-gray-200 rounded animate-pulse w-16"></div>
               <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
             </div>
-            
+
             {/* Window Cards Loading */}
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -99,7 +99,7 @@ export function WindowsList({
     const end = new Date(w.endDate);
     const isActive = now >= start && now <= end;
     const hasEnded = now > end;
-    
+
     return showInactiveWindows || isActive || !hasEnded;
   });
 
@@ -109,7 +109,7 @@ export function WindowsList({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between p-4 bg-gray-100 rounded-lg"
+        className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg"
       >
         <div className="flex items-center space-x-3">
           <span className="text-sm font-medium text-gray-700">Window Display Options:</span>
@@ -118,14 +118,12 @@ export function WindowsList({
             {/* Toggle Switch */}
             <button
               onClick={() => onShowInactiveToggle(!showInactiveWindows)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                showInactiveWindows ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${showInactiveWindows ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  showInactiveWindows ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showInactiveWindows ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>
@@ -143,11 +141,11 @@ export function WindowsList({
             // First, sort by workflow order (proposal → application → submission → assessment → grade_release)
             const aWorkflowOrder = getWorkflowOrder(a.windowType, a.assessmentType);
             const bWorkflowOrder = getWorkflowOrder(b.windowType, b.assessmentType);
-            
+
             if (aWorkflowOrder !== bWorkflowOrder) {
               return aWorkflowOrder - bWorkflowOrder; // Ascending workflow order
             }
-            
+
             // Within same workflow step, sort by start time (earliest first - ascending order)
             const aStart = new Date(a.startDate);
             const bStart = new Date(b.startDate);
@@ -165,12 +163,12 @@ export function WindowsList({
             className="space-y-3"
           >
             <div className="flex items-center space-x-2">
-              <h2 className="text-xl font-bold text-gray-800">{projectType}</h2>
-              <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
+              <h2 className="text-xl font-bold text-text">{projectType}</h2>
+              <span className="px-2 py-1 text-xs bg-surface border border-border text-textSecondary rounded-full">
                 {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               {projectWindows.map((window, windowIndex) => (
                 <motion.div

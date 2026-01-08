@@ -47,10 +47,10 @@ export function EvaluatorStats({ evaluators, assignments }: EvaluatorStatsProps)
 
   const getColorClasses = (color: string) => {
     const colors = {
-      blue: 'bg-blue-100 text-blue-600',
-      green: 'bg-green-100 text-green-600',
-      yellow: 'bg-yellow-100 text-yellow-600',
-      red: 'bg-red-100 text-red-600'
+      blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+      green: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+      yellow: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
+      red: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
     };
     return colors[color as keyof typeof colors] || colors.blue;
   };
@@ -65,18 +65,18 @@ export function EvaluatorStats({ evaluators, assignments }: EvaluatorStatsProps)
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-lg border border-gray-200 p-4"
+            className="bg-surface border border-border rounded-lg p-4 shadow-sm"
           >
             <div className="flex items-center gap-3 mb-2">
               <div className={`p-2 rounded-lg ${getColorClasses(stat.color)}`}>
                 <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-sm font-medium text-gray-700">{stat.label}</p>
+                <p className="text-2xl font-bold text-text">{stat.value}</p>
+                <p className="text-sm font-medium text-textSecondary">{stat.label}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-500">{stat.description}</p>
+            <p className="text-xs text-textSecondary opacity-80">{stat.description}</p>
           </motion.div>
         ))}
       </div>
@@ -87,9 +87,9 @@ export function EvaluatorStats({ evaluators, assignments }: EvaluatorStatsProps)
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white rounded-lg border border-gray-200 p-6"
+          className="bg-surface border border-border rounded-lg p-6 shadow-sm"
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-text mb-4">
             Evaluator Workload Distribution
           </h3>
           <div className="space-y-3">
@@ -98,39 +98,39 @@ export function EvaluatorStats({ evaluators, assignments }: EvaluatorStatsProps)
               .map((evaluator, index) => {
                 const maxAssignments = Math.max(...evaluators.map(e => e.assignmentCount), 1);
                 const percentage = (evaluator.assignmentCount / maxAssignments) * 100;
-                
+
                 return (
                   <div key={evaluator._id} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{evaluator.name}</p>
-                        <p className="text-xs text-gray-500">{evaluator.email}</p>
+                        <p className="text-sm font-medium text-text">{evaluator.name}</p>
+                        <p className="text-xs text-textSecondary">{evaluator.email}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-text">
                           {evaluator.assignmentCount} assignments
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {totalAssignments > 0 ? 
+                        <p className="text-xs text-textSecondary">
+                          {totalAssignments > 0 ?
                             Math.round((evaluator.assignmentCount / totalAssignments) * 100) : 0}% of total
                         </p>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-border/30 rounded-full h-2">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
                         transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                        className="bg-blue-500 h-2 rounded-full"
+                        className="bg-primary h-2 rounded-full"
                       />
                     </div>
                   </div>
                 );
               })}
           </div>
-          
+
           {evaluators.length === 0 && (
-            <p className="text-gray-500 text-center py-4">
+            <p className="text-textSecondary text-center py-4">
               No external evaluators available
             </p>
           )}

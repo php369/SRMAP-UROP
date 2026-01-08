@@ -21,18 +21,18 @@ export const useThemeStore = create<ThemeStore>()(
         const { mode } = get();
         const newMode = mode === 'light' ? 'dark' : 'light';
         const newTheme = newMode === 'light' ? THEMES.LIGHT : THEMES.DARK;
-        
+
         set({ mode: newMode, theme: newTheme });
-        
+
         // Update CSS custom properties
         updateCSSVariables(newTheme);
       },
 
       setTheme: (mode: ThemeMode) => {
         const newTheme = mode === 'light' ? THEMES.LIGHT : THEMES.DARK;
-        
+
         set({ mode, theme: newTheme });
-        
+
         // Update CSS custom properties
         updateCSSVariables(newTheme);
       },
@@ -42,7 +42,9 @@ export const useThemeStore = create<ThemeStore>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Update CSS variables on hydration
-          updateCSSVariables(state.theme);
+          if (state.theme) {
+            updateCSSVariables(state.theme);
+          }
         }
       },
     }
@@ -52,14 +54,14 @@ export const useThemeStore = create<ThemeStore>()(
 // Update CSS custom properties
 function updateCSSVariables(theme: typeof THEMES.LIGHT | typeof THEMES.DARK) {
   const root = document.documentElement;
-  
+
   Object.entries(theme.colors).forEach(([key, value]) => {
     root.style.setProperty(`--color-${key}`, value);
   });
-  
+
   // Update data-theme attribute for Tailwind dark mode
   document.documentElement.setAttribute('data-theme', theme.mode);
-  
+
   // Update class for Tailwind dark mode
   if (theme.mode === 'dark') {
     document.documentElement.classList.add('dark');

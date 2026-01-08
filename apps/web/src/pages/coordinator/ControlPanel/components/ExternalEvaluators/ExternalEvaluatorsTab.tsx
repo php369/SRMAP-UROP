@@ -29,10 +29,10 @@ export function ExternalEvaluatorsTab() {
   const [filterType, setFilterType] = useState<'all' | 'group' | 'solo'>('all');
 
   // Check if external evaluation window is active for any project type
-  const isExternalEvaluationActive = windows.some(window => 
-    window.windowType === 'assessment' && 
+  const isExternalEvaluationActive = windows.some(window =>
+    window.windowType === 'assessment' &&
     window.assessmentType === 'External' &&
-    new Date() >= new Date(window.startDate) && 
+    new Date() >= new Date(window.startDate) &&
     new Date() <= new Date(window.endDate)
   );
 
@@ -51,16 +51,16 @@ export function ExternalEvaluatorsTab() {
   const filteredAssignments = assignments.filter(assignment => {
     // Search filter
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm || 
-      (assignment.submissionType === 'group' && 
+    const matchesSearch = !searchTerm ||
+      (assignment.submissionType === 'group' &&
         (assignment.groupId?.groupCode?.toLowerCase().includes(searchLower) ||
-         assignment.groupId?.assignedProjectId?.title?.toLowerCase().includes(searchLower) ||
-         assignment.groupId?.members?.some(member => 
-           member.name.toLowerCase().includes(searchLower)
-         ))) ||
+          assignment.groupId?.assignedProjectId?.title?.toLowerCase().includes(searchLower) ||
+          assignment.groupId?.members?.some(member =>
+            member.name.toLowerCase().includes(searchLower)
+          ))) ||
       (assignment.submissionType === 'solo' &&
         (assignment.studentId?.name?.toLowerCase().includes(searchLower) ||
-         assignment.studentId?.assignedProjectId?.title?.toLowerCase().includes(searchLower)));
+          assignment.studentId?.assignedProjectId?.title?.toLowerCase().includes(searchLower)));
 
     // Status filter
     const matchesStatus = filterStatus === 'all' ||
@@ -116,14 +116,14 @@ export function ExternalEvaluatorsTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">External Evaluator Assignment</h2>
-          <p className="text-gray-600">Manage external evaluator assignments for projects</p>
+          <h2 className="text-2xl font-bold text-text">External Evaluator Assignment</h2>
+          <p className="text-textSecondary">Manage external evaluator assignments for projects</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
             disabled={assignmentsLoading || evaluatorsLoading}
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-surface border border-border text-text hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${(assignmentsLoading || evaluatorsLoading) ? 'animate-spin' : ''}`} />
             Refresh
@@ -131,7 +131,7 @@ export function ExternalEvaluatorsTab() {
           <button
             onClick={handleAutoAssign}
             disabled={loading || isModificationRestricted || assignments.length === 0}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
             title={isModificationRestricted ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
           >
             <Zap className="w-4 h-4" />
@@ -142,20 +142,20 @@ export function ExternalEvaluatorsTab() {
 
       {/* Validation Issues Warning */}
       {validationResult && !validationResult.isValid && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-yellow-800 font-medium mb-2">Assignment Validation Issues</h3>
-              <ul className="text-yellow-700 text-sm space-y-1 mb-3">
+              <h3 className="text-warning font-medium mb-2">Assignment Validation Issues</h3>
+              <ul className="text-warning/90 text-sm space-y-1 mb-3">
                 {validationResult.issues.map((issue: string, index: number) => (
                   <li key={index}>• {issue}</li>
                 ))}
               </ul>
               {validationResult.recommendations.length > 0 && (
                 <>
-                  <h4 className="text-yellow-800 font-medium mb-1">Recommendations:</h4>
-                  <ul className="text-yellow-700 text-sm space-y-1">
+                  <h4 className="text-warning font-medium mb-1">Recommendations:</h4>
+                  <ul className="text-warning/90 text-sm space-y-1">
                     {validationResult.recommendations.map((rec: string, index: number) => (
                       <li key={index}>• {rec}</li>
                     ))}
@@ -169,11 +169,11 @@ export function ExternalEvaluatorsTab() {
 
       {/* Warning for active external evaluation window */}
       {isExternalEvaluationActive && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-yellow-600" />
+        <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-warning" />
           <div>
-            <p className="text-yellow-800 font-medium">External Evaluation Window Active</p>
-            <p className="text-yellow-700 text-sm">
+            <p className="text-warning font-medium">External Evaluation Window Active</p>
+            <p className="text-warning/90 text-sm">
               Assignment modifications are restricted during active external evaluation windows.
             </p>
           </div>
@@ -184,18 +184,18 @@ export function ExternalEvaluatorsTab() {
       <EvaluatorStats evaluators={evaluators} assignments={assignments} />
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-surface rounded-lg border border-border p-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search by group code, project title, or student name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text placeholder-textSecondary/50"
               />
             </div>
           </div>
@@ -205,7 +205,7 @@ export function ExternalEvaluatorsTab() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
             >
               <option value="all">All Status</option>
               <option value="assigned">Assigned</option>
@@ -216,7 +216,7 @@ export function ExternalEvaluatorsTab() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
             >
               <option value="all">All Types</option>
               <option value="group">Groups</option>

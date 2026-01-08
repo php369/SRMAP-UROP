@@ -203,28 +203,18 @@ export function Sidebar() {
   const location = useLocation();
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  if (!user) {
-    return null;
-  }
-
   const navigationItems = ROLE_NAVIGATION[user.role] || [];
 
   // Handle mobile sidebar open/close
   const openMobileSidebar = useCallback(() => {
     if (window.innerWidth < 1024) {
-      setIsAnimating(true);
       setIsMobileOpen(true);
-      setTimeout(() => setIsAnimating(false), 300);
     }
   }, []);
 
   const closeMobileSidebar = useCallback(() => {
     if (window.innerWidth < 1024) {
-      setIsAnimating(true);
       setIsMobileOpen(false);
-      setTimeout(() => setIsAnimating(false), 300);
     }
   }, []);
 
@@ -484,13 +474,13 @@ export function Sidebar() {
         <button
           onClick={openMobileSidebar}
           className={cn(
-            'fixed top-4 left-4 z-50 p-2.5 bg-surface/90 backdrop-blur-md border border-border rounded-xl text-text hover:bg-surface/100 transition-all duration-200 shadow-md',
+            'fixed top-4 left-4 z-50 p-3 bg-surface/80 backdrop-blur-xl border border-border/50 rounded-2xl text-text hover:bg-surface transition-all duration-300 shadow-lg group',
             isMobileOpen && 'opacity-0 pointer-events-none scale-90'
           )}
           aria-label="Open navigation menu"
         >
           <svg
-            className="w-5 h-5"
+            className="w-6 h-6 transform group-hover:scale-110 transition-transform"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -506,40 +496,40 @@ export function Sidebar() {
 
         {/* Swipe indicator for mobile */}
         {!isMobileOpen && (
-          <div className="fixed left-0 top-1/2 transform -translate-y-1/2 w-1 h-16 bg-gradient-to-b from-transparent via-primary/50 to-transparent rounded-r-full opacity-30 animate-pulse" />
+          <div className="fixed left-0 top-1/2 transform -translate-y-1/2 w-1.5 h-20 bg-gradient-to-b from-transparent via-primary/40 to-transparent rounded-r-full opacity-50 animate-pulse" />
         )}
 
         {/* Mobile sidebar overlay */}
-        {isMobileOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            {/* Backdrop */}
-            <div
-              className={cn(
-                'fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
-                isAnimating ? 'opacity-0' : 'opacity-100'
-              )}
-              onClick={closeMobileSidebar}
-            />
+        <div
+          className={cn(
+            'fixed inset-0 z-50 lg:hidden transition-all duration-300',
+            isMobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          )}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={closeMobileSidebar}
+          />
 
-            {/* Sidebar */}
-            <div
-              ref={swipeRef as any}
-              className={cn(
-                'fixed inset-y-0 left-0 w-72 sm:w-80 transform transition-all duration-300 ease-out',
-                isAnimating && !isMobileOpen
-                  ? '-translate-x-full'
-                  : 'translate-x-0'
-              )}
-            >
-              <div className="h-full relative bg-surface border-r border-border shadow-2xl flex flex-col">
-                {/* Close button */}
+          {/* Glass Drawer */}
+          <div
+            ref={swipeRef as any}
+            className={cn(
+              'absolute inset-y-4 left-4 w-[85vw] sm:w-80 transform transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1)',
+              isMobileOpen ? 'translate-x-0' : '-translate-x-[110%]'
+            )}
+          >
+            <div className="h-full bg-surface/90 backdrop-blur-2xl border border-border/50 shadow-2xl rounded-3xl overflow-hidden flex flex-col">
+              {/* Close button area */}
+              <div className="absolute top-4 right-4 z-20">
                 <button
                   onClick={closeMobileSidebar}
-                  className="absolute top-4 right-4 z-10 p-2 text-textSecondary hover:text-text hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 text-textSecondary hover:text-text hover:bg-white/10 rounded-xl transition-all duration-200"
                   aria-label="Close navigation menu"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-6 h-6"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -552,12 +542,103 @@ export function Sidebar() {
                     />
                   </svg>
                 </button>
+              </div>
 
-                {sidebarContent}
+              {/* Reuse existing sidebar content logic but wrapped in our new container */}
+              <div
+                className={cn(
+                  'flex flex-col h-full',
+                  'w-full' // Override specific widths from desktop logic
+                )}
+              >
+                {/* Logo */}
+                <div className="flex items-center justify-start px-6 h-20 border-b border-border/10">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src="/branding/srm-icon.svg"
+                      alt="SRM University-AP"
+                      className="w-10 h-10 shadow-lg rounded-lg"
+                    />
+                    <div>
+                      <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        Project Portal
+                      </h1>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                  {navigationItems.map(item => {
+                    const IconComponent =
+                      IconComponents[item.icon as keyof typeof IconComponents];
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={() => {
+                          const currentPath = location.pathname;
+                          const isCurrentPage = currentPath === item.path ||
+                            (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+
+                          return cn(
+                            'group flex items-center px-4 py-3.5 text-base font-medium rounded-2xl transition-all duration-300 relative overflow-hidden',
+                            isCurrentPage
+                              ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                              : 'text-textSecondary hover:bg-surface/50 hover:text-text'
+                          );
+                        }}
+                      >
+                        {() => {
+                          const currentPath = location.pathname;
+                          const isCurrentPage = currentPath === item.path ||
+                            (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+
+                          return (
+                            <>
+                              {isCurrentPage && (
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-r-full" />
+                              )}
+
+                              <div
+                                className={cn(
+                                  "flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
+                                  isCurrentPage ? "text-primary" : "text-textSecondary/70 group-hover:text-text"
+                                )}
+                              >
+                                {IconComponent && <IconComponent />}
+                              </div>
+                              <span className="ml-4 tracking-wide">{item.label}</span>
+                            </>
+                          );
+                        }}
+                      </NavLink>
+                    );
+                  })}
+                </nav>
+
+                {/* User Info Footnote */}
+                <div className="p-4 mt-auto border-t border-border/10 bg-surface/50">
+                  <div className="flex items-center p-3 rounded-2xl bg-surface border border-border/30 shadow-sm">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center shadow-inner">
+                      <span className="text-white text-sm font-bold">
+                        {user?.name?.charAt(0).toUpperCase() || '?'}
+                      </span>
+                    </div>
+                    <div className="ml-3 min-w-0">
+                      <p className="text-sm font-bold text-text truncate">
+                        {user?.name || 'Loading...'}
+                      </p>
+                      <p className="text-xs text-textSecondary uppercase tracking-wider font-semibold">
+                        {user?.role || 'user'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </>
   );

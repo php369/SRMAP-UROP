@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,18 +15,6 @@ export function TopNavigation() {
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  // Track scroll position
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   // Notifications - will be fetched from API in the future
   const notifications: any[] = [];
   const unreadCount = 0;
@@ -44,14 +32,6 @@ export function TopNavigation() {
   return (
     <motion.header
       className="sticky top-0 z-30"
-      initial={{ y: 0 }}
-      animate={{
-        y: isScrolled ? -10 : 0,
-      }}
-      transition={{
-        duration: 0.3,
-        ease: 'easeInOut'
-      }}
       style={{
         backgroundColor: 'transparent',
         boxShadow: 'none'

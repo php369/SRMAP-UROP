@@ -26,26 +26,26 @@ const THEME_COLORS = {
     hover: 'rgba(200, 150, 67, 0.1)',
     active: 'rgba(200, 150, 67, 0.2)',
     focus: '#c89643',
-    glass: 'rgba(200, 195, 163, 0.7)',
-    glassBorder: 'rgba(170, 164, 108, 0.3)',
+    glass: 'rgba(255, 255, 255, 0.6)',
+    glassBorder: 'rgba(255, 255, 255, 0.4)',
   },
   dark: {
     bg: '#1f1e17',
     surface: '#2b2a22',
-    textPrimary: '#d4b57d',
-    textSecondary: '#c8c3a3',
-    accent: '#d4b57d',
-    highlight: '#c89643',
-    border: '#3e3c2f',
-    success: '#c89643',
-    warning: '#d4b57d',
-    error: '#d4704a',
-    info: '#c8c3a3',
-    hover: 'rgba(212, 181, 125, 0.1)',
-    active: 'rgba(212, 181, 125, 0.2)',
-    focus: '#d4b57d',
-    glass: 'rgba(43, 42, 34, 0.7)',
-    glassBorder: 'rgba(62, 60, 47, 0.3)',
+    textPrimary: '#e3dec3',
+    textSecondary: '#b0ab8c',
+    accent: '#d4b76c',
+    highlight: '#d4b76c',
+    border: 'rgba(212, 183, 108, 0.2)',
+    success: '#bba44a',
+    warning: '#d4b76c',
+    error: '#e58b6a',
+    info: '#b0ab8c',
+    hover: 'rgba(212, 183, 108, 0.1)',
+    active: 'rgba(212, 183, 108, 0.2)',
+    focus: '#d4b76c',
+    glass: 'rgba(0, 0, 0, 0.3)',
+    glassBorder: 'rgba(255, 255, 255, 0.1)',
   },
 };
 
@@ -114,11 +114,11 @@ export function initializeTheme(): void {
  */
 export function setupSystemThemeListener(): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) {
-    return () => {}; // No-op for SSR
+    return () => { }; // No-op for SSR
   }
 
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  
+
   const handleSystemThemeChange = (event: MediaQueryListEvent) => {
     // Only apply system theme if no user preference is stored
     try {

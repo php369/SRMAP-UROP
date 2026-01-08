@@ -86,7 +86,7 @@
   }
 
   .glass-hover {
-    @apply transition-all duration-300;
+    @apply transition-all duration-500 ease-out;
   }
 
   .glass-hover:hover {
