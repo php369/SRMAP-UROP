@@ -1,51 +1,32 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ThemeContextType, ThemeMode, ThemeConfig } from '../types';
-import { EARTH_PALETTE, STORAGE_KEYS } from '../utils/constants';
+import { MODERN_PALETTE, STORAGE_KEYS } from '../utils/constants';
 
-// Theme configurations based on the earth-toned color palette
+// Theme configurations based on the modern palette
 const LIGHT_THEME: ThemeConfig = {
   mode: 'light',
   colors: {
-    bg: EARTH_PALETTE.SATIN_LINEN,
-    surface: EARTH_PALETTE.CORAL_REEF,
-    textPrimary: EARTH_PALETTE.WOODLAND,
-    textSecondary: EARTH_PALETTE.FLAX_SMOKE,
-    accent: EARTH_PALETTE.TUSSOCK,
-    highlight: EARTH_PALETTE.SYCAMORE,
-    border: EARTH_PALETTE.GREEN_SMOKE,
-    success: EARTH_PALETTE.SYCAMORE,
-    warning: EARTH_PALETTE.TUSSOCK,
-    error: '#d4704a',
-    info: EARTH_PALETTE.FLAX_SMOKE,
-    hover: 'rgba(200, 150, 67, 0.1)',
-    active: 'rgba(200, 150, 67, 0.2)',
-    focus: EARTH_PALETTE.TUSSOCK,
-    glass: 'rgba(200, 195, 163, 0.7)',
-    glassBorder: 'rgba(170, 164, 108, 0.3)',
+    bg: MODERN_PALETTE.SLATE_50,
+    surface: MODERN_PALETTE.WHITE,
+    textPrimary: MODERN_PALETTE.SLATE_900,
+    textSecondary: MODERN_PALETTE.SLATE_600,
+    accent: MODERN_PALETTE.INDIGO_600,
+    highlight: MODERN_PALETTE.BLUE_500,
+    border: MODERN_PALETTE.SLATE_200,
+    success: MODERN_PALETTE.EMERALD_600,
+    warning: MODERN_PALETTE.AMBER_500,
+    error: MODERN_PALETTE.RED_500,
+    info: MODERN_PALETTE.BLUE_500,
+    hover: 'rgba(79, 70, 229, 0.1)',
+    active: 'rgba(79, 70, 229, 0.2)',
+    focus: MODERN_PALETTE.INDIGO_600,
+    glass: 'rgba(255, 255, 255, 0.9)',
+    glassBorder: MODERN_PALETTE.SLATE_200,
   },
 };
 
-const DARK_THEME: ThemeConfig = {
-  mode: 'dark',
-  colors: {
-    bg: '#1f1e17',
-    surface: '#2b2a22',
-    textPrimary: EARTH_PALETTE.STRAW,
-    textSecondary: EARTH_PALETTE.CORAL_REEF,
-    accent: EARTH_PALETTE.STRAW,
-    highlight: EARTH_PALETTE.TUSSOCK,
-    border: '#3e3c2f',
-    success: EARTH_PALETTE.TUSSOCK,
-    warning: EARTH_PALETTE.STRAW,
-    error: '#d4704a',
-    info: EARTH_PALETTE.CORAL_REEF,
-    hover: 'rgba(212, 181, 125, 0.1)',
-    active: 'rgba(212, 181, 125, 0.2)',
-    focus: EARTH_PALETTE.STRAW,
-    glass: 'rgba(43, 42, 34, 0.7)',
-    glassBorder: 'rgba(62, 60, 47, 0.3)',
-  },
-};
+// Dark theme deprecated - identical to light
+const DARK_THEME: ThemeConfig = { ...LIGHT_THEME, mode: 'light' };
 
 // Create the theme context
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -57,9 +38,9 @@ interface ThemeProviderProps {
 }
 
 // Theme provider component
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
-  children, 
-  defaultTheme = 'light' 
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({
+  children,
+  defaultTheme = 'light'
 }) => {
   const [mode, setMode] = useState<ThemeMode>(defaultTheme);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,16 +84,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       });
 
       // Set data-theme attribute
-      root.setAttribute('data-theme', themeConfig.mode);
+      root.setAttribute('data-theme', 'light');
 
-      // Handle Tailwind CSS dark mode class
-      if (themeConfig.mode === 'dark') {
-        root.classList.add('dark');
-        root.classList.remove('light');
-      } else {
-        root.classList.add('light');
-        root.classList.remove('dark');
-      }
+      // Handle Tailwind CSS dark mode class - always remove dark
+      root.classList.add('light');
+      root.classList.remove('dark');
     };
 
     applyThemeToDOM(theme);
@@ -122,51 +98,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   useEffect(() => {
     if (isLoading) return;
 
-    try {
-      localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify({ mode }));
-      
-      // Dispatch storage event for cross-tab synchronization
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: STORAGE_KEYS.THEME,
-        newValue: JSON.stringify({ mode }),
-        storageArea: localStorage,
-      }));
-    } catch (error) {
-      console.warn('Failed to save theme to localStorage:', error);
-    }
+    // We don't really need to save it anymore since it's always light, but we'll keep it for legacy compat
   }, [mode, isLoading]);
 
   // Listen for theme changes from other tabs
   useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEYS.THEME && event.newValue) {
-        try {
-          const parsedTheme = JSON.parse(event.newValue);
-          if (parsedTheme.mode && parsedTheme.mode !== mode) {
-            setMode(parsedTheme.mode);
-          }
-        } catch (error) {
-          console.warn('Failed to parse theme from storage event:', error);
-        }
-      }
-    };
-
-    // Listen for storage events from other tabs
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    // No-op
   }, [mode]);
 
-  // Toggle between light and dark themes
+  // Toggle - Disabled
   const toggleTheme = () => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
+    setMode('light');
   };
 
-  // Set specific theme
+  // Set specific theme - Force light
   const setTheme = (newMode: ThemeMode) => {
-    setMode(newMode);
+    setMode('light');
   };
 
   // Context value

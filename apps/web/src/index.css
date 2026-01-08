@@ -4,67 +4,41 @@
 
 @layer base {
   :root {
-    /* Core Earth Tones */
-    --tussock: #ca9a4a;
-    --sycamore: #928b42;
-    --green-smoke: #afa76f;
-    --satin-linen: #e6e5d4;
-    --chino: #cbc6a4;
-    --gurkha: #98957d;
+    /* Core Modern Palette */
+    --indigo-600: #4f46e5;
+    --slate-900: #0f172a;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-200: #e2e8f0;
+    --slate-50: #f8fafc;
+    --white: #ffffff;
 
-    /* Semantic Colors - Light Mode */
-    --color-background: var(--satin-linen);
-    --color-surface: var(--chino);
-    --color-primary: var(--tussock);
+    /* Semantic Colors - Light Mode Only */
+    --color-background: var(--slate-50);
+    --color-surface: var(--white);
+    --color-primary: var(--indigo-600);
     --color-primary-foreground: #ffffff;
-    --color-secondary: var(--green-smoke);
+    --color-secondary: var(--slate-500);
     --color-secondary-foreground: #ffffff;
-    --color-accent: var(--tussock);
+    --color-accent: var(--indigo-600);
     --color-accent-foreground: #ffffff;
 
-    --color-text: #2d2b1a;
-    --color-textSecondary: #4a4724;
-    --color-border: rgba(146, 139, 66, 0.3);
-    /* Based on sycamore/green-smoke */
+    --color-text: var(--slate-900);
+    --color-textSecondary: var(--slate-600);
+    --color-border: var(--slate-200);
 
-    --color-success: var(--sycamore);
-    --color-warning: var(--tussock);
-    --color-error: #d4704a;
-    --color-info: var(--gurkha);
+    --color-success: #059669;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
 
-    /* Solid Effects - Light */
+    /* Solid Effects */
     --glass-bg: #ffffff;
-    --glass-border: #e6e5d4;
+    --glass-border: #e2e8f0;
     --glass-blur: 0px;
   }
 
-  /* Dark Mode Overrides */
-  .dark {
-    /* Adjusted Earth Tones for Dark Mode */
-    --color-background: #1f1e17;
-    --color-surface: #2b2a22;
-
-    --color-primary: #d4b76c;
-    --color-primary-foreground: #1f1e17;
-    --color-secondary: #5e5b4a;
-    --color-secondary-foreground: #e3dec3;
-
-    --color-accent: #d4b76c;
-    --color-accent-foreground: #1f1e17;
-
-    --color-text: #e3dec3;
-    --color-textSecondary: #b0ab8c;
-    --color-border: rgba(212, 183, 108, 0.2);
-
-    --color-success: #bba44a;
-    --color-warning: #d4b76c;
-    --color-error: #e58b6a;
-    --color-info: #b0ab8c;
-
-    /* Solid Effects - Dark */
-    --glass-bg: #2b2a22;
-    --glass-border: #3e3c2f;
-  }
+  /* Dark Mode Removed */
 
   html {
     font-family: 'Inter', system-ui, sans-serif;

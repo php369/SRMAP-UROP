@@ -11,6 +11,10 @@ import { useWindowStatus } from '../../hooks/useWindowStatus';
 
 
 
+import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
+import { GlassCard } from '../../components/ui/GlassCard';
+import { Badge } from '../../components/ui/Badge';
+
 export function SubmissionPage() {
   const { user } = useAuth();
   const { windows } = useWindowStatus();
@@ -53,7 +57,7 @@ export function SubmissionPage() {
         };
 
         const projectType = roleToProjectType[user.role];
-        
+
         if (projectType) {
           setEligibleProjectType(projectType);
           console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
@@ -78,7 +82,7 @@ export function SubmissionPage() {
           // Get current assessment type from active SUBMISSION windows (not assessment windows)
           const assessmentType = getCurrentSubmissionAssessmentType(windows, eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE');
           setCurrentAssessmentType(assessmentType);
-          
+
           // Only proceed if there's an active submission window for this project type
           if (assessmentType) {
             await Promise.all([
@@ -95,7 +99,7 @@ export function SubmissionPage() {
           setInitializing(false);
         }
       };
-      
+
       initializeData();
     }
   }, [eligibleProjectType, windows]);
@@ -108,22 +112,22 @@ export function SubmissionPage() {
       const timer = setTimeout(() => {
         checkExistingSubmission();
       }, 100); // Small delay to ensure state is settled
-      
+
       return () => clearTimeout(timer);
     }
   }, [userGroup, user?.id, initializing, currentAssessmentType]);
 
   const checkSubmissionWindow = async () => {
     if (!eligibleProjectType || !currentAssessmentType) return;
-    
+
     try {
       // Check if submission is open for the current assessment type
       const isOpen = isSubmissionOpenForAssessmentType(
-        windows, 
-        eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE', 
+        windows,
+        eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE',
         currentAssessmentType
       );
-      
+
       if (isOpen) {
         setSubmissionWindow({ isActive: true, assessmentType: currentAssessmentType });
       } else {
@@ -138,32 +142,32 @@ export function SubmissionPage() {
   const checkUserRole = async () => {
     try {
       console.log('🔍 Checking user role for user:', user?.id);
-      
+
       // Check if user has an approved application using the new endpoint
       const approvedResponse = await api.get('/applications/approved');
       console.log('✅ Approved Application Response:', approvedResponse);
-      
+
       if (approvedResponse.success && approvedResponse.data) {
         const approvedApp = approvedResponse.data as any;
         console.log('✅ Found approved application:', approvedApp);
-        
+
         if (approvedApp.groupId) {
           // User is in a group - use the group data from the populated response
           const groupData = approvedApp.groupId as any;
           console.log('👥 User is in group:', groupData);
           setUserGroup(groupData);
-          
+
           // Determine group leadership from the group data
           // Check if user is the group leader
           const groupLeaderId = groupData?.leaderId?._id || groupData?.leaderId;
           const isGroupLeader = groupLeaderId === user?.id || String(groupLeaderId) === String(user?.id);
-          
+
           console.log('👑 Group Leadership Check:', {
             groupLeaderId: groupLeaderId,
             userId: user?.id,
             isLeader: isGroupLeader
           });
-          
+
           setIsLeader(isGroupLeader);
         } else {
           // Solo application
@@ -174,7 +178,7 @@ export function SubmissionPage() {
       } else {
         // No approved application found - check if user has any applications at all
         console.log('❌ No approved application found, checking all applications...');
-        
+
         try {
           const applicationsResponse = await api.get('/applications/my-application');
           if (applicationsResponse.success && applicationsResponse.data && (applicationsResponse.data as any[]).length > 0) {
@@ -200,7 +204,7 @@ export function SubmissionPage() {
         data: error?.response?.data,
         message: error?.message
       });
-      
+
       // If 404, it means no approved application exists
       if (error?.response?.status === 404) {
         console.log('🚶 No approved application found (404)');
@@ -217,22 +221,22 @@ export function SubmissionPage() {
 
   const checkExistingSubmission = async () => {
     if (!currentAssessmentType) return;
-    
+
     try {
       let response;
-      
+
       if (userGroup) {
         // Group student - check for submission with specific assessment type
         console.log('Checking group submission for group:', userGroup._id, 'assessment type:', currentAssessmentType);
         console.log('User is group leader:', isLeader);
-        
+
         try {
           // Use the my/submissions endpoint with assessment type filter
           // Note: For CLA-1, there might not be any existing submissions, which is expected
           response = await api.get('/group-submissions/my/submissions', {
             assessmentType: currentAssessmentType
           });
-          
+
           if (response.success && response.data) {
             console.log('✅ Found group submission for', currentAssessmentType, ':', response.data);
             setHasSubmitted(true);
@@ -241,7 +245,7 @@ export function SubmissionPage() {
           }
         } catch (error: any) {
           console.log('my/submissions failed:', error?.response?.status, error?.response?.data?.error);
-          
+
           // For 404 errors, this is expected for new assessment types - no submission exists yet
           if (error?.response?.status === 404) {
             console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
@@ -249,14 +253,14 @@ export function SubmissionPage() {
             setCurrentSubmission(null);
             return;
           }
-          
+
           // Second try: Direct group ID lookup with assessment type filter
           try {
             console.log('Trying direct group ID lookup with assessment type...');
             response = await api.get(`/group-submissions/${userGroup._id}`, {
               assessmentType: currentAssessmentType
             });
-            
+
             if (response.success && response.data) {
               console.log('✅ Found group submission via direct lookup:', response.data);
               setHasSubmitted(true);
@@ -265,7 +269,7 @@ export function SubmissionPage() {
             }
           } catch (directError: any) {
             console.log('Direct lookup also failed:', directError?.response?.status, directError?.response?.data?.error);
-            
+
             // 404 is expected for new assessment types
             if (directError?.response?.status === 404) {
               console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
@@ -275,21 +279,21 @@ export function SubmissionPage() {
             }
           }
         }
-        
+
         // If both approaches fail with non-404 errors, log but don't block
         console.log('No group submission found for', currentAssessmentType);
         setHasSubmitted(false);
         setCurrentSubmission(null);
-        
+
       } else {
         // Solo student - check regular submissions by student ID and assessment type
         console.log('Checking solo submission for user:', user?.id, 'assessment type:', currentAssessmentType);
-        
+
         try {
           response = await api.get(`/submissions/student/${user?.id}`, {
             assessmentType: currentAssessmentType
           });
-          
+
           if (response.success && response.data) {
             console.log('✅ Found solo submission for', currentAssessmentType, ':', response.data);
             setHasSubmitted(true);
@@ -388,7 +392,7 @@ export function SubmissionPage() {
     setLoading(true);
     try {
       const formDataToSend = new FormData();
-      
+
       if (userGroup) {
         // Group submission - use group submissions endpoint
         console.log('Submitting as group leader for', currentAssessmentType);
@@ -436,7 +440,7 @@ export function SubmissionPage() {
         toast.success(`${currentAssessmentType} submission successful!`);
         setHasSubmitted(true);
         setCurrentSubmission(response.data);
-        
+
         // Update group status if this was a group submission
         if (userGroup) {
           setUserGroup({ ...userGroup, status: 'frozen' });
@@ -453,19 +457,19 @@ export function SubmissionPage() {
         status: error?.response?.status,
         data: error?.response?.data
       });
-      
+
       let errorMessage = 'Failed to submit';
-      
+
       // Handle different error types
       if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       // Show user-friendly messages for different scenarios
       if (errorMessage.includes('already submitted')) {
-        errorMessage = userGroup 
+        errorMessage = userGroup
           ? 'Your group has already submitted. You cannot submit again.'
           : 'You have already submitted. You cannot submit again.';
       } else if (errorMessage.includes('not a member')) {
@@ -477,9 +481,9 @@ export function SubmissionPage() {
       } else if (errorMessage.includes('Either groupId or studentId is required')) {
         errorMessage = 'System error: Missing submission identifier. Please refresh and try again.';
       }
-      
+
       toast.error(errorMessage);
-      
+
       // Also show a generic error toast with more details for debugging
       if (error?.response?.status) {
         console.error(`HTTP ${error.response.status}: ${errorMessage}`);
@@ -493,7 +497,7 @@ export function SubmissionPage() {
   if (initializing || !eligibleProjectType) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -509,7 +513,7 @@ export function SubmissionPage() {
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Submission Window Not Open</h2>
           <p className="text-gray-600">
-            {!currentAssessmentType 
+            {!currentAssessmentType
               ? `No active submission window for ${eligibleProjectType} students. Please check back later.`
               : 'The submission window is not currently active. Please check back later.'
             }
@@ -531,21 +535,21 @@ export function SubmissionPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md mx-auto p-6"
         >
-          <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Group Leader Submission</h2>
-          <p className="text-gray-600 mb-4">
+          <AlertCircle className="w-16 h-16 text-indigo-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-slate-900">Group Leader Submission</h2>
+          <p className="text-slate-600 mb-4">
             Only the group leader can submit work. Please wait for your leader to submit.
           </p>
-          
-          <div className="p-4 bg-blue-50 rounded-lg mb-4">
-            <p className="text-sm text-blue-700">
+
+          <div className="p-4 bg-indigo-50 rounded-lg mb-4 border border-indigo-100">
+            <p className="text-sm text-indigo-700">
               <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
             </p>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-indigo-700">
               <strong>Status:</strong> {(userGroup as any)?.status}
             </p>
           </div>
-          
+
           <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
             <p className="text-yellow-700 text-sm">
               Waiting for group leader to submit...
@@ -570,7 +574,7 @@ export function SubmissionPage() {
           <p className="text-gray-600 mb-4">
             You need an approved application before you can submit work.
           </p>
-          
+
           <div className="p-4 bg-yellow-50 rounded-lg">
             <p className="text-yellow-700 text-sm">
               Please apply for a project first, and wait for approval before submitting work.
@@ -596,41 +600,37 @@ export function SubmissionPage() {
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg overflow-hidden"
-          >
+          <GlassCard className="overflow-hidden">
             {/* Header Section */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 border-b">
+            <div className="bg-slate-50 p-6 border-b border-slate-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900">
                     {userGroup ? (
-                      <Users className="w-6 h-6 text-blue-500" />
+                      <Users className="w-6 h-6 text-indigo-500" />
                     ) : (
-                      <User className="w-6 h-6 text-green-500" />
+                      <User className="w-6 h-6 text-emerald-500" />
                     )}
                     {submissionWindow.assessmentType} Submission
                   </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
                     <span>
                       Submitted on {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleDateString()}
                     </span>
                     {userGroup && (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <Badge variant="secondary">
                         Group: {userGroup.groupName || userGroup.groupCode}
-                      </span>
+                      </Badge>
                     )}
                     {!userGroup && (
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <Badge variant="success">
                         Solo Submission
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                  <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
                     <CheckCircle className="w-5 h-5" />
                     <span className="font-medium">Submitted</span>
                   </div>
@@ -643,21 +643,21 @@ export function SubmissionPage() {
               <h4 className="text-lg font-semibold mb-4 text-gray-800">Submitted Work</h4>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* GitHub Repository */}
-                <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                <div className="bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-colors border border-slate-100">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-gray-800 rounded-lg">
+                    <div className="p-2 bg-slate-800 rounded-lg">
                       <Github className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-800">GitHub Repository</h5>
-                      <p className="text-xs text-gray-500">Source code</p>
+                      <h5 className="font-medium text-slate-900">GitHub Repository</h5>
+                      <p className="text-xs text-slate-500">Source code</p>
                     </div>
                   </div>
                   <a
                     href={currentSubmission.githubUrl || currentSubmission.githubLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                   >
                     View Repository
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -681,7 +681,7 @@ export function SubmissionPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => openPDFModal(
-                          currentSubmission.reportUrl || currentSubmission.reportFile?.url, 
+                          currentSubmission.reportUrl || currentSubmission.reportFile?.url,
                           'Project Report'
                         )}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -690,7 +690,7 @@ export function SubmissionPage() {
                       </button>
                       <button
                         onClick={() => downloadFile(
-                          currentSubmission.reportUrl || currentSubmission.reportFile?.url, 
+                          currentSubmission.reportUrl || currentSubmission.reportFile?.url,
                           currentSubmission.reportFile?.name || 'project-report.pdf'
                         )}
                         className="text-green-600 hover:text-green-800 text-sm font-medium"
@@ -716,7 +716,7 @@ export function SubmissionPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => openPDFModal(
-                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url, 
+                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url,
                           'Presentation'
                         )}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -725,7 +725,7 @@ export function SubmissionPage() {
                       </button>
                       <button
                         onClick={() => downloadFile(
-                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url, 
+                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url,
                           currentSubmission.presentationFile?.name || 'presentation.pdf'
                         )}
                         className="text-green-600 hover:text-green-800 text-sm font-medium"
@@ -737,21 +737,24 @@ export function SubmissionPage() {
                 )}
               </div>
 
-              {/* Additional Info */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">Submission Details</h5>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>Submitted by:</strong> {currentSubmission.submittedBy?.name || user?.name}</p>
-                  <p><strong>Submission time:</strong> {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleString()}</p>
-                  {userGroup && !isLeader && (
-                    <p className="text-blue-600 font-medium">
-                      ℹ️ This submission was made by your group leader and is visible to all group members.
-                    </p>
-                  )}
-                </div>
+            </div>
+
+            {/* Additional Info */}
+            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <h5 className="font-medium text-slate-900 mb-2">Submission Details</h5>
+              <div className="text-sm text-slate-600 space-y-1">
+                <p><strong>Submitted by:</strong> {currentSubmission.submittedBy?.name || user?.name}</p>
+                <p><strong>Submission time:</strong> {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleString()}</p>
+                {userGroup && !isLeader && (
+                  <p className="text-indigo-600 font-medium">
+                    ℹ️ This submission was made by your group leader and is visible to all group members.
+                  </p>
+                )}
               </div>
             </div>
-          </motion.div>
+
+          </GlassCard>
+
         </div>
       </div>
     );
@@ -771,17 +774,17 @@ export function SubmissionPage() {
           <p className="text-gray-600">
             Upload your project work for evaluation
           </p>
-          
+
           {/* Submission Type Indicator */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
             {userGroup ? (
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" />
+                <Users className="w-5 h-5 text-indigo-600" />
                 <div>
-                  <p className="text-blue-800 font-medium">
+                  <p className="text-indigo-800 font-medium">
                     Submitting as Group Leader
                   </p>
-                  <p className="text-blue-600 text-sm">
+                  <p className="text-indigo-600 text-sm">
                     Group: {(userGroup as any)?.groupName || (userGroup as any)?.groupCode} ({(userGroup as any)?.members?.length || 0} members)
                   </p>
                 </div>
@@ -789,12 +792,12 @@ export function SubmissionPage() {
             ) : (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <User className="w-5 h-5 text-blue-600" />
+                  <User className="w-5 h-5 text-indigo-600" />
                   <div>
-                    <p className="text-blue-800 font-medium">
+                    <p className="text-indigo-800 font-medium">
                       Submitting as Individual Student
                     </p>
-                    <p className="text-blue-600 text-sm">
+                    <p className="text-indigo-600 text-sm">
                       Solo submission for {eligibleProjectType}
                     </p>
                   </div>
@@ -830,9 +833,8 @@ export function SubmissionPage() {
                   setErrors({ ...errors, githubLink: validation.error || '' });
                 }}
                 placeholder="https://github.com/username/repository"
-                className={`w-full px-4 py-3 border rounded-lg ${
-                  errors.githubLink ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg ${errors.githubLink ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.githubLink && (
                 <p className="text-red-500 text-sm mt-1">{errors.githubLink}</p>

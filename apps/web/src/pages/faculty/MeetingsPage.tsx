@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye, AlertCircle, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, GlowButton } from '../../components/ui';
+import { GlassCard, Button } from '../../components/ui';
+import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
@@ -111,8 +112,8 @@ export function FacultyMeetingsPage() {
     try {
       const response = await api.get('/projects/faculty');
       // Check if any project has been assigned to students
-      const assignedProjects = (response.data && Array.isArray(response.data)) 
-        ? response.data.filter((p: any) => p.status === 'assigned') 
+      const assignedProjects = (response.data && Array.isArray(response.data))
+        ? response.data.filter((p: any) => p.status === 'assigned')
         : [];
       setHasAssignments(assignedProjects.length > 0);
     } catch (error) {
@@ -177,11 +178,11 @@ export function FacultyMeetingsPage() {
       // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
       const meetingDateObj = new Date(scheduleData.meetingDate);
       const meetingDateUTC = meetingDateObj.toISOString();
-      
+
       console.log('Faculty meeting scheduling - Local time:', scheduleData.meetingDate);
       console.log('Faculty meeting scheduling - Parsed as Date:', meetingDateObj.toString());
       console.log('Faculty meeting scheduling - Converted to UTC:', meetingDateUTC);
-      
+
       const response = await api.post('/meetings', {
         projectId: scheduleData.projectId,
         meetingDate: meetingDateUTC,
@@ -211,8 +212,8 @@ export function FacultyMeetingsPage() {
 
   // Helper functions to filter meetings and logs
   const getUpcomingMeetings = () => {
-    return meetings.filter(meeting => 
-      meeting.status === 'scheduled' || 
+    return meetings.filter(meeting =>
+      meeting.status === 'scheduled' ||
       (meeting.status === 'completed' && !meeting.attendees?.some(a => a.present))
     );
   };
@@ -222,7 +223,7 @@ export function FacultyMeetingsPage() {
   };
 
   const getPendingLogs = () => {
-    return meetingLogs.filter(log => 
+    return meetingLogs.filter(log =>
       log.status === 'completed' || log.status === 'pending'
     );
   };
@@ -348,7 +349,7 @@ export function FacultyMeetingsPage() {
   if (hasAssignments === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -373,14 +374,13 @@ export function FacultyMeetingsPage() {
               Schedule meetings and review meeting logs
             </p>
           </div>
-          <GlowButton
+          <Button
             onClick={() => setShowScheduleModal(true)}
-            variant="primary"
-            glow
+            variant="default"
           >
             <Plus className="w-4 h-4 mr-2" />
             Schedule Meeting
-          </GlowButton>
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -389,8 +389,8 @@ export function FacultyMeetingsPage() {
             <button
               onClick={() => setActiveTab('meetings')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'meetings'
-                ? 'bg-primary text-white'
-                : 'bg-transparent text-textSecondary hover:bg-white/5'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-transparent text-slate-500 hover:bg-slate-50'
                 }`}
             >
               Schedule Meetings ({meetings.length})
@@ -398,8 +398,8 @@ export function FacultyMeetingsPage() {
             <button
               onClick={() => setActiveTab('logs')}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'logs'
-                ? 'bg-primary text-white'
-                : 'bg-transparent text-textSecondary hover:bg-white/5'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-transparent text-slate-500 hover:bg-slate-50'
                 }`}
             >
               Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'pending').length : 0} pending)
@@ -414,8 +414,8 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setMeetingsSubTab('upcoming')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'upcoming'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 Upcoming Meetings ({getUpcomingMeetings().length})
@@ -423,8 +423,8 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setMeetingsSubTab('past')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'past'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 Past Meetings ({getPastMeetings().length})
@@ -439,8 +439,8 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setLogsSubTab('pending')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'pending'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 Pending Logs ({getPendingLogs().length})
@@ -448,8 +448,8 @@ export function FacultyMeetingsPage() {
               <button
                 onClick={() => setLogsSubTab('approved')}
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'approved'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-transparent text-textSecondary hover:bg-white/5'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 Approved Logs ({getApprovedLogs().length})
@@ -462,33 +462,32 @@ export function FacultyMeetingsPage() {
         {activeTab === 'meetings' ? (
           loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
             </div>
           ) : (() => {
             const displayMeetings = meetingsSubTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
             return displayMeetings.length === 0 ? (
-              <GlassCard className="p-12 text-center">
+              <GlassCard className="p-12 text-center bg-white shadow-xl border border-slate-200">
                 <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-indigo-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-text mb-2">
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
                     No {meetingsSubTab === 'upcoming' ? 'Upcoming' : 'Past'} Meetings
                   </h3>
-                  <p className="text-textSecondary mb-6">
-                    {meetingsSubTab === 'upcoming' 
+                  <p className="text-slate-500 mb-6">
+                    {meetingsSubTab === 'upcoming'
                       ? "Schedule a meeting with your project groups"
                       : "Past meetings will appear here after logs are approved"
                     }
                   </p>
                   {meetingsSubTab === 'upcoming' && (
-                    <GlowButton
+                    <Button
                       onClick={() => setShowScheduleModal(true)}
-                      variant="primary"
-                      glow
+                      variant="default"
                     >
                       Schedule Meeting
-                    </GlowButton>
+                    </Button>
                   )}
                 </div>
               </GlassCard>
@@ -500,31 +499,28 @@ export function FacultyMeetingsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <GlassCard className="p-6 hover:bg-white/10 transition-all">
+                    <GlassCard className="p-6 hover:bg-slate-50 transition-all bg-white shadow-xl border border-slate-200">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
-                            <Calendar className="w-5 h-5 text-primary" />
-                            <h3 className="text-lg font-semibold text-text">
+                            <Calendar className="w-5 h-5 text-indigo-600" />
+                            <h3 className="text-lg font-semibold text-slate-900">
                               {meeting.groupId
                                 ? `Group ${meeting.groupId.groupCode}`
                                 : meeting.studentId?.name}
                             </h3>
-                            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${meeting.mode === 'online'
-                              ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30'
-                              : 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30'
-                              }`}>
+                            <Badge variant={meeting.mode === 'online' ? 'info' : 'secondary'}>
                               {meeting.mode === 'online' ? 'Online' : 'In-Person'}
-                            </span>
+                            </Badge>
                           </div>
 
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-textSecondary">
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
                               <Clock className="w-4 h-4" />
                               <span>{new Date(meeting.meetingDate).toLocaleString()}</span>
                             </div>
                             {meeting.location && meeting.mode === 'in-person' && (
-                              <div className="flex items-center gap-2 text-sm text-textSecondary">
+                              <div className="flex items-center gap-2 text-sm text-slate-500">
                                 <MapPin className="w-4 h-4" />
                                 <span>{meeting.location}</span>
                               </div>
@@ -534,50 +530,50 @@ export function FacultyMeetingsPage() {
                                 href={meeting.meetUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-sm text-primary hover:underline"
+                                className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                               >
                                 <Video className="w-4 h-4" />
                                 Join Meeting
                               </a>
                             )}
                             {meeting.status === 'completed' && (
-                              <div className="flex items-center gap-2 text-sm text-orange-600">
+                              <div className="flex items-center gap-2 text-sm text-amber-600">
                                 <Clock className="w-4 h-4" />
                                 Awaiting meeting's log for review
                               </div>
                             )}
                             {meeting.status === 'approved' && (
-                              <div className="flex items-center gap-2 text-sm text-green-600">
+                              <div className="flex items-center gap-2 text-sm text-emerald-600">
                                 <CheckCircle className="w-4 h-4" />
                                 Meeting Approved
                               </div>
                             )}
                             {meeting.groupId && (
-                              <div className="text-sm text-textSecondary">
+                              <div className="text-sm text-slate-500">
                                 Members: {meeting.attendees ? meeting.attendees.length : meeting.groupId.members.length} students
                               </div>
                             )}
                             {meeting.attendees && meeting.attendees.length > 0 && (
-                              <div className="text-sm text-textSecondary">
+                              <div className="text-sm text-slate-500">
                                 Participants: {meeting.attendees.map(a => a.studentId.name).join(', ')}
                               </div>
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Meeting Actions */}
                         <div className="flex flex-col gap-2">
                           {meeting.status === 'scheduled' && (
                             <button
                               onClick={() => handleCompleteMeeting(meeting._id)}
-                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                             >
                               <CheckCircle className="w-4 h-4" />
                               End Meeting
                             </button>
                           )}
                           {meeting.status === 'completed' && (
-                            <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <span className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium flex items-center gap-2">
                               <CheckCircle className="w-4 h-4" />
                               Meeting Ended
                             </span>
@@ -603,7 +599,7 @@ export function FacultyMeetingsPage() {
                     No {logsSubTab === 'pending' ? 'Pending' : 'Approved'} Meeting Logs
                   </h3>
                   <p className="text-textSecondary">
-                    {logsSubTab === 'pending' 
+                    {logsSubTab === 'pending'
                       ? "Meeting logs will appear here after students submit them"
                       : "Approved meeting logs will appear here"
                     }
@@ -642,11 +638,11 @@ export function FacultyMeetingsPage() {
                             <div>
                               <span className="text-sm font-medium text-text">Attendees: </span>
                               <span className="text-sm text-textSecondary">
-                                {log.attendees && log.attendees.length > 0 
+                                {log.attendees && log.attendees.length > 0
                                   ? log.attendees
-                                      .filter((attendee: any) => attendee.present)
-                                      .map((attendee: any) => attendee.studentId?.name || 'Unknown')
-                                      .join(', ') || 'No attendees marked present'
+                                    .filter((attendee: any) => attendee.present)
+                                    .map((attendee: any) => attendee.studentId?.name || 'Unknown')
+                                    .join(', ') || 'No attendees marked present'
                                   : 'No attendees recorded'
                                 }
                               </span>
@@ -911,23 +907,23 @@ export function FacultyMeetingsPage() {
                   >
                     Close
                   </button>
-                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') && 
-                   (selectedLog.minutesOfMeeting || selectedLog.mom) && (
-                    <>
-                      <button
-                        onClick={() => handleApproveLog(selectedLog._id, false)}
-                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        onClick={() => handleApproveLog(selectedLog._id, true)}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
-                      >
-                        Approve
-                      </button>
-                    </>
-                  )}
+                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') &&
+                    (selectedLog.minutesOfMeeting || selectedLog.mom) && (
+                      <>
+                        <button
+                          onClick={() => handleApproveLog(selectedLog._id, false)}
+                          className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => handleApproveLog(selectedLog._id, true)}
+                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
+                        >
+                          Approve
+                        </button>
+                      </>
+                    )}
                 </div>
               </div>
             </motion.div>

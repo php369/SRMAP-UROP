@@ -18,23 +18,18 @@ export const useThemeStore = create<ThemeStore>()(
       theme: THEMES.LIGHT,
 
       toggleTheme: () => {
+        // Theme toggling is disabled in the modern design
         const { mode } = get();
-        const newMode = mode === 'light' ? 'dark' : 'light';
-        const newTheme = newMode === 'light' ? THEMES.LIGHT : THEMES.DARK;
-
-        set({ mode: newMode, theme: newTheme });
-
-        // Update CSS custom properties
-        updateCSSVariables(newTheme);
+        if (mode !== 'light') {
+          set({ mode: 'light', theme: THEMES.LIGHT });
+          updateCSSVariables(THEMES.LIGHT);
+        }
       },
 
       setTheme: (mode: ThemeMode) => {
-        const newTheme = mode === 'light' ? THEMES.LIGHT : THEMES.DARK;
-
-        set({ mode, theme: newTheme });
-
-        // Update CSS custom properties
-        updateCSSVariables(newTheme);
+        // Force light mode regardless of input
+        set({ mode: 'light', theme: THEMES.LIGHT });
+        updateCSSVariables(THEMES.LIGHT);
       },
     }),
     {
@@ -59,15 +54,11 @@ function updateCSSVariables(theme: typeof THEMES.LIGHT | typeof THEMES.DARK) {
     root.style.setProperty(`--color-${key}`, value);
   });
 
-  // Update data-theme attribute for Tailwind dark mode
-  document.documentElement.setAttribute('data-theme', theme.mode);
+  // Update data-theme attribute for Tailwind (always light)
+  document.documentElement.setAttribute('data-theme', 'light');
 
-  // Update class for Tailwind dark mode
-  if (theme.mode === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
+  // Remove dark class always
+  document.documentElement.classList.remove('dark');
 }
 
 // Initialize theme on app start

@@ -8,25 +8,25 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
 }
 
-export function Button({ 
-  children, 
-  variant = 'default', 
-  size = 'md', 
-  className, 
+export function Button({
+  children,
+  variant = 'default',
+  size = 'md',
+  className,
   disabled,
-  ...props 
+  ...props
 }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
+
   const variantClasses = {
-    default: 'bg-surface text-textPrimary border border-border hover:bg-surface/80',
-    primary: 'bg-accent text-white hover:bg-accent/90 focus:ring-accent',
-    secondary: 'bg-textSecondary text-white hover:bg-textSecondary/90',
-    outline: 'border border-border text-textPrimary hover:bg-surface',
-    ghost: 'text-textPrimary hover:bg-surface/50',
-    success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
-    warning: 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500',
-    error: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    default: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm',
+    primary: 'bg-primary text-primary-foreground hover:bg-indigo-700 shadow-sm shadow-indigo-200',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-slate-600 shadow-sm',
+    outline: 'border border-border text-slate-700 hover:bg-slate-50',
+    ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+    success: 'bg-success text-white hover:bg-emerald-700 shadow-sm',
+    warning: 'bg-warning text-white hover:bg-amber-600 shadow-sm',
+    error: 'bg-error text-white hover:bg-red-600 shadow-sm',
   };
 
   const sizeClasses = {
@@ -36,7 +36,7 @@ export function Button({
   };
 
   return (
-    <button 
+    <button
       className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
       disabled={disabled}
       {...props}

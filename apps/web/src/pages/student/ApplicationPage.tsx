@@ -7,6 +7,8 @@ import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
+import { GlassCard } from '../../components/ui/GlassCard';
+import { Badge } from '../../components/ui/Badge';
 
 interface Project {
   _id: string;
@@ -74,7 +76,7 @@ export function ApplicationPage() {
           setInitializing(false);
         }
       };
-      
+
       initializeData();
     }
   }, [eligibleProjectType]);
@@ -119,7 +121,7 @@ export function ApplicationPage() {
       };
 
       const projectType = roleToProjectType[user.role];
-      
+
       if (projectType) {
         setEligibleProjectType(projectType);
         console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
@@ -144,15 +146,15 @@ export function ApplicationPage() {
         // Ensure members are properly set - the API should populate this
         const members = group.members || [];
         setGroupMembers(members);
-        
+
         // Check if current user is the group leader
         const isLeader = group.leaderId?._id === user?.id || group.leaderId === user?.id;
         setIsGroupLeader(isLeader);
-        
-        console.log('Group fetched:', { 
-          groupCode: group.groupCode, 
+
+        console.log('Group fetched:', {
+          groupCode: group.groupCode,
           memberCount: members.length,
-          isLeader 
+          isLeader
         });
 
         // Fetch member details if in a group
@@ -171,32 +173,32 @@ export function ApplicationPage() {
       console.log('Fetching member details for group:', groupId);
       const response = await api.get(`/groups/${groupId}/member-details`);
       console.log('Member details fetch response:', response);
-      
+
       if (response.success && response.data) {
         const details = response.data as any[];
         setMemberDetails(details);
-        
+
         // Check if current user has submitted details - try multiple ID comparison methods
         const currentUserId = user?.id;
         console.log('Current user ID:', currentUserId);
-        console.log('Details user IDs:', details.map(d => ({ 
-          userId: d.userId, 
+        console.log('Details user IDs:', details.map(d => ({
+          userId: d.userId,
           userIdId: d.userId?._id,
           userIdString: d.userId?.toString?.(),
-          department: d.department 
+          department: d.department
         })));
-        
+
         const userDetails = details.find(d => {
           const detailUserId = d.userId?._id || d.userId;
           const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
           const currentUserIdString = typeof currentUserId === 'string' ? currentUserId : (currentUserId as any)?.toString?.();
-          
+
           return detailUserIdString === currentUserIdString;
         });
-        
+
         setHasSubmittedDetails(!!userDetails);
-        
-        console.log('Member details fetched:', { 
+
+        console.log('Member details fetched:', {
           detailsCount: details.length,
           hasSubmittedDetails: !!userDetails,
           userDetails: userDetails,
@@ -222,16 +224,16 @@ export function ApplicationPage() {
 
     const wasLoading = loading;
     if (!wasLoading) setLoading(true);
-    
+
     try {
-      console.log('Submitting member details:', { 
-        groupId, 
-        department, 
-        specialization, 
+      console.log('Submitting member details:', {
+        groupId,
+        department,
+        specialization,
         isLeaderSubmission,
-        userId: user?.id 
+        userId: user?.id
       });
-      
+
       const response = await api.post(`/groups/${groupId}/member-details`, {
         department: department.trim(),
         specialization: specialization?.trim() || ''
@@ -323,17 +325,17 @@ export function ApplicationPage() {
       console.log('🔍 Fetching existing applications...');
       const response = await api.get('/applications/my-application');
       console.log('📋 Application response:', response);
-      
+
       if (response.success && response.data) {
         const apps = Array.isArray(response.data) ? response.data : [response.data];
         console.log('📝 Raw applications:', apps);
-        
+
         // Show all applications (pending, approved, rejected) so students can see all statuses
         const allApps = apps.filter((app: any) => ['pending', 'approved', 'rejected'].includes(app.status));
         console.log('✅ Filtered applications:', allApps);
-        
+
         setExistingApplications(allApps);
-        
+
         if (allApps.length > 0) {
           console.log('🎯 Found existing applications, showing application status view');
         }
@@ -458,10 +460,10 @@ export function ApplicationPage() {
         setGroupMembers(createdGroup.members || [user]);
         setIsGroupLeader(true);
         toast.success('Group created successfully!');
-        
+
         // Refetch the group to ensure we have the latest data
         await fetchExistingGroup();
-        
+
         // Don't automatically redirect - let leader see the code first
         // They can manually click "Continue to Application"
       } else {
@@ -494,7 +496,7 @@ export function ApplicationPage() {
         setHasSubmittedDetails(false);
         setApplicationType(null);
         setSelectedProjects([]);
-        
+
         toast.success('Group deleted successfully! All members have been removed.');
         setStep('choice');
       } else {
@@ -663,10 +665,10 @@ export function ApplicationPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Your Applications</h1>
-                <p className="text-gray-600">
-                  {canApply 
-                    ? 'Track the status of your project applications' 
+                <h1 className="text-3xl font-bold mb-2 text-slate-900">Your Applications</h1>
+                <p className="text-slate-500">
+                  {canApply
+                    ? 'Track the status of your project applications'
                     : 'Showing approved applications (application window is closed)'}
                 </p>
               </div>
@@ -676,14 +678,14 @@ export function ApplicationPage() {
                     console.log('Manual refresh triggered');
                     fetchExistingApplication();
                   }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm shadow-sm"
                 >
                   Refresh Status
                 </button>
                 {eligibleProjectType && (
-                  <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
-                    <p className="text-sm text-gray-600">Eligible for</p>
-                    <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
+                  <div className="px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
+                    <p className="text-sm text-indigo-600 font-medium">Eligible for</p>
+                    <p className="text-lg font-bold text-indigo-700">{eligibleProjectType}</p>
                   </div>
                 )}
               </div>
@@ -699,77 +701,75 @@ export function ApplicationPage() {
                 return application.status === 'approved';
               })
               .map((application: any) => (
-              <motion.div
-                key={application._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-lg p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    {application.groupId ? (
-                      <Users className="w-6 h-6 text-blue-500 mr-2" />
-                    ) : (
-                      <User className="w-6 h-6 text-green-500 mr-2" />
-                    )}
-                    <span className="text-sm font-medium text-gray-600">
-                      {application.groupId ? 'Group' : 'Solo'}
-                    </span>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      application.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                    }`}>
-                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                  </span>
-                </div>
-
-                <h3 className="font-bold text-lg mb-2">
-                  {application.projectId?.title || 'Project Title'}
-                </h3>
-
-                {application.projectId?.brief && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                    {application.projectId.brief}
-                  </p>
-                )}
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Department:</span>
-                    <span className="font-medium">{application.department}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Submitted:</span>
-                    <span className="font-medium">
-                      {new Date(application.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {application.reviewedAt && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Reviewed:</span>
-                      <span className="font-medium">
-                        {new Date(application.reviewedAt).toLocaleDateString()}
+                <GlassCard
+                  key={application._id}
+                  className="p-6 h-full flex flex-col"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      {application.groupId ? (
+                        <Users className="w-6 h-6 text-indigo-500 mr-2" />
+                      ) : (
+                        <User className="w-6 h-6 text-emerald-500 mr-2" />
+                      )}
+                      <span className="text-sm font-medium text-slate-500">
+                        {application.groupId ? 'Group' : 'Solo'}
                       </span>
                     </div>
+                    <Badge variant={
+                      application.status === 'approved' ? 'success' :
+                        application.status === 'items' ? 'warning' : 'default'
+                    }>
+                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                    </Badge>
+                  </div>
+
+                  <h3 className="font-bold text-lg mb-2 text-slate-900">
+                    {application.projectId?.title || 'Project Title'}
+                  </h3>
+
+                  {application.projectId?.brief && (
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-3 flex-grow">
+                      {application.projectId.brief}
+                    </p>
                   )}
-                  {application.status === 'approved' && application.projectId?.facultyName && (
-                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-xs text-green-800 font-medium">Assigned Faculty:</p>
-                      <p className="text-sm text-green-900">{application.projectId.facultyName}</p>
+
+                  <div className="space-y-2 text-sm pt-4 border-t border-slate-100 mt-auto">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Department:</span>
+                      <span className="font-medium text-slate-900">{application.department}</span>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Submitted:</span>
+                      <span className="font-medium text-slate-900">
+                        {new Date(application.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {application.reviewedAt && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Reviewed:</span>
+                        <span className="font-medium text-slate-900">
+                          {new Date(application.reviewedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {application.status === 'approved' && application.projectId?.facultyName && (
+                      <div className="mt-3 p-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+                        <p className="text-xs text-emerald-800 font-medium">Assigned Faculty:</p>
+                        <p className="text-sm text-emerald-900">{application.projectId.facultyName}</p>
+                      </div>
+                    )}
+                  </div>
+                </GlassCard>
+              ))}
           </div>
 
-          <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+          <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex items-start">
-              <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1" />
+              <CheckCircle className="w-6 h-6 text-indigo-500 mr-3 mt-1" />
               <div>
-                <h3 className="font-bold text-blue-900 mb-2">Application Status Guide</h3>
-                <div className="space-y-1 text-sm text-blue-800">
+                <h3 className="font-bold text-slate-900 mb-2">Application Status Guide</h3>
+                <div className="space-y-1 text-sm text-slate-600">
                   <p><strong>Pending:</strong> Your application is under review</p>
                   <p><strong>Approved:</strong> Congratulations! Your application has been accepted</p>
                   <p><strong>Rejected:</strong> You can apply to other projects or reapply to this project</p>
@@ -784,7 +784,7 @@ export function ApplicationPage() {
 
   // Show loading state while initializing
   console.log('🔄 ApplicationPage: Loading state check:', { initializing, windowLoading, eligibleProjectType, existingApplicationsLength: existingApplications.length });
-  
+
   if (initializing || windowLoading || !eligibleProjectType) {
     console.log('⏳ ApplicationPage: Showing loading state');
     return (
@@ -794,9 +794,9 @@ export function ApplicationPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <Loader className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
-          <h2 className="text-2xl font-bold mb-2">Loading Application</h2>
-          <p className="text-gray-600">
+          <Loader className="w-16 h-16 text-indigo-500 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-bold mb-2 text-slate-900">Loading Application</h2>
+          <p className="text-slate-500">
             Please wait while we load your application data...
           </p>
         </motion.div>
@@ -806,13 +806,13 @@ export function ApplicationPage() {
 
   // Check if window is open - but only show closed message if no existing applications OR no approved applications
   const hasApprovedApplications = existingApplications.some((app: any) => app.status === 'approved');
-  console.log('🪟 ApplicationPage: Window check:', { 
-    eligibleProjectType, 
-    canApply, 
+  console.log('🪟 ApplicationPage: Window check:', {
+    eligibleProjectType,
+    canApply,
     existingApplicationsLength: existingApplications.length,
-    hasApprovedApplications 
+    hasApprovedApplications
   });
-  
+
   if (eligibleProjectType && !canApply && existingApplications.length === 0) {
     console.log('🚫 ApplicationPage: Window closed and no existing applications, showing closed message');
     return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
@@ -881,7 +881,7 @@ export function ApplicationPage() {
             className="bg-white rounded-xl shadow-lg p-8"
           >
             <h2 className="text-2xl font-bold mb-6">You're in a Group!</h2>
-            
+
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center mb-3">
                 <Users className="w-6 h-6 text-blue-500 mr-3" />
@@ -1048,7 +1048,7 @@ export function ApplicationPage() {
                     const rawValue = e.target.value;
                     const cleanValue = rawValue.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
                     setInputCode(cleanValue);
-                    
+
                     // If user typed a hyphen, show a helpful message
                     if (rawValue.includes('-') && rawValue !== cleanValue) {
                       console.log('Hyphen removed from typed input');
@@ -1059,13 +1059,13 @@ export function ApplicationPage() {
                     e.preventDefault();
                     const pastedText = e.clipboardData.getData('text').trim();
                     console.log('Pasted text:', pastedText);
-                    
+
                     // Remove all non-alphanumeric characters (including hyphens) and convert to uppercase
                     const cleanValue = pastedText.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
                     console.log('Cleaned value:', cleanValue);
-                    
+
                     setInputCode(cleanValue);
-                    
+
                     // Show feedback to user
                     if (pastedText.includes('-') && cleanValue.length === 6) {
                       toast.success(`Code "${pastedText}" pasted and formatted as "${cleanValue}"`);
@@ -1101,7 +1101,7 @@ export function ApplicationPage() {
             className="bg-white rounded-xl shadow-lg p-8"
           >
             <h2 className="text-2xl font-bold mb-6">Submit Your Details</h2>
-            
+
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-start">
                 <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
@@ -1128,7 +1128,7 @@ export function ApplicationPage() {
               const formData = new FormData(e.currentTarget);
               const department = formData.get('department') as string;
               const specialization = formData.get('specialization') as string;
-              
+
               if (await submitMemberDetails(department, specialization)) {
                 setStep('member-waiting');
               }
@@ -1183,7 +1183,7 @@ export function ApplicationPage() {
             className="bg-white rounded-xl shadow-lg p-8"
           >
             <h2 className="text-2xl font-bold mb-6">Waiting for Group Leader</h2>
-            
+
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start">
                 <CheckCircle className="w-6 h-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
@@ -1307,7 +1307,7 @@ export function ApplicationPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {groupCode && (
                       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center justify-between">
@@ -1337,86 +1337,86 @@ export function ApplicationPage() {
                   </>
                 )}
 
-            {/* Form Fields */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Department *</label>
-                <input
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., Computer Science"
-                  required
-                />
-              </div>
+                {/* Form Fields */}
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block mb-2 font-medium text-gray-700">Department *</label>
+                    <input
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., Computer Science"
+                      required
+                    />
+                  </div>
 
-              <div>
-                <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
-                <input
-                  type="text"
-                  value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., AI/ML, Data Science"
-                />
-              </div>
-            </div>
-
-            {/* Project Selection */}
-            <div className="mb-6">
-              <h3 className="text-xl font-bold mb-4">
-                Select Projects (up to 3) - {selectedProjects.length}/3 selected
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Choose the projects you're interested in working on. You can select up to 3 projects in order of preference.
-              </p>
-
-              {projects.length === 0 ? (
-                <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                  <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 mb-2">No projects available yet</p>
-                  <p className="text-sm text-gray-500">
-                    Projects will be posted by faculty soon. Check back later!
-                  </p>
+                  <div>
+                    <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
+                    <input
+                      type="text"
+                      value={formData.specialization}
+                      onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., AI/ML, Data Science"
+                    />
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {projects.map((project) => (
-                    <div
-                      key={project._id}
-                      onClick={() => handleProjectSelection(project._id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedProjects.includes(project._id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-bold mb-1">{project.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="text-gray-500">
-                              Faculty: {project.facultyName} ({project.facultyIdNumber})
-                            </span>
-                            <span className="text-gray-500">Dept: {project.department}</span>
+
+                {/* Project Selection */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold mb-4">
+                    Select Projects (up to 3) - {selectedProjects.length}/3 selected
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Choose the projects you're interested in working on. You can select up to 3 projects in order of preference.
+                  </p>
+
+                  {projects.length === 0 ? (
+                    <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                      <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 mb-2">No projects available yet</p>
+                      <p className="text-sm text-gray-500">
+                        Projects will be posted by faculty soon. Check back later!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {projects.map((project) => (
+                        <div
+                          key={project._id}
+                          onClick={() => handleProjectSelection(project._id)}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedProjects.includes(project._id)
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-bold mb-1">{project.title}</h4>
+                              <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
+                              <div className="flex items-center gap-4 text-sm">
+                                <span className="text-gray-500">
+                                  Faculty: {project.facultyName} ({project.facultyIdNumber})
+                                </span>
+                                <span className="text-gray-500">Dept: {project.department}</span>
+                              </div>
+                            </div>
+                            {selectedProjects.includes(project._id) && (
+                              <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                            )}
                           </div>
                         </div>
-                        {selectedProjects.includes(project._id) && (
-                          <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
 
-            {selectedProjects.length === 0 && projects.length > 0 && (
-              <p className="text-sm text-amber-600 mb-3 text-center">
-                ⚠️ Please select at least one project to continue
-              </p>
-            )}
+                {selectedProjects.length === 0 && projects.length > 0 && (
+                  <p className="text-sm text-amber-600 mb-3 text-center">
+                    ⚠️ Please select at least one project to continue
+                  </p>
+                )}
 
                 <button
                   onClick={handleProceedToVerification}
@@ -1457,14 +1457,14 @@ export function ApplicationPage() {
             className="bg-white rounded-xl shadow-lg p-8"
           >
             <h2 className="text-2xl font-bold mb-6">Verify Group Members</h2>
-            
+
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-start">
                 <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
                 <div>
                   <h3 className="font-bold text-blue-900 mb-2">Important: Verify Your Team</h3>
                   <p className="text-sm text-blue-800">
-                    Please confirm that all group members listed below are correct before submitting your application. 
+                    Please confirm that all group members listed below are correct before submitting your application.
                     Once submitted, you cannot modify the group composition.
                   </p>
                 </div>
@@ -1482,7 +1482,7 @@ export function ApplicationPage() {
 
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-4">Group Members ({groupMembers.length})</h3>
-              
+
               {groupMembers.length === 0 ? (
                 <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
@@ -1499,7 +1499,7 @@ export function ApplicationPage() {
                       return detailUserIdString === memberUserIdString;
                     });
                     const hasSubmittedDetails = !!memberDetail;
-                    
+
                     return (
                       <div
                         key={member._id || index}
@@ -1565,7 +1565,7 @@ export function ApplicationPage() {
               {groupMembers.length < 2 && (
                 <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
-                    ⚠️ Your group needs at least 2 members to submit an application. 
+                    ⚠️ Your group needs at least 2 members to submit an application.
                     Share your group code with team members to have them join.
                   </p>
                 </div>
@@ -1577,14 +1577,14 @@ export function ApplicationPage() {
                   const membersWithoutDetails = groupMembers.filter(member => {
                     const memberUserId = member._id || member.id;
                     const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-                    
+
                     return !memberDetails.some(detail => {
                       const detailUserId = detail.userId?._id || detail.userId;
                       const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
                       return detailUserIdString === memberUserIdString;
                     });
                   });
-                  
+
                   return membersWithoutDetails.length > 0 && (
                     <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                       <p className="text-sm text-amber-800">
@@ -1628,7 +1628,7 @@ export function ApplicationPage() {
                 disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => {
                   const memberUserId = member._id || member.id;
                   const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-                  
+
                   return memberDetails.some(detail => {
                     const detailUserId = detail.userId?._id || detail.userId;
                     const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
@@ -1637,20 +1637,20 @@ export function ApplicationPage() {
                 })}
                 className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 title={
-                  groupMembers.length < 2 
-                    ? 'Group needs at least 2 members' 
+                  groupMembers.length < 2
+                    ? 'Group needs at least 2 members'
                     : !groupMembers.every(member => {
-                        const memberUserId = member._id || member.id;
-                        const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-                        
-                        return memberDetails.some(detail => {
-                          const detailUserId = detail.userId?._id || detail.userId;
-                          const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                          return detailUserIdString === memberUserIdString;
-                        });
-                      })
-                    ? 'All members must submit their details'
-                    : 'Confirm and submit application'
+                      const memberUserId = member._id || member.id;
+                      const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+
+                      return memberDetails.some(detail => {
+                        const detailUserId = detail.userId?._id || detail.userId;
+                        const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                        return detailUserIdString === memberUserIdString;
+                      });
+                    })
+                      ? 'All members must submit their details'
+                      : 'Confirm and submit application'
                 }
               >
                 {loading ? <Loader className="animate-spin mx-auto" /> : 'Confirm & Submit Application'}

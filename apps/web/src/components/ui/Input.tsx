@@ -10,11 +10,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, variant = 'default', ...props }, ref) => {
-    const baseClasses = 'w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-    
+    const baseClasses = 'w-full px-4 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed';
+
     const variantClasses = {
-      default: 'bg-surface border-border text-text placeholder:text-textSecondary focus:border-primary focus:ring-primary/20',
-      glass: 'bg-white/10 backdrop-blur-md border-white/20 text-text placeholder:text-textSecondary/70 focus:border-primary focus:ring-primary/20',
+      default: 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100',
+      // Map glass to default for consistency
+      glass: 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100',
     };
 
     const errorClasses = error ? 'border-error focus:border-error focus:ring-error/20' : '';

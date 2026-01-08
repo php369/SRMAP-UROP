@@ -17,8 +17,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
           className="bg-white rounded-xl shadow-lg p-6"
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-indigo-100 rounded-lg">
+              <FileText className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Projects</p>
@@ -89,7 +89,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           className="bg-white rounded-xl shadow-lg p-6"
         >
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <FileText className="w-5 h-5 text-indigo-600" />
             Projects by Type
           </h3>
           <div className="space-y-3">
@@ -99,8 +99,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
                 <span className="text-sm font-bold text-gray-900">{item.count}</span>
               </div>
             )) || (
-              <p className="text-sm text-gray-500">No project data available</p>
-            )}
+                <p className="text-sm text-gray-500">No project data available</p>
+              )}
           </div>
         </motion.div>
 
@@ -118,18 +118,17 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <div className="space-y-3">
             {stats.breakdown?.applicationsByStatus?.map((item: any) => (
               <div key={item._id} className="flex justify-between items-center">
-                <span className={`text-sm font-medium capitalize ${
-                  item._id === 'pending' ? 'text-yellow-700' :
-                  item._id === 'approved' ? 'text-green-700' :
-                  item._id === 'rejected' ? 'text-red-700' : 'text-gray-700'
-                }`}>
+                <span className={`text-sm font-medium capitalize ${item._id === 'pending' ? 'text-yellow-700' :
+                    item._id === 'approved' ? 'text-green-700' :
+                      item._id === 'rejected' ? 'text-red-700' : 'text-gray-700'
+                  }`}>
                   {item._id || 'Unknown'}
                 </span>
                 <span className="text-sm font-bold text-gray-900">{item.count}</span>
               </div>
             )) || (
-              <p className="text-sm text-gray-500">No application data available</p>
-            )}
+                <p className="text-sm text-gray-500">No application data available</p>
+              )}
           </div>
         </motion.div>
 
@@ -151,8 +150,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
                 <span className="text-sm font-bold text-gray-900">{item.count}</span>
               </div>
             )) || (
-              <p className="text-sm text-gray-500">No submission data available</p>
-            )}
+                <p className="text-sm text-gray-500">No submission data available</p>
+              )}
           </div>
         </motion.div>
       </div>
@@ -178,7 +177,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           className="bg-white rounded-xl shadow-lg p-4"
         >
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.overview.totalApplications}</div>
+            <div className="text-2xl font-bold text-indigo-600">{stats.overview.totalApplications}</div>
             <div className="text-sm text-gray-600">Total Applications</div>
           </div>
         </motion.div>

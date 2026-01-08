@@ -161,12 +161,12 @@ export function ControlPanel() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-text">
+              <h1 className="text-3xl font-bold mb-2 text-slate-900">
                 {currentView === 'dashboard' ? 'Control Panel' :
                   currentView === 'windows' ? 'Manage Windows' :
                     'External Evaluators'}
               </h1>
-              <p className="text-textSecondary">
+              <p className="text-slate-500">
                 {currentView === 'dashboard'
                   ? 'Overview of system statistics and quick actions'
                   : currentView === 'windows'
@@ -178,7 +178,7 @@ export function ControlPanel() {
             {(currentView === 'windows' || currentView === 'external-evaluators') && (
               <button
                 onClick={() => setCurrentView('dashboard')}
-                className="px-4 py-2 bg-surface hover:bg-hover text-text border border-border rounded-lg flex items-center gap-2 transition-colors"
+                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Back to Dashboard
@@ -226,17 +226,17 @@ export function ControlPanel() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass p-6 rounded-xl"
+                className="bg-white shadow-xl p-6 rounded-xl border border-slate-200"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-text">
-                    <Calendar className="w-6 h-6 text-primary" />
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900">
+                    <Calendar className="w-6 h-6 text-indigo-600" />
                     Manage Windows
                   </h2>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={updateWindowStatuses}
-                      className="px-4 py-2 bg-surface hover:bg-hover text-text border border-border rounded-lg flex items-center gap-2 transition-colors"
+                      className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg flex items-center gap-2 transition-colors"
                       title="Update window statuses based on current time"
                     >
                       <RefreshCw className="w-5 h-5" />
@@ -244,7 +244,7 @@ export function ControlPanel() {
                     </button>
                     <button
                       onClick={() => setShowCreationModeModal(true)}
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 transition-colors"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 transition-colors"
                     >
                       <Plus className="w-5 h-5" />
                       Create Window

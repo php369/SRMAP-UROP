@@ -8,11 +8,11 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, error, ...props }, ref) => {
-    const baseClasses = 'w-full px-3 py-2 text-sm border rounded-lg bg-surface text-textPrimary placeholder-textSecondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors resize-vertical';
-    
-    const errorClasses = error 
-      ? 'border-red-500 focus:ring-red-500' 
-      : 'border-border';
+    const baseClasses = 'w-full px-4 py-2 text-sm border rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all duration-200 resize-vertical disabled:opacity-50 disabled:bg-slate-100';
+
+    const errorClasses = error
+      ? 'border-red-500 focus:ring-red-100 focus:border-red-500'
+      : 'border-slate-200';
 
     return (
       <div className="space-y-1">

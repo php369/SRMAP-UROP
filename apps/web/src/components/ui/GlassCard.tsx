@@ -11,13 +11,13 @@ interface GlassCardProps {
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
   ({ children, className, variant = 'default', hoverEffect = true, onClick }, ref) => {
-    const baseClasses = 'glass rounded-2xl transition-all duration-300';
+    const baseClasses = 'bg-white rounded-xl transition-all duration-200 border border-slate-200';
 
-    // Additional variants on top of base glass
+    // Modern solid variants suitable for clean UI
     const variantClasses = {
-      default: 'shadow-sm bg-surface',
-      elevated: 'shadow-md border border-border bg-surface',
-      subtle: 'bg-surface/50 shadow-sm border border-border/50',
+      default: 'shadow-sm',
+      elevated: 'shadow-md shadow-slate-200/50',
+      subtle: 'bg-slate-50 border-slate-200 shadow-none',
     };
 
     return (
@@ -26,7 +26,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         className={cn(
           baseClasses,
           variantClasses[variant],
-          hoverEffect && 'glass-hover hover:shadow-2xl hover:scale-[1.01]',
+          hoverEffect && 'hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-0.5',
           onClick && 'cursor-pointer',
           className
         )}

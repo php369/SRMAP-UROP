@@ -6,6 +6,7 @@ import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { FinalGradeCard } from '../../components/assessment/FinalGradeCard';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
+import { GlassCard } from '../../components/ui/GlassCard';
 
 export function AssessmentPage() {
   const { user } = useAuth();
@@ -54,7 +55,7 @@ export function AssessmentPage() {
         };
 
         const projectType = roleToProjectType[user.role];
-        
+
         if (projectType) {
           setEligibleProjectType(projectType);
           console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
@@ -86,16 +87,16 @@ export function AssessmentPage() {
           setInitializing(false);
         }
       };
-      
+
       initializeData();
     }
   }, [eligibleProjectType]);
 
   const checkAssessmentWindow = async () => {
     if (!eligibleProjectType) return;
-    
+
     try {
-      const response = await api.get('/windows/active', { 
+      const response = await api.get('/windows/active', {
         windowType: 'assessment',
         projectType: eligibleProjectType
       });
@@ -113,13 +114,13 @@ export function AssessmentPage() {
       setLoading(false);
       return;
     }
-    
+
     try {
       // Fetch student evaluations (new CLA grading system)
       const evaluationsResponse = await api.get('/student-evaluations/my').catch(() => ({ success: false, evaluations: [] }));
-      
+
       console.log('🔍 Evaluations Response:', evaluationsResponse);
-      
+
       // Fetch both regular submissions and group submissions (legacy)
       const [regularResponse, groupResponse] = await Promise.all([
         api.get('/submissions/my').catch(() => ({ success: false, data: [] })),
@@ -132,14 +133,14 @@ export function AssessmentPage() {
       if (evaluationsResponse.success && (evaluationsResponse as any).evaluations) {
         const evaluations = Array.isArray((evaluationsResponse as any).evaluations) ? (evaluationsResponse as any).evaluations : [(evaluationsResponse as any).evaluations];
         console.log('📊 Processing evaluations:', evaluations);
-        
+
         evaluations.forEach((evalData: any) => {
           if (evalData.evaluation) {
             console.log('📝 Evaluation data:', evalData.evaluation);
             console.log('🔢 Has scores:', hasAnyScores(evalData.evaluation));
             console.log('✅ Is complete:', isEvaluationComplete(evalData.evaluation));
             console.log('📢 Is published:', evalData.evaluation.isPublished);
-            
+
             // Show all evaluations, not just published ones
             allSubmissions.push({
               _id: evalData.evaluation._id,
@@ -173,8 +174,8 @@ export function AssessmentPage() {
         });
       } else if ((regularResponse as any).submissions) {
         // Handle legacy response format
-        const legacySubmissions = Array.isArray((regularResponse as any).submissions) 
-          ? (regularResponse as any).submissions 
+        const legacySubmissions = Array.isArray((regularResponse as any).submissions)
+          ? (regularResponse as any).submissions
           : [(regularResponse as any).submissions];
         legacySubmissions.forEach((submission: any) => {
           allSubmissions.push({
@@ -255,7 +256,7 @@ export function AssessmentPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -283,44 +284,43 @@ export function AssessmentPage() {
             </div>
           ) : (
             submissions.map((submission) => (
-              <motion.div
+
+              <GlassCard
                 key={submission._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden"
+                className="overflow-hidden"
               >
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b">
+                <div className="bg-slate-50 p-6 border-b border-slate-200">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900">
                         {submission.submissionType === 'evaluation' ? (
                           <Award className="w-6 h-6 text-purple-500" />
                         ) : submission.submissionType === 'group' ? (
-                          <Users className="w-6 h-6 text-blue-500" />
+                          <Users className="w-6 h-6 text-indigo-500" />
                         ) : (
-                          <FileText className="w-6 h-6 text-green-500" />
+                          <FileText className="w-6 h-6 text-emerald-500" />
                         )}
                         {submission.assessmentType} Assessment
                       </h3>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
                         <span>
-                          {submission.submissionType === 'evaluation' ? 
-                            (submission.isGradeReleased ? 'Grade released on' : 'Evaluation created on') : 
+                          {submission.submissionType === 'evaluation' ?
+                            (submission.isGradeReleased ? 'Grade released on' : 'Evaluation created on') :
                             'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
                         </span>
                         {(submission.groupId?.groupCode || submission.groupCode) && (
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
                             Group: {submission.groupId?.groupCode || submission.groupCode}
                           </span>
                         )}
                         {submission.submissionType === 'solo' && (
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs font-medium">
                             Solo Submission
                           </span>
                         )}
                         {submission.projectTitle && (
-                          <span className="text-gray-500">
+                          <span className="text-slate-500">
                             Project: {submission.projectTitle}
                           </span>
                         )}
@@ -328,17 +328,17 @@ export function AssessmentPage() {
                     </div>
                     <div className="text-right">
                       {submission.isGradeReleased || submission.gradeReleased ? (
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
                           <CheckCircle className="w-5 h-5" />
                           <span className="font-medium">Graded</span>
                         </div>
                       ) : submission.isComplete ? (
-                        <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-full">
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">Awaiting Release</span>
                         </div>
                       ) : submission.submissionType === 'evaluation' && submission.isGraded ? (
-                        <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-2 rounded-full">
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
                           <Clock className="w-5 h-5" />
                           <span className="font-medium">Partially Graded</span>
                         </div>
@@ -353,12 +353,12 @@ export function AssessmentPage() {
                         }
                         return false;
                       })() ? (
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
                           <CheckCircle className="w-5 h-5" />
                           <span className="font-medium">Graded</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-full">
+                        <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-full border border-indigo-100">
                           <AlertCircle className="w-5 h-5" />
                           <span className="font-medium">Under Review</span>
                         </div>
@@ -467,7 +467,7 @@ export function AssessmentPage() {
                         const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
                         let feedbackComment = '';
                         let feedbackTitle = '';
-                        
+
                         // Match assessment type to evaluation component
                         if (submission.assessmentType === 'CLA-1' && evaluation?.internal?.cla1?.comments) {
                           feedbackComment = evaluation.internal.cla1.comments;
@@ -486,7 +486,7 @@ export function AssessmentPage() {
                           feedbackComment = submission.facultyComments;
                           feedbackTitle = `${submission.assessmentType} Assessment Feedback`;
                         }
-                        
+
                         if (feedbackComment) {
                           return (
                             <div>
@@ -513,15 +513,14 @@ export function AssessmentPage() {
                         <Award className="w-5 h-5 text-blue-500" />
                         Assessment Progress
                       </h4>
-                      
+
                       {/* Assessment Components Grid - Hide individual scores */}
                       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* CLA-1 */}
-                        <div className={`p-4 rounded-lg border-2 ${
-                          submission.evaluation.internal?.cla1?.conduct > 0 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla1?.conduct > 0
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200'
+                          }`}>
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="font-medium text-gray-800">CLA-1</h5>
                             {submission.evaluation.internal?.cla1?.conduct > 0 ? (
@@ -542,11 +541,10 @@ export function AssessmentPage() {
                         </div>
 
                         {/* CLA-2 */}
-                        <div className={`p-4 rounded-lg border-2 ${
-                          submission.evaluation.internal?.cla2?.conduct > 0 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla2?.conduct > 0
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200'
+                          }`}>
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="font-medium text-gray-800">CLA-2</h5>
                             {submission.evaluation.internal?.cla2?.conduct > 0 ? (
@@ -567,11 +565,10 @@ export function AssessmentPage() {
                         </div>
 
                         {/* CLA-3 */}
-                        <div className={`p-4 rounded-lg border-2 ${
-                          submission.evaluation.internal?.cla3?.conduct > 0 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla3?.conduct > 0
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200'
+                          }`}>
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="font-medium text-gray-800">CLA-3</h5>
                             {submission.evaluation.internal?.cla3?.conduct > 0 ? (
@@ -592,11 +589,10 @@ export function AssessmentPage() {
                         </div>
 
                         {/* External */}
-                        <div className={`p-4 rounded-lg border-2 ${
-                          submission.evaluation.external?.reportPresentation?.conduct > 0 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.external?.reportPresentation?.conduct > 0
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200'
+                          }`}>
                           <div className="flex items-center justify-between mb-2">
                             <h5 className="font-medium text-gray-800">External</h5>
                             {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
@@ -620,13 +616,13 @@ export function AssessmentPage() {
                   )}
 
                   {/* Final Grade - Only show when released */}
-                  <FinalGradeCard 
+                  <FinalGradeCard
                     totalScore={submission.finalGrade || submission.total || 0}
                     isReleased={submission.isGradeReleased}
                     className="mt-6"
                   />
                 </div>
-              </motion.div>
+              </GlassCard>
             ))
           )}
         </div>

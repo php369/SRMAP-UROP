@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, UserCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard } from '../../components/ui';
+import { GlassCard } from '../../components/ui/GlassCard';
+import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
@@ -171,8 +173,8 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async (assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null) => {
     setLoading(true);
     try {
-      const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
-      const response = await api.get(`/student-evaluations/submissions${params}`);
+      const params = assessmentType ? `? assessmentType = ${assessmentType} ` : '';
+      const response = await api.get(`/ student - evaluations / submissions${params} `);
       if (response.success && response.data && Array.isArray(response.data)) {
         // Filter submissions by assessment type if specified
         const filteredSubmissions = assessmentType
@@ -240,7 +242,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await api.put(`/meetings/logs/${logId}/grade`, { grade });
+      const response = await api.put(`/ meetings / logs / ${logId}/grade`, { grade });
 
       if (response.success) {
         toast.success('Grade saved');
@@ -481,17 +483,16 @@ export function FacultyAssessmentPage() {
   };
 
   const getAssessmentBadge = (type: string) => {
-    const colors = {
-      'CLA-1': 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-500/30',
-      'CLA-2': 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-500/30',
-      'CLA-3': 'bg-pink-100 dark:bg-pink-500/20 text-pink-800 dark:text-pink-300 border-pink-300 dark:border-pink-500/30',
-      External: 'bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-500/30'
-    };
+    const variant =
+      type === 'CLA-1' ? 'info' :
+        type === 'CLA-2' ? 'secondary' :
+          type === 'CLA-3' ? 'warning' :
+            'default';
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border ${colors[type as keyof typeof colors]}`}>
+      <Badge variant={variant as any}>
         {type}
-      </span>
+      </Badge>
     );
   };
 
@@ -499,7 +500,7 @@ export function FacultyAssessmentPage() {
   if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -518,20 +519,20 @@ export function FacultyAssessmentPage() {
       >
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-text">Assessment & Grading</h1>
-          <p className="text-textSecondary mt-1">
+          <h1 className="text-3xl font-bold text-slate-900">Assessment & Grading</h1>
+          <p className="text-slate-500 mt-1">
             Review submissions and provide grades
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-slate-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('internal')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'internal'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -542,8 +543,8 @@ export function FacultyAssessmentPage() {
             <button
               onClick={() => setActiveTab('external')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'external'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -580,7 +581,7 @@ export function FacultyAssessmentPage() {
                 {/* Show meeting logs even without submissions */}
                 {Object.keys(meetingLogs).length > 0 && (
                   <div className="mt-6">
-                    <h2 className="text-2xl font-bold text-text mb-4">Meeting Logs by Project</h2>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Meeting Logs by Project</h2>
                     <div className="grid gap-4">
                       {Object.entries(meetingLogs)
                         .filter(([_, logs]) => logs.length > 0) // Only show projects with logs
@@ -636,16 +637,16 @@ export function FacultyAssessmentPage() {
                                     <div key={log._id} className="p-4 bg-white/5 rounded-lg">
                                       <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-3">
-                                          <span className="text-base font-semibold text-text">Meeting #{index + 1}</span>
+                                          <span className="text-base font-semibold text-slate-900">Meeting #{index + 1}</span>
                                           {log.status === 'approved' && (
-                                            <span className="px-2 py-1 bg-green-100 dark:bg-success/20 text-green-800 dark:text-success text-xs font-medium rounded-lg border border-green-300 dark:border-success/30">
+                                            <Badge variant="success">
                                               Approved
-                                            </span>
+                                            </Badge>
                                           )}
                                           {log.status === 'completed' && (
-                                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-500/30">
+                                            <Badge variant="info">
                                               Completed
-                                            </span>
+                                            </Badge>
                                           )}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-textSecondary">
@@ -687,8 +688,8 @@ export function FacultyAssessmentPage() {
                                               <span
                                                 key={idx}
                                                 className={`px-2 py-1 text-xs rounded-lg ${attendee.present
-                                                  ? 'bg-green-100 dark:bg-success/20 text-green-800 dark:text-success border border-green-300 dark:border-success/30'
-                                                  : 'bg-white/5 text-textSecondary border border-white/10'
+                                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                  : 'bg-slate-50 text-slate-500 border border-slate-200'
                                                   }`}
                                               >
                                                 {attendee.studentId?.name || 'Student'}

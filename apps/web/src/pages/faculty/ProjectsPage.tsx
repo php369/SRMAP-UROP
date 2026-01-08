@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, GlowButton } from '../../components/ui';
+import { GlassCard, Button } from '../../components/ui';
+import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { api } from '../../utils/api';
@@ -207,10 +208,15 @@ export function FacultyProjectsPage() {
     const Icon = icons[status as keyof typeof icons] || Clock;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles] || styles.draft}`}>
-        <Icon className="w-3 h-3" />
+      <Badge variant={
+        status === 'published' ? 'success' :
+          status === 'assigned' ? 'info' :
+            status === 'frozen' ? 'warning' :
+              'default'
+      }>
+        <Icon className="w-3 h-3 mr-1" />
         {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
+      </Badge>
     );
   };
 
@@ -229,19 +235,18 @@ export function FacultyProjectsPage() {
               Manage your project proposals ({projects.length}/5)
             </p>
           </div>
-          <GlowButton
+          <Button
             onClick={() => {
               resetForm();
               setShowModal(true);
             }}
             disabled={projects.length >= 5 || !canCreateProject || windowLoading}
-            variant="primary"
-            glow
+            variant="default"
             title={!canCreateProject ? 'Proposal window is not open' : projects.length >= 5 ? 'Maximum projects reached' : 'Create new project'}
           >
             <Plus className="w-4 h-4 mr-2" />
             New Project
-          </GlowButton>
+          </Button>
         </div>
 
         {/* Window Status Alert */}
@@ -276,17 +281,16 @@ export function FacultyProjectsPage() {
               <p className="text-textSecondary mb-6">
                 Create your first project proposal to get started
               </p>
-              <GlowButton
+              <Button
                 onClick={() => {
                   resetForm();
                   setShowModal(true);
                 }}
                 disabled={!canCreateProject || windowLoading}
-                variant="primary"
-                glow
+                variant="default"
               >
                 Create Project
-              </GlowButton>
+              </Button>
               {!canCreateProject && (
                 <p className="text-sm text-warning mt-2">
                   Proposal window is not open
@@ -306,11 +310,11 @@ export function FacultyProjectsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold text-text">{project.title}</h3>
+                        <h3 className="text-xl font-semibold text-slate-900">{project.title}</h3>
                         {getStatusBadge(project.status)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/30 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
+                        <Badge variant="secondary">
                           {project.type}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-textSecondary text-sm mb-3">{project.brief}</p>
                       {project.prerequisites && (
@@ -407,10 +411,10 @@ export function FacultyProjectsPage() {
                             disabled={isDisabled}
                             title={!isAvailable ? `${type} proposal window is not open` : ''}
                             className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.projectType === type
-                                ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
-                                : isAvailable
-                                  ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                                  : 'bg-gray-50 border-gray-200 text-gray-400'
+                              ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
+                              : isAvailable
+                                ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-50 border-gray-200 text-gray-400'
                               }`}
                           >
                             {type}
@@ -486,16 +490,14 @@ export function FacultyProjectsPage() {
                     >
                       Cancel
                     </button>
-                    <GlowButton
+                    <Button
                       type="submit"
-                      loading={loading}
                       disabled={loading}
-                      variant="primary"
-                      glow
+                      variant="default"
                       className="flex-1"
                     >
                       {editingProject ? 'Update Project' : 'Create Project'}
-                    </GlowButton>
+                    </Button>
                   </div>
                 </form>
               </div>

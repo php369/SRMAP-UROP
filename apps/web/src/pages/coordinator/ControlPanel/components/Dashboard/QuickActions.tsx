@@ -18,13 +18,13 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
       <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
       <div className="grid md:grid-cols-3 gap-6">
         {/* Manage Windows Card */}
-        <div 
+        <div
           onClick={onManageWindows}
-          className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all group"
+          className="p-6 border-2 border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all group"
         >
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-              <Calendar className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+              <Calendar className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Manage Windows</h3>
@@ -36,14 +36,14 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <p>• Edit existing window schedules</p>
             <p>• View window status and timeline</p>
           </div>
-          <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
+          <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
             Click to manage windows
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
         </div>
 
         {/* External Evaluators Card */}
-        <div 
+        <div
           onClick={onManageExternalEvaluators}
           className="p-6 border-2 border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all group"
         >
