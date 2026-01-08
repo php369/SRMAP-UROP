@@ -32,10 +32,10 @@
     --color-error: #d4704a;
     --color-info: var(--gurkha);
 
-    /* Glass Effects - Light */
-    --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --glass-blur: 16px;
+    /* Solid Effects - Light */
+    --glass-bg: #ffffff;
+    --glass-border: #e6e5d4;
+    --glass-blur: 0px;
   }
 
   /* Dark Mode Overrides */
@@ -61,9 +61,9 @@
     --color-error: #e58b6a;
     --color-info: #b0ab8c;
 
-    /* Glass Effects - Dark */
-    --glass-bg: rgba(0, 0, 0, 0.3);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    /* Solid Effects - Dark */
+    --glass-bg: #2b2a22;
+    --glass-border: #3e3c2f;
   }
 
   html {
@@ -78,25 +78,24 @@
 @layer components {
 
   /* Modern Glass Class */
+  /* Modern Card Class (formerly Glass) */
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
   }
 
   .glass-hover {
-    @apply transition-all duration-500 ease-out;
+    @apply transition-all duration-300;
   }
 
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.35);
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .dark .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--color-primary);
   }
 
   /* Card Variants */

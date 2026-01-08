@@ -26,8 +26,8 @@ const THEME_COLORS = {
     hover: 'rgba(200, 150, 67, 0.1)',
     active: 'rgba(200, 150, 67, 0.2)',
     focus: '#c89643',
-    glass: 'rgba(255, 255, 255, 0.6)',
-    glassBorder: 'rgba(255, 255, 255, 0.4)',
+    glass: '#ffffff',
+    glassBorder: '#e6e5d4',
   },
   dark: {
     bg: '#1f1e17',
@@ -44,8 +44,8 @@ const THEME_COLORS = {
     hover: 'rgba(212, 183, 108, 0.1)',
     active: 'rgba(212, 183, 108, 0.2)',
     focus: '#d4b76c',
-    glass: 'rgba(0, 0, 0, 0.3)',
-    glassBorder: 'rgba(255, 255, 255, 0.1)',
+    glass: '#2b2a22',
+    glassBorder: '#3e3c2f',
   },
 };
 

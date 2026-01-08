@@ -15,9 +15,9 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
 
     // Additional variants on top of base glass
     const variantClasses = {
-      default: 'shadow-lg',
-      elevated: 'shadow-xl border-opacity-40',
-      subtle: 'bg-opacity-10 shadow-md',
+      default: 'shadow-sm bg-surface',
+      elevated: 'shadow-md border border-border bg-surface',
+      subtle: 'bg-surface/50 shadow-sm border border-border/50',
     };
 
     return (

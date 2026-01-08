@@ -40,7 +40,7 @@ export function TopNavigation() {
       <div className="px-4 sm:px-6 lg:px-8 py-4">
         <GlassCard
           variant="elevated"
-          className="px-6 py-4 transition-all duration-300 shadow-lg bg-surface/80 backdrop-blur-xl border-border/50 mx-4 mt-2 rounded-2xl"
+          className="px-6 py-4 transition-all duration-300 shadow-lg bg-surface border-border mx-4 mt-2 rounded-2xl"
         >
           <div className="flex justify-between items-center">
             {/* Left side - page title and breadcrumbs */}
@@ -211,7 +211,7 @@ export function TopNavigation() {
                 {/* User dropdown menu - render on top of backdrop */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-4 w-56 z-50">
-                    <div className="bg-surface/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl py-2">
+                    <div className="bg-surface border border-border rounded-2xl shadow-2xl py-2">
                       <div className="px-4 py-3 border-b border-border">
                         <p className="text-sm font-medium text-text">{user?.name}</p>
                         <p className="text-xs text-textSecondary truncate">{user?.email}</p>

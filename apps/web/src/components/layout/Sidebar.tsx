@@ -203,7 +203,7 @@ export function Sidebar() {
   const location = useLocation();
   const { isCollapsed, toggleCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const navigationItems = ROLE_NAVIGATION[user.role] || [];
+  const navigationItems = user ? ROLE_NAVIGATION[user.role] || [] : [];
 
   // Handle mobile sidebar open/close
   const openMobileSidebar = useCallback(() => {
@@ -474,7 +474,7 @@ export function Sidebar() {
         <button
           onClick={openMobileSidebar}
           className={cn(
-            'fixed top-4 left-4 z-50 p-3 bg-surface/80 backdrop-blur-xl border border-border/50 rounded-2xl text-text hover:bg-surface transition-all duration-300 shadow-lg group',
+            'fixed top-4 left-4 z-50 p-3 bg-surface border border-border rounded-2xl text-text hover:bg-surface transition-all duration-300 shadow-lg group',
             isMobileOpen && 'opacity-0 pointer-events-none scale-90'
           )}
           aria-label="Open navigation menu"
@@ -508,7 +508,7 @@ export function Sidebar() {
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            className="absolute inset-0 bg-black/60 transition-opacity duration-300"
             onClick={closeMobileSidebar}
           />
 
@@ -520,7 +520,7 @@ export function Sidebar() {
               isMobileOpen ? 'translate-x-0' : '-translate-x-[110%]'
             )}
           >
-            <div className="h-full bg-surface/90 backdrop-blur-2xl border border-border/50 shadow-2xl rounded-3xl overflow-hidden flex flex-col">
+            <div className="h-full bg-surface border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col">
               {/* Close button area */}
               <div className="absolute top-4 right-4 z-20">
                 <button
