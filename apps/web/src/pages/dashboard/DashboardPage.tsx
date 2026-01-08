@@ -1,4 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
+import { Loader } from '../../components/ui/Loader';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { isStudentRole } from '../../utils/constants';
@@ -121,7 +122,7 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader size="lg" text="Loading Dashboard..." />
       </div>
     );
   }
