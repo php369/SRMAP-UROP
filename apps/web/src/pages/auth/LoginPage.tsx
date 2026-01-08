@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -8,9 +8,11 @@ import {
   ROUTES,
 } from '../../utils/constants';
 import { AuthVisual } from '../../components/auth/AuthVisual';
+import { ChevronLeftIcon } from '../../components/ui/Icons';
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
@@ -77,6 +79,15 @@ export function LoginPage() {
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
+
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-6 left-6 z-50 w-10 h-10 flex items-center justify-center bg-[#F2F3F5] rounded-full shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] hover:shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff] transition-all duration-300 text-slate-600 hover:text-slate-800"
+        aria-label="Go back"
+      >
+        <ChevronLeftIcon className="w-6 h-6" />
+      </button>
 
       {/* Left Column - Login Form */}
       <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24 bg-[#F2F3F5] relative z-10 transition-all duration-500 ease-in-out">
