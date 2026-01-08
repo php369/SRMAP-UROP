@@ -4,12 +4,22 @@ export default {
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}'
   ],
+  darkMode: 'class', // Enable class-based dark mode
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-primary)',
-        secondary: 'var(--color-secondary)',
-        accent: 'var(--color-accent)',
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          foreground: 'var(--color-primary-foreground)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',
+          foreground: 'var(--color-secondary-foreground)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          foreground: 'var(--color-accent-foreground)',
+        },
         background: 'var(--color-background)',
         surface: 'var(--color-surface)',
         text: 'var(--color-text)',
@@ -19,6 +29,9 @@ export default {
         warning: 'var(--color-warning)',
         error: 'var(--color-error)',
         info: 'var(--color-info)',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
-import { GlassCard } from './GlassCard';
+import { cn } from '../../utils/cn';
 
 interface ModalProps {
   isOpen: boolean;
@@ -52,42 +52,41 @@ export function Modal({ isOpen, onClose, children, title, size = 'md', className
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
-      <GlassCard 
-        variant="elevated"
+      <div
         className={cn(
-          'relative w-full max-h-[90vh] overflow-hidden',
+          'relative w-full glass flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200',
           sizeClasses[size],
           className
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center justify-between p-6 border-b border-border/10 shrink-0">
             <h2 className="text-xl font-semibold text-text">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface/20 transition-colors text-textSecondary hover:text-text"
             >
-              <svg className="w-5 h-5 text-textSecondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         )}
-        
+
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+        <div className="overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {children}
         </div>
-      </GlassCard>
+      </div>
     </div>,
     document.body
   );
