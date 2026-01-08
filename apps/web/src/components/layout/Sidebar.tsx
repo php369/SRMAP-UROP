@@ -484,8 +484,8 @@ export function Sidebar() {
         <button
           onClick={openMobileSidebar}
           className={cn(
-            'fixed top-4 left-4 z-50 p-3 bg-surface/90 backdrop-blur-md border border-border rounded-xl text-text hover:bg-surface transition-all duration-200 shadow-lg hover:shadow-xl',
-            isMobileOpen && 'opacity-0 pointer-events-none'
+            'fixed top-4 left-4 z-50 p-2.5 bg-surface/90 backdrop-blur-md border border-border rounded-xl text-text hover:bg-surface/100 transition-all duration-200 shadow-md',
+            isMobileOpen && 'opacity-0 pointer-events-none scale-90'
           )}
           aria-label="Open navigation menu"
         >
@@ -515,7 +515,7 @@ export function Sidebar() {
             {/* Backdrop */}
             <div
               className={cn(
-                'fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
+                'fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
                 isAnimating ? 'opacity-0' : 'opacity-100'
               )}
               onClick={closeMobileSidebar}
@@ -531,7 +531,7 @@ export function Sidebar() {
                   : 'translate-x-0'
               )}
             >
-              <GlassCard variant="elevated" className="h-full relative">
+              <div className="h-full relative bg-surface border-r border-border shadow-2xl flex flex-col">
                 {/* Close button */}
                 <button
                   onClick={closeMobileSidebar}
@@ -554,7 +554,7 @@ export function Sidebar() {
                 </button>
 
                 {sidebarContent}
-              </GlassCard>
+              </div>
             </div>
           </div>
         )}

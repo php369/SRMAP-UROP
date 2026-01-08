@@ -52,14 +52,14 @@ export function ControlPanel() {
     updateWindowStatuses,
     prepareEditWindow
   } = useWindowManagement();
-  
+
   const { stats, statsLoading, fetchStats } = useStats();
-  
-  const { 
-    releasedGrades, 
-    checkReleasedGrades, 
-    releaseGrades, 
-    isGradeReleaseWindowActive 
+
+  const {
+    releasedGrades,
+    checkReleasedGrades,
+    releaseGrades,
+    isGradeReleaseWindowActive
   } = useGradeRelease();
 
   const {
@@ -78,18 +78,18 @@ export function ControlPanel() {
         checkReleasedGrades()
       ]);
     };
-    
+
     loadData();
   }, [fetchWindows, fetchStats, checkReleasedGrades]);
 
   // Handlers
   const handleCreateWindow = async () => {
     if (!validateForm()) return;
-    
+
     setFormLoading(true);
     const success = await createWindow(windowForm, editingWindow);
     setFormLoading(false);
-    
+
     if (success) {
       setShowWindowForm(false);
       setEditingWindow(null);
@@ -101,7 +101,7 @@ export function ControlPanel() {
     setFormLoading(true);
     const success = await createBulkWindows(windowForm, selectedProjectType);
     setFormLoading(false);
-    
+
     if (success) {
       setShowBulkCreationModal(false);
       resetForm();
@@ -161,24 +161,24 @@ export function ControlPanel() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">
-                {currentView === 'dashboard' ? 'Control Panel' : 
-                 currentView === 'windows' ? 'Manage Windows' : 
-                 'External Evaluators'}
+              <h1 className="text-3xl font-bold mb-2 text-text">
+                {currentView === 'dashboard' ? 'Control Panel' :
+                  currentView === 'windows' ? 'Manage Windows' :
+                    'External Evaluators'}
               </h1>
-              <p className="text-gray-600">
-                {currentView === 'dashboard' 
+              <p className="text-textSecondary">
+                {currentView === 'dashboard'
                   ? 'Overview of system statistics and quick actions'
                   : currentView === 'windows'
-                  ? 'Create, edit, and manage assessment windows'
-                  : 'Assign and manage external evaluators for projects'
+                    ? 'Create, edit, and manage assessment windows'
+                    : 'Assign and manage external evaluators for projects'
                 }
               </p>
             </div>
             {(currentView === 'windows' || currentView === 'external-evaluators') && (
               <button
                 onClick={() => setCurrentView('dashboard')}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
+                className="px-4 py-2 bg-surface hover:bg-hover text-text border border-border rounded-lg flex items-center gap-2 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Back to Dashboard
@@ -215,52 +215,54 @@ export function ControlPanel() {
               </>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">Failed to load dashboard data. Please refresh the page.</p>
+                <p className="text-textSecondary">Failed to load dashboard data. Please refresh the page.</p>
               </div>
             )}
           </>
         ) : currentView === 'windows' ? (
           /* Windows Management View */
           <>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Calendar className="w-6 h-6" />
-                  Manage Windows
-                </h2>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={updateWindowStatuses}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
-                    title="Update window statuses based on current time"
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                    Update Statuses
-                  </button>
-                  <button
-                    onClick={() => setShowCreationModeModal(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Create Window
-                  </button>
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass p-6 rounded-xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-text">
+                    <Calendar className="w-6 h-6 text-primary" />
+                    Manage Windows
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={updateWindowStatuses}
+                      className="px-4 py-2 bg-surface hover:bg-hover text-text border border-border rounded-lg flex items-center gap-2 transition-colors"
+                      title="Update window statuses based on current time"
+                    >
+                      <RefreshCw className="w-5 h-5" />
+                      Update Statuses
+                    </button>
+                    <button
+                      onClick={() => setShowCreationModeModal(true)}
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Create Window
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Windows List */}
-              <WindowsList
-                windows={windows}
-                windowsLoading={windowsLoading}
-                showInactiveWindows={showInactiveWindows}
-                onShowInactiveToggle={setShowInactiveWindows}
-                onEditWindow={handleEditWindow}
-                onDeleteWindow={handleDeleteWindow}
-              />
-            </motion.div>
+                {/* Windows List */}
+                <WindowsList
+                  windows={windows}
+                  windowsLoading={windowsLoading}
+                  showInactiveWindows={showInactiveWindows}
+                  onShowInactiveToggle={setShowInactiveWindows}
+                  onEditWindow={handleEditWindow}
+                  onDeleteWindow={handleDeleteWindow}
+                />
+              </motion.div>
+            </>
           </>
         ) : (
           /* External Evaluators View */
@@ -269,8 +271,8 @@ export function ControlPanel() {
 
         {/* Individual Window Creation Form */}
         {showWindowForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-surface rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
               <WindowForm
                 windowForm={windowForm}
                 setWindowForm={setWindowForm}

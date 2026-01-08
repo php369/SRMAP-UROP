@@ -53,21 +53,17 @@ export function TopNavigation() {
         ease: 'easeInOut'
       }}
       style={{
-        backgroundColor: isScrolled
-          ? themeMode === 'dark'
-            ? 'rgba(31, 30, 23, 0.95)'
-            : 'rgba(229, 228, 211, 0.95)'
-          : 'transparent',
-        backdropFilter: isScrolled ? 'blur(12px)' : 'none',
-        boxShadow: isScrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
+        backgroundColor: 'transparent',
+        boxShadow: 'none'
       }}
     >
       <div className="px-4 sm:px-6 lg:px-8 py-4">
         <GlassCard
           variant="default"
-          className={`px-6 py-4 transition-all duration-300 ${
-            isScrolled ? 'shadow-lg' : ''
-          }`}
+          className={`px-6 py-4 transition-all duration-300 ${isScrolled
+              ? 'shadow-lg bg-surface/80 backdrop-blur-xl border-border/50 mx-4 mt-2 rounded-2xl'
+              : 'border-transparent shadow-none bg-transparent'
+            }`}
         >
           <div className="flex justify-between items-center">
             {/* Left side - page title and breadcrumbs */}
@@ -131,72 +127,74 @@ export function TopNavigation() {
                 {/* Notifications dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 z-50">
-                    <GlassCard variant="elevated" className="py-2 max-h-96 overflow-y-auto">
-                      <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-text">Notifications</h3>
-                        {unreadCount > 0 && (
-                          <Badge variant="glass" size="sm">{unreadCount} new</Badge>
-                        )}
-                      </div>
-
-                      <div className="py-1">
-                        {notifications.length === 0 ? (
-                          <div className="px-4 py-8 text-center">
-                            <svg className="w-12 h-12 mx-auto text-textSecondary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                            </svg>
-                            <p className="text-sm text-textSecondary">No notifications</p>
-                          </div>
-                        ) : (
-                          notifications.map((notification) => (
-                            <button
-                              key={notification.id}
-                              className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-l-2 ${!notification.read ? 'border-primary bg-white/5' : 'border-transparent'
-                                }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-success/20' :
-                                  notification.type === 'warning' ? 'bg-warning/20' :
-                                    'bg-info/20'
-                                  }`}>
-                                  {notification.type === 'success' && (
-                                    <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                  {notification.type === 'warning' && (
-                                    <svg className="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                  )}
-                                  {notification.type === 'info' && (
-                                    <svg className="w-4 h-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-text">{notification.title}</p>
-                                  <p className="text-xs text-textSecondary mt-1">{notification.message}</p>
-                                  <p className="text-xs text-textSecondary mt-1">{notification.time}</p>
-                                </div>
-                                {!notification.read && (
-                                  <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full"></div>
-                                )}
-                              </div>
-                            </button>
-                          ))
-                        )}
-                      </div>
-
-                      {notifications.length > 0 && (
-                        <div className="border-t border-white/10 py-2">
-                          <button className="w-full text-center px-4 py-2 text-sm text-primary hover:bg-white/5 transition-colors">
-                            View All Notifications
-                          </button>
+                    <div className="bg-surface border border-border rounded-xl shadow-2xl overflow-hidden">
+                      <div className="py-2 max-h-96 overflow-y-auto">
+                        <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-text">Notifications</h3>
+                          {unreadCount > 0 && (
+                            <Badge variant="glass" size="sm">{unreadCount} new</Badge>
+                          )}
                         </div>
-                      )}
-                    </GlassCard>
+
+                        <div className="py-1">
+                          {notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <svg className="w-12 h-12 mx-auto text-textSecondary mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                              </svg>
+                              <p className="text-sm text-textSecondary">No notifications</p>
+                            </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <button
+                                key={notification.id}
+                                className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-l-2 ${!notification.read ? 'border-primary bg-white/5' : 'border-transparent'
+                                  }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-success/20' :
+                                    notification.type === 'warning' ? 'bg-warning/20' :
+                                      'bg-info/20'
+                                    }`}>
+                                    {notification.type === 'success' && (
+                                      <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                    {notification.type === 'warning' && (
+                                      <svg className="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                      </svg>
+                                    )}
+                                    {notification.type === 'info' && (
+                                      <svg className="w-4 h-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-text">{notification.title}</p>
+                                    <p className="text-xs text-textSecondary mt-1">{notification.message}</p>
+                                    <p className="text-xs text-textSecondary mt-1">{notification.time}</p>
+                                  </div>
+                                  {!notification.read && (
+                                    <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full"></div>
+                                  )}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+
+                        {notifications.length > 0 && (
+                          <div className="border-t border-white/10 py-2">
+                            <button className="w-full text-center px-4 py-2 text-sm text-primary hover:bg-white/5 transition-colors">
+                              View All Notifications
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

@@ -33,9 +33,9 @@
     --color-info: var(--gurkha);
 
     /* Glass Effects - Light */
-    --glass-bg: rgba(255, 255, 255, 0.25);
-    --glass-border: rgba(255, 255, 255, 0.3);
-    --glass-blur: 12px;
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-blur: 16px;
   }
 
   /* Dark Mode Overrides */
