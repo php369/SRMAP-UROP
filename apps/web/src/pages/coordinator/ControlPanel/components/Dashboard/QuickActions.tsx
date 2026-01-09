@@ -23,7 +23,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           whileHover={{ y: -5, scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           onClick={onManageWindows}
-          className="p-6 bg-gray-50/80 rounded-xl hover:bg-white hover:shadow-xl hover:shadow-primary/10 cursor-pointer border border-transparent hover:border-primary/10 transition-colors group relative overflow-hidden"
+          className="p-6 bg-[#f9f9f9] rounded-xl hover:bg-white hover:shadow-xl hover:shadow-primary/10 cursor-pointer transition-colors group relative overflow-hidden"
         >
           <div className="flex items-start gap-4 mb-4">
             <div className="p-3 bg-white rounded-lg shadow-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors flex-shrink-0">
@@ -50,9 +50,9 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           whileHover={isExternalEvaluatorsEnabled ? { y: -5, scale: 1.02 } : undefined}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           onClick={isExternalEvaluatorsEnabled ? onManageExternalEvaluators : undefined}
-          className={`p-6 rounded-xl transition-all group relative overflow-hidden border border-transparent ${isExternalEvaluatorsEnabled
-            ? 'bg-gray-50/80 hover:bg-white hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-200/50 cursor-pointer'
-            : 'bg-gray-50 opacity-60 cursor-not-allowed'
+          className={`p-6 rounded-xl transition-all group relative overflow-hidden ${isExternalEvaluatorsEnabled
+            ? 'bg-[#f9f9f9] hover:bg-white hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer'
+            : 'bg-[#f9f9f9] opacity-60 cursor-not-allowed'
             }`}
         >
           <div className="flex items-start gap-4 mb-4">
@@ -88,7 +88,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         <motion.div
           whileHover={{ y: -5, scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          className="p-6 bg-gray-50/80 rounded-xl border border-transparent hover:bg-white hover:shadow-xl hover:shadow-green-500/10 hover:border-green-200/50 transition-all"
+          className="p-6 bg-[#f9f9f9] rounded-xl hover:bg-white hover:shadow-xl hover:shadow-green-500/10 transition-all"
         >
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-white rounded-lg shadow-sm">
