@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -12,7 +12,7 @@ import { ChevronLeftIcon } from '../../components/ui/Icons';
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+
   const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function LoginPage() {
 
       {/* Back Button */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => window.location.href = '/'}
         className="absolute top-6 left-6 z-50 w-10 h-10 flex items-center justify-center bg-[#F2F3F5] rounded-full shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] hover:shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff] transition-all duration-300 text-slate-600 hover:text-slate-800"
         aria-label="Go back"
       >
