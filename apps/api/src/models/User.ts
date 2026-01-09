@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   googleId: string;
-  name: string;
+  name?: string;
   email: string;
   role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin';
   studentId?: string; // Unique identifier for students

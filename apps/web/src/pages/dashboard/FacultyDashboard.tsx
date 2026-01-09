@@ -22,45 +22,35 @@ export function FacultyDashboard() {
                         icon={<HomeIcon size={20} />}
                         className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Overview</p>
-                    </DashboardCard>
+                    />
 
                     <DashboardCard
                         title="My Projects"
                         icon={<FolderOpenIcon size={20} />}
                         className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/projects')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Manage Projects</p>
-                    </DashboardCard>
+                    />
 
                     <DashboardCard
                         title="Applications"
                         icon={<UsersIcon size={20} />}
                         className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/applications')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Review Applications</p>
-                    </DashboardCard>
+                    />
 
                     <DashboardCard
                         title="Assessment"
                         icon={<AwardIcon size={20} />}
                         className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/assessment')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Evaluate Students</p>
-                    </DashboardCard>
+                    />
 
                     <DashboardCard
                         title="Meetings"
                         icon={<CalendarIcon size={20} />}
                         className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/meetings')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
-                    </DashboardCard>
+                    />
                 </div>
             </div>
 

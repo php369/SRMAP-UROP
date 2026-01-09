@@ -35,9 +35,7 @@ export function AdminDashboard() {
                                 icon={<HomeIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Overview</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -60,9 +58,7 @@ export function AdminDashboard() {
                                 icon={<UploadIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/admin/eligibility')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Upload Student Data</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -85,9 +81,7 @@ export function AdminDashboard() {
                                 icon={<CalendarIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/admin/windows')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Manage Windows</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
                 </div>

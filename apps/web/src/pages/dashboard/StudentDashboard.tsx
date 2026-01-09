@@ -94,9 +94,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                 icon={<HomeIcon size={20} />}
                                 className="h-full transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none hover:bg-white"
                                 onClick={() => navigate('/dashboard')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Overview</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -119,9 +117,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                 icon={<UsersIcon size={20} />}
                                 className="h-full transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none hover:bg-white"
                                 onClick={() => navigate('/dashboard/application')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Manage Applications</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -144,9 +140,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                 icon={<UploadIcon size={20} />}
                                 className="h-full transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none hover:bg-white"
                                 onClick={() => navigate('/dashboard/submission')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Project Submissions</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -169,9 +163,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                 icon={<FileTextIcon size={20} />}
                                 className="h-full transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none hover:bg-white"
                                 onClick={() => navigate('/dashboard/assessment')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">View Assessments</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -194,9 +186,7 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                 icon={<CalendarIcon size={20} />}
                                 className="h-full transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none hover:bg-white"
                                 onClick={() => navigate('/dashboard/meetings')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
                 </div>

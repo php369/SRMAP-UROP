@@ -46,9 +46,7 @@ export function CoordinatorDashboard() {
                                 icon={<HomeIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Overview</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -71,9 +69,7 @@ export function CoordinatorDashboard() {
                                 icon={<FolderOpenIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/projects')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Manage Projects</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -96,9 +92,7 @@ export function CoordinatorDashboard() {
                                 icon={<UsersIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/faculty/applications')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">All Applications</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -121,9 +115,7 @@ export function CoordinatorDashboard() {
                                 icon={<CalendarIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/faculty/meetings')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
 
@@ -146,9 +138,7 @@ export function CoordinatorDashboard() {
                                 icon={<SettingsIcon size={20} />}
                                 className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/control')}
-                            >
-                                <p className="text-xs text-slate-500 mt-1">System Settings</p>
-                            </DashboardCard>
+                            />
                         </TiltedCard>
                     </div>
                 </div>

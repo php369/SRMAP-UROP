@@ -2,23 +2,23 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { User, IUser } from '../models/User';
 import { authenticate, authorize } from '../middleware/auth';
-import { 
-  verifyGoogleIdToken, 
-  verifyDomainRestriction, 
+import {
+  verifyGoogleIdToken,
+  verifyDomainRestriction,
   generateAuthUrl,
-  exchangeCodeForTokens 
+  exchangeCodeForTokens
 } from '../services/googleAuth';
-import { 
-  generateTokenPair, 
-  verifyRefreshToken, 
+import {
+  generateTokenPair,
+  verifyRefreshToken,
   extractTokenFromHeader,
-  verifyAccessToken 
+  verifyAccessToken
 } from '../services/jwtService';
 import { checkUserAuthorization } from '../services/authService';
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const googleAuthSchema = z.object({
@@ -159,7 +159,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code);
-    
+
     // Verify ID token and extract user info
     const googleUser = await verifyGoogleIdToken(tokens.idToken);
 
@@ -182,7 +182,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
 
     // Check user authorization (eligibility/faculty roster/admin)
     const authResult = await checkUserAuthorization(googleUser.email);
-    
+
     if (!authResult.isAuthorized) {
       logger.warn(`Authorization failed for email: ${googleUser.email}`);
       return res.status(403).json({
@@ -199,18 +199,18 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Find or create user in database
-    let user = await User.findOne({ 
+    let user = await User.findOne({
       $or: [
         { googleId: googleUser.googleId },
         { email: googleUser.email }
       ]
     }) as IUser | null;
-    
+
     if (!user) {
       // Create new user with determined role
       user = new User({
         googleId: googleUser.googleId,
-        name: googleUser.name,
+        // name: googleUser.name, // Don't set name automatically to force profile completion
         email: googleUser.email,
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
         isCoordinator: authResult.role === 'coordinator',
@@ -238,16 +238,16 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
       }
     } else {
       // Update existing user info and role
-      user.name = googleUser.name;
+      // user.name = googleUser.name; // Don't overwrite name from Google
       user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
       user.googleId = googleUser.googleId; // Update Google ID if it was missing
       user.isCoordinator = authResult.role === 'coordinator';
-      
+
       // Update department if available
       if (authResult.user?.department) {
         user.department = authResult.user.department;
       }
-      
+
       await user.save();
       logger.info(`Existing user updated: ${user.email} with role: ${authResult.role}`);
     }
@@ -256,7 +256,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
     const jwtTokens = generateTokenPair({
       userId: user._id.toString(),
       email: user.email,
-      name: user.name,
+      name: user.name || '',
       role: authResult.role as any, // Use the actual role from authorization
     });
 
@@ -284,7 +284,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Google authentication failed:', error);
-    
+
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message.includes('OAuth configuration mismatch')) {
@@ -298,7 +298,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
-      
+
       if (error.message.includes('Authorization code is malformed') || error.message.includes('Authorization code is invalid')) {
         return res.status(400).json({
           success: false,
@@ -310,7 +310,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
-      
+
       if (error.message.includes('Token verification failed')) {
         return res.status(401).json({
           success: false,
@@ -320,7 +320,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
-      
+
       if (error.message.includes('Email not verified')) {
         return res.status(400).json({
           success: false,
@@ -330,7 +330,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
-      
+
       if (error.message.includes('OAuth client configuration error')) {
         return res.status(500).json({
           success: false,
@@ -399,7 +399,7 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
  */
 router.get('/me', asyncHandler(async (req: Request, res: Response) => {
   const token = extractTokenFromHeader(req.headers.authorization);
-  
+
   if (!token) {
     return res.status(401).json({
       success: false,
@@ -413,7 +413,7 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Verify access token
     const payload = verifyAccessToken(token);
-    
+
     // Find user in database
     const user = await User.findById(payload.userId) as IUser | null;
     if (!user) {
@@ -428,7 +428,7 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
 
     // Re-check authorization to get current role and eligibility info
     const authResult = await checkUserAuthorization(user.email);
-    
+
     if (!authResult.isAuthorized) {
       return res.status(403).json({
         success: false,
@@ -459,7 +459,7 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Token verification failed:', error);
-    
+
     if (error instanceof Error && error.message.includes('expired')) {
       return res.status(401).json({
         success: false,
@@ -553,7 +553,7 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Verify refresh token
     const payload = verifyRefreshToken(refreshToken);
-    
+
     // Find user in database
     const user = await User.findById(payload.userId) as IUser | null;
     if (!user) {
@@ -570,7 +570,7 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
     const newTokens = generateTokenPair({
       userId: user._id.toString(),
       email: user.email,
-      name: user.name,
+      name: user.name || '',
       role: user.role,
     });
 
@@ -587,7 +587,7 @@ router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Token refresh failed:', error);
-    
+
     if (error instanceof Error && error.message.includes('expired')) {
       return res.status(401).json({
         success: false,
@@ -715,7 +715,7 @@ function getUserPermissions(role: string): string[] {
 router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
   // This is an alias for the /google endpoint to maintain compatibility
   // with frontend expectations. Reuse the same validation and logic.
-  
+
   // Validate request body
   const validationResult = googleAuthSchema.safeParse(req.body);
   if (!validationResult.success) {
@@ -734,7 +734,7 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code);
-    
+
     // Verify ID token and extract user info
     const googleUser = await verifyGoogleIdToken(tokens.idToken);
 
@@ -757,7 +757,7 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
 
     // Check user authorization (eligibility/faculty roster/admin)
     const authResult = await checkUserAuthorization(googleUser.email);
-    
+
     if (!authResult.isAuthorized) {
       logger.warn(`Authorization failed for email: ${googleUser.email}`);
       return res.status(403).json({
@@ -800,12 +800,12 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
       user.role = authResult.role === 'coordinator' ? 'faculty' : authResult.role;
       user.googleId = googleUser.googleId; // Update Google ID if it was missing
       user.isCoordinator = authResult.role === 'coordinator';
-      
+
       // Update department if available
       if (authResult.user?.department) {
         user.department = authResult.user.department;
       }
-      
+
       user.lastSeen = new Date();
       await user.save();
       logger.info(`User updated: ${user.email} (${authResult.role})`);
@@ -815,7 +815,7 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
     const { accessToken, refreshToken } = generateTokenPair({
       userId: user._id.toString(),
       email: user.email,
-      name: user.name,
+      name: user.name || '',
       role: authResult.role, // Use the actual role including coordinator
     });
 
@@ -847,7 +847,7 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
 
   } catch (error) {
     logger.error('Google OAuth callback error:', error);
-    
+
     if (error instanceof Error) {
       // Handle specific OAuth errors
       if (error.message.includes('invalid_grant')) {
@@ -860,7 +860,7 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
           },
         });
       }
-      
+
       if (error.message.includes('Token verification failed')) {
         return res.status(400).json({
           success: false,

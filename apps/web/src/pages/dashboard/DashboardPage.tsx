@@ -136,12 +136,7 @@ export function DashboardPage() {
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               Welcome back, {user?.name?.split(' ').slice(0, 4).join(' ')}! 👋
             </h1>
-            <p className="text-slate-500 mt-2">
-              {isStudentRole(user?.role) && 'Track your project progress and collaborate with your team.'}
-              {user?.role === 'faculty' && 'Manage your projects, applications and students.'}
-              {user?.role === 'coordinator' && 'Oversee project approvals and coordinate activities.'}
-              {user?.role === 'admin' && 'Manage system-wide settings and windows.'}
-            </p>
+
           </div>
           <div className="text-left md:text-right flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl border border-slate-100 shadow-sm">
             <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Today</p>

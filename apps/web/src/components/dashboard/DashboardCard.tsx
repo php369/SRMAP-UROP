@@ -24,7 +24,7 @@ export function DashboardCard({
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                     {icon && (
-                        <div className="p-2 rounded-lg bg-slate-100 text-primary border border-slate-200">
+                        <div className="p-2 rounded-lg bg-[#e2e2e2] text-[#364155]">
                             {icon}
                         </div>
                     )}
@@ -44,7 +44,7 @@ export function DashboardCard({
         <div
             className={cn(
                 'rounded-2xl p-5 border transition-all duration-300',
-                'bg-white border-slate-200 shadow-sm hover:shadow-md',
+                'bg-[#eeedeb] border-transparent shadow-sm hover:shadow-md',
                 className
             )}
             onClick={onClick}
