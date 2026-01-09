@@ -81,13 +81,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* Framed Canvas */}
-        <main className={`flex-1 relative overflow-y-auto ${isMobile ? 'p-0' : 'p-3'
+        <main className={`flex-1 relative overflow-hidden ${isMobile ? 'p-0' : 'p-3'
           }`}>
-          <div className={`w-full min-h-full ${isMobile
+          <div className={`w-full h-full overflow-y-auto ${isMobile
             ? 'px-4 py-6'
             : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
             }`}>
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto h-full">
               <Suspense fallback={<PageLoader />}>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -96,6 +96,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="h-full"
                   >
                     {children}
                   </motion.div>
