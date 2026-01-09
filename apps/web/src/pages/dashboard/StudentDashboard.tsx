@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { DashboardCard } from '../../components/dashboard/DashboardCard';
+import TiltedCard from '../../components/ui/TiltedCard';
 // GlassCard removed
 import {
     HomeIcon,
@@ -74,55 +75,130 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
             <div className="border-b border-slate-100 pb-8">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <DashboardCard
-                        title="Dashboard"
-                        icon={<HomeIcon size={20} />}
+                    <div style={{ height: '140px' }}>
+                        <TiltedCard
+                            imageSrc=""
+                            altText="Dashboard"
+                            containerHeight="100%"
+                            containerWidth="100%"
+                            imageHeight="100%"
+                            imageWidth="100%"
+                            rotateAmplitude={12}
+                            scaleOnHover={1.0}
+                            showMobileWarning={false}
+                            showTooltip={false}
+                            displayOverlayContent={false}
+                        >
+                            <DashboardCard
+                                title="Dashboard"
+                                icon={<HomeIcon size={20} />}
+                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                onClick={() => navigate('/dashboard')}
+                            >
+                                <p className="text-xs text-slate-500 mt-1">Overview</p>
+                            </DashboardCard>
+                        </TiltedCard>
+                    </div>
 
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
-                        onClick={() => navigate('/dashboard')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Overview</p>
-                    </DashboardCard>
+                    <div style={{ height: '140px' }}>
+                        <TiltedCard
+                            imageSrc=""
+                            altText="Application"
+                            containerHeight="100%"
+                            containerWidth="100%"
+                            imageHeight="100%"
+                            imageWidth="100%"
+                            rotateAmplitude={12}
+                            scaleOnHover={1.0}
+                            showMobileWarning={false}
+                            showTooltip={false}
+                            displayOverlayContent={false}
+                        >
+                            <DashboardCard
+                                title="Application"
+                                icon={<UsersIcon size={20} />}
+                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                onClick={() => navigate('/dashboard/application')}
+                            >
+                                <p className="text-xs text-slate-500 mt-1">Manage Applications</p>
+                            </DashboardCard>
+                        </TiltedCard>
+                    </div>
 
-                    <DashboardCard
-                        title="Application"
-                        icon={<UsersIcon size={20} />}
+                    <div style={{ height: '140px' }}>
+                        <TiltedCard
+                            imageSrc=""
+                            altText="Submission"
+                            containerHeight="100%"
+                            containerWidth="100%"
+                            imageHeight="100%"
+                            imageWidth="100%"
+                            rotateAmplitude={12}
+                            scaleOnHover={1.0}
+                            showMobileWarning={false}
+                            showTooltip={false}
+                            displayOverlayContent={false}
+                        >
+                            <DashboardCard
+                                title="Submission"
+                                icon={<UploadIcon size={20} />}
+                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                onClick={() => navigate('/dashboard/submission')}
+                            >
+                                <p className="text-xs text-slate-500 mt-1">Project Submissions</p>
+                            </DashboardCard>
+                        </TiltedCard>
+                    </div>
 
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
-                        onClick={() => navigate('/dashboard/application')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Manage Applications</p>
-                    </DashboardCard>
+                    <div style={{ height: '140px' }}>
+                        <TiltedCard
+                            imageSrc=""
+                            altText="Assessment"
+                            containerHeight="100%"
+                            containerWidth="100%"
+                            imageHeight="100%"
+                            imageWidth="100%"
+                            rotateAmplitude={12}
+                            scaleOnHover={1.0}
+                            showMobileWarning={false}
+                            showTooltip={false}
+                            displayOverlayContent={false}
+                        >
+                            <DashboardCard
+                                title="Assessment"
+                                icon={<FileTextIcon size={20} />}
+                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                onClick={() => navigate('/dashboard/assessment')}
+                            >
+                                <p className="text-xs text-slate-500 mt-1">View Assessments</p>
+                            </DashboardCard>
+                        </TiltedCard>
+                    </div>
 
-                    <DashboardCard
-                        title="Submission"
-                        icon={<UploadIcon size={20} />}
-
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
-                        onClick={() => navigate('/dashboard/submission')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Project Submissions</p>
-                    </DashboardCard>
-
-                    <DashboardCard
-                        title="Assessment"
-                        icon={<FileTextIcon size={20} />}
-
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
-                        onClick={() => navigate('/dashboard/assessment')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">View Assessments</p>
-                    </DashboardCard>
-
-                    <DashboardCard
-                        title="Meetings"
-                        icon={<CalendarIcon size={20} />}
-
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
-                        onClick={() => navigate('/dashboard/meetings')}
-                    >
-                        <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
-                    </DashboardCard>
+                    <div style={{ height: '140px' }}>
+                        <TiltedCard
+                            imageSrc=""
+                            altText="Meetings"
+                            containerHeight="100%"
+                            containerWidth="100%"
+                            imageHeight="100%"
+                            imageWidth="100%"
+                            rotateAmplitude={12}
+                            scaleOnHover={1.0}
+                            showMobileWarning={false}
+                            showTooltip={false}
+                            displayOverlayContent={false}
+                        >
+                            <DashboardCard
+                                title="Meetings"
+                                icon={<CalendarIcon size={20} />}
+                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                onClick={() => navigate('/dashboard/meetings')}
+                            >
+                                <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>
+                            </DashboardCard>
+                        </TiltedCard>
+                    </div>
                 </div>
             </div>
 

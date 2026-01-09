@@ -131,10 +131,10 @@ export function DashboardPage() {
     <div className="space-y-8 p-6">
       {/* Header with greeting */}
       <Reveal direction="down">
-        <div className="bg-slate-50 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 border-b border-slate-200/60">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-              Welcome back, {user?.name?.split(' ')[0]}! 👋
+              Welcome back, {user?.name?.split(' ').slice(0, 4).join(' ')}! 👋
             </h1>
             <p className="text-slate-500 mt-2">
               {isStudentRole(user?.role) && 'Track your project progress and collaborate with your team.'}

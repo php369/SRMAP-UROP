@@ -151,7 +151,7 @@ export function LandingPage() {
                   showTooltip={false}
                   displayOverlayContent={false}
                 >
-                  <div className="w-full h-full group flex flex-col items-start p-6 rounded-2xl bg-white/60 border border-slate-100 hover:border-srm-200 transition-colors duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl dark:bg-slate-900/60 dark:border-slate-800 dark:hover:border-srm-900">
+                  <div className="w-full h-full group flex flex-col items-start p-6 rounded-2xl bg-white/60 border border-slate-100 transition-colors duration-300 backdrop-blur-xl dark:bg-slate-900/60 dark:border-slate-800">
                     <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3 dark:bg-slate-800 dark:text-srm-400">
                       <feature.icon className="h-6 w-6" />
                     </div>

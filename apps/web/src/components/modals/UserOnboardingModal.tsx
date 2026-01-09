@@ -28,7 +28,8 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
 
         try {
             // 1. Update on server
-            const updatedUser = await userService.updateProfile({ name: name.trim() });
+            const formattedName = name.trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+            const updatedUser = await userService.updateProfile({ name: formattedName });
 
             // 2. Update local store
             if (updatedUser) {
