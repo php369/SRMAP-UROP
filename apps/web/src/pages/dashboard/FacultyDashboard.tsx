@@ -20,7 +20,7 @@ export function FacultyDashboard() {
                     <DashboardCard
                         title="Dashboard"
                         icon={<HomeIcon size={20} />}
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                        className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard')}
                     >
                         <p className="text-xs text-slate-500 mt-1">Overview</p>
@@ -29,7 +29,7 @@ export function FacultyDashboard() {
                     <DashboardCard
                         title="My Projects"
                         icon={<FolderOpenIcon size={20} />}
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                        className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/projects')}
                     >
                         <p className="text-xs text-slate-500 mt-1">Manage Projects</p>
@@ -38,7 +38,7 @@ export function FacultyDashboard() {
                     <DashboardCard
                         title="Applications"
                         icon={<UsersIcon size={20} />}
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                        className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/applications')}
                     >
                         <p className="text-xs text-slate-500 mt-1">Review Applications</p>
@@ -47,7 +47,7 @@ export function FacultyDashboard() {
                     <DashboardCard
                         title="Assessment"
                         icon={<AwardIcon size={20} />}
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                        className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/assessment')}
                     >
                         <p className="text-xs text-slate-500 mt-1">Evaluate Students</p>
@@ -56,7 +56,7 @@ export function FacultyDashboard() {
                     <DashboardCard
                         title="Meetings"
                         icon={<CalendarIcon size={20} />}
-                        className="hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                        className="hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                         onClick={() => navigate('/dashboard/faculty/meetings')}
                     >
                         <p className="text-xs text-slate-500 mt-1">Schedule Meetings</p>

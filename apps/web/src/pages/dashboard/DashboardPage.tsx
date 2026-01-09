@@ -131,7 +131,7 @@ export function DashboardPage() {
     <div className="space-y-8 p-6">
       {/* Header with greeting */}
       <Reveal direction="down">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 border-b border-slate-200/60">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4 border-b border-slate-200/60">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               Welcome back, {user?.name?.split(' ').slice(0, 4).join(' ')}! 👋
@@ -143,9 +143,9 @@ export function DashboardPage() {
               {user?.role === 'admin' && 'Manage system-wide settings and windows.'}
             </p>
           </div>
-          <div className="text-right hidden sm:block">
-            <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Today</p>
-            <p className="text-xl font-mono text-slate-700">
+          <div className="text-left md:text-right flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl border border-slate-100 shadow-sm">
+            <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Today</p>
+            <p className="text-xl font-mono text-slate-700 font-medium">
               {new Date().toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',

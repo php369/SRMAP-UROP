@@ -33,7 +33,7 @@ export function AdminDashboard() {
                             <DashboardCard
                                 title="Dashboard"
                                 icon={<HomeIcon size={20} />}
-                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard')}
                             >
                                 <p className="text-xs text-slate-500 mt-1">Overview</p>
@@ -58,7 +58,7 @@ export function AdminDashboard() {
                             <DashboardCard
                                 title="Eligibility Upload"
                                 icon={<UploadIcon size={20} />}
-                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/admin/eligibility')}
                             >
                                 <p className="text-xs text-slate-500 mt-1">Upload Student Data</p>
@@ -83,7 +83,7 @@ export function AdminDashboard() {
                             <DashboardCard
                                 title="Windows"
                                 icon={<CalendarIcon size={20} />}
-                                className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
+                                className="h-full hover:bg-white transition-colors cursor-pointer bg-slate-50 border border-slate-200 shadow-none"
                                 onClick={() => navigate('/dashboard/admin/windows')}
                             >
                                 <p className="text-xs text-slate-500 mt-1">Manage Windows</p>
