@@ -56,7 +56,6 @@ export async function uploadStudentEmails(
         await User.create({
           googleId: `pending-${trimmedEmail}`, // Temporary, will be updated on first login
           email: trimmedEmail,
-          name: trimmedEmail.split('@')[0], // Temporary name from email
           role: role,
           preferences: {
             theme: 'light',
@@ -119,7 +118,6 @@ export async function uploadFacultyEmails(
         await User.create({
           googleId: `pending-${trimmedEmail}`, // Temporary, will be updated on first login
           email: trimmedEmail,
-          name: trimmedEmail.split('@')[0], // Temporary name from email
           role: 'faculty',
           isCoordinator: false,
           isExternalEvaluator: false,
