@@ -52,7 +52,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div
       ref={swipeRef as any}
-      className="flex h-screen bg-[#f5f4f2] overflow-hidden"
+      className="flex min-h-screen bg-[#f5f4f2]"
     >
       {/* User Onboarding Modal - user name check */}
       {/* We need to access the user from AuthContext/AuthStore. 
@@ -81,9 +81,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* Framed Canvas */}
-        <main className={`flex-1 relative overflow-hidden ${isMobile ? 'p-0' : 'p-3'
+        <main className={`flex-1 relative ${isMobile ? 'p-0' : 'p-3'
           }`}>
-          <div className={`w-full h-full overflow-y-auto ${isMobile
+          <div className={`w-full min-h-full ${isMobile
             ? 'px-4 py-6'
             : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
             }`}>
