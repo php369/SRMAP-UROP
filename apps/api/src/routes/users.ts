@@ -6,7 +6,7 @@ import { User } from '../models/User';
 import { Group } from '../models/Group';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * GET /api/users
@@ -121,6 +121,113 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
 }));
 
 // Profile and avatar endpoints removed - profile and avatar fields no longer exist in User model
+
+/**
+ * PATCH /api/users/me
+ * Update current user's profile
+ */
+router.patch('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { name } = req.body;
+    let updates: any = {};
+
+    // Validate and add name to updates if provided
+    if (name !== undefined) {
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Valid name is required',
+                },
+            });
+        }
+
+        // Validate name format (only letters, spaces, and common punctuation)
+        const nameRegex = /^[a-zA-Z\s.'-]+$/;
+        if (!nameRegex.test(name.trim())) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Name can only contain letters, spaces, and common punctuation (. \' -)',
+                },
+            });
+        }
+
+        // Validate name length
+        if (name.trim().length < 2 || name.trim().length > 100) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Name must be between 2 and 100 characters',
+                },
+            });
+        }
+
+        updates.name = name.trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                message: 'No valid fields to update',
+            },
+        });
+    }
+
+    try {
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updates },
+            { new: true, runValidators: true }
+        ).select('-googleId -__v');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found',
+                },
+            });
+        }
+
+        logger.info(`Profile updated for user: ${user.email}`, updates);
+
+        res.json({
+            success: true,
+            data: {
+                message: 'Profile updated successfully',
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    department: user.department,
+                    studentId: user.studentId,
+                    facultyId: user.facultyId,
+                    isCoordinator: user.isCoordinator,
+                    isExternalEvaluator: user.isExternalEvaluator,
+                    preferences: user.preferences,
+                }
+            },
+        });
+
+    } catch (error) {
+        logger.error('Error updating profile:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'PROFILE_UPDATE_FAILED',
+                message: 'Failed to update profile',
+            },
+        });
+    }
+}));
 
 /**
  * PUT /api/users/name

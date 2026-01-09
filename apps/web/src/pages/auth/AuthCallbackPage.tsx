@@ -206,10 +206,10 @@ export function AuthCallbackPage() {
 
                   <div className="pt-2">
                     <button
-                      onClick={() => window.location.href = ROUTES.LOGIN}
+                      onClick={() => window.location.href = '/'}
                       className="group w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all duration-200 shadow-lg shadow-slate-200 active:scale-[0.98]"
                     >
-                      <span>Try Signing In Again</span>
+                      <span>Go back to Home</span>
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </button>
 
