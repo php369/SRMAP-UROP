@@ -145,6 +145,13 @@ export function ControlPanel() {
     setGradeReleaseProjectType(null);
   };
 
+  // Check if External Evaluators should be enabled
+  // Enabled if ANY project type's application window is over
+  const now = new Date();
+  const isExternalEvaluatorsEnabled = windows.some(w =>
+    w.windowType === 'application' && new Date(w.endDate) < now
+  );
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
@@ -197,6 +204,7 @@ export function ControlPanel() {
               onManageWindows={() => setCurrentView('windows')}
               onUpdateStatuses={updateWindowStatuses}
               onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
+              isExternalEvaluatorsEnabled={isExternalEvaluatorsEnabled}
             />
           </>
         ) : currentView === 'windows' ? (
