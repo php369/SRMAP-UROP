@@ -1,3 +1,4 @@
+import { HeroUIProvider } from "@heroui/react";
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -17,7 +18,9 @@ setupSystemThemeListener()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   // <React.StrictMode> // Disabled to prevent duplicate auth requests in development
+  <HeroUIProvider>
     <App />
+  </HeroUIProvider>
   // </React.StrictMode>,
 )
 

@@ -252,7 +252,7 @@ export function ControlPanel() {
 
         {/* Individual Window Creation Form */}
         {showWindowForm && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50">
             <div className="bg-surface rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
               <WindowForm
                 windowForm={windowForm}
