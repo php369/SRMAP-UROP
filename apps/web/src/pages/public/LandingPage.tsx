@@ -95,10 +95,15 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-8 justify-center items-center mb-12 relative z-30">
               <Link
                 to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
-                className="group flex items-center gap-3 px-8 py-4 rounded-full bg-white/10 backdrop-blur-md border border-slate-200/50 text-slate-900 font-semibold transition-all duration-500 hover:bg-[#f5bb3e] hover:border-[#f5bb3e] hover:text-white hover:shadow-[0_0_20px_rgba(245,187,62,0.3)] dark:border-white/10 dark:text-white dark:hover:bg-[#f5bb3e]"
+                className="relative inline-flex group overflow-hidden rounded-full p-[2px] transition-transform duration-300 active:scale-95"
               >
-                <span>{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
-                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-70 group-hover:opacity-100" />
+
+                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-semibold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-300 group-hover:bg-slate-100 dark:group-hover:bg-slate-800">
+                  <span className="mr-2">{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
               </Link>
             </div>
           </Reveal>
