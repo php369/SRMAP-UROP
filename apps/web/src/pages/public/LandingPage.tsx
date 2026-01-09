@@ -100,7 +100,7 @@ export function LandingPage() {
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-70 group-hover:opacity-100" />
 
-                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-semibold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-300 group-hover:bg-slate-100 dark:group-hover:bg-slate-800">
+                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-semibold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-white">
                   <span className="mr-2">{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
