@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthStore } from '../../stores/authStore';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
@@ -18,7 +19,6 @@ import {
   SettingsIcon,
   CheckCircleIcon,
   CalendarIcon,
-  MenuIcon,
   XIcon
 } from '../ui/Icons';
 
@@ -38,6 +38,40 @@ const IconComponents = {
   Calendar: CalendarIcon,
 };
 
+const GlassSurface = ({
+  top,
+  height,
+  width,
+  left
+}: {
+  top: number;
+  height: number;
+  width: number;
+  left: number;
+}) => {
+  return (
+    <motion.div
+      className="absolute z-0 rounded-lg border border-white/20 shadow-sm pointer-events-none"
+      initial={false}
+      animate={{
+        top,
+        height,
+        width,
+        left
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30
+      }}
+      style={{
+        backdropFilter: "blur(8px)",
+        backgroundColor: "rgba(255, 255, 255, 0.4)", // White/40
+      }}
+    />
+  );
+};
+
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
@@ -46,6 +80,39 @@ export function Sidebar() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigationItems = user ? ROLE_NAVIGATION[user.role] || [] : [];
   const logout = useAuthStore(state => state.logout);
+
+  // Ref for nav items to measure position
+  const navItemRefs = useRef<{ [key: string]: HTMLAnchorElement | null }>({});
+  const [glassState, setGlassState] = useState({ top: 0, height: 0, width: 0, left: 0, opacity: 0 });
+
+  // Update position when location changes
+  useEffect(() => {
+    // Find the active item path
+    // We need to match the logic used in the render loop
+    const currentPath = location.pathname;
+
+    // Check if we have a match
+    const activeItem = navigationItems.find(item =>
+      currentPath === item.path || (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path))
+    );
+
+    if (activeItem && navItemRefs.current[activeItem.path]) {
+      const el = navItemRefs.current[activeItem.path];
+      if (el) {
+        setGlassState({
+          top: el.offsetTop,
+          height: el.offsetHeight,
+          width: el.offsetWidth,
+          left: el.offsetLeft,
+          opacity: 1
+        });
+      }
+    } else {
+      // If no active item found (shouldn't happen on valid routes), maybe hide it or keep last
+      // keeping last is safer to avoid jumping, or opacity 0
+      setGlassState(prev => ({ ...prev, opacity: 0 }));
+    }
+  }, [location.pathname, navigationItems]);
 
   // Handle click outside for profile menu
   useEffect(() => {
@@ -146,8 +213,19 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4 relative">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Menu</div>
+
+          {/* Glass Surface Active Indicator */}
+          {glassState.opacity > 0 && (
+            <GlassSurface
+              top={glassState.top}
+              height={glassState.height}
+              width={glassState.width}
+              left={glassState.left}
+            />
+          )}
+
           {navigationItems.map(item => {
             const IconComponent =
               IconComponents[item.icon as keyof typeof IconComponents];
@@ -155,6 +233,7 @@ export function Sidebar() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                ref={(el) => (navItemRefs.current[item.path] = el)}
                 onClick={(e) => {
                   const currentPath = location.pathname;
                   const isCurrentPage = currentPath === item.path ||
@@ -172,11 +251,20 @@ export function Sidebar() {
                     (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
                   return cn(
-                    'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+                    'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative z-10',
                     isCurrentPage
-                      ? 'bg-[#eeedeb] text-primary'
-                      : 'text-slate-600 hover:bg-[#eeedeb] hover:text-slate-900'
-                  );
+                      ? 'text-primary'
+                      : 'text-slate-600 hover:text-slate-900' // Removed hover:bg-[#eeedeb] because glass surface handles "active", maybe we want hover effect too?
+                    // User requirement: "Other nav items remain unchanged" -> implies usage of standard hover?
+                    // Wait, "GlassSurface aligns perfectly with that item". 
+                    // "Fallback to a normal highlight (background color) for touch devices" -> Logic for mobile is distinct.
+                    // For desktop inactive items, do we keep hover bg? 
+                    // "Sidebar remains usable without hover" - okay.
+                    // If I remove hover bg, inactive items have no hover state?
+                    // Usually you keep a subtle hover for inactive items. 
+                    // Let's keep hover:bg-[#eeedeb] for inactive items, but remove bg for active.
+                    // Updated ternary below:
+                  ) + (isCurrentPage ? '' : ' hover:bg-[#eeedeb]');
                 }}
               >
                 {() => {
@@ -194,7 +282,12 @@ export function Sidebar() {
                       >
                         {IconComponent && <IconComponent className="w-5 h-5" />}
                       </div>
-                      <span className="ml-3">{item.label}</span>
+                      <span className={cn(
+                        "ml-3 transition-transform duration-200",
+                        isCurrentPage ? "scale-105 font-semibold" : ""
+                      )}>
+                        {item.label}
+                      </span>
                     </>
                   );
                 }}
