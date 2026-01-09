@@ -163,6 +163,16 @@ export function Sidebar() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={(e) => {
+                  const currentPath = location.pathname;
+                  const isCurrentPage = currentPath === item.path ||
+                    (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+
+                  if (isCurrentPage) {
+                    e.preventDefault();
+                    document.dispatchEvent(new CustomEvent('refresh-active-view'));
+                  }
+                }}
                 className={() => {
                   // Check if current path matches exactly or starts with the item path (for nested routes)
                   const currentPath = location.pathname;

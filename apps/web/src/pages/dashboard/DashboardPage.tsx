@@ -112,6 +112,14 @@ export function DashboardPage() {
   };
 
   useEffect(() => {
+    const handleRefresh = () => {
+      fetchDashboardData();
+    };
+    document.addEventListener('refresh-active-view', handleRefresh);
+    return () => document.removeEventListener('refresh-active-view', handleRefresh);
+  }, []);
+
+  useEffect(() => {
     if (user) {
       fetchDashboardData();
     } else {
