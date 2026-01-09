@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { XCircle, ChevronLeft, ChevronRight, CheckCircle, CalendarDays, Layers } from 'lucide-react';
 import { WindowForm, ProjectType } from '../../types';
 import { DateRangePicker } from "@heroui/date-picker";
-import { parseDateTime } from "@internationalized/date";
+import { parseZonedDateTime } from "@internationalized/date";
 
 interface BulkCreationModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export function BulkCreationModal({
       const day = String(date.day).padStart(2, '0');
       const hour = String(date.hour).padStart(2, '0');
       const minute = String(date.minute).padStart(2, '0');
-      return `${year}-${month}-${day}T${hour}:${minute}`;
+      return `${year}-${month}-${day}T${hour}:${minute}:00`;
     };
 
     setWindowForm({
@@ -66,9 +66,11 @@ export function BulkCreationModal({
     const settings = windowForm.bulkSettings[phase as keyof typeof windowForm.bulkSettings] as any;
     try {
       if (settings[startField] && settings[endField]) {
+        const startStr = settings[startField].replace('Z', '').replace(/\+.*$/, '');
+        const endStr = settings[endField].replace('Z', '').replace(/\+.*$/, '');
         return {
-          start: parseDateTime(settings[startField]),
-          end: parseDateTime(settings[endField])
+          start: parseZonedDateTime(`${startStr}[Asia/Kolkata]`),
+          end: parseZonedDateTime(`${endStr}[Asia/Kolkata]`)
         };
       }
     } catch (e) { console.error(e); }
@@ -141,6 +143,7 @@ export function BulkCreationModal({
               description={`Select start and end dates for ${tab.label}`}
               visibleMonths={1}
               hideTimeZone
+              granularity="minute"
               className="max-w-md w-full"
             />
           </div>
@@ -168,6 +171,7 @@ export function BulkCreationModal({
                 label="Submission Duration"
                 variant="bordered"
                 hideTimeZone
+                granularity="minute"
                 className="w-full"
               />
             </div>
@@ -185,6 +189,7 @@ export function BulkCreationModal({
                 label="Assessment Duration"
                 variant="bordered"
                 hideTimeZone
+                granularity="minute"
                 className="w-full"
               />
             </div>

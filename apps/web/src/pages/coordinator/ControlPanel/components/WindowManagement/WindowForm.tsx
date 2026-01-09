@@ -1,6 +1,6 @@
 import { WindowForm as WindowFormType, WindowType, ProjectType, AssessmentType, Window } from '../../types';
 import { DateRangePicker } from "@heroui/date-picker";
-import { parseDateTime } from "@internationalized/date";
+import { parseZonedDateTime } from "@internationalized/date";
 
 interface WindowFormProps {
   windowForm: WindowFormType;
@@ -20,13 +20,19 @@ export function WindowForm({
   loading
 }: WindowFormProps) {
 
-  // Helper to parse date strings for DateRangePicker
+  // Helper to parse date strings for DateRangePicker with IST timezone
   const getDateRangeValue = () => {
     try {
       if (windowForm.startDate && windowForm.endDate) {
+        // Ensure the string has no timezone offset before appending [Asia/Kolkata]
+        // If it comes as ISO with Z, we might need to strip it, but existing logic stores "local" ISO.
+        // We will treat the stored string as the "IST" time literal.
+        const startStr = windowForm.startDate.replace('Z', '').replace(/\+.*$/, '');
+        const endStr = windowForm.endDate.replace('Z', '').replace(/\+.*$/, '');
+
         return {
-          start: parseDateTime(windowForm.startDate),
-          end: parseDateTime(windowForm.endDate)
+          start: parseZonedDateTime(`${startStr}[Asia/Kolkata]`),
+          end: parseZonedDateTime(`${endStr}[Asia/Kolkata]`)
         };
       }
     } catch (e) {
@@ -38,14 +44,15 @@ export function WindowForm({
   // Helper to handle date range changes
   const handleDateRangeChange = (value: any) => {
     if (value && value.start && value.end) {
-      // Format: YYYY-MM-DDTHH:MM
+      // Format to ISO-like string preserving the selected time literal
       const format = (date: any) => {
         const year = date.year;
         const month = String(date.month).padStart(2, '0');
         const day = String(date.day).padStart(2, '0');
         const hour = String(date.hour).padStart(2, '0');
         const minute = String(date.minute).padStart(2, '0');
-        return `${year}-${month}-${day}T${hour}:${minute}`;
+        // Return ISO format which is expected by backend, but represents IST time
+        return `${year}-${month}-${day}T${hour}:${minute}:00`;
       };
 
       setWindowForm({
@@ -156,6 +163,7 @@ export function WindowForm({
               variant="bordered"
               description="Select the start and end dates for this window"
               hideTimeZone
+              granularity="minute"
               visibleMonths={1}
               className="max-w-xs"
             />
