@@ -5,13 +5,10 @@ import toast from 'react-hot-toast';
 
 // Hooks
 import { useWindowManagement } from './hooks/useWindowManagement';
-import { useStats } from './hooks/useStats';
 import { useGradeRelease } from './hooks/useGradeRelease';
 import { useWindowForm } from './hooks/useWindowForm';
 
 // Components
-import { StatsCards } from './components/Dashboard/StatsCards';
-import { LoadingDashboard } from './components/Dashboard/LoadingDashboard';
 import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection';
 import { QuickActions } from './components/Dashboard/QuickActions';
 import { WindowsList } from './components/WindowManagement/WindowsList';
@@ -53,8 +50,6 @@ export function ControlPanel() {
     prepareEditWindow
   } = useWindowManagement();
 
-  const { stats, statsLoading, fetchStats } = useStats();
-
   const {
     releasedGrades,
     checkReleasedGrades,
@@ -74,13 +69,12 @@ export function ControlPanel() {
     const loadData = async () => {
       await Promise.all([
         fetchWindows(),
-        fetchStats(),
         checkReleasedGrades()
       ]);
     };
 
     loadData();
-  }, [fetchWindows, fetchStats, checkReleasedGrades]);
+  }, [fetchWindows, checkReleasedGrades]);
 
   // Handlers
   const handleCreateWindow = async () => {
@@ -145,7 +139,7 @@ export function ControlPanel() {
 
     const success = await releaseGrades(gradeReleaseProjectType);
     if (success) {
-      fetchStats(); // Refresh stats after grade release
+      // Grades released
     }
     setShowGradeReleaseModal(false);
     setGradeReleaseProjectType(null);
@@ -190,34 +184,20 @@ export function ControlPanel() {
         {currentView === 'dashboard' ? (
           /* Dashboard View */
           <>
-            {/* Show loading state for entire dashboard or loaded content */}
-            {statsLoading ? (
-              <LoadingDashboard />
-            ) : stats ? (
-              <>
-                {/* Statistics */}
-                <StatsCards stats={stats} />
-
-                {/* Grade Release Section - Only show when grade release window is active */}
-                {isGradeReleaseWindowActive(windows) && (
-                  <GradeReleaseSection
-                    releasedGrades={releasedGrades}
-                    onReleaseGrades={handleReleaseFinalGrades}
-                  />
-                )}
-
-                {/* Quick Actions */}
-                <QuickActions
-                  onManageWindows={() => setCurrentView('windows')}
-                  onUpdateStatuses={updateWindowStatuses}
-                  onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
-                />
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-textSecondary">Failed to load dashboard data. Please refresh the page.</p>
-              </div>
+            {/* Grade Release Section - Only show when grade release window is active */}
+            {isGradeReleaseWindowActive(windows) && (
+              <GradeReleaseSection
+                releasedGrades={releasedGrades}
+                onReleaseGrades={handleReleaseFinalGrades}
+              />
             )}
+
+            {/* Quick Actions */}
+            <QuickActions
+              onManageWindows={() => setCurrentView('windows')}
+              onUpdateStatuses={updateWindowStatuses}
+              onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
+            />
           </>
         ) : currentView === 'windows' ? (
           /* Windows Management View */
