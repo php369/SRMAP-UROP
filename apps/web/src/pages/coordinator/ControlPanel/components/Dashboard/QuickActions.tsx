@@ -21,7 +21,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         {/* Manage Windows Card */}
         <div
           onClick={onManageWindows}
-          className="p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
+          className="p-6 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all group"
         >
           <div className="flex items-start gap-4 mb-4">
             <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
@@ -46,9 +46,9 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         {/* External Evaluators Card */}
         <div
           onClick={isExternalEvaluatorsEnabled ? onManageExternalEvaluators : undefined}
-          className={`p-6 border-2 border-gray-200 rounded-lg transition-all group ${isExternalEvaluatorsEnabled
-            ? 'hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
-            : 'opacity-60 bg-gray-50 cursor-not-allowed'
+          className={`p-6 rounded-lg transition-all group ${isExternalEvaluatorsEnabled
+            ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+            : 'bg-gray-50 opacity-60 cursor-not-allowed'
             }`}
         >
           <div className="flex items-start gap-4 mb-4">
@@ -81,7 +81,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         </div>
 
         {/* System Status Card */}
-        <div className="p-6 border-2 border-gray-200 rounded-lg">
+        <div className="p-6 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-green-100 rounded-lg">
               <RefreshCwIcon className="w-6 h-6 text-green-600" />
