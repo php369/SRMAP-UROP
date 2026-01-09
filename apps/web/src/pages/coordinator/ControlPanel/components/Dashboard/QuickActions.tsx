@@ -27,7 +27,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
               <CalendarIcon className="w-6 h-6 text-primary" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="text-lg font-semibold text-gray-900 break-words">Manage Windows</h3>
               <p className="text-sm text-gray-600 break-words line-clamp-2">Create, edit, and manage assessment windows</p>
             </div>
@@ -55,7 +55,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <div className={`p-3 rounded-lg transition-colors flex-shrink-0 ${isExternalEvaluatorsEnabled ? 'bg-purple-100 group-hover:bg-purple-200' : 'bg-gray-200'}`}>
               <UserCheckIcon className={`w-6 h-6 ${isExternalEvaluatorsEnabled ? 'text-purple-600' : 'text-gray-500'}`} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="text-lg font-semibold text-gray-900 break-words">External Evaluators</h3>
               <p className="text-sm text-gray-600 break-words line-clamp-2">Assign and manage external evaluators</p>
             </div>
