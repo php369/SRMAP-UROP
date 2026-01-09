@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, Users, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
-import { Reveal } from '../../components/ui/Reveal';
+import { ScrollReveal as Reveal } from '../../components/ui/ScrollReveal';
 import TiltedCard from '../../components/ui/TiltedCard';
 
 

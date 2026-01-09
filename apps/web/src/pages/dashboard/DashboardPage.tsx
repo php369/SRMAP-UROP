@@ -8,7 +8,7 @@ import { StudentDashboard } from './StudentDashboard';
 import { FacultyDashboard } from './FacultyDashboard';
 import { CoordinatorDashboard } from './CoordinatorDashboard';
 import { AdminDashboard } from './AdminDashboard';
-import { Reveal } from '../../components/ui/Reveal';
+import { ScrollReveal as Reveal } from '../../components/ui/ScrollReveal';
 
 // Configure axios base URL (only once)
 if (!axios.defaults.baseURL) {
