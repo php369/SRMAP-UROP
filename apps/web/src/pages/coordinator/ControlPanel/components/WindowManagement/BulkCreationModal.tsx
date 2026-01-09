@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { XCircle, ChevronLeft, ChevronRight, CheckCircle, CalendarDays, Layers } from 'lucide-react';
 import { WindowForm, ProjectType } from '../../types';
-import { DateRangePicker } from "@heroui/react";
+import { DateRangePicker } from "@heroui/date-picker";
 import { parseDateTime } from "@internationalized/date";
 
 interface BulkCreationModalProps {

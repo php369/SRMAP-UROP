@@ -1,5 +1,5 @@
 import { WindowForm as WindowFormType, WindowType, ProjectType, AssessmentType, Window } from '../../types';
-import { DateRangePicker } from "@heroui/react";
+import { DateRangePicker } from "@heroui/date-picker";
 import { parseDateTime } from "@internationalized/date";
 
 interface WindowFormProps {
