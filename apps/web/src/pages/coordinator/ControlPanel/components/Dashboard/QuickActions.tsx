@@ -23,13 +23,13 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           onClick={onManageWindows}
           className="p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
               <CalendarIcon className="w-6 h-6 text-primary" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Manage Windows</h3>
-              <p className="text-sm text-gray-600">Create, edit, and manage assessment windows</p>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 break-words">Manage Windows</h3>
+              <p className="text-sm text-gray-600 break-words line-clamp-2">Create, edit, and manage assessment windows</p>
             </div>
           </div>
           <div className="text-sm text-gray-500">
@@ -51,13 +51,13 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             : 'opacity-60 bg-gray-50 cursor-not-allowed'
             }`}
         >
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`p-3 rounded-lg transition-colors ${isExternalEvaluatorsEnabled ? 'bg-purple-100 group-hover:bg-purple-200' : 'bg-gray-200'}`}>
+          <div className="flex items-start gap-4 mb-4">
+            <div className={`p-3 rounded-lg transition-colors flex-shrink-0 ${isExternalEvaluatorsEnabled ? 'bg-purple-100 group-hover:bg-purple-200' : 'bg-gray-200'}`}>
               <UserCheckIcon className={`w-6 h-6 ${isExternalEvaluatorsEnabled ? 'text-purple-600' : 'text-gray-500'}`} />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">External Evaluators</h3>
-              <p className="text-sm text-gray-600">Assign and manage external evaluators</p>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 break-words">External Evaluators</h3>
+              <p className="text-sm text-gray-600 break-words line-clamp-2">Assign and manage external evaluators</p>
             </div>
           </div>
           <div className="text-sm text-gray-500">

@@ -160,7 +160,7 @@ export function ControlPanel() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold mb-2 text-slate-900">
                 {currentView === 'dashboard' ? 'Control Panel' :
@@ -179,7 +179,7 @@ export function ControlPanel() {
             {(currentView === 'windows' || currentView === 'external-evaluators') && (
               <button
                 onClick={() => setCurrentView('dashboard')}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg flex items-center gap-2 transition-colors"
+                className="w-full md:w-auto px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Back to Dashboard

@@ -109,9 +109,9 @@ export function WindowsList({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between p-4 bg-surface/50 border border-border rounded-lg"
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-surface/50 border border-border rounded-lg"
       >
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
           <span className="text-sm font-medium text-gray-700">Window Display Options:</span>
           <div className="flex items-center space-x-3">
             <span className="text-sm text-gray-600">Show inactive windows</span>
@@ -128,7 +128,7 @@ export function WindowsList({
             </button>
           </div>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 self-end sm:self-auto">
           {windowsLoading ? 'Loading...' : `${filteredWindows.length} of ${windows.length} windows shown`}
         </div>
       </motion.div>

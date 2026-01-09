@@ -114,16 +114,16 @@ export function ExternalEvaluatorsTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text">External Evaluator Assignment</h2>
           <p className="text-textSecondary">Manage external evaluator assignments for projects</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           <button
             onClick={handleRefresh}
             disabled={assignmentsLoading || evaluatorsLoading}
-            className="px-4 py-2 bg-surface border border-border text-text hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 rounded-lg transition-colors"
+            className="flex-1 w-full sm:w-auto justify-center px-4 py-2 bg-surface border border-border text-text hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${(assignmentsLoading || evaluatorsLoading) ? 'animate-spin' : ''}`} />
             Refresh
@@ -131,7 +131,7 @@ export function ExternalEvaluatorsTab() {
           <button
             onClick={handleAutoAssign}
             disabled={loading || isModificationRestricted || assignments.length === 0}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
+            className="flex-1 w-full sm:w-auto justify-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
             title={isModificationRestricted ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
           >
             <Zap className="w-4 h-4" />
@@ -201,11 +201,11 @@ export function ExternalEvaluatorsTab() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
+              className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
             >
               <option value="all">All Status</option>
               <option value="assigned">Assigned</option>
@@ -216,7 +216,7 @@ export function ExternalEvaluatorsTab() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
+              className="w-full sm:w-auto px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text"
             >
               <option value="all">All Types</option>
               <option value="group">Groups</option>
