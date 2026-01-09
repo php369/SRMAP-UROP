@@ -87,7 +87,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             ? 'px-4 py-6'
             : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
             }`}>
-            <div className="max-w-7xl mx-auto h-full">
+            <div className="max-w-7xl mx-auto">
               <Suspense fallback={<PageLoader />}>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -96,7 +96,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="h-full"
                   >
                     {children}
                   </motion.div>
