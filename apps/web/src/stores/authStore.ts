@@ -195,7 +195,7 @@ export const useAuthStore = create<AuthStore>()(
 
         refreshUserData: async () => {
           try {
-            const response = await apiClient.get('/auth/me');
+            const response = await apiClient.get<{ user: User }>('/auth/me');
 
             if (response.success && response.data?.user) {
               const updatedUser = response.data.user;
@@ -346,11 +346,27 @@ export const useAuthStore = create<AuthStore>()(
                     sessionManager.setUserData(user);
                     console.log('✅ User data updated from background verification');
                   }
-                }).catch(async (error) => {
+                }).catch(async (error: any) => {
                   // Only logout on explicit auth errors, not network/server errors
                   console.warn('⚠️ Background session verification failed:', error);
-                  // Don't automatically logout - let the session monitoring handle it
-                  // This prevents unnecessary logouts during temporary network issues or DB operations
+
+                  // Check for specific error status codes or messages indicating invalid auth/user
+                  // 401: Unauthorized (token invalid)
+                  // 404: Not Found (user deleted)
+                  const isAuthError =
+                    error?.message?.includes('401') ||
+                    error?.message?.includes('404') ||
+                    error?.message?.includes('UNAUTHORIZED') ||
+                    error?.message?.includes('Not Found');
+
+                  if (isAuthError) {
+                    console.error('❌ Critical auth error during background check - logging out');
+                    get().logout();
+                  } else {
+                    // Don't automatically logout - let the session monitoring handle it
+                    // This prevents unnecessary logouts during temporary network issues or DB operations
+                    console.log('⚠️ Ignoring non-critical error during background check');
+                  }
                 });
               }
 
