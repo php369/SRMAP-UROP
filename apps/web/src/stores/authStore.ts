@@ -222,8 +222,24 @@ export const useAuthStore = create<AuthStore>()(
             }
 
             return false;
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Failed to refresh user data:', error);
+
+            // Check if error implies we should logout (401/404)
+            const errorMessage = error?.message?.toLowerCase() || '';
+            const isAuthError =
+              errorMessage.includes('401') ||
+              errorMessage.includes('404') ||
+              errorMessage.includes('unauthorized') ||
+              errorMessage.includes('not found') ||
+              errorMessage.includes('access revoked') ||
+              errorMessage.includes('user not found');
+
+            if (isAuthError) {
+              console.error('❌ Critical auth error during refresh - logging out');
+              get().logout();
+            }
+
             return false;
           }
         },
@@ -353,11 +369,14 @@ export const useAuthStore = create<AuthStore>()(
                   // Check for specific error status codes or messages indicating invalid auth/user
                   // 401: Unauthorized (token invalid)
                   // 404: Not Found (user deleted)
+                  const errorMessage = error?.message?.toLowerCase() || '';
                   const isAuthError =
-                    error?.message?.includes('401') ||
-                    error?.message?.includes('404') ||
-                    error?.message?.includes('UNAUTHORIZED') ||
-                    error?.message?.includes('Not Found');
+                    errorMessage.includes('401') ||
+                    errorMessage.includes('404') ||
+                    errorMessage.includes('unauthorized') ||
+                    errorMessage.includes('not found') ||
+                    errorMessage.includes('access revoked') ||
+                    errorMessage.includes('user not found');
 
                   if (isAuthError) {
                     console.error('❌ Critical auth error during background check - logging out');
