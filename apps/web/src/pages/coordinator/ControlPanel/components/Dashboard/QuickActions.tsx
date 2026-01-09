@@ -17,7 +17,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
       className="bg-white rounded-xl shadow-lg p-6"
     >
       <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Manage Windows Card */}
         <div
           onClick={onManageWindows}
@@ -47,8 +47,8 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
         <div
           onClick={isExternalEvaluatorsEnabled ? onManageExternalEvaluators : undefined}
           className={`p-6 border-2 border-gray-200 rounded-lg transition-all group ${isExternalEvaluatorsEnabled
-              ? 'hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
-              : 'opacity-60 bg-gray-50 cursor-not-allowed'
+            ? 'hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
+            : 'opacity-60 bg-gray-50 cursor-not-allowed'
             }`}
         >
           <div className="flex items-center gap-4 mb-4">

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAuthStore } from '../../stores/authStore';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
-import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
+
 import {
   HomeIcon,
   FileTextIcon,
@@ -73,15 +73,7 @@ export function Sidebar() {
     }
   }, []);
 
-  // Swipe gesture support for mobile sidebar
-  const swipeRef = useSwipeGesture({
-    onSwipeRight: () => openMobileSidebar(),
-    onSwipeLeft: () => closeMobileSidebar(),
-    threshold: 50,
-    velocityThreshold: 0.3,
-    preventScroll: true,
-    enabled: window.innerWidth < 1024,
-  });
+
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -257,24 +249,7 @@ export function Sidebar() {
 
       {/* Mobile Sidebar */}
       <div className="lg:hidden">
-        {/* Mobile menu button */}
-        <button
-          onClick={openMobileSidebar}
-          className={cn(
-            'fixed top-4 left-4 z-50 p-3 bg-surface border border-border rounded-2xl text-text hover:bg-surface transition-all duration-300 shadow-lg group',
-            isMobileOpen && 'opacity-0 pointer-events-none scale-90'
-          )}
-          aria-label="Open navigation menu"
-        >
-          <MenuIcon
-            className="w-6 h-6 transform group-hover:scale-110 transition-transform"
-          />
-        </button>
 
-        {/* Swipe indicator for mobile */}
-        {!isMobileOpen && (
-          <div className="fixed left-0 top-1/2 transform -translate-y-1/2 w-1.5 h-20 bg-gradient-to-b from-transparent via-primary/40 to-transparent rounded-r-full opacity-50 animate-pulse" />
-        )}
 
         {/* Mobile sidebar overlay */}
         <div
@@ -291,7 +266,7 @@ export function Sidebar() {
 
           {/* Glass Drawer */}
           <div
-            ref={swipeRef as any}
+            ref={undefined}
             className={cn(
               'absolute inset-y-4 left-4 w-[85vw] sm:w-80 transform transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1)',
               isMobileOpen ? 'translate-x-0' : '-translate-x-[110%]'
@@ -384,7 +359,7 @@ export function Sidebar() {
 
                 {/* User Info Footnote */}
                 <div className="p-4 mt-auto border-t border-border/10 bg-surface/50">
-                  <div className="flex items-center p-3 rounded-2xl bg-surface border border-border/30 shadow-sm">
+                  <div className="flex items-center p-3 rounded-2xl bg-surface border border-border/30 shadow-sm mb-3">
                     <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-inner">
                       <span className="text-white text-sm font-bold">
                         {user?.name?.charAt(0).toUpperCase() || '?'}
@@ -399,6 +374,12 @@ export function Sidebar() {
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => logout()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition-colors"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               </div>
             </div>

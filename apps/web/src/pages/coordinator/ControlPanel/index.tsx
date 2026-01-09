@@ -153,7 +153,7 @@ export function ControlPanel() {
   );
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -214,7 +214,7 @@ export function ControlPanel() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white shadow-xl p-6 rounded-xl border border-slate-200"
+                className="bg-white shadow-xl p-4 md:p-6 rounded-xl border border-slate-200"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900">

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { UserOnboardingModal } from '../modals/UserOnboardingModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSwipeGesture } from '../../hooks/ui/useSwipeGesture';
+
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
 import { PageLoader } from '../common/PageLoader';
@@ -31,27 +31,10 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Add swipe gesture support for mobile navigation
-  const swipeRef = useSwipeGesture({
-    onSwipeRight: () => {
-      if (isMobile) {
-        document.dispatchEvent(new CustomEvent('open-mobile-sidebar'));
-      }
-    },
-    onSwipeLeft: () => {
-      if (isMobile) {
-        document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
-      }
-    },
-    threshold: 80,
-    velocityThreshold: 0.4,
-    preventScroll: false,
-    enabled: isMobile,
-  });
+
 
   return (
     <div
-      ref={swipeRef as any}
       className="flex min-h-screen bg-[#f5f4f2]"
     >
       {/* User Onboarding Modal - user name check */}
@@ -69,14 +52,20 @@ export function AppLayout({ children }: AppLayoutProps) {
         }`}>
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center px-4 h-16 bg-white border-b border-slate-200 flex-shrink-0 z-30">
+          <div className="sticky top-0 z-30 flex items-center justify-between px-4 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm transition-all duration-200">
+            <div className="flex items-center gap-3">
+              <img src="/branding/srm-icon.svg" alt="SRM Logo" className="w-8 h-8" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-900 leading-tight">Project Portal</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SRM University-AP</span>
+              </div>
+            </div>
             <button
               onClick={() => document.dispatchEvent(new CustomEvent('open-mobile-sidebar'))}
-              className="p-2 -ml-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
             >
               <MenuIcon className="w-6 h-6" />
             </button>
-            <span className="ml-3 font-semibold text-slate-900">Project Portal</span>
           </div>
         )}
 
