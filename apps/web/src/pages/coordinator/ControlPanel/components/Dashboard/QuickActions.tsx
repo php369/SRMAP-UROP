@@ -19,16 +19,18 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
       <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Manage Windows Card */}
-        <div
+        <motion.div
+          whileHover={{ y: -5, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
           onClick={onManageWindows}
-          className="p-6 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all group"
+          className="p-6 bg-gray-50/80 rounded-xl hover:bg-white hover:shadow-xl hover:shadow-primary/10 cursor-pointer border border-transparent hover:border-primary/10 transition-colors group relative overflow-hidden"
         >
           <div className="flex items-start gap-4 mb-4">
-            <div className="p-3 bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
-              <CalendarIcon className="w-6 h-6 text-primary" />
+            <div className="p-3 bg-white rounded-lg shadow-sm group-hover:bg-primary/10 group-hover:text-primary transition-colors flex-shrink-0">
+              <CalendarIcon className="w-6 h-6 text-gray-500 group-hover:text-primary transition-colors" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 break-words">Manage Windows</h3>
+              <h3 className="text-lg font-semibold text-gray-900 break-words group-hover:text-primary transition-colors">Manage Windows</h3>
               <p className="text-sm text-gray-600 break-words line-clamp-2">Create, edit, and manage assessment windows</p>
             </div>
           </div>
@@ -37,26 +39,28 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <p>• Edit existing window schedules</p>
             <p>• View window status and timeline</p>
           </div>
-          <div className="mt-4 flex items-center text-primary text-sm font-medium">
+          <div className="mt-4 flex items-center text-gray-400 group-hover:text-primary text-sm font-medium transition-colors">
             Click to manage windows
-            <ChevronRightIcon className="w-4 h-4 ml-1" />
+            <ChevronRightIcon className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" />
           </div>
-        </div>
+        </motion.div>
 
         {/* External Evaluators Card */}
-        <div
+        <motion.div
+          whileHover={isExternalEvaluatorsEnabled ? { y: -5, scale: 1.02 } : undefined}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
           onClick={isExternalEvaluatorsEnabled ? onManageExternalEvaluators : undefined}
-          className={`p-6 rounded-lg transition-all group ${isExternalEvaluatorsEnabled
-            ? 'bg-gray-50 hover:bg-gray-100 cursor-pointer'
+          className={`p-6 rounded-xl transition-all group relative overflow-hidden border border-transparent ${isExternalEvaluatorsEnabled
+            ? 'bg-gray-50/80 hover:bg-white hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-200/50 cursor-pointer'
             : 'bg-gray-50 opacity-60 cursor-not-allowed'
             }`}
         >
           <div className="flex items-start gap-4 mb-4">
-            <div className={`p-3 rounded-lg transition-colors flex-shrink-0 ${isExternalEvaluatorsEnabled ? 'bg-purple-100 group-hover:bg-purple-200' : 'bg-gray-200'}`}>
-              <UserCheckIcon className={`w-6 h-6 ${isExternalEvaluatorsEnabled ? 'text-purple-600' : 'text-gray-500'}`} />
+            <div className={`p-3 rounded-lg shadow-sm transition-colors flex-shrink-0 ${isExternalEvaluatorsEnabled ? 'bg-white group-hover:bg-purple-50' : 'bg-gray-200'}`}>
+              <UserCheckIcon className={`w-6 h-6 ${isExternalEvaluatorsEnabled ? 'text-gray-500 group-hover:text-purple-600' : 'text-gray-500'} transition-colors`} />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 break-words">External Evaluators</h3>
+              <h3 className={`text-lg font-semibold break-words transition-colors ${isExternalEvaluatorsEnabled ? 'text-gray-900 group-hover:text-purple-700' : 'text-gray-900'}`}>External Evaluators</h3>
               <p className="text-sm text-gray-600 break-words line-clamp-2">Assign and manage external evaluators</p>
             </div>
           </div>
@@ -65,11 +69,11 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
             <p>• View assignment details</p>
             <p>• Manage evaluator workload</p>
           </div>
-          <div className={`mt-4 flex items-center text-sm font-medium ${isExternalEvaluatorsEnabled ? 'text-purple-600' : 'text-gray-400'}`}>
+          <div className={`mt-4 flex items-center text-sm font-medium transition-colors ${isExternalEvaluatorsEnabled ? 'text-gray-400 group-hover:text-purple-600' : 'text-gray-400'}`}>
             {isExternalEvaluatorsEnabled ? (
               <>
                 Click to manage evaluators
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
+                <ChevronRightIcon className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" />
               </>
             ) : (
               <span className="flex items-center gap-1">
@@ -78,12 +82,16 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
               </span>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* System Status Card */}
-        <div className="p-6 bg-gray-50 rounded-lg">
+        <motion.div
+          whileHover={{ y: -5, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="p-6 bg-gray-50/80 rounded-xl border border-transparent hover:bg-white hover:shadow-xl hover:shadow-green-500/10 hover:border-green-200/50 transition-all"
+        >
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-green-100 rounded-lg">
+            <div className="p-3 bg-white rounded-lg shadow-sm">
               <RefreshCwIcon className="w-6 h-6 text-green-600" />
             </div>
             <div>
@@ -94,7 +102,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           <div className="space-y-3">
             <button
               onClick={onUpdateStatuses}
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 bg-gray-white border border-gray-200 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 hover:border-green-200 flex items-center justify-center gap-2 transition-all shadow-sm"
             >
               <RefreshCwIcon className="w-4 h-4" />
               Update Window Statuses
@@ -103,7 +111,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
               Updates window statuses based on current time
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );
