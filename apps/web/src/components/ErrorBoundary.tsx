@@ -44,6 +44,20 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack,
     });
 
+    // Check for chunk loading failures (common after deployments or inactivity)
+    if (error.message.includes('Failed to fetch dynamically imported module')) {
+      // Prevent infinite reload loops check session storage
+      const isReloaded = sessionStorage.getItem('chunk_reload');
+      if (!isReloaded) {
+        sessionStorage.setItem('chunk_reload', 'true');
+        window.location.reload();
+        return;
+      } else {
+        // Clear flag if we already reloaded once and it still failed
+        sessionStorage.removeItem('chunk_reload');
+      }
+    }
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -57,7 +71,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    // Hard reload to clear any stale state or caches
+    window.location.reload();
+    // this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   render() {
