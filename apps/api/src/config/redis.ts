@@ -16,6 +16,8 @@ export function initializeRedis(): { pubClient: Redis; subClient: Redis } {
             return delay;
         },
         maxRetriesPerRequest: 3,
+        // Render uses IPv6 for internal networking, but ioredis defaults to IPv4
+        family: config.NODE_ENV === 'production' ? 6 : 4,
     };
 
     logger.info(`Connecting to Redis at ${config.REDIS_URL}...`);
