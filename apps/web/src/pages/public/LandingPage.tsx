@@ -54,7 +54,7 @@ export function LandingPage() {
 
           <div className="flex items-center gap-6">
             {!isAuthenticated && (
-              <Button asChild variant="ghost" className="text-sm font-semibold text-slate-600 hover:text-srm-600 transition-colors dark:text-slate-400 dark:hover:text-srm-400 hover:bg-transparent">
+              <Button asChild variant="ghost" className="text-sm font-semibold text-slate-700 hover:text-srm-700 transition-colors dark:text-slate-300 dark:hover:text-srm-300 hover:bg-transparent">
                 <Link to={ROUTES.LOGIN}>
                   Sign In
                 </Link>
@@ -102,7 +102,7 @@ export function LandingPage() {
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-70 group-hover:opacity-100" />
 
-                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-semibold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-white">
+                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-bold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-slate-900">
                   <span className="mr-2">{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
@@ -159,7 +159,7 @@ export function LandingPage() {
                   displayOverlayContent={false}
                 >
                   <div className="w-full h-full group flex flex-col items-start p-6 rounded-2xl bg-white/60 border border-slate-100 transition-colors duration-300 backdrop-blur-xl dark:bg-slate-900/60 dark:border-slate-800">
-                    <div className="w-12 h-12 rounded-xl bg-srm-50 text-srm-600 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3 dark:bg-slate-800 dark:text-srm-400">
+                    <div className="w-12 h-12 rounded-xl bg-srm-100 text-srm-700 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3 dark:bg-slate-800 dark:text-srm-300">
                       <feature.icon className="h-6 w-6" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 mb-2 dark:text-white group-hover:text-srm-600 transition-colors">{feature.title}</h3>
