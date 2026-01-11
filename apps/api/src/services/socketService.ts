@@ -1,9 +1,10 @@
 import { Server, Socket } from 'socket.io';
-import { createAdapter } from '@socket.io/redis-adapter';
+// import { createAdapter } from '@socket.io/redis-adapter';
 import { verifyAccessToken } from './jwtService';
 import { User } from '../models/User';
 import { logger } from '../utils/logger';
-import { getRedisClient, initializeRedis } from '../config/redis';
+import { redis } from '../config/redis';
+import { attachRedisAdapter } from '../config/redisAdapter';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -28,23 +29,7 @@ const ROOM_KEY_PREFIX = 'room:members:';
 
 export function setupSocketIO(io: Server): void {
   // Initialize Redis Adapter
-  try {
-    const { pubClient, subClient } = initializeRedis();
-    // Verify connection before attaching
-    if (pubClient.status === 'ready' || pubClient.status === 'connecting') {
-      io.adapter(createAdapter(pubClient, subClient));
-      logger.info('✅ Socket.IO Redis Adapter configured');
-    } else {
-      // This might happen if lazy connect hasn't kicked in or failed immediately,
-      // but createAdapter usually accepts them anyway.
-      // We'll trust ioredis to handle the connecting state, but wrap in try-catch 
-      // just in case createAdapter throws on invalid client.
-      io.adapter(createAdapter(pubClient, subClient));
-      logger.info('✅ Socket.IO Redis Adapter attached (lazy)');
-    }
-  } catch (error) {
-    logger.warn('⚠️ Redis adapter failed to initialize, continuing WITHOUT Redis clustering. This is expected if Redis is down.', error);
-  }
+  attachRedisAdapter(io);
 
   // Authentication middleware
   io.use(async (socket: AuthenticatedSocket, next) => {
@@ -147,7 +132,6 @@ export function setupSocketIO(io: Server): void {
 // Presence Helpers using Redis
 
 async function addUserPresence(userId: string, userName: string, userRole: string, socketId: string) {
-  const redis = getRedisClient();
   if (!redis) return;
 
   const presence: UserPresence = {
@@ -163,20 +147,17 @@ async function addUserPresence(userId: string, userName: string, userRole: strin
 }
 
 async function removeUserPresence(userId: string, socketId: string) {
-  const redis = getRedisClient();
   if (!redis) return;
   // In a robust app, we might handle multi-device (multiple sockets per user) logic here
   await redis.del(`${PRESENCE_KEY_PREFIX}${userId}`);
 }
 
 async function addUserToRoom(userId: string, roomId: string) {
-  const redis = getRedisClient();
   if (!redis) return;
   await redis.sadd(`${ROOM_KEY_PREFIX}${roomId}`, userId);
 }
 
 async function removeUserFromRoom(userId: string, roomId: string) {
-  const redis = getRedisClient();
   if (!redis) return;
   await redis.srem(`${ROOM_KEY_PREFIX}${roomId}`, userId);
 }
@@ -184,7 +165,6 @@ async function removeUserFromRoom(userId: string, roomId: string) {
 // Public API
 
 export async function getOnlineUsers(): Promise<UserPresence[]> {
-  const redis = getRedisClient();
   if (!redis) return [];
 
   const keys = await redis.keys(`${PRESENCE_KEY_PREFIX}*`);
@@ -195,14 +175,12 @@ export async function getOnlineUsers(): Promise<UserPresence[]> {
 }
 
 export async function isUserOnline(userId: string): Promise<boolean> {
-  const redis = getRedisClient();
   if (!redis) return false;
   const exists = await redis.exists(`${PRESENCE_KEY_PREFIX}${userId}`);
   return exists === 1;
 }
 
 export async function getUserCurrentRoom(userId: string): Promise<string | undefined> {
-  const redis = getRedisClient();
   if (!redis) return undefined;
   // Note: Since Redis sets don't store "current room" state on the user key easily without extra complexity,
   // we might need to query room members or store it on the user presence.
@@ -211,7 +189,6 @@ export async function getUserCurrentRoom(userId: string): Promise<string | undef
 }
 
 export async function getOnlineUsersInRoom(roomId: string): Promise<UserPresence[]> {
-  const redis = getRedisClient();
   if (!redis) return [];
 
   const userIds = await redis.smembers(`${ROOM_KEY_PREFIX}${roomId}`);
@@ -226,7 +203,6 @@ export async function getOnlineUsersInRoom(roomId: string): Promise<UserPresence
 }
 
 export async function getPresenceStats(): Promise<{ totalOnline: number; activeRooms: number }> {
-  const redis = getRedisClient();
   if (!redis) return { totalOnline: 0, activeRooms: 0 };
 
   // Note: KEYS command is expensive in production. SCAN should be used in real large scale apps.
