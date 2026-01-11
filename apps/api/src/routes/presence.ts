@@ -1,16 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
-import { 
-  getOnlineUsers, 
-  getOnlineUsersInRoom, 
-  isUserOnline, 
+import {
+  getOnlineUsers,
+  getOnlineUsersInRoom,
+  isUserOnline,
   getUserCurrentRoom,
   getPresenceStats
 } from '../services/socketService';
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * GET /presence/online
@@ -18,8 +18,8 @@ const router = Router();
  */
 router.get('/online', authenticate, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const onlineUsers = getOnlineUsers();
-    
+    const onlineUsers = await getOnlineUsers();
+
     // Filter sensitive information based on user role
     const user = req.user!;
     const filteredUsers = onlineUsers.map(presence => ({
@@ -41,7 +41,7 @@ router.get('/online', authenticate, asyncHandler(async (req: Request, res: Respo
 
   } catch (error) {
     logger.error('Failed to get online users:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -70,8 +70,8 @@ router.get('/room/:roomId', authenticate, asyncHandler(async (req: Request, res:
   }
 
   try {
-    const roomUsers = getOnlineUsersInRoom(roomId);
-    
+    const roomUsers = await getOnlineUsersInRoom(roomId);
+
     const filteredUsers = roomUsers.map(presence => ({
       userId: presence.userId,
       userName: presence.userName,
@@ -92,7 +92,7 @@ router.get('/room/:roomId', authenticate, asyncHandler(async (req: Request, res:
 
   } catch (error) {
     logger.error(`Failed to get users in room ${roomId}:`, error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -133,8 +133,8 @@ router.get('/user/:userId', authenticate, asyncHandler(async (req: Request, res:
   }
 
   try {
-    const isOnline = isUserOnline(userId);
-    const currentRoom = getUserCurrentRoom(userId);
+    const isOnline = await isUserOnline(userId);
+    const currentRoom = await getUserCurrentRoom(userId);
 
     res.json({
       success: true,
@@ -148,7 +148,7 @@ router.get('/user/:userId', authenticate, asyncHandler(async (req: Request, res:
 
   } catch (error) {
     logger.error(`Failed to get presence for user ${userId}:`, error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -177,7 +177,7 @@ router.get('/stats', authenticate, asyncHandler(async (req: Request, res: Respon
   }
 
   try {
-    const stats = getPresenceStats();
+    const stats = await getPresenceStats();
 
     res.json({
       success: true,
@@ -189,7 +189,7 @@ router.get('/stats', authenticate, asyncHandler(async (req: Request, res: Respon
 
   } catch (error) {
     logger.error('Failed to get presence statistics:', error);
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -208,8 +208,8 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
   const userId = req.user!.id;
 
   try {
-    const isOnline = isUserOnline(userId);
-    const currentRoom = getUserCurrentRoom(userId);
+    const isOnline = await isUserOnline(userId);
+    const currentRoom = await getUserCurrentRoom(userId);
 
     res.json({
       success: true,
@@ -223,7 +223,7 @@ router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response)
 
   } catch (error) {
     logger.error(`Failed to get own presence for user ${userId}:`, error);
-    
+
     res.status(500).json({
       success: false,
       error: {
