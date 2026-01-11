@@ -157,8 +157,23 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
   const { code } = validationResult.data;
 
   try {
+    // Determine the correct redirect URI based on the request origin
+    // This is critical for supporting multiple domains (e.g. Vercel preview vs Production)
+    const origin = req.headers.origin;
+    let customRedirectUri: string | undefined;
+
+    if (origin === 'https://projects-srmap.vercel.app') {
+      customRedirectUri = `${origin}/auth/callback`;
+    } else if (origin === 'https://srmap-urop-web.vercel.app') {
+      customRedirectUri = `${origin}/auth/callback`;
+    }
+
+    if (customRedirectUri) {
+      logger.info(`Using custom redirect URI based on origin: ${customRedirectUri}`);
+    }
+
     // Exchange code for tokens
-    const tokens = await exchangeCodeForTokens(code);
+    const tokens = await exchangeCodeForTokens(code, customRedirectUri);
 
     // Verify ID token and extract user info
     const googleUser = await verifyGoogleIdToken(tokens.idToken);
@@ -732,8 +747,22 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
   const { code } = validationResult.data;
 
   try {
+    // Determine the correct redirect URI based on the request origin (Same logic as /google)
+    const origin = req.headers.origin;
+    let customRedirectUri: string | undefined;
+
+    if (origin === 'https://projects-srmap.vercel.app') {
+      customRedirectUri = `${origin}/auth/callback`;
+    } else if (origin === 'https://srmap-urop-web.vercel.app') {
+      customRedirectUri = `${origin}/auth/callback`;
+    }
+
+    if (customRedirectUri) {
+      logger.info(`Using custom redirect URI for callback based on origin: ${customRedirectUri}`);
+    }
+
     // Exchange code for tokens
-    const tokens = await exchangeCodeForTokens(code);
+    const tokens = await exchangeCodeForTokens(code, customRedirectUri);
 
     // Verify ID token and extract user info
     const googleUser = await verifyGoogleIdToken(tokens.idToken);

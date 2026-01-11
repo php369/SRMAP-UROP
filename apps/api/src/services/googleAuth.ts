@@ -47,7 +47,7 @@ export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedGoog
     });
 
     const payload = ticket.getPayload() as GoogleTokenPayload;
-    
+
     if (!payload) {
       throw new Error('Invalid token payload');
     }
@@ -99,12 +99,12 @@ export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedGoog
  */
 export function verifyDomainRestriction(email: string, hostedDomain?: string): boolean {
   const requiredDomain = 'srmap.edu.in';
-  
+
   // Check hosted domain first (more reliable for G Suite accounts)
   if (hostedDomain) {
     return hostedDomain === requiredDomain;
   }
-  
+
   // Fallback to email domain check
   return email.endsWith(`@${requiredDomain}`);
 }
@@ -135,16 +135,22 @@ export function generateAuthUrl(state?: string): string {
 /**
  * Exchange authorization code for tokens
  * @param code - Authorization code from Google
+ * @param customRedirectUri - Optional redirect URI to use for this exchange (overrides config)
  * @returns Token information
  */
-export async function exchangeCodeForTokens(code: string) {
+export async function exchangeCodeForTokens(code: string, customRedirectUri?: string) {
   try {
+    const redirectUri = customRedirectUri || config.GOOGLE_REDIRECT_URI;
+
     logger.info(`Attempting token exchange with code: ${code.substring(0, 20)}...`);
     logger.info(`OAuth2 Client Config - Client ID: ${config.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
-    logger.info(`OAuth2 Client Config - Redirect URI: ${config.GOOGLE_REDIRECT_URI}`);
-    
-    const { tokens } = await oauth2Client.getToken(code);
-    
+    logger.info(`OAuth2 Client Config - Redirect URI: ${redirectUri} ${customRedirectUri ? '(custom)' : '(default)'}`);
+
+    const { tokens } = await oauth2Client.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
+
     if (!tokens.id_token) {
       throw new Error('No ID token received');
     }
@@ -165,10 +171,10 @@ export async function exchangeCodeForTokens(code: string) {
       response: error.response?.data,
       config: {
         clientId: config.GOOGLE_CLIENT_ID.substring(0, 20) + '...',
-        redirectUri: config.GOOGLE_REDIRECT_URI,
+        redirectUri: customRedirectUri || config.GOOGLE_REDIRECT_URI,
       }
     });
-    
+
     // Provide specific error messages based on error type
     if (error.message?.includes('invalid_grant')) {
       if (error.response?.data?.error_description?.includes('Bad Request')) {
@@ -181,7 +187,7 @@ export async function exchangeCodeForTokens(code: string) {
     } else if (error.message?.includes('invalid_client')) {
       throw new Error('OAuth client configuration error: Invalid client ID or secret. Please check your Google Cloud Console settings.');
     }
-    
+
     throw new Error(`Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
