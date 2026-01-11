@@ -54,6 +54,7 @@ async function startServer() {
       config.FRONTEND_URL,
       "https://projects-srmap.vercel.app",
       "https://srmap-urop-web.vercel.app",
+      "https://projects.srmap.poojanhp.com",
       ...(config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
     ].filter(Boolean);
 

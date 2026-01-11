@@ -166,6 +166,8 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
       customRedirectUri = `${origin}/auth/callback`;
     } else if (origin === 'https://srmap-urop-web.vercel.app') {
       customRedirectUri = `${origin}/auth/callback`;
+    } else if (origin === 'https://projects.srmap.poojanhp.com') {
+      customRedirectUri = `${origin}/auth/callback`;
     }
 
     if (customRedirectUri) {
@@ -754,6 +756,8 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
     if (origin === 'https://projects-srmap.vercel.app') {
       customRedirectUri = `${origin}/auth/callback`;
     } else if (origin === 'https://srmap-urop-web.vercel.app') {
+      customRedirectUri = `${origin}/auth/callback`;
+    } else if (origin === 'https://projects.srmap.poojanhp.com') {
       customRedirectUri = `${origin}/auth/callback`;
     }
 
