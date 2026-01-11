@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoginLayout } from '../../components/auth/LoginLayout';
 import { ROUTES } from '../../utils/constants';
-import { CheckCircle2, XCircle, AlertCircle, ShieldAlert, ArrowRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldAlert, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AuthError {
@@ -206,8 +206,8 @@ export function AuthCallbackPage() {
 
                   <div className="pt-2">
                     <button
-                      onClick={() => window.location.href = '/'}
-                      className="group w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all duration-200 shadow-lg shadow-slate-200 active:scale-[0.98]"
+                      onClick={() => navigate(ROUTES.HOME)}
+                      className="group w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all duration-200 shadow-lg shadow-slate-200 active:scale-[0.98] cursor-pointer"
                     >
                       <span>Go back to Home</span>
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
