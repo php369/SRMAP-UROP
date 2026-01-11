@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Project, ProjectFilter } from '../../types';
+import { ProjectLegacy as Project, ProjectLegacyFilter as ProjectFilter } from '../../types';
 import { Badge, GlassCard, Input } from '../ui';
 import { cn } from '../../utils/cn';
 
@@ -38,7 +38,7 @@ export function ProjectFilters({
     const newArray = currentArray.includes(value)
       ? currentArray.filter(item => item !== value)
       : [...currentArray, value];
-    
+
     updateFilter(key, newArray.length > 0 ? newArray : undefined);
   };
 
@@ -85,7 +85,7 @@ export function ProjectFilters({
             </Badge>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {getActiveFilterCount() > 0 && (
             <button
@@ -95,7 +95,7 @@ export function ProjectFilters({
               Clear All
             </button>
           )}
-          
+
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-2 text-textSecondary hover:text-text transition-colors"

@@ -38,7 +38,7 @@ async function registerValidSW(swUrl: string, config?: ServiceWorkerConfig) {
     // Check for updates
     registration.onupdatefound = () => {
       const installingWorker = registration.installing;
-      
+
       if (installingWorker == null) {
         return;
       }
@@ -48,14 +48,14 @@ async function registerValidSW(swUrl: string, config?: ServiceWorkerConfig) {
           if (navigator.serviceWorker.controller) {
             // New update available
             console.log('🔄 New content is available; please refresh.');
-            
+
             if (config && config.onUpdate) {
               config.onUpdate(registration);
             }
           } else {
             // Content cached for offline use
             console.log('✅ Content is cached for offline use.');
-            
+
             if (config && config.onSuccess) {
               config.onSuccess(registration);
             }
@@ -110,10 +110,10 @@ export async function update() {
 export async function skipWaiting() {
   if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.ready;
-    
+
     if (registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      
+
       // Reload the page after the new service worker takes control
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -235,10 +235,10 @@ export async function subscribeToPushNotifications(vapidPublicKey: string) {
   if ('serviceWorker' in navigator && 'PushManager' in window) {
     try {
       const registration = await navigator.serviceWorker.ready;
-      
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as any,
       });
 
       console.log('✅ Push notification subscription:', subscription);
@@ -285,11 +285,12 @@ export function listenForMessages(callback: (message: any) => void) {
 export async function sendMessage(message: any): Promise<any> {
   if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.ready;
-    
+
     if (registration.active) {
+      const activeWorker = registration.active;
       return new Promise((resolve, reject) => {
         const messageChannel = new MessageChannel();
-        
+
         messageChannel.port1.onmessage = (event) => {
           if (event.data.error) {
             reject(event.data.error);
@@ -298,11 +299,11 @@ export async function sendMessage(message: any): Promise<any> {
           }
         };
 
-        registration.active.postMessage(message, [messageChannel.port2]);
+        activeWorker.postMessage(message, [messageChannel.port2 as unknown as Transferable]);
       });
     }
   }
-  
+
   throw new Error('Service Worker not available');
 }
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Project, ProjectFilter, User } from '../../types';
+import { ProjectLegacy as Project, ProjectLegacyFilter as ProjectFilter, User } from '../../types';
 import { ProjectMasonryGrid } from '../../components/projects/ProjectMasonryGrid';
 import { ProjectFilters } from '../../components/projects/ProjectFilters';
 import { KanbanBoard } from '../../components/projects/KanbanBoard';
@@ -204,7 +204,7 @@ export function ProjectsPage() {
       }
 
       // Assigned to filter
-      if (filters.assignedTo?.length && !filters.assignedTo.some(userId => 
+      if (filters.assignedTo?.length && !filters.assignedTo.some(userId =>
         project.assignedTo.some(user => user.id === userId)
       )) {
         return false;
@@ -243,8 +243,8 @@ export function ProjectsPage() {
   }, [projects, filters]);
 
   const handleStatusChange = (projectId: string, status: Project['status']) => {
-    setProjects(prev => prev.map(project => 
-      project.id === projectId 
+    setProjects(prev => prev.map(project =>
+      project.id === projectId
         ? { ...project, status, updatedAt: new Date().toISOString() }
         : project
     ));
@@ -366,7 +366,7 @@ export function ProjectsPage() {
             <p className="text-textSecondary">
               Showing {filteredProjects.length} of {projects.length} projects
             </p>
-            
+
             {filteredProjects.length > 0 && (
               <div className="flex items-center space-x-4 text-sm text-textSecondary">
                 <span>

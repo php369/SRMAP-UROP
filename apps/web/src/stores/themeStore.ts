@@ -26,7 +26,7 @@ export const useThemeStore = create<ThemeStore>()(
         }
       },
 
-      setTheme: (mode: ThemeMode) => {
+      setTheme: () => {
         // Force light mode regardless of input
         set({ mode: 'light', theme: THEMES.LIGHT });
         updateCSSVariables(THEMES.LIGHT);

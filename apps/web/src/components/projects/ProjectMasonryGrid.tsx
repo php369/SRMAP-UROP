@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Project } from '../../types';
+import { ProjectLegacy as Project } from '../../types';
 import { ProjectCard } from './ProjectCard';
 import { cn } from '../../utils/cn';
 
@@ -31,7 +31,7 @@ export function ProjectMasonryGrid({
   // Calculate responsive columns
   const getResponsiveColumns = () => {
     if (typeof window === 'undefined') return columns;
-    
+
     const width = window.innerWidth;
     if (width < 640) return 1; // sm
     if (width < 1024) return 2; // md
@@ -56,7 +56,7 @@ export function ProjectMasonryGrid({
 
     const containerWidth = containerRef.current.offsetWidth;
     const columnWidth = (containerWidth - gap * (responsiveColumns - 1)) / responsiveColumns;
-    
+
     // Initialize column heights
     const heights = new Array(responsiveColumns).fill(0);
     const positions: { x: number; y: number }[] = [];
@@ -67,13 +67,13 @@ export function ProjectMasonryGrid({
 
       // Find the shortest column
       const shortestColumnIndex = heights.indexOf(Math.min(...heights));
-      
+
       // Calculate position
       const x = shortestColumnIndex * (columnWidth + gap);
       const y = heights[shortestColumnIndex];
-      
+
       positions.push({ x, y });
-      
+
       // Update column height (using a fixed height for now, could be dynamic)
       heights[shortestColumnIndex] += 320 + gap; // 320px is the card height + gap
     });
@@ -96,17 +96,17 @@ export function ProjectMasonryGrid({
   };
 
   const itemVariants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       scale: 0.8,
       y: 50,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 15,
       },

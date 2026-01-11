@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Project } from '../../types';
+import { ProjectLegacy as Project } from '../../types';
 import { KanbanCard } from './KanbanCard';
 import { Badge, GlassCard } from '../ui';
 import { cn } from '../../utils/cn';
@@ -57,7 +57,7 @@ export function KanbanColumn({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const projectId = e.dataTransfer.getData('text/plain');
     if (projectId && onDrop) {
       onDrop(projectId, status);
@@ -74,9 +74,9 @@ export function KanbanColumn({
   };
 
   const getOverdueCount = () => {
-    return projects.filter(p => 
-      p.dueDate && 
-      new Date(p.dueDate) < new Date() && 
+    return projects.filter(p =>
+      p.dueDate &&
+      new Date(p.dueDate) < new Date() &&
       p.status !== 'done'
     ).length;
   };
@@ -93,7 +93,7 @@ export function KanbanColumn({
               {projects.length}
             </Badge>
           </div>
-          
+
           {onAddProject && (
             <button
               onClick={() => onAddProject(status)}
@@ -125,8 +125,8 @@ export function KanbanColumn({
       <div
         className={cn(
           'flex-1 min-h-96 p-2 rounded-lg border-2 border-dashed transition-all duration-200',
-          isDragOver 
-            ? 'border-primary bg-primary/5 scale-105' 
+          isDragOver
+            ? 'border-primary bg-primary/5 scale-105'
             : 'border-transparent hover:border-border/50',
           projects.length === 0 && 'flex items-center justify-center'
         )}

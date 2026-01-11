@@ -1,6 +1,6 @@
 // Auth Components
 export { AuthGuard } from './AuthGuard';
-export { ProtectedRoute, AdminRoute, FacultyRoute, StudentRoute } from './ProtectedRoute';
+
 
 // Auth Context
 export { AuthProvider, useAuth } from '../../contexts/AuthContext';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Project } from '../../types';
+import { ProjectLegacy as Project } from '../../types';
 import { KanbanColumn } from './KanbanColumn';
 import { GlassCard } from '../ui';
 import { cn } from '../../utils/cn';
@@ -109,9 +109,9 @@ export function KanbanBoard({
     const total = projects.length;
     const completed = projects.filter(p => p.status === 'done').length;
     const inProgress = projects.filter(p => p.status === 'in-progress').length;
-    const overdue = projects.filter(p => 
-      p.dueDate && 
-      new Date(p.dueDate) < new Date() && 
+    const overdue = projects.filter(p =>
+      p.dueDate &&
+      new Date(p.dueDate) < new Date() &&
       p.status !== 'done'
     ).length;
 
@@ -127,7 +127,7 @@ export function KanbanBoard({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <h2 className="text-xl font-bold text-text">Project Board</h2>
-            
+
             <div className="flex items-center space-x-4 text-sm text-textSecondary">
               <span>{stats.total} total</span>
               <span className="text-success">{stats.completed} completed</span>

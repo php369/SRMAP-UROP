@@ -31,13 +31,13 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => {
       // Set up session expiration listeners
       if (typeof window !== 'undefined') {
-        window.addEventListener('session-expired', (event: any) => {
+        window.addEventListener('session-expired' as any, () => {
           console.log('🔔 Session expired event received');
           console.trace('Session expired stack trace:');
           get().logout();
         });
 
-        window.addEventListener('token-refresh-needed', async () => {
+        window.addEventListener('token-refresh-needed' as any, async () => {
           console.log('🔔 Token refresh needed event received');
           const refreshed = await get().refreshAuthToken();
           if (!refreshed) {

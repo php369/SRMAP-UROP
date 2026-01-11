@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { lazy } from '../utils/performance';
 
 // Loading component
@@ -54,104 +54,31 @@ const AssessmentsSkeleton = () => (
 );
 
 // Lazy loaded components with proper error boundaries
-const withErrorBoundary = <P extends object>(
-  Component: React.ComponentType<P>,
-  fallback?: React.ComponentType
-) => {
-  return React.forwardRef<any, P>((props, ref) => (
-    <ErrorBoundary fallback={fallback}>
-      <Component {...props} ref={ref} />
-    </ErrorBoundary>
-  ));
-};
+
 
 // Error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ComponentType },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode; fallback?: React.ComponentType }) {
-    super(props);
-    this.state = { hasError: false };
-  }
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Component error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return React.createElement(this.props.fallback);
-      }
-      
-      return (
-        <div className="flex items-center justify-center min-h-[200px] p-6">
-          <div className="text-center">
-            <div className="text-red-500 text-4xl mb-4">⚠️</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Something went wrong
-            </h3>
-            <p className="text-gray-600 mb-4">
-              We encountered an error loading this component.
-            </p>
-            <button
-              onClick={() => this.setState({ hasError: false })}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 // Lazy loaded page components
+// Lazy loaded page components
 export const LazyDashboard = lazy(
-  () => import('../pages/DashboardPage'),
+  () => import('../pages/dashboard/DashboardPage').then(module => ({ default: module.DashboardPage })),
   () => <DashboardSkeleton />
 );
 
 export const LazyAssessments = lazy(
-  () => import('../pages/AssessmentsPage'),
+  () => import('../pages/assessments/AssessmentsPage').then(module => ({ default: module.AssessmentsPage })),
   () => <AssessmentsSkeleton />
 );
 
 export const LazyAssessmentDetail = lazy(
-  () => import('../pages/AssessmentDetailPage'),
-  LoadingSpinner
-);
-
-export const LazyAdminDashboard = lazy(
-  () => import('../pages/admin/AdminDashboard'),
-  () => <DashboardSkeleton />
-);
-
-
-
-export const LazyReportsPage = lazy(
-  () => import('../pages/admin/ReportsPage'),
+  () => import('../pages/assessments/AssessmentDetailPage').then(module => ({ default: module.AssessmentDetailPage })),
   LoadingSpinner
 );
 
 // Lazy loaded component chunks
 export const LazyPerformanceMonitor = lazy(
-  () => import('./admin/PerformanceMonitor'),
-  LoadingSpinner
-);
-
-
-
-export const LazyChartComponents = lazy(
-  () => import('./charts/ChartComponents'),
+  () => import('./admin/PerformanceMonitor').then(module => ({ default: module.PerformanceMonitor })),
   LoadingSpinner
 );
 
@@ -211,7 +138,7 @@ export const withLazyLoading = <P extends object>(
       return options.fallback ? React.createElement(options.fallback) : <LoadingSpinner />;
     }
 
-    return <Component {...props} ref={ref} />;
+    return <Component {...(props as any)} ref={ref} />;
   });
 };
 
@@ -232,10 +159,10 @@ export const preloadComponent = (importFunc: () => Promise<any>) => {
 // Preload critical components
 export const preloadCriticalComponents = () => {
   // Preload dashboard after initial load
-  preloadComponent(() => import('../pages/DashboardPage'));
-  
+  preloadComponent(() => import('../pages/dashboard/DashboardPage'));
+
   // Preload assessments page
-  preloadComponent(() => import('../pages/AssessmentsPage'));
+  preloadComponent(() => import('../pages/assessments/AssessmentsPage'));
 };
 
 // Component for managing lazy loading state

@@ -23,7 +23,7 @@ export class SocketReconnectionManager {
   private baseDelay: number;
   private maxDelay: number;
   private jitterRange: number;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private isManualDisconnect = false;
   private config: ReconnectionConfig;
 
@@ -85,7 +85,7 @@ export class SocketReconnectionManager {
     this.socket.on('connect', () => {
       logger.info('✅ Socket connected');
       this.reconnectAttempts = 0; // Reset on successful connection
-      
+
       if (this.reconnectTimeout) {
         clearTimeout(this.reconnectTimeout);
         this.reconnectTimeout = null;
@@ -97,7 +97,7 @@ export class SocketReconnectionManager {
     });
 
     this.socket.on('disconnect', (reason) => {
-      logger.warn('Socket disconnected:', reason);
+      logger.warn('Socket disconnected:', { reason });
 
       // Don't reconnect if it was a manual disconnect
       if (this.isManualDisconnect) {
@@ -116,12 +116,12 @@ export class SocketReconnectionManager {
     });
 
     this.socket.on('connect_error', (error) => {
-      logger.error('Socket connection error:', error);
+      logger.error('Socket connection error:', { error });
       this.scheduleReconnect();
     });
 
     this.socket.on('error', (error) => {
-      logger.error('Socket error:', error);
+      logger.error('Socket error:', { error });
     });
 
     // Custom reconnection event
@@ -137,11 +137,11 @@ export class SocketReconnectionManager {
     // Check if max attempts reached
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       logger.error('Max reconnection attempts reached');
-      
+
       if (this.config.onMaxAttemptsReached) {
         this.config.onMaxAttemptsReached();
       }
-      
+
       return;
     }
 
@@ -180,7 +180,7 @@ export class SocketReconnectionManager {
     try {
       this.socket.connect();
     } catch (error) {
-      logger.error('Reconnection attempt failed:', error);
+      logger.error('Reconnection attempt failed:', { error });
       this.scheduleReconnect();
     }
   }
@@ -190,7 +190,7 @@ export class SocketReconnectionManager {
    */
   disconnect() {
     this.isManualDisconnect = true;
-    
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;

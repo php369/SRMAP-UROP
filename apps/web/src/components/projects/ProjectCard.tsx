@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Project } from '../../types';
+import { ProjectLegacy as Project } from '../../types';
 import { Badge, GlassCard, ProgressIndicator } from '../ui';
 import { cn } from '../../utils/cn';
 

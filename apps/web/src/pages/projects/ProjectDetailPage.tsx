@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Project, ProjectArtifact, ProjectTimelineEvent, User } from '../../types';
+import { ProjectLegacy as Project, ProjectArtifact, ProjectTimelineEvent, User } from '../../types';
 import { ArtifactCarousel } from '../../components/projects/ArtifactCarousel';
 import { ProjectGanttChart } from '../../components/projects/ProjectGanttChart';
 import { GlassCard, Badge, ProgressIndicator, LoadingSpinner, GlowButton } from '../../components/ui';

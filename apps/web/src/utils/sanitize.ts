@@ -16,22 +16,21 @@ export function sanitizeHtml(dirty: string): string {
   // Create a temporary div to parse HTML
   const temp = document.createElement('div');
   temp.textContent = dirty;
-  
+
   // Get the sanitized text
   let sanitized = temp.innerHTML;
 
   // Allow only safe HTML tags
-  const allowedTags = ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'code', 'pre'];
-  const allowedAttributes = ['href', 'target', 'rel'];
+
 
   // Remove script tags and event handlers
   sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
   sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
   sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
-  
+
   // Remove javascript: protocol
   sanitized = sanitized.replace(/javascript:/gi, '');
-  
+
   // Remove data: protocol (can be used for XSS)
   sanitized = sanitized.replace(/data:text\/html/gi, '');
 
@@ -62,13 +61,13 @@ export function sanitizeUrl(url: string): string {
 
   try {
     const parsed = new URL(url);
-    
+
     // Only allow http and https protocols
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       console.warn(`Blocked potentially unsafe URL protocol: ${parsed.protocol}`);
       return '';
     }
-    
+
     return parsed.toString();
   } catch (error) {
     // Invalid URL
@@ -85,7 +84,7 @@ export function sanitizeEmail(email: string): string {
 
   // Basic email validation and sanitization
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
+
   if (!emailRegex.test(email)) {
     return '';
   }
@@ -101,13 +100,13 @@ export function sanitizeFilename(filename: string): string {
 
   // Remove directory traversal attempts
   let sanitized = filename.replace(/\.\./g, '');
-  
+
   // Remove path separators
   sanitized = sanitized.replace(/[\/\\]/g, '');
-  
+
   // Remove null bytes
   sanitized = sanitized.replace(/\0/g, '');
-  
+
   // Limit length
   if (sanitized.length > 255) {
     sanitized = sanitized.substring(0, 255);
@@ -194,10 +193,10 @@ export function sanitizeMarkdown(markdown: string): string {
 
   // Remove HTML tags
   let sanitized = markdown.replace(/<[^>]*>/g, '');
-  
+
   // Remove javascript: links
   sanitized = sanitized.replace(/\[([^\]]+)\]\(javascript:[^\)]*\)/gi, '[$1](#)');
-  
+
   // Remove data: links
   sanitized = sanitized.replace(/\[([^\]]+)\]\(data:[^\)]*\)/gi, '[$1](#)');
 
