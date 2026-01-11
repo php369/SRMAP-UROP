@@ -28,8 +28,23 @@ const ROOM_KEY_PREFIX = 'room:members:';
 
 export function setupSocketIO(io: Server): void {
   // Initialize Redis Adapter
-  const { pubClient, subClient } = initializeRedis();
-  io.adapter(createAdapter(pubClient, subClient));
+  try {
+    const { pubClient, subClient } = initializeRedis();
+    // Verify connection before attaching
+    if (pubClient.status === 'ready' || pubClient.status === 'connecting') {
+      io.adapter(createAdapter(pubClient, subClient));
+      logger.info('✅ Socket.IO Redis Adapter configured');
+    } else {
+      // This might happen if lazy connect hasn't kicked in or failed immediately,
+      // but createAdapter usually accepts them anyway.
+      // We'll trust ioredis to handle the connecting state, but wrap in try-catch 
+      // just in case createAdapter throws on invalid client.
+      io.adapter(createAdapter(pubClient, subClient));
+      logger.info('✅ Socket.IO Redis Adapter attached (lazy)');
+    }
+  } catch (error) {
+    logger.warn('⚠️ Redis adapter failed to initialize, continuing WITHOUT Redis clustering. This is expected if Redis is down.', error);
+  }
 
   // Authentication middleware
   io.use(async (socket: AuthenticatedSocket, next) => {

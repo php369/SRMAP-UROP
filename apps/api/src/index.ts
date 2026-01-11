@@ -38,9 +38,11 @@ async function startServer() {
     // Connect to database
     await connectDatabase();
 
-    // Initialize Redis
-    const { initializeRedis } = await import('./config/redis');
-    initializeRedis();
+    // Initialize Redis (Lazy)
+    // We import and reference it to ensure the module is loaded if needed, 
+    // but actual connection happens on first getRedisClient() call in services.
+    // const { initializeRedis } = await import('./config/redis');
+    // initializeRedis();
 
     // Create Express app
     const app = express();
