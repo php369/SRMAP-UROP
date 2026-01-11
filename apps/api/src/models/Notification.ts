@@ -4,10 +4,10 @@ export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
-  type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' | 
-        'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' | 
-        'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |
-        'EXTERNAL_ASSIGNED' | 'GROUP_OVERRIDE' | 'SYSTEM' | 'SUBMISSION' | 'ASSESSMENT';
+  type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' |
+  'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' |
+  'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |
+  'EXTERNAL_ASSIGNED' | 'GROUP_OVERRIDE' | 'SYSTEM' | 'SUBMISSION' | 'ASSESSMENT';
   title: string;
   message: string;
   data: Record<string, any>; // JSON data for deep linking
@@ -15,6 +15,7 @@ export interface INotification extends Document {
   targetGroupId?: mongoose.Types.ObjectId;
   targetProjectId?: mongoose.Types.ObjectId;
   actorId?: mongoose.Types.ObjectId; // Who triggered the notification
+  priority?: 'low' | 'normal' | 'high';
   createdAt: Date;
 }
 
@@ -33,7 +34,7 @@ const NotificationSchema = new Schema<INotification>({
     type: String,
     enum: [
       'APPLICATION_SUBMITTED',
-      'APPLICATION_APPROVED', 
+      'APPLICATION_APPROVED',
       'APPLICATION_REJECTED',
       'PROJECT_FROZEN',
       'MEETING_APPROVAL_REQUIRED',
@@ -45,7 +46,12 @@ const NotificationSchema = new Schema<INotification>({
       'GROUP_OVERRIDE',
       'SYSTEM',
       'SUBMISSION',
-      'ASSESSMENT'
+      'ASSESSMENT',
+      'WINDOW_ACTIVE',
+      'WINDOW_CLOSED',
+      'GROUP_MEMBER_ADD',
+      'GROUP_MEMBER_REMOVE',
+      'MEETING_SCHEDULED'
     ],
     required: true
   },
@@ -83,6 +89,11 @@ const NotificationSchema = new Schema<INotification>({
     ref: 'User',
     required: false
   },
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high'],
+    default: 'normal'
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -101,18 +112,18 @@ NotificationSchema.index({ targetGroupId: 1, createdAt: -1 });
 NotificationSchema.index({ targetProjectId: 1, createdAt: -1 });
 
 // Virtual for notification age
-NotificationSchema.virtual('age').get(function() {
+NotificationSchema.virtual('age').get(function () {
   return Date.now() - this.createdAt.getTime();
 });
 
 // Method to mark as read
-NotificationSchema.methods.markAsRead = function() {
+NotificationSchema.methods.markAsRead = function () {
   this.read = true;
   return this.save();
 };
 
 // Static method to mark multiple notifications as read
-NotificationSchema.statics.markAllAsRead = function(userId: string) {
+NotificationSchema.statics.markAllAsRead = function (userId: string) {
   return this.updateMany(
     { userId: new mongoose.Types.ObjectId(userId), read: false },
     { read: true }
@@ -120,7 +131,7 @@ NotificationSchema.statics.markAllAsRead = function(userId: string) {
 };
 
 // Static method to get unread count
-NotificationSchema.statics.getUnreadCount = function(userId: string) {
+NotificationSchema.statics.getUnreadCount = function (userId: string) {
   return this.countDocuments({
     userId: new mongoose.Types.ObjectId(userId),
     read: false
@@ -128,8 +139,8 @@ NotificationSchema.statics.getUnreadCount = function(userId: string) {
 };
 
 // Static method to get paginated notifications
-NotificationSchema.statics.getPaginated = function(
-  userId: string, 
+NotificationSchema.statics.getPaginated = function (
+  userId: string,
   options: {
     page?: number;
     limit?: number;
@@ -145,11 +156,11 @@ NotificationSchema.statics.getPaginated = function(
   } = options;
 
   const query: any = { userId: new mongoose.Types.ObjectId(userId) };
-  
+
   if (read !== undefined) {
     query.read = read;
   }
-  
+
   if (type) {
     query.type = type;
   }
@@ -180,17 +191,17 @@ NotificationSchema.statics.getPaginated = function(
 };
 
 // Pre-save middleware to ensure data consistency
-NotificationSchema.pre('save', function(next) {
+NotificationSchema.pre('save', function (next) {
   // Ensure createdAt is set
   if (!this.createdAt) {
     this.createdAt = new Date();
   }
-  
+
   // Validate data field
   if (this.data && typeof this.data !== 'object') {
     this.data = {};
   }
-  
+
   next();
 });
 

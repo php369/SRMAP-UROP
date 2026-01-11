@@ -34,19 +34,23 @@ async function startServer() {
   try {
     // Validate OAuth configuration
     validateOAuthConfig();
-    
+
     // Connect to database
     await connectDatabase();
-    
+
+    // Initialize Redis
+    const { initializeRedis } = await import('./config/redis');
+    initializeRedis();
+
     // Create Express app
     const app = express();
     const server = createServer(app);
-    
+
     // Parse allowed origins for CORS
-    const allowedOrigins = config.ALLOWED_ORIGINS 
+    const allowedOrigins = config.ALLOWED_ORIGINS
       ? config.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
       : [config.FRONTEND_URL];
-    
+
     // Setup Socket.IO
     const io = new Server(server, {
       cors: {
@@ -55,10 +59,10 @@ async function startServer() {
         credentials: true,
       },
     });
-    
+
     setupSocketIO(io);
     initializeNotificationService(io);
-    
+
     // Security middleware
     app.use(helmet({
       contentSecurityPolicy: {
@@ -71,13 +75,13 @@ async function startServer() {
       },
       frameguard: false, // Disable X-Frame-Options to allow iframe embedding
     }));
-    
+
     // CORS configuration
     app.use(cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
@@ -88,32 +92,32 @@ async function startServer() {
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     }));
-    
+
     // Rate limiting (per-user instead of per-IP)
     app.use(userRateLimiter);
-    
+
     // Body parsing middleware
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-    
+
     // Request ID middleware (must be early in the chain)
     app.use(requestIdMiddleware);
-    
+
     // Response compression middleware (add early for maximum benefit)
     app.use(compressionMiddleware);
-    
+
     // Performance monitoring middleware
     app.use(performanceMonitoring);
-    
+
     // Monitoring metrics middleware
     app.use(monitoring.requestMetricsMiddleware());
-    
+
     // Development logging middleware
     app.use(developmentLogger);
-    
+
     // Start system monitoring
     monitoring.startSystemMonitoring(60000); // Every minute
-    
+
     // Initialize scheduler service for automatic tasks
     try {
       SchedulerService.initialize();
@@ -123,7 +127,7 @@ async function startServer() {
       const { SimpleSchedulerService } = await import('./services/simpleSchedulerService');
       SimpleSchedulerService.initialize();
     }
-    
+
     /**
      * @swagger
      * /health:
@@ -163,7 +167,7 @@ async function startServer() {
         environment: config.NODE_ENV,
       });
     });
-    
+
     // OAuth debug endpoint (development only)
     if (config.NODE_ENV === 'development') {
       app.get('/debug/oauth', (_req: Request, res: Response) => {
@@ -177,27 +181,27 @@ async function startServer() {
         });
       });
     }
-    
+
     // Setup routes
     setupRoutes(app);
-    
+
     // Error handling middleware (must be last)
     app.use(errorHandler);
-    
+
     // Start server - following Render's recommended pattern
     const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
-    
+
     // Debug port configuration
     logger.info(`🔧 Port Configuration: process.env.PORT=${process.env.PORT}, final PORT=${PORT}`);
     logger.info(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}`);
-    
+
     // Force production behavior on Render (when PORT is set by Render)
     // Render automatically sets PORT, so if it exists, we're likely on Render
     const isOnRender = !!process.env.PORT && process.env.PORT !== '3001';
     const shouldBindToAllInterfaces = process.env.NODE_ENV === 'production' || isOnRender;
-    
+
     logger.info(`🔧 Binding Configuration: isOnRender=${isOnRender}, shouldBindToAllInterfaces=${shouldBindToAllInterfaces}`);
-    
+
     if (shouldBindToAllInterfaces) {
       server.listen(PORT, () => {
         logger.info(`🚀 Server running on port ${PORT} (all interfaces - 0.0.0.0)`);
@@ -211,7 +215,7 @@ async function startServer() {
         logger.info(`📚 API docs: http://localhost:${PORT}/docs`);
       });
     }
-    
+
     // Handle server errors
     server.on('error', (error: any) => {
       if (error.code === 'EADDRINUSE') {
@@ -221,7 +225,7 @@ async function startServer() {
       }
       process.exit(1);
     });
-    
+
     // Graceful shutdown
     process.on('SIGTERM', () => {
       logger.info('SIGTERM received, shutting down gracefully');
@@ -235,7 +239,7 @@ async function startServer() {
         process.exit(0);
       });
     });
-    
+
     process.on('SIGINT', () => {
       logger.info('SIGINT received, shutting down gracefully');
       try {
@@ -248,7 +252,7 @@ async function startServer() {
         process.exit(0);
       });
     });
-    
+
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);

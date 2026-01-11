@@ -2,7 +2,17 @@ import { create } from 'zustand';
 
 export interface NotificationData {
   id: string;
-  type: 'submission' | 'grade' | 'assessment' | 'system';
+  type:
+  | 'submission'
+  | 'grade'
+  | 'assessment'
+  | 'system'
+  | 'application'
+  | 'WINDOW_ACTIVE'
+  | 'WINDOW_CLOSED'
+  | 'GROUP_MEMBER_ADD'
+  | 'GROUP_MEMBER_REMOVE'
+  | 'MEETING_SCHEDULED';
   title: string;
   message: string;
   data?: any;
@@ -87,6 +97,13 @@ function getDurationByType(type: NotificationData['type']): number {
       return 4000;
     case 'submission':
       return 4000;
+    case 'WINDOW_ACTIVE':
+    case 'WINDOW_CLOSED':
+    case 'MEETING_SCHEDULED':
+      return 8000;
+    case 'GROUP_MEMBER_ADD':
+    case 'GROUP_MEMBER_REMOVE':
+      return 5000;
     default:
       return 4000;
   }

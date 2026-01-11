@@ -21,6 +21,7 @@ import {
   CalendarIcon,
   XIcon
 } from '../ui/Icons';
+import { NotificationBell } from '../common/NotificationBell';
 
 // Icon components for navigation
 const IconComponents = {
@@ -297,6 +298,12 @@ export function Sidebar() {
         </nav>
 
         {/* User info - Clickable Profile Menu */}
+        <div className="px-4 pb-2">
+          <div className="flex items-center justify-between mb-2 px-2">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Account</div>
+            <NotificationBell />
+          </div>
+        </div>
         <div className="p-4 mt-auto relative" ref={profileMenuRef}>
           {/* Profile Menu Popup */}
           {isProfileMenuOpen && (

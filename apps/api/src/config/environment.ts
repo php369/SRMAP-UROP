@@ -11,34 +11,35 @@ if (process.env.NODE_ENV !== 'production') {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).default('3001'),
-  
+
   // Database
   MONGODB_URI: z.string().min(1, 'MongoDB URI is required'),
-  
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT refresh secret must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  
+
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string().min(1, 'Google Client ID is required'),
   GOOGLE_CLIENT_SECRET: z.string().min(1, 'Google Client Secret is required'),
   GOOGLE_REDIRECT_URI: z.string().url('Invalid Google Redirect URI'),
-  
+
   // Supabase
   SUPABASE_URL: z.string().min(1, 'Supabase URL is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase Service Role Key is required'),
   SUPABASE_ANON_KEY: z.string().min(1, 'Supabase Anon Key is required'),
-  
+
   // App Configuration
   FRONTEND_URL: z.string().url('Invalid Frontend URL').default('http://localhost:5173').transform(url => url.replace(/\/$/, '')),
   ALLOWED_ORIGINS: z.string().optional(),
   ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
-  
+
   // Security
   BCRYPT_ROUNDS: z.string().transform(Number).default('12'),
-  
+
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
@@ -63,7 +64,7 @@ export function validateOAuthConfig() {
   console.log(`  Client ID: ${config.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
   console.log(`  Redirect URI: ${config.GOOGLE_REDIRECT_URI}`);
   console.log(`  Frontend URL: ${config.FRONTEND_URL}`);
-  
+
   // Validate redirect URI format
   try {
     new URL(config.GOOGLE_REDIRECT_URI);
@@ -71,7 +72,7 @@ export function validateOAuthConfig() {
     console.error('❌ Invalid GOOGLE_REDIRECT_URI format');
     process.exit(1);
   }
-  
+
   // Check if redirect URI matches expected pattern
   const expectedRedirectUri = `${config.FRONTEND_URL}/auth/callback`;
   if (config.GOOGLE_REDIRECT_URI !== expectedRedirectUri) {
@@ -79,7 +80,7 @@ export function validateOAuthConfig() {
     console.warn(`  Configured: ${config.GOOGLE_REDIRECT_URI}`);
     console.warn(`  Expected:   ${expectedRedirectUri}`);
   }
-  
+
   console.log('✅ OAuth configuration validated');
 }
 
@@ -88,6 +89,7 @@ export const {
   NODE_ENV,
   PORT,
   MONGODB_URI,
+  REDIS_URL,
   JWT_SECRET,
   JWT_REFRESH_SECRET,
   JWT_EXPIRES_IN,

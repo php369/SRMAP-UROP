@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
 import { PageLoader } from '../common/PageLoader';
+import { NotificationBell } from '../common/NotificationBell';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -60,12 +61,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SRM University-AP</span>
               </div>
             </div>
-            <button
-              onClick={() => document.dispatchEvent(new CustomEvent('open-mobile-sidebar'))}
-              className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-            >
-              <MenuIcon className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <button
+                onClick={() => document.dispatchEvent(new CustomEvent('open-mobile-sidebar'))}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <MenuIcon className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -97,14 +101,16 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Mobile swipe hint */}
-      {isMobile && (
-        <div className="fixed bottom-4 left-4 right-4 pointer-events-none z-50">
-          <div className="bg-slate-900/80 backdrop-blur-sm text-white rounded-full px-4 py-2 text-center text-xs shadow-lg mx-auto w-max">
-            <span>Swipe right for menu</span>
+      {
+        isMobile && (
+          <div className="fixed bottom-4 left-4 right-4 pointer-events-none z-50">
+            <div className="bg-slate-900/80 backdrop-blur-sm text-white rounded-full px-4 py-2 text-center text-xs shadow-lg mx-auto w-max">
+              <span>Swipe right for menu</span>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

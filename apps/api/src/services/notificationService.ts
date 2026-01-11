@@ -40,7 +40,7 @@ export function notifyUser(userId: string, notification: {
   };
 
   io.to(`user-${userId}`).emit('notification', notificationData);
-  
+
   logger.debug(`Notification sent to user ${userId}: ${notification.title}`);
 }
 
@@ -73,9 +73,9 @@ export function notifyRoom(roomId: string, notification: {
   if (excludeUserId) {
     roomSocket.except(`user-${excludeUserId}`);
   }
-  
+
   roomSocket.emit('notification', notificationData);
-  
+
   logger.debug(`Notification sent to room ${roomId}: ${notification.title}`);
 }
 
@@ -105,7 +105,7 @@ export function notifyAll(notification: {
   };
 
   io.emit('notification', notificationData);
-  
+
   logger.debug(`Broadcast notification sent: ${notification.title}`);
 }
 
@@ -162,7 +162,7 @@ export function notifyGradeReceived(
   score?: number
 ): void {
   const scoreText = score !== undefined ? ` (Score: ${score})` : '';
-  
+
   notifyUser(studentId, {
     type: 'grade',
     title: 'Grade Received',
@@ -189,7 +189,7 @@ export function notifyAssessmentUpdate(
   changes: string[],
   facultyName: string
 ): void {
-  const changeText = changes.length > 1 
+  const changeText = changes.length > 1
     ? `${changes.length} changes made`
     : changes[0] || 'Assessment updated';
 
@@ -225,7 +225,7 @@ export function notifyNewAssessment(
   facultyName: string
 ): void {
   const dueDateText = dueDate.toLocaleDateString();
-  
+
   // For now, broadcast to all students (in a full implementation, filter by cohort)
   notifyAll({
     type: 'assessment',
@@ -248,7 +248,7 @@ export function notifyNewAssessment(
  */
 export function notifySystemMaintenance(message: string, scheduledTime?: Date): void {
   const timeText = scheduledTime ? ` scheduled for ${scheduledTime.toLocaleString()}` : '';
-  
+
   notifyAll({
     type: 'system',
     title: 'System Maintenance',
@@ -284,7 +284,7 @@ export function notifyApplicationApproved(
   applicationId?: string
 ): void {
   const meetText = meetUrl ? ' Your Google Meet link has been created.' : '';
-  
+
   groupMembers.forEach(memberId => {
     notifyUser(memberId, {
       type: 'application',
@@ -308,7 +308,146 @@ export function notifyApplicationApproved(
  * @param groupCode - Group code
  * @param reason - Rejection reason (optional)
  * @param applicationId - Application ID
+ * @param facultyId - Faculty who rejected (optional)
  */
+
+
+// ============================================================================
+// NEW TRIGGERS (Window, Group, Meeting)
+// ============================================================================
+
+/**
+ * Notify when a project window is activated
+ * @param windowId - Window ID
+ * @param type - Window type (proposal, grading, etc.)
+ * @param targetRole - Target user role ('student', 'faculty', etc.)
+ */
+export async function notifyWindowActive(
+  windowId: string,
+  type: string,
+  targetRole: 'student' | 'faculty' | 'coordinator' | 'admin'
+): Promise<void> {
+  // Broadcast to all users of that role
+  // Note: 'student' role in User model might be specific (idp-student, etc.), 
+  // so we might need to be broader or handle specific student types.
+  // For now, using a simple role filter if supported, or notifying all for generic student announcements.
+
+  let roleFilter: 'student' | 'faculty' | 'admin' | undefined;
+  if (targetRole === 'student') roleFilter = 'student';
+  if (targetRole === 'faculty') roleFilter = 'faculty';
+  if (targetRole === 'admin') roleFilter = 'admin';
+
+  notifyAll({
+    type: 'system',
+    title: 'New Window Active',
+    message: `The ${type} window is now active. Please check your dashboard for details.`,
+    data: {
+      windowId,
+      windowType: type,
+      status: 'active'
+    },
+    priority: 'high'
+  }, roleFilter);
+}
+
+/**
+ * Notify when a project window is closed
+ * @param windowId - Window ID
+ * @param type - Window type
+ * @param targetRole - Target user role
+ */
+export async function notifyWindowClosed(
+  windowId: string,
+  type: string,
+  targetRole: 'student' | 'faculty' | 'coordinator' | 'admin'
+): Promise<void> {
+  let roleFilter: 'student' | 'faculty' | 'admin' | undefined;
+  if (targetRole === 'student') roleFilter = 'student';
+  if (targetRole === 'faculty') roleFilter = 'faculty';
+  if (targetRole === 'admin') roleFilter = 'admin';
+
+  notifyAll({
+    type: 'system',
+    title: 'Window Closed',
+    message: `The ${type} window has been closed.`,
+    data: {
+      windowId,
+      windowType: type,
+      status: 'closed'
+    },
+    priority: 'normal'
+  }, roleFilter);
+}
+
+/**
+ * Notify group leader about member changes
+ * @param groupCode - Group Code
+ * @param leaderId - Leader's User ID
+ * @param memberName - Name of member added/removed
+ * @param action - 'add' or 'remove'
+ */
+export async function notifyGroupMemberUpdate(
+  groupCode: string,
+  leaderId: string,
+  memberName: string,
+  action: 'add' | 'remove'
+): Promise<void> {
+  const leader = await User.findById(leaderId);
+  if (!leader) return;
+
+  const type = action === 'add' ? 'GROUP_MEMBER_ADD' : 'GROUP_MEMBER_REMOVE';
+  const title = action === 'add' ? 'Member Added' : 'Member Removed';
+  const message = action === 'add'
+    ? `${memberName} has joined your group ${groupCode}.`
+    : `${memberName} has left your group ${groupCode}.`;
+
+  await createNotification({
+    userId: leaderId,
+    role: leader.role as any,
+    type: type,
+    title: title,
+    message: message,
+    data: {
+      groupCode,
+      memberName,
+      action
+    },
+    priority: 'normal'
+  });
+}
+
+/**
+ * Notify users about a scheduled meeting
+ * @param meetingId - Meeting ID
+ * @param participants - Array of User IDs
+ * @param scheduledTime - Time of meeting
+ * @param organizerName - Name of organizer
+ */
+export async function notifyMeetingScheduled(
+  meetingId: string,
+  participants: string[],
+  scheduledTime: Date,
+  organizerName: string
+): Promise<void> {
+  const users = await User.find({ _id: { $in: participants } });
+  const timeText = scheduledTime.toLocaleString();
+
+  for (const user of users) {
+    await createNotification({
+      userId: user._id.toString(),
+      role: user.role as any,
+      type: 'MEETING_SCHEDULED',
+      title: 'Meeting Scheduled',
+      message: `A meeting has been scheduled by ${organizerName} for ${timeText}.`,
+      data: {
+        meetingId,
+        scheduledTime: scheduledTime.toISOString(),
+        organizerName
+      },
+      priority: 'high'
+    });
+  }
+}
 export function notifyApplicationRejected(
   groupMembers: string[],
   groupCode: string,
@@ -316,7 +455,7 @@ export function notifyApplicationRejected(
   applicationId?: string
 ): void {
   const reasonText = reason ? ` Reason: ${reason}` : '';
-  
+
   groupMembers.forEach(memberId => {
     notifyUser(memberId, {
       type: 'application',
@@ -349,7 +488,7 @@ export function notifyFacultyGroupAssigned(
   applicationId?: string
 ): void {
   const meetText = meetUrl ? ' A Google Meet link has been created for your meetings.' : '';
-  
+
   notifyUser(facultyId, {
     type: 'application',
     title: 'Group Assigned to Your Project',
@@ -409,7 +548,7 @@ export function notifyExternalEvaluatorAssigned(
 ): void {
   const meetText = meetUrl ? ' The Google Meet link has been updated to include you.' : '';
   const recipients = Array.isArray(userIds) ? userIds : [userIds];
-  
+
   recipients.forEach(userId => {
     notifyUser(userId, {
       type: 'assessment',
@@ -441,7 +580,7 @@ export function notifyExternalEvaluatorRemoved(
   evaluationId?: string
 ): void {
   const recipients = Array.isArray(userIds) ? userIds : [userIds];
-  
+
   recipients.forEach(userId => {
     notifyUser(userId, {
       type: 'assessment',
@@ -470,7 +609,7 @@ export function notifyGradesPublished(
   evaluationId?: string
 ): void {
   const recipients = Array.isArray(userIds) ? userIds : [userIds];
-  
+
   recipients.forEach(userId => {
     notifyUser(userId, {
       type: 'grade',
@@ -501,16 +640,18 @@ export function getSocketServer(): Server | null {
 export interface CreateNotificationData {
   userId: string;
   role: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'coordinator' | 'admin';
-  type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' | 
-        'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' | 
-        'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |
-        'EXTERNAL_ASSIGNED' | 'GROUP_OVERRIDE' | 'SYSTEM' | 'SUBMISSION' | 'ASSESSMENT';
+  type: 'APPLICATION_SUBMITTED' | 'APPLICATION_APPROVED' | 'APPLICATION_REJECTED' |
+  'PROJECT_FROZEN' | 'MEETING_APPROVAL_REQUIRED' | 'MEETING_APPROVED' |
+  'MEETING_REJECTED' | 'GRADES_PUBLISHED' | 'GRADES_UNPUBLISHED' |
+  'EXTERNAL_ASSIGNED' | 'GROUP_OVERRIDE' | 'SYSTEM' | 'SUBMISSION' | 'ASSESSMENT' |
+  'WINDOW_ACTIVE' | 'WINDOW_CLOSED' | 'GROUP_MEMBER_ADD' | 'GROUP_MEMBER_REMOVE' | 'MEETING_SCHEDULED';
   title: string;
   message: string;
   data?: Record<string, any>;
   targetGroupId?: string;
   targetProjectId?: string;
   actorId?: string;
+  priority?: 'low' | 'normal' | 'high';
 }
 
 export interface PaginationOptions {
@@ -539,7 +680,7 @@ export interface PaginatedNotifications {
  * @returns Created notification
  */
 export async function createNotification(
-  data: CreateNotificationData, 
+  data: CreateNotificationData,
   broadcast: boolean = true
 ): Promise<INotification> {
   try {
@@ -598,7 +739,7 @@ export async function createNotificationForUsers(
   broadcast: boolean = true
 ): Promise<INotification[]> {
   const notifications = await Promise.all(
-    userIds.map(userId => 
+    userIds.map(userId =>
       createNotification({ ...notificationData, userId }, broadcast)
     )
   );
@@ -613,7 +754,7 @@ export async function createNotificationForUsers(
  * @returns Paginated notifications
  */
 export async function getUserNotifications(
-  userId: string, 
+  userId: string,
   options: PaginationOptions = {}
 ): Promise<PaginatedNotifications> {
   try {
@@ -631,12 +772,12 @@ export async function getUserNotifications(
  * @returns Updated notification
  */
 export async function markNotificationAsRead(
-  notificationId: string, 
+  notificationId: string,
   userId: string
 ): Promise<INotification | null> {
   try {
     const notification = await Notification.findOneAndUpdate(
-      { 
+      {
         _id: new mongoose.Types.ObjectId(notificationId),
         userId: new mongoose.Types.ObjectId(userId)
       },
@@ -772,7 +913,7 @@ export async function notifyApplicationApprovedPersistent(
 
   // Get user roles for each member
   const users = await User.find({ _id: { $in: groupMembers } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),
@@ -814,7 +955,7 @@ export async function notifyApplicationRejectedPersistent(
 
   // Get user roles for each member
   const users = await User.find({ _id: { $in: groupMembers } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),
@@ -850,10 +991,10 @@ export async function notifyGradesPublishedPersistent(
   facultyId?: string
 ): Promise<void> {
   const recipients = Array.isArray(userIds) ? userIds : [userIds];
-  
+
   // Get user roles for each recipient
   const users = await User.find({ _id: { $in: recipients } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),
@@ -893,10 +1034,10 @@ export async function notifyExternalEvaluatorAssignedPersistent(
 ): Promise<void> {
   const meetText = meetUrl ? ' The Google Meet link has been updated to include you.' : '';
   const recipients = Array.isArray(userIds) ? userIds : [userIds];
-  
+
   // Get user roles for each recipient
   const users = await User.find({ _id: { $in: recipients } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),
@@ -941,9 +1082,14 @@ function mapNotificationTypeToSocket(type: string): string {
     'GROUP_OVERRIDE': 'system',
     'SYSTEM': 'system',
     'SUBMISSION': 'submission',
-    'ASSESSMENT': 'assessment'
+    'ASSESSMENT': 'assessment',
+    'WINDOW_ACTIVE': 'system',
+    'WINDOW_CLOSED': 'system',
+    'GROUP_MEMBER_ADD': 'system',
+    'GROUP_MEMBER_REMOVE': 'system',
+    'MEETING_SCHEDULED': 'system'
   };
-  
+
   return mapping[type] || 'system';
 }
 
@@ -954,14 +1100,19 @@ function getNotificationPriority(type: string): 'low' | 'normal' | 'high' {
   const highPriority = [
     'APPLICATION_APPROVED',
     'GRADES_PUBLISHED',
-    'EXTERNAL_ASSIGNED'
+    'EXTERNAL_ASSIGNED',
+    'WINDOW_ACTIVE',
+    'MEETING_SCHEDULED'
   ];
-  
+
   const lowPriority = [
     'SUBMISSION',
-    'MEETING_APPROVAL_REQUIRED'
+    'MEETING_APPROVAL_REQUIRED',
+    'WINDOW_CLOSED',
+    'GROUP_MEMBER_ADD',
+    'GROUP_MEMBER_REMOVE'
   ];
-  
+
   if (highPriority.includes(type)) return 'high';
   if (lowPriority.includes(type)) return 'low';
   return 'normal';
@@ -1038,7 +1189,7 @@ export async function notifyMeetingLogApprovedPersistent(
 
   // Get user roles for each member
   const users = await User.find({ _id: { $in: groupMembers } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),
@@ -1095,7 +1246,7 @@ export async function notifyMeetingLogRejectedPersistent(
 
   // Get user roles for each member
   const users = await User.find({ _id: { $in: groupMembers } });
-  
+
   for (const user of users) {
     await createNotification({
       userId: user._id.toString(),

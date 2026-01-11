@@ -11,7 +11,7 @@ import {
 } from '../services/notificationService';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Apply authentication to all notification routes
 router.use(authenticate);
@@ -25,7 +25,10 @@ const notificationQuerySchema = Joi.object({
     'APPLICATION_SUBMITTED', 'APPLICATION_APPROVED', 'APPLICATION_REJECTED',
     'PROJECT_FROZEN', 'MEETING_APPROVAL_REQUIRED', 'MEETING_APPROVED', 'MEETING_REJECTED',
     'GRADES_PUBLISHED', 'GRADES_UNPUBLISHED', 'EXTERNAL_ASSIGNED', 'GROUP_OVERRIDE',
-    'SYSTEM', 'SUBMISSION', 'ASSESSMENT'
+    'SYSTEM', 'SUBMISSION', 'ASSESSMENT',
+    'WINDOW_ACTIVE', 'WINDOW_CLOSED',
+    'GROUP_MEMBER_ADD', 'GROUP_MEMBER_REMOVE',
+    'MEETING_SCHEDULED'
   ).optional()
 });
 
@@ -40,7 +43,10 @@ const createNotificationSchema = Joi.object({
     'APPLICATION_SUBMITTED', 'APPLICATION_APPROVED', 'APPLICATION_REJECTED',
     'PROJECT_FROZEN', 'MEETING_APPROVAL_REQUIRED', 'MEETING_APPROVED', 'MEETING_REJECTED',
     'GRADES_PUBLISHED', 'GRADES_UNPUBLISHED', 'EXTERNAL_ASSIGNED', 'GROUP_OVERRIDE',
-    'SYSTEM', 'SUBMISSION', 'ASSESSMENT'
+    'SYSTEM', 'SUBMISSION', 'ASSESSMENT',
+    'WINDOW_ACTIVE', 'WINDOW_CLOSED',
+    'GROUP_MEMBER_ADD', 'GROUP_MEMBER_REMOVE',
+    'MEETING_SCHEDULED'
   ).required(),
   title: Joi.string().min(1).max(200).required(),
   message: Joi.string().min(1).max(1000).required(),
@@ -451,7 +457,7 @@ router.post('/', validateRequest(createNotificationSchema), async (req: Request,
   try {
     // Check if user is admin (for now, allow any authenticated user for testing)
     const currentUser = (req as any).user;
-    
+
     // In production, you might want to restrict this to admin users only
     // if (currentUser.role !== 'admin') {
     //   return res.status(403).json({
@@ -465,8 +471,8 @@ router.post('/', validateRequest(createNotificationSchema), async (req: Request,
 
     const notificationData = {
       userId: req.body.userId,
-      role: req.body.role,
-      type: req.body.type,
+      role: req.body.role as any,
+      type: req.body.type as any,
       title: req.body.title,
       message: req.body.message,
       data: req.body.data,
