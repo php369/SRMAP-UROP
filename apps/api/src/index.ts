@@ -49,9 +49,13 @@ async function startServer() {
     const server = createServer(app);
 
     // Parse allowed origins for CORS
-    const allowedOrigins = config.ALLOWED_ORIGINS
-      ? config.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-      : [config.FRONTEND_URL];
+    // Explicitly add the new Vercel domains + any from environment
+    const allowedOrigins = [
+      config.FRONTEND_URL,
+      "https://projects-srmap.vercel.app",
+      "https://srmap-urop-web.vercel.app",
+      ...(config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
+    ].filter(Boolean);
 
     // Setup Socket.IO
     const io = new Server(server, {
@@ -79,21 +83,29 @@ async function startServer() {
     }));
 
     // CORS configuration
-    app.use(cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+    const corsOptions = {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps, curl, or internal health checks)
+        if (!origin) {
+          return callback(null, true);
+        }
 
         if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
+          return callback(null, true);
         }
+
+        // Don't throw error, just deny
+        return callback(null, false);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    }));
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    };
+
+    app.use(cors(corsOptions));
+
+    // Explicitly allow preflight requests globally
+    app.options('*', cors(corsOptions));
 
     // Rate limiting (per-user instead of per-IP)
     app.use(userRateLimiter);
