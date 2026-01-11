@@ -20,6 +20,13 @@ export { AnimatedCounter } from './AnimatedCounter';
 export { ProgressIndicator } from './ProgressIndicator';
 export { QuickActionCard } from './QuickActionCard';
 
+// Shadcn Primitives
+export * from './table';
+export * from './tabs';
+export * from './dropdown-menu';
+export * from './dialog';
+export * from './label';
+
 // Design System Utilities
 export { designSystem } from '../../utils/design-system';
 export { useTheme } from '../../hooks/ui/useTheme';

@@ -1,32 +1,54 @@
-import { TextareaHTMLAttributes, forwardRef } from 'react';
-import { cn } from '../../utils/cn';
+import * as React from "react"
+import { cn } from "../../lib/utils"
+import { Label } from "./label"
 
-interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
-  error?: string;
-  className?: string;
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string
+  error?: string
+  helperText?: string
+  variant?: 'default' | 'glass'
 }
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, error, ...props }, ref) => {
-    const baseClasses = 'w-full px-4 py-2 text-sm border rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-vertical disabled:opacity-50 disabled:bg-slate-100';
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, label, error, helperText, variant = 'default', ...props }, ref) => {
 
-    const errorClasses = error
-      ? 'border-red-500 focus:ring-red-100 focus:border-red-500'
-      : 'border-slate-200';
+    // Base Shadcn Textarea Styles
+    const textareaClasses = cn(
+      "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      variant === 'glass' && "bg-white/50 backdrop-blur-sm border-slate-200",
+      error && "border-error focus-visible:ring-error",
+      className
+    )
+
+    if (!label && !error && !helperText) {
+      return (
+        <textarea
+          className={textareaClasses}
+          ref={ref}
+          {...props}
+        />
+      )
+    }
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-2">
+        {label && <Label>{label}</Label>}
         <textarea
+          className={textareaClasses}
           ref={ref}
-          className={cn(baseClasses, errorClasses, className)}
           {...props}
         />
         {error && (
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-sm font-medium text-error">{error}</p>
+        )}
+        {helperText && !error && (
+          <p className="text-sm text-textSecondary">{helperText}</p>
         )}
       </div>
-    );
+    )
   }
-);
+)
+Textarea.displayName = "Textarea"
 
-Textarea.displayName = 'Textarea';
+export { Textarea }

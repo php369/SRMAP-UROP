@@ -1,0 +1,349 @@
+src/components/admin/PerformanceMonitor.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/examples/GlassmorphicExample.tsx(39,55): error TS2322: Type '{ children: Element[]; variant: "elevated"; blur: string; className: string; }' is not assignable to type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+  Property 'blur' does not exist on type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+src/components/examples/GlassmorphicExample.tsx(46,53): error TS2322: Type '{ children: Element[]; variant: "subtle"; blur: string; className: string; }' is not assignable to type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+  Property 'blur' does not exist on type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+src/components/layout/index.ts(4,31): error TS2307: Cannot find module './TopNavigation' or its corresponding type declarations.
+src/components/LazyComponents.tsx(1,17): error TS6133: 'Suspense' is declared but its value is never read.
+src/components/LazyComponents.tsx(57,7): error TS6133: 'withErrorBoundary' is declared but its value is never read.
+src/components/LazyComponents.tsx(63,8): error TS2322: Type 'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is not assignable to type 'IntrinsicAttributes & P'.
+  Type 'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is not assignable to type 'P'.
+    'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint 'object'.
+src/components/LazyComponents.tsx(119,16): error TS2307: Cannot find module '../pages/DashboardPage' or its corresponding type declarations.
+src/components/LazyComponents.tsx(124,16): error TS2307: Cannot find module '../pages/AssessmentsPage' or its corresponding type declarations.
+src/components/LazyComponents.tsx(129,16): error TS2307: Cannot find module '../pages/AssessmentDetailPage' or its corresponding type declarations.
+src/components/LazyComponents.tsx(134,9): error TS2322: Type 'Promise<typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/pages/admin/AdminDashboard")>' is not assignable to type 'Promise<{ default: ComponentType<any>; }>'.
+  Property 'default' is missing in type 'typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/pages/admin/AdminDashboard")' but required in type '{ default: ComponentType<any>; }'.
+src/components/LazyComponents.tsx(141,9): error TS2322: Type 'Promise<typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/pages/admin/ReportsPage")>' is not assignable to type 'Promise<{ default: ComponentType<any>; }>'.
+  Property 'default' is missing in type 'typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/pages/admin/ReportsPage")' but required in type '{ default: ComponentType<any>; }'.
+src/components/LazyComponents.tsx(147,9): error TS2322: Type 'Promise<typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/components/admin/PerformanceMonitor")>' is not assignable to type 'Promise<{ default: ComponentType<any>; }>'.
+  Property 'default' is missing in type 'typeof import("P:/Study/Programming Practice/SRM/SRMAP UROP/apps/web/src/components/admin/PerformanceMonitor")' but required in type '{ default: ComponentType<any>; }'.
+src/components/LazyComponents.tsx(154,16): error TS2307: Cannot find module './charts/ChartComponents' or its corresponding type declarations.
+src/components/LazyComponents.tsx(214,13): error TS2322: Type 'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is not assignable to type 'IntrinsicAttributes & P'.
+  Type 'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is not assignable to type 'P'.
+    'PropsWithoutRef<P> & { ref: ForwardedRef<any>; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint 'object'.
+src/components/LazyComponents.tsx(235,33): error TS2307: Cannot find module '../pages/DashboardPage' or its corresponding type declarations.
+src/components/LazyComponents.tsx(238,33): error TS2307: Cannot find module '../pages/AssessmentsPage' or its corresponding type declarations.
+src/components/profile/InterestsTagCloud.tsx(192,19): error TS2322: Type '{ hidden: { opacity: number; scale: number; rotate: number; }; visible: { opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }; hover: { ...; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/projects/KanbanBoard.tsx(26,5): error TS2322: Type '"backlog"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/KanbanBoard.tsx(32,5): error TS2322: Type '"in-progress"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/KanbanBoard.tsx(38,5): error TS2322: Type '"review"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/KanbanBoard.tsx(44,5): error TS2322: Type '"done"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/KanbanBoard.tsx(76,28): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ urgent: number; high: number; medium: number; low: number; }'.
+src/components/projects/KanbanBoard.tsx(76,44): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(76,56): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ urgent: number; high: number; medium: number; low: number; }'.
+src/components/projects/KanbanBoard.tsx(76,72): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(80,13): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(80,26): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(81,27): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(81,59): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(83,13): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(84,13): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(110,44): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/components/projects/KanbanBoard.tsx(111,45): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"in-progress"' have no overlap.
+src/components/projects/KanbanBoard.tsx(113,9): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(114,18): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanBoard.tsx(115,7): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/components/projects/KanbanCard.tsx(31,47): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(46,29): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(46,57): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(46,82): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/components/projects/KanbanCard.tsx(51,25): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(56,17): error TS2339: Property 'color' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(56,58): error TS2339: Property 'color' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(74,49): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(76,22): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(105,40): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(127,16): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(131,67): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(134,28): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(136,23): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(137,25): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(138,27): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(147,16): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(149,20): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(149,42): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/projects/KanbanCard.tsx(159,20): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(161,25): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(171,20): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(176,61): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(181,20): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(183,27): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(190,20): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(190,48): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/components/projects/KanbanCard.tsx(190,54): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/projects/KanbanCard.tsx(200,20): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/KanbanCard.tsx(202,25): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(69,71): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(73,35): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(78,9): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(79,18): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(80,7): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/components/projects/KanbanColumn.tsx(156,32): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(163,71): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/KanbanColumn.tsx(170,62): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(35,12): error TS2678: Type '"backlog"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(37,12): error TS2678: Type '"in-progress"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(39,12): error TS2678: Type '"review"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(41,12): error TS2678: Type '"done"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(48,47): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(65,12): error TS2678: Type '"backlog"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(67,12): error TS2678: Type '"in-progress"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(69,12): error TS2678: Type '"review"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(71,12): error TS2678: Type '"done"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectCard.tsx(78,29): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(78,57): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(78,82): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/components/projects/ProjectCard.tsx(101,23): error TS2339: Property 'color' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(101,64): error TS2339: Property 'color' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(105,22): error TS2339: Property 'coverImage' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(108,32): error TS2339: Property 'coverImage' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(122,70): error TS2339: Property 'category' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(145,73): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(148,34): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(150,29): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(151,31): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(152,33): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(159,24): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(161,28): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(161,50): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/components/projects/ProjectCard.tsx(171,28): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(173,33): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(185,57): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(187,30): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(198,28): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(198,56): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/components/projects/ProjectCard.tsx(198,62): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/projects/ProjectCard.tsx(208,28): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(210,33): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(248,30): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(252,47): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(256,30): error TS2339: Property 'completedAt' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(259,76): error TS2339: Property 'completedAt' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(268,30): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(268,61): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(276,43): error TS2339: Property 'createdByName' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(279,32): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(279,71): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(304,46): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/ProjectCard.tsx(320,42): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/ProjectFilters.tsx(52,17): error TS2339: Property 'priority' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(53,17): error TS2339: Property 'category' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(54,17): error TS2339: Property 'tags' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(55,17): error TS2339: Property 'assignedTo' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(56,17): error TS2339: Property 'createdBy' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(57,17): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(63,7): error TS2322: Type '"backlog"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectFilters.tsx(64,7): error TS2322: Type '"in-progress"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectFilters.tsx(65,7): error TS2322: Type '"review"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectFilters.tsx(66,7): error TS2322: Type '"done"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/components/projects/ProjectFilters.tsx(69,43): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/components/projects/ProjectFilters.tsx(166,56): error TS2345: Argument of type '"priority"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(166,92): error TS2339: Property 'priority' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(170,33): error TS2339: Property 'priority' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(189,58): error TS2345: Argument of type '"category"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(189,88): error TS2339: Property 'category' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(193,35): error TS2339: Property 'category' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(213,58): error TS2345: Argument of type '"tags"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(213,79): error TS2339: Property 'tags' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(217,35): error TS2339: Property 'tags' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(241,44): error TS2339: Property 'assignedTo' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(242,61): error TS2345: Argument of type '"assignedTo"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(242,96): error TS2339: Property 'assignedTo' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(265,38): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(266,53): error TS2345: Argument of type '"dateRange"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(268,38): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(277,38): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(278,53): error TS2345: Argument of type '"dateRange"' is not assignable to parameter of type 'keyof ProjectFilter'.
+src/components/projects/ProjectFilters.tsx(279,40): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/components/projects/ProjectMasonryGrid.tsx(152,28): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/projects/ProjectMasonryGrid.tsx(160,15): error TS2322: Type '{ hidden: { opacity: number; scale: number; y: number; }; visible: { opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }; exit: { opacity: number; scale: number; y: number; transition: { ...; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; y: number; transition: { type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/projects/ProjectMasonryGrid.tsx(162,33): error TS2339: Property 'id' does not exist on type 'Project'.
+src/components/submissions/index.ts(10,15): error TS2724: '"./SubmissionForm"' has no exported member named 'SubmissionFormData'. Did you mean 'SubmissionForm'?
+src/components/submissions/index.ts(11,15): error TS2305: Module '"./SubmissionCard"' has no exported member 'Submission'.
+src/components/submissions/index.ts(11,27): error TS2305: Module '"./SubmissionCard"' has no exported member 'SubmissionFile'.
+src/components/submissions/SubmissionCard.tsx(116,28): error TS2304: Cannot find name 'openLink'.
+src/components/submissions/SubmissionCard.tsx(212,32): error TS2304: Cannot find name 'openLink'.
+src/components/submissions/SubmissionDetail.tsx(4,10): error TS2305: Module '"./SubmissionCard"' has no exported member 'Submission'.
+src/components/submissions/SubmissionDetail.tsx(4,22): error TS2305: Module '"./SubmissionCard"' has no exported member 'SubmissionFile'.
+src/components/submissions/SubmissionDetail.tsx(64,18): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ draft: { color: string; text: string; icon: string; }; submitted: { color: string; text: string; icon: string; }; graded: { color: string; text: string; icon: string; }; late: { color: string; text: string; icon: string; }; missing: { ...; }; }'.
+src/components/submissions/SubmissionDetail.tsx(258,62): error TS7006: Parameter 'total' implicitly has an 'any' type.
+src/components/submissions/SubmissionDetail.tsx(258,69): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/submissions/SubmissionDetail.tsx(297,38): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/contexts/ThemeContext.tsx(13,28): error TS2551: Property 'INDIGO_600' does not exist on type '{ readonly SRM_400: "#f5bb3e"; readonly SRM_600: "#c49b60"; readonly INDIGO_50: "#eef2ff"; readonly SLATE_900: "#0f172a"; readonly SLATE_800: "#1e293b"; readonly SLATE_600: "#475569"; ... 8 more ...; readonly BLUE_500: "#3b82f6"; }'. Did you mean 'INDIGO_50'?
+src/contexts/ThemeContext.tsx(22,27): error TS2551: Property 'INDIGO_600' does not exist on type '{ readonly SRM_400: "#f5bb3e"; readonly SRM_600: "#c49b60"; readonly INDIGO_50: "#eef2ff"; readonly SLATE_900: "#0f172a"; readonly SLATE_800: "#1e293b"; readonly SLATE_600: "#475569"; ... 8 more ...; readonly BLUE_500: "#3b82f6"; }'. Did you mean 'INDIGO_50'?
+src/contexts/ThemeContext.tsx(115,21): error TS6133: 'newMode' is declared but its value is never read.
+src/hooks/useOptimisticMutation.ts(1,39): error TS6133: 'UseMutationOptions' is declared but its value is never read.
+src/hooks/useOptimisticMutation.ts(77,40): error TS2638: Type 'NonNullable<TContext>' may represent a primitive value, which is not permitted as the right operand of the 'in' operator.
+src/main.tsx(2,1): error TS6133: 'React' is declared but its value is never read.
+src/main.tsx(33,16): error TS6133: 'registration' is declared but its value is never read.
+src/pages/admin/AdminDashboard.tsx(3,10): error TS2305: Module '"../../types"' has no exported member 'SystemAnalytics'.
+src/pages/admin/AdminDashboard.tsx(5,72): error TS2307: Cannot find module '../../components/charts' or its corresponding type declarations.
+src/pages/admin/AdminDashboard.tsx(352,48): error TS7006: Parameter 'activity' implicitly has an 'any' type.
+src/pages/admin/AdminDashboardPage.tsx(68,52): error TS6133: 'index' is declared but its value is never read.
+src/pages/admin/AdminUsersPage.tsx(3,21): error TS6133: 'GlowButton' is declared but its value is never read.
+src/pages/admin/AdminUsersPage.tsx(3,33): error TS6133: 'Badge' is declared but its value is never read.
+src/pages/admin/AdminUsersPage.tsx(51,32): error TS2339: Property 'users' does not exist on type '{}'.
+src/pages/assessments/AssessmentDetailPage.tsx(160,9): error TS2322: Type '"student" | "faculty" | "coordinator" | "admin"' is not assignable to type '"student" | "faculty" | "admin"'.
+  Type '"coordinator"' is not assignable to type '"student" | "faculty" | "admin"'.
+src/pages/auth/AuthCallbackPage.tsx(6,24): error TS6133: 'XCircle' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/StatsCards.tsx(2,10): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/hooks/useStats.ts(15,18): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<Stats | null>'.
+src/pages/faculty/ApplicationReviewPage.tsx(50,11): error TS6133: 'user' is declared but its value is never read.
+src/pages/faculty/ApplicationReviewPage.tsx(67,33): error TS2345: Argument of type '{}' is not assignable to parameter of type 'SetStateAction<Application[]>'.
+src/pages/faculty/ProjectsPage.tsx(194,11): error TS6133: 'styles' is declared but its value is never read.
+src/pages/projects/ProjectDetailPage.tsx(136,3): error TS2322: Type '"in-progress"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectDetailPage.tsx(217,12): error TS2678: Type '"backlog"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectDetailPage.tsx(219,12): error TS2678: Type '"in-progress"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectDetailPage.tsx(221,12): error TS2678: Type '"review"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectDetailPage.tsx(223,12): error TS2678: Type '"done"' is not comparable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectDetailPage.tsx(230,47): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(247,70): error TS2339: Property 'timeline' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(248,72): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(249,62): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(283,29): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(283,57): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(283,82): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/pages/projects/ProjectDetailPage.tsx(293,20): error TS2339: Property 'coverImage' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(295,28): error TS2339: Property 'coverImage' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(302,49): error TS2339: Property 'color' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(321,76): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(322,28): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(325,28): error TS2339: Property 'category' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(340,64): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(344,64): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(349,30): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(349,59): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(382,73): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(389,30): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(391,25): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(392,27): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(393,29): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(456,34): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(456,43): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/pages/projects/ProjectDetailPage.tsx(470,30): error TS2339: Property 'timeline' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(470,55): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/pages/projects/ProjectDetailPage.tsx(506,60): error TS2339: Property 'createdByName' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(508,30): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(512,47): error TS2339: Property 'dueDate' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(523,30): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(523,45): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/pages/projects/ProjectDetailPage.tsx(542,31): error TS2339: Property 'timeline' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(549,34): error TS2339: Property 'artifacts' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(556,24): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectDetailPage.tsx(556,39): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/pages/projects/ProjectsPage.tsx(49,5): error TS2322: Type '"in-progress"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(70,5): error TS2322: Type '"review"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(90,5): error TS2322: Type '"done"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(110,5): error TS2322: Type '"backlog"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(130,5): error TS2322: Type '"in-progress"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(150,5): error TS2322: Type '"review"' is not assignable to type '"draft" | "pending" | "published" | "archived"'.
+src/pages/projects/ProjectsPage.tsx(175,56): error TS2339: Property 'category' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(176,54): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(177,59): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(192,19): error TS2339: Property 'priority' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(192,48): error TS2339: Property 'priority' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(192,74): error TS2339: Property 'priority' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(197,19): error TS2339: Property 'category' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(197,48): error TS2339: Property 'category' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(197,74): error TS2339: Property 'category' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(202,19): error TS2339: Property 'tags' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(202,44): error TS2339: Property 'tags' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(202,54): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/pages/projects/ProjectsPage.tsx(202,69): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(207,19): error TS2339: Property 'assignedTo' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(207,50): error TS2339: Property 'assignedTo' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(207,66): error TS7006: Parameter 'userId' implicitly has an 'any' type.
+src/pages/projects/ProjectsPage.tsx(208,17): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(208,33): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/pages/projects/ProjectsPage.tsx(219,19): error TS2339: Property 'category' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(220,22): error TS2339: Property 'tags' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(221,19): error TS2339: Property 'createdByName' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(222,22): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(222,37): error TS7006: Parameter 'u' implicitly has an 'any' type.
+src/pages/projects/ProjectsPage.tsx(231,19): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(231,47): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(233,21): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(233,71): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(236,21): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(236,69): error TS2339: Property 'dateRange' does not exist on type 'ProjectFilter'.
+src/pages/projects/ProjectsPage.tsx(247,15): error TS2339: Property 'id' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(259,56): error TS2339: Property 'id' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(373,49): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/pages/projects/ProjectsPage.tsx(376,49): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"in-progress"' have no overlap.
+src/pages/projects/ProjectsPage.tsx(379,49): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"backlog"' have no overlap.
+src/pages/projects/ProjectsPage.tsx(415,41): error TS2339: Property 'id' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(421,40): error TS2339: Property 'category' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(422,40): error TS2339: Property 'progress' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(423,40): error TS2339: Property 'assignedTo' does not exist on type 'Project'.
+src/pages/projects/ProjectsPage.tsx(427,51): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"done"' have no overlap.
+src/pages/projects/ProjectsPage.tsx(427,85): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"in-progress"' have no overlap.
+src/pages/projects/ProjectsPage.tsx(427,127): error TS2367: This comparison appears to be unintentional because the types '"draft" | "pending" | "published" | "archived"' and '"review"' have no overlap.
+src/pages/student/SubmissionPage.tsx(14,1): error TS6133: 'WindowClosedMessage' is declared but its value is never read.
+src/pages/submissions/SubmissionDetailPage.tsx(4,10): error TS2305: Module '"../../components/submissions/SubmissionCard"' has no exported member 'Submission'.
+src/pages/submissions/SubmissionDetailPage.tsx(4,22): error TS2305: Module '"../../components/submissions/SubmissionCard"' has no exported member 'SubmissionFile'.
+src/pages/submissions/SubmitAssignmentPage.tsx(3,26): error TS2724: '"../../components/submissions/SubmissionForm"' has no exported member named 'SubmissionFormData'. Did you mean 'SubmissionForm'?
+src/pages/submissions/SubmitAssignmentPage.tsx(126,9): error TS2322: Type '{ assessment: Assessment; onSubmit: (data: SubmissionFormData) => Promise<void>; onSaveDraft: (data: SubmissionFormData) => Promise<void>; onCancel: () => void; loading: boolean; }' is not assignable to type 'IntrinsicAttributes & SubmissionFormProps'.
+  Property 'assessment' does not exist on type 'IntrinsicAttributes & SubmissionFormProps'.
+src/stores/authStore.ts(34,53): error TS6133: 'event' is declared but its value is never read.
+src/stores/themeStore.ts(29,18): error TS6133: 'mode' is declared but its value is never read.
+src/utils/apiValidation.ts(6,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+src/utils/apiValidation.ts(163,17): error TS18046: 'error' is of type 'unknown'.
+src/utils/apiValidation.ts(166,55): error TS18046: 'error' is of type 'unknown'.
+src/utils/apiValidation.ts(166,72): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/utils/monitoring.ts(89,35): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(108,20): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/monitoring.ts(108,27): error TS7006: Parameter 'hint' implicitly has an 'any' type.
+src/utils/monitoring.ts(145,28): error TS2339: Property 'renderTime' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(145,52): error TS2339: Property 'loadTime' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(155,29): error TS2339: Property 'processingStart' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(229,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(251,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(275,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(329,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(347,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(373,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(384,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(395,21): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(407,72): error TS2307: Cannot find module 'web-vitals' or its corresponding type declarations.
+src/utils/monitoring.ts(409,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(418,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(427,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(436,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(445,16): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/performance.tsx(22,8): error TS2322: Type 'PropsWithoutRef<ComponentProps<T>> & { ref: ForwardedRef<any>; }' is not assignable to type 'IntrinsicAttributes & (T extends MemoExoticComponent<infer U extends ComponentType<any>> | LazyExoticComponent<infer U extends ComponentType<...>> ? ReactManagedAttributes<...> : ReactManagedAttributes<...>)'.
+  Type 'PropsWithoutRef<ComponentProps<T>> & { ref: ForwardedRef<any>; }' is not assignable to type 'T extends MemoExoticComponent<infer U extends ComponentType<any>> | LazyExoticComponent<infer U extends ComponentType<any>> ? ReactManagedAttributes<...> : ReactManagedAttributes<...>'.
+src/utils/sanitize.ts(24,9): error TS6133: 'allowedTags' is declared but its value is never read.
+src/utils/sanitize.ts(25,9): error TS6133: 'allowedAttributes' is declared but its value is never read.
+src/utils/serviceWorkerRegistration.ts(241,9): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'string | BufferSource | null | undefined'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is not assignable to type 'ArrayBuffer'.
+          Types of property '[Symbol.toStringTag]' are incompatible.
+            Type '"SharedArrayBuffer"' is not assignable to type '"ArrayBuffer"'.
+src/utils/serviceWorkerRegistration.ts(301,9): error TS18047: 'registration.active' is possibly 'null'.
+src/utils/socketReconnection.ts(26,29): error TS2503: Cannot find namespace 'NodeJS'.
+src/utils/socketReconnection.ts(100,43): error TS2345: Argument of type 'DisconnectReason' is not assignable to parameter of type 'LogData | undefined'.
+  Type 'string' is not assignable to type 'LogData'.
+src/utils/socketReconnection.ts(183,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogData | undefined'.

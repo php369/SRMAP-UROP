@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 // GlassCard removed
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { Button } from '../../components/ui/Button';
 
 interface StudentDashboardProps {
     user: any;
@@ -107,15 +108,17 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                                                 </div>
                                             </div>
                                             {isGroupLeader && member._id !== getLeaderId(group.leaderId) && (
-                                                <button
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     onClick={() => handleRemoveMember(member._id)}
-                                                    className="text-red-400 hover:text-red-500 p-2 rounded-full hover:bg-red-500/10 transition-colors"
+                                                    className="text-red-400 hover:text-red-500 hover:bg-red-500/10 h-8 w-8"
                                                     title="Remove member"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     ))}
@@ -181,7 +184,13 @@ export function StudentDashboard({ user, dashboardData, refreshData }: StudentDa
                             ) : (
                                 <div className="text-center py-10 text-slate-400">
                                     <p>No applications yet.</p>
-                                    <button onClick={() => navigate('/dashboard/application')} className="text-primary hover:underline text-sm mt-2">Browse Projects</button>
+                                    <Button
+                                        variant="link"
+                                        onClick={() => navigate('/dashboard/application')}
+                                        className="text-primary hover:text-primary/80 mt-2 p-0 h-auto font-normal"
+                                    >
+                                        Browse Projects
+                                    </Button>
                                 </div>
                             )}
 

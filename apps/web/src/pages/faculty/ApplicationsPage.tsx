@@ -5,6 +5,7 @@ import { Users, User, CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
 import { GlassCard } from '../../components/ui';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { Button } from '../../components/ui/Button';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 
@@ -193,11 +194,12 @@ export function FacultyApplicationsPage() {
             <Filter className="w-5 h-5 text-textSecondary" />
             <div className="flex gap-2">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-                <button
+                <Button
                   key={status}
+                  variant={filterStatus === status ? "default" : "ghost"}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === status
-                    ? 'bg-primary text-white'
+                  className={`h-auto py-2 ${filterStatus === status
+                    ? ''
                     : 'bg-white/5 text-textSecondary hover:bg-white/10'
                     }`}
                 >
@@ -205,7 +207,7 @@ export function FacultyApplicationsPage() {
                   <span className="ml-2 text-xs opacity-70">
                     ({applications.filter(a => status === 'all' ? true : a.status === status).length})
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -293,30 +295,36 @@ export function FacultyApplicationsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setSelectedApplication(application)}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                        className="h-8 w-8 hover:bg-white/10"
                         title="View details"
                       >
                         <Eye className="w-4 h-4 text-text" />
-                      </button>
+                      </Button>
 
                       {application.status === 'pending' && (
                         <>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleAccept(application._id, application.projectId._id)}
-                            className="p-2 hover:bg-success/20 rounded-lg transition-all"
+                            className="h-8 w-8 hover:bg-success/10 text-success hover:text-success"
                             title="Accept application"
                           >
-                            <CheckCircle className="w-4 h-4 text-success" />
-                          </button>
-                          <button
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleReject(application._id)}
-                            className="p-2 hover:bg-error/20 rounded-lg transition-all"
+                            className="h-8 w-8 hover:bg-error/10 text-error hover:text-error"
                             title="Reject"
                           >
-                            <XCircle className="w-4 h-4 text-error" />
-                          </button>
+                            <XCircle className="w-4 h-4" />
+                          </Button>
                         </>
                       )}
                     </div>
@@ -427,28 +435,30 @@ export function FacultyApplicationsPage() {
                 </div>
 
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => setSelectedApplication(null)}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
+                    className="flex-1"
                   >
                     Close
-                  </button>
+                  </Button>
                   {selectedApplication.status === 'pending' && (
                     <>
-                      <button
+                      <Button
+                        variant="destructive"
                         onClick={() => handleReject(selectedApplication._id)}
-                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
+                        className="flex-1"
                       >
                         Reject
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => {
                           handleAccept(selectedApplication._id, selectedApplication.projectId._id);
                         }}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                       >
                         Accept
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

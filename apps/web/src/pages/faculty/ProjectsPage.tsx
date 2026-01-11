@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, Button } from '../../components/ui';
+import { GlassCard, Button, Input, Label, Textarea } from '../../components/ui';
 import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
@@ -332,22 +332,26 @@ export function FacultyProjectsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleEdit(project)}
                         disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-8 w-8 hover:bg-white/10"
                         title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot edit assigned project' : 'Edit project'}
                       >
                         <Edit2 className="w-4 h-4 text-text" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleDelete(project._id)}
                         disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
-                        className="p-2 hover:bg-error/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-8 w-8 hover:bg-error/10 text-error hover:text-error"
                         title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot delete assigned project' : 'Delete project'}
                       >
-                        <Trash2 className="w-4 h-4 text-error" />
-                      </button>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </GlassCard>
@@ -404,14 +408,15 @@ export function FacultyProjectsPage() {
                         const isDisabled = editingProject !== null || !isAvailable;
 
                         return (
-                          <button
+                          <Button
                             key={type}
                             type="button"
+                            variant="outline"
                             onClick={() => isAvailable && setFormData({ ...formData, projectType: type })}
                             disabled={isDisabled}
                             title={!isAvailable ? `${type} proposal window is not open` : ''}
-                            className={`px-4 py-2 rounded-lg transition-all border-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.projectType === type
-                              ? 'bg-blue-100 border-blue-500 text-blue-700 font-semibold'
+                            className={`h-auto py-2 ${formData.projectType === type
+                              ? 'bg-blue-100 border-blue-500 text-blue-700 hover:bg-blue-200'
                               : isAvailable
                                 ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                                 : 'bg-gray-50 border-gray-200 text-gray-400'
@@ -419,34 +424,32 @@ export function FacultyProjectsPage() {
                           >
                             {type}
                             {!isAvailable && <span className="ml-1 text-xs">🔒</span>}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
                       Project Title *
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       maxLength={200}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
                       Brief Description *
-                    </label>
-                    <textarea
+                    </Label>
+                    <Textarea
                       value={formData.brief}
                       onChange={(e) => setFormData({ ...formData, brief: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={4}
                       required
                       maxLength={1000}
@@ -454,42 +457,41 @@ export function FacultyProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
                       Prerequisites (Optional)
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="text"
                       value={formData.prerequisites}
                       onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., Python, Machine Learning basics"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
                       Department
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="text"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
 
                   <div className="flex gap-3 pt-4">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded-lg text-gray-700 transition-all font-medium"
+                      className="flex-1"
                     >
                       Cancel
-                    </button>
+                    </Button>
                     <Button
                       type="submit"
                       disabled={loading}

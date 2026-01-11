@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Video, CheckCircle, XCircle, Clock, Plus, Eye, AlertCircle, MapPin } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, Button } from '../../components/ui';
+import { GlassCard, Button, Input, Label, Modal, Textarea } from '../../components/ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
@@ -383,80 +384,30 @@ export function FacultyMeetingsPage() {
           </Button>
         </div>
 
-        {/* Tabs */}
-        <GlassCard className="p-2">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('meetings')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'meetings'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                }`}
-            >
-              Schedule Meetings ({meetings.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('logs')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'logs'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                }`}
-            >
-              Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'pending').length : 0} pending)
-            </button>
-          </div>
-        </GlassCard>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'meetings' | 'logs')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="meetings">Schedule Meetings ({meetings.length})</TabsTrigger>
+            <TabsTrigger value="logs">Meeting Logs ({Array.isArray(meetingLogs) ? meetingLogs.filter(log => log.status === 'completed' || log.status === 'pending').length : 0} pending)</TabsTrigger>
+          </TabsList>
 
-        {/* Sub-tabs */}
-        {activeTab === 'meetings' && (
-          <GlassCard className="p-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMeetingsSubTab('upcoming')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'upcoming'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                Upcoming Meetings ({getUpcomingMeetings().length})
-              </button>
-              <button
-                onClick={() => setMeetingsSubTab('past')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${meetingsSubTab === 'past'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                Past Meetings ({getPastMeetings().length})
-              </button>
-            </div>
-          </GlassCard>
-        )}
+          <TabsContent value="meetings" className="space-y-4">
+            <Tabs value={meetingsSubTab} onValueChange={(v) => setMeetingsSubTab(v as 'upcoming' | 'past')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upcoming">Upcoming Meetings ({getUpcomingMeetings().length})</TabsTrigger>
+                <TabsTrigger value="past">Past Meetings ({getPastMeetings().length})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </TabsContent>
 
-        {activeTab === 'logs' && (
-          <GlassCard className="p-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setLogsSubTab('pending')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'pending'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                Pending Logs ({getPendingLogs().length})
-              </button>
-              <button
-                onClick={() => setLogsSubTab('approved')}
-                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${logsSubTab === 'approved'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-transparent text-slate-500 hover:bg-slate-50'
-                  }`}
-              >
-                Approved Logs ({getApprovedLogs().length})
-              </button>
-            </div>
-          </GlassCard>
-        )}
+          <TabsContent value="logs" className="space-y-4">
+            <Tabs value={logsSubTab} onValueChange={(v) => setLogsSubTab(v as 'pending' | 'approved')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Pending Logs ({getPendingLogs().length})</TabsTrigger>
+                <TabsTrigger value="approved">Approved Logs ({getApprovedLogs().length})</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
 
         {/* Content */}
         {activeTab === 'meetings' ? (
@@ -682,317 +633,266 @@ export function FacultyMeetingsPage() {
         )}
       </motion.div>
 
-      {/* Schedule Meeting Modal */}
-      <AnimatePresence>
-        {showScheduleModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setShowScheduleModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg"
+      <Modal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        title="Schedule Meeting"
+      >
+        <form onSubmit={handleScheduleMeeting} className="space-y-4">
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Project *
+            </Label>
+            <select
+              value={scheduleData.projectId}
+              onChange={(e) => setScheduleData({ ...scheduleData, projectId: e.target.value })}
+              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
             >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Meeting</h2>
+              <option value="">-- Select a project --</option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.projectId} - {project.title}
+                </option>
+              ))}
+            </select>
+            {projects.length === 0 && (
+              <p className="text-sm text-gray-500 mt-1">
+                No assigned projects found. Projects will appear here once you accept student applications.
+              </p>
+            )}
+          </div>
 
-                <form onSubmit={handleScheduleMeeting} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Project *
-                    </label>
-                    <select
-                      value={scheduleData.projectId}
-                      onChange={(e) => setScheduleData({ ...scheduleData, projectId: e.target.value })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">-- Select a project --</option>
-                      {projects.map((project) => (
-                        <option key={project._id} value={project._id}>
-                          {project.projectId} - {project.title}
-                        </option>
-                      ))}
-                    </select>
-                    {projects.length === 0 && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        No assigned projects found. Projects will appear here once you accept student applications.
-                      </p>
-                    )}
-                  </div>
+          <SmartDateTimeInput
+            value={scheduleData.meetingDate}
+            onChange={(value) => setScheduleData({ ...scheduleData, meetingDate: value })}
+            label="Meeting Date & Time"
+          />
 
-                  <SmartDateTimeInput
-                    value={scheduleData.meetingDate}
-                    onChange={(value) => setScheduleData({ ...scheduleData, meetingDate: value })}
-                    label="Meeting Date & Time"
-                  />
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-2">
+              Meeting Mode
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant={scheduleData.mode === 'online' ? 'default' : 'outline'}
+                onClick={() => setScheduleData({ ...scheduleData, mode: 'online' })}
+              >
+                Online
+              </Button>
+              <Button
+                type="button"
+                variant={scheduleData.mode === 'in-person' ? 'default' : 'outline'}
+                onClick={() => setScheduleData({ ...scheduleData, mode: 'in-person' })}
+              >
+                In-Person
+              </Button>
+            </div>
+          </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Meeting Mode
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setScheduleData({ ...scheduleData, mode: 'online' })}
-                        className={`px-4 py-2 rounded-lg transition-all border-2 ${scheduleData.mode === 'online'
-                          ? 'bg-blue-50 border-blue-500 text-blue-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                      >
-                        Online
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setScheduleData({ ...scheduleData, mode: 'in-person' })}
-                        className={`px-4 py-2 rounded-lg transition-all border-2 ${scheduleData.mode === 'in-person'
-                          ? 'bg-blue-50 border-blue-500 text-blue-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                      >
-                        In-Person
-                      </button>
-                    </div>
-                  </div>
+          {scheduleData.mode === 'online' && (
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                Google Meet Link
+              </Label>
+              <Input
+                type="url"
+                value={scheduleData.meetUrl}
+                onChange={(e) => setScheduleData({ ...scheduleData, meetUrl: e.target.value })}
+                placeholder="https://meet.google.com/..."
+              />
+            </div>
+          )}
 
-                  {scheduleData.mode === 'online' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Google Meet Link
-                      </label>
-                      <input
-                        type="url"
-                        value={scheduleData.meetUrl}
-                        onChange={(e) => setScheduleData({ ...scheduleData, meetUrl: e.target.value })}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="https://meet.google.com/..."
-                      />
-                    </div>
-                  )}
+          {scheduleData.mode === 'in-person' && (
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                Location *
+              </Label>
+              <Input
+                type="text"
+                value={scheduleData.location}
+                onChange={(e) => setScheduleData({ ...scheduleData, location: e.target.value })}
+                placeholder="Room number, building, etc."
+                required
+              />
+            </div>
+          )}
 
-                  {scheduleData.mode === 'in-person' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Location *
-                      </label>
-                      <input
-                        type="text"
-                        value={scheduleData.location}
-                        onChange={(e) => setScheduleData({ ...scheduleData, location: e.target.value })}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Room number, building, etc."
-                        required
-                      />
-                    </div>
-                  )}
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowScheduleModal(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              className="flex-1"
+            >
+              Schedule Meeting
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowScheduleModal(false)}
-                      className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all"
-                    >
-                      Schedule
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Log Details Modal */}
-      <AnimatePresence>
+      <Modal
+        isOpen={!!selectedLog}
+        onClose={() => {
+          setSelectedLog(null);
+          setApprovalData({ facultyNotes: '' });
+        }}
+        title="Meeting Log Details"
+        size="lg"
+      >
         {selectedLog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => {
-              setSelectedLog(null);
-              setApprovalData({ facultyNotes: '' });
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-            >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Meeting Log Details</h2>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Group/Student</Label>
+              <p className="text-gray-900">
+                {selectedLog.groupId
+                  ? `Group ${selectedLog.groupId.groupCode}`
+                  : selectedLog.studentId?.name}
+              </p>
+            </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Group/Student</label>
-                    <p className="text-gray-900">
-                      {selectedLog.groupId
-                        ? `Group ${selectedLog.groupId.groupCode}`
-                        : selectedLog.studentId?.name}
-                    </p>
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Meeting Date</Label>
+              <p className="text-gray-900">{selectedLog.meetingDate ? new Date(selectedLog.meetingDate).toLocaleString() : 'N/A'}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Attendees</Label>
+              <div className="text-gray-900 mt-1">
+                {selectedLog.attendees && selectedLog.attendees.length > 0 ? (
+                  <div className="space-y-1">
+                    {selectedLog.attendees.map((attendee: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${attendee.present ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className={attendee.present ? 'text-gray-900' : 'text-gray-500 line-through'}>
+                          {attendee.studentId?.name || 'Unknown Student'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({attendee.present ? 'Present' : 'Absent'})
+                        </span>
+                      </div>
+                    ))}
                   </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Meeting Date</label>
-                    <p className="text-gray-900">{selectedLog.meetingDate ? new Date(selectedLog.meetingDate).toLocaleString() : 'N/A'}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Attendees</label>
-                    <div className="text-gray-900 mt-1">
-                      {selectedLog.attendees && selectedLog.attendees.length > 0 ? (
-                        <div className="space-y-1">
-                          {selectedLog.attendees.map((attendee: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${attendee.present ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                              <span className={attendee.present ? 'text-gray-900' : 'text-gray-500 line-through'}>
-                                {attendee.studentId?.name || 'Unknown Student'}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                ({attendee.present ? 'Present' : 'Absent'})
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500">No attendees recorded</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Minutes of Meeting</label>
-                    <p className="text-gray-900 whitespace-pre-wrap mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      {selectedLog.minutesOfMeeting || selectedLog.mom || 'No minutes recorded'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
-                  </div>
-
-                  {selectedLog.facultyNotes && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Faculty Notes</label>
-                      <p className="text-gray-900 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        {selectedLog.facultyNotes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setSelectedLog(null);
-                      setApprovalData({ facultyNotes: '' });
-                    }}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
-                  >
-                    Close
-                  </button>
-                  {(selectedLog.status === 'completed' || selectedLog.status === 'pending') &&
-                    (selectedLog.minutesOfMeeting || selectedLog.mom) && (
-                      <>
-                        <button
-                          onClick={() => handleApproveLog(selectedLog._id, false)}
-                          className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg text-red-700 font-medium transition-all"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => handleApproveLog(selectedLog._id, true)}
-                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all"
-                        >
-                          Approve
-                        </button>
-                      </>
-                    )}
-                </div>
+                ) : (
+                  <p className="text-gray-500">No attendees recorded</p>
+                )}
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Minutes of Meeting</Label>
+              <p className="text-gray-900 whitespace-pre-wrap mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                {selectedLog.minutesOfMeeting || selectedLog.mom || 'No minutes recorded'}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-600">Status</Label>
+              <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
+            </div>
+
+            {selectedLog.facultyNotes && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Faculty Notes</Label>
+                <p className="text-gray-900 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  {selectedLog.facultyNotes}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedLog(null);
+                  setApprovalData({ facultyNotes: '' });
+                }}
+                className="flex-1"
+              >
+                Close
+              </Button>
+              {(selectedLog.status === 'completed' || selectedLog.status === 'pending') &&
+                (selectedLog.minutesOfMeeting || selectedLog.mom) && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleApproveLog(selectedLog._id, false)}
+                      className="flex-1"
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      onClick={() => handleApproveLog(selectedLog._id, true)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Rejection Feedback Modal */}
-      <AnimatePresence>
-        {showRejectModal && selectedLog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => {
-              setShowRejectModal(false);
-              setApprovalData({ facultyNotes: '' });
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md"
+      <Modal
+        isOpen={showRejectModal}
+        onClose={() => {
+          setShowRejectModal(false);
+          setApprovalData({ facultyNotes: '' });
+        }}
+        title="Reject Meeting Log"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Please provide feedback explaining why this meeting log is being rejected:
+          </p>
+
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-2">
+              Feedback *
+            </Label>
+            <Textarea
+              value={approvalData.facultyNotes}
+              onChange={(e) => setApprovalData({ facultyNotes: e.target.value })}
+              rows={4}
+              placeholder="Explain what needs to be improved or corrected..."
+              required
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectModal(false);
+                setApprovalData({ facultyNotes: '' });
+              }}
+              className="flex-1"
             >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Reject Meeting Log</h2>
-                <p className="text-gray-600 mb-4">
-                  Please provide feedback explaining why this meeting log is being rejected:
-                </p>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Feedback *
-                  </label>
-                  <textarea
-                    value={approvalData.facultyNotes}
-                    onChange={(e) => setApprovalData({ facultyNotes: e.target.value })}
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    rows={4}
-                    placeholder="Explain what needs to be improved or corrected..."
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowRejectModal(false);
-                      setApprovalData({ facultyNotes: '' });
-                    }}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 font-medium transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleRejectWithFeedback}
-                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all"
-                  >
-                    Confirm Rejection
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectWithFeedback}
+              className="flex-1"
+            >
+              Confirm Rejection
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div >
   );
 }

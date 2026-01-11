@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, UserCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard } from '../../components/ui/GlassCard';
+import { Button, Input, Label, Textarea } from '../../components/ui';
 import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
@@ -528,10 +529,11 @@ export function FacultyAssessmentPage() {
         {/* Tab Navigation */}
         <div className="border-b border-slate-200">
           <nav className="-mb-px flex space-x-8">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('internal')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'internal'
-                ? 'border-primary text-primary'
+              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 ${activeTab === 'internal'
+                ? 'border-primary text-primary hover:text-primary'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
@@ -539,11 +541,12 @@ export function FacultyAssessmentPage() {
                 <Users className="w-4 h-4" />
                 Internal Grading
               </div>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => setActiveTab('external')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'external'
-                ? 'border-primary text-primary'
+              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 ${activeTab === 'external'
+                ? 'border-primary text-primary hover:text-primary'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
@@ -551,7 +554,7 @@ export function FacultyAssessmentPage() {
                 <UserCheck className="w-4 h-4" />
                 External Evaluator
               </div>
-            </button>
+            </Button>
           </nav>
         </div>
 
@@ -703,8 +706,8 @@ export function FacultyAssessmentPage() {
                                       {/* Grading Section */}
                                       <div className="mt-4 pt-4 border-t border-white/10">
                                         <div className="flex items-center gap-4">
-                                          <label className="text-sm font-medium text-text">Grade (out of 5):</label>
-                                          <input
+                                          <Label className="text-sm font-medium text-text">Grade (out of 5):</Label>
+                                          <Input
                                             type="number"
                                             min="0"
                                             max="5"
@@ -797,7 +800,7 @@ export function FacultyAssessmentPage() {
                                     });
 
                                     return !allGraded ? (
-                                      <button
+                                      <Button
                                         onClick={() => {
                                           setSelectedSubmission(submission);
                                           setShowGroupGrading(true);
@@ -817,10 +820,10 @@ export function FacultyAssessmentPage() {
                                             comments: ''
                                           });
                                         }}
-                                        className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
+                                        className="h-auto px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
                                       >
                                         Grade Group
-                                      </button>
+                                      </Button>
                                     ) : (
                                       <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded">
                                         ✓ All Graded
@@ -875,7 +878,8 @@ export function FacultyAssessmentPage() {
                               )}
                               {submission.reportUrl && (
                                 <div className="flex flex-col gap-1">
-                                  <button
+                                  <Button
+                                    variant="link"
                                     onClick={() => {
                                       const fullUrl = submission.reportUrl?.startsWith('/api/')
                                         ? `${window.location.origin}${submission.reportUrl}`
@@ -909,11 +913,11 @@ export function FacultyAssessmentPage() {
                                         if (e.target === modal) closeModal();
                                       });
                                     }}
-                                    className="flex items-center gap-1 text-primary hover:underline cursor-pointer bg-none border-none p-0 text-left"
+                                    className="h-auto p-0 flex items-center gap-1 text-primary hover:underline hover:no-underline"
                                   >
                                     <FileText className="w-4 h-4" />
                                     📄 View Report
-                                  </button>
+                                  </Button>
                                   <a
                                     href={submission.reportUrl?.startsWith('/api/')
                                       ? `${window.location.origin}${submission.reportUrl}`
@@ -928,7 +932,8 @@ export function FacultyAssessmentPage() {
                               {/* Presentation only for External evaluation */}
                               {assessmentType === 'External' && submission.presentationUrl && (
                                 <div className="flex flex-col gap-1">
-                                  <button
+                                  <Button
+                                    variant="link"
                                     onClick={() => {
                                       const fullUrl = submission.presentationUrl?.startsWith('/api/')
                                         ? `${window.location.origin}${submission.presentationUrl}`
@@ -962,11 +967,11 @@ export function FacultyAssessmentPage() {
                                         if (e.target === modal) closeModal();
                                       });
                                     }}
-                                    className="flex items-center gap-1 text-primary hover:underline cursor-pointer bg-none border-none p-0 text-left"
+                                    className="h-auto p-0 flex items-center gap-1 text-primary hover:underline hover:no-underline"
                                   >
                                     <Presentation className="w-4 h-4" />
                                     📊 View Presentation
-                                  </button>
+                                  </Button>
                                   <a
                                     href={submission.presentationUrl?.startsWith('/api/')
                                       ? `${window.location.origin}${submission.presentationUrl}`
@@ -989,27 +994,29 @@ export function FacultyAssessmentPage() {
                         <div className="flex items-center gap-2 ml-4">
                           {/* Meeting logs and presentations only for External evaluation */}
                           {assessmentType === 'External' && submission.projectId?._id && meetingLogs[submission.projectId._id]?.length > 0 && (
-                            <button
+                            <Button
                               onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId!._id])}
-                              className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm"
+                              className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm h-auto"
                               title="View Meeting Logs"
                             >
                               <FileText className="w-4 h-4" />
                               {meetingLogs[submission.projectId._id].length} Logs
-                            </button>
+                            </Button>
                           )}
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               // For group submissions, show the submission details modal
                               setSelectedSubmission(submission);
                               setSelectedStudent(null);
                               setGradeData({ grade: '', comments: '' });
                             }}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                            className="h-8 w-8 hover:bg-white/10"
                             title="View Submission Details"
                           >
                             <Eye className="w-4 h-4 text-text" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </GlassCard>
@@ -1230,17 +1237,16 @@ export function FacultyAssessmentPage() {
                     {selectedStudent && (
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <Label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Grade (0-{getMaxScore(assessmentType)}) *
-                          </label>
-                          <input
+                          </Label>
+                          <Input
                             type="number"
                             min="0"
                             max={getMaxScore(assessmentType)}
                             step="0.5"
                             value={gradeData.grade}
                             onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder={`Enter grade (max ${getMaxScore(assessmentType)})`}
                           />
                           {gradeData.grade && (
@@ -1251,13 +1257,12 @@ export function FacultyAssessmentPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <Label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Comments / Feedback (Optional)
-                          </label>
-                          <textarea
+                          </Label>
+                          <Textarea
                             value={gradeData.comments}
                             onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             rows={3}
                             placeholder="Provide feedback to the student..."
                           />
@@ -1301,7 +1306,7 @@ export function FacultyAssessmentPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <input
+                                  <Input
                                     type="number"
                                     min="0"
                                     max={getMaxScore(assessmentType)}
@@ -1314,7 +1319,7 @@ export function FacultyAssessmentPage() {
                                         [student.studentId]: e.target.value
                                       }
                                     })}
-                                    className="w-20 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-20"
                                     placeholder="0"
                                   />
                                   {groupGradeData.students[student.studentId] && (
@@ -1329,13 +1334,12 @@ export function FacultyAssessmentPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <Label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Group Comments / Feedback (Optional)
-                          </label>
-                          <textarea
+                          </Label>
+                          <Textarea
                             value={groupGradeData.comments}
                             onChange={(e) => setGroupGradeData({ ...groupGradeData, comments: e.target.value })}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             rows={3}
                             placeholder="Provide feedback that will be shared with all group members..."
                           />
@@ -1391,7 +1395,8 @@ export function FacultyAssessmentPage() {
                   </div>
 
                   <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setSelectedSubmission(null);
                         setSelectedStudent(null);
@@ -1399,33 +1404,33 @@ export function FacultyAssessmentPage() {
                         setGradeData({ grade: '', comments: '' });
                         setGroupGradeData({ students: {}, comments: '' });
                       }}
-                      className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white transition-all"
+                      className="flex-1"
                     >
                       Close
-                    </button>
+                    </Button>
                     {selectedStudent && (
-                      <button
+                      <Button
                         onClick={handleGradeSubmission}
                         disabled={!gradeData.grade || parseFloat(gradeData.grade) < 0 || parseFloat(gradeData.grade) > getMaxScore(assessmentType)}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                        className="flex-1"
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="w-4 h-4 mr-2" />
                         Submit Grade
-                      </button>
+                      </Button>
                     )}
                     {showGroupGrading && (
-                      <button
+                      <Button
                         onClick={handleGroupGradeSubmission}
                         disabled={!selectedSubmission?.students?.every(student =>
                           groupGradeData.students[student.studentId] &&
                           parseFloat(groupGradeData.students[student.studentId]) >= 0 &&
                           parseFloat(groupGradeData.students[student.studentId]) <= getMaxScore(assessmentType)
                         )}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="w-4 h-4 mr-2" />
                         Submit Group Grades
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

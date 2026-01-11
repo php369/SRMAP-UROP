@@ -9,6 +9,9 @@ import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/label';
 
 interface Project {
   _id: string;
@@ -927,24 +930,26 @@ export function ApplicationPage() {
 
             <div className="flex gap-3">
               {!isGroupLeader && (
-                <button
+                <Button
+                  variant="destructive"
                   onClick={handleLeaveGroup}
                   disabled={loading}
-                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                  className="px-6 py-6"
                 >
                   Leave Group
-                </button>
+                </Button>
               )}
               {isGroupLeader && (
-                <button
+                <Button
+                  variant="destructive"
                   onClick={handleDeleteGroup}
                   disabled={loading}
-                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                  className="px-6 py-6"
                 >
                   Delete Group
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 onClick={() => {
                   if (isGroupLeader) {
                     setStep('application');
@@ -955,10 +960,10 @@ export function ApplicationPage() {
                   }
                   setApplicationType('group');
                 }}
-                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                className="flex-1 px-6 py-6"
               >
                 Continue Application
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -997,13 +1002,13 @@ export function ApplicationPage() {
             {groupAction === 'create' && !groupCode && (
               <div className="text-center">
                 <p className="mb-4">Click below to generate your group code</p>
-                <button
+                <Button
                   onClick={handleCreateGroup}
                   disabled={loading}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  className="px-6 py-6"
                 >
                   {loading ? <Loader className="animate-spin" /> : 'Generate Code'}
-                </button>
+                </Button>
               </div>
             )}
 
@@ -1017,19 +1022,20 @@ export function ApplicationPage() {
                   Share this code with your team members (2-4 members total)
                 </p>
                 <div className="flex gap-3 justify-center">
-                  <button
+                  <Button
+                    variant="destructive"
                     onClick={handleDeleteGroup}
                     disabled={loading}
-                    className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                    className="px-6 py-6"
                   >
                     Delete Group
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setStep('application')}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-6 py-6"
                   >
                     Continue to Application <ArrowRight className="inline ml-2" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -1040,7 +1046,7 @@ export function ApplicationPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   Enter the 6-character code (e.g., ABC123) or paste the full code with hyphen (ABC-123)
                 </p>
-                <input
+                <Input
                   type="text"
                   value={inputCode}
                   onChange={(e) => {
@@ -1079,15 +1085,15 @@ export function ApplicationPage() {
                   }}
                   maxLength={6}
                   placeholder="ABC123 or ABC-123"
-                  className="w-full px-4 py-3 border rounded-lg mb-4 text-center text-2xl font-bold"
+                  className="w-full text-center text-2xl font-bold mb-4"
                 />
-                <button
+                <Button
                   onClick={handleJoinGroup}
                   disabled={loading || inputCode.length !== 6}
-                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                  className="w-full px-6 py-6"
                 >
                   {loading ? <Loader className="animate-spin mx-auto" /> : 'Join Group'}
-                </button>
+                </Button>
               </div>
             )}
           </motion.div>
@@ -1134,8 +1140,8 @@ export function ApplicationPage() {
               }
             }} className="space-y-4 mb-6">
               <div>
-                <label className="block mb-2 font-medium text-gray-700">Department *</label>
-                <input
+                <Label className="block mb-2 font-medium text-gray-700">Department *</Label>
+                <Input
                   type="text"
                   name="department"
                   required
@@ -1145,8 +1151,8 @@ export function ApplicationPage() {
               </div>
 
               <div>
-                <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
-                <input
+                <Label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</Label>
+                <Input
                   type="text"
                   name="specialization"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1155,21 +1161,22 @@ export function ApplicationPage() {
               </div>
 
               <div className="flex gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
                   onClick={handleLeaveGroup}
                   disabled={loading}
-                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                  className="px-6 py-6"
                 >
                   Leave Group
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-all"
+                  className="flex-1 px-6 py-6"
                 >
                   {loading ? <Loader className="animate-spin mx-auto" /> : 'Submit Details'}
-                </button>
+                </Button>
               </div>
             </form>
           </motion.div>
@@ -1245,19 +1252,20 @@ export function ApplicationPage() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="destructive"
                 onClick={handleLeaveGroup}
                 disabled={loading}
-                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                className="px-6 py-6"
               >
                 Leave Group
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => window.location.reload()}
-                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                className="flex-1 px-6 py-6"
               >
                 Refresh Status
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -1321,14 +1329,16 @@ export function ApplicationPage() {
                             <p className="text-xs text-gray-500">Share with team members</p>
                             <p className="text-xs text-gray-500">Members: {groupMembers.length}/4</p>
                             {isGroupLeader && (
-                              <button
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 onClick={handleDeleteGroup}
                                 disabled={loading}
-                                className="mt-2 px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:opacity-50 transition-all"
+                                className="mt-2 text-xs"
                                 title="Delete group and remove all members"
                               >
                                 Delete Group
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -1340,8 +1350,8 @@ export function ApplicationPage() {
                 {/* Form Fields */}
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="block mb-2 font-medium text-gray-700">Department *</label>
-                    <input
+                    <Label className="block mb-2 font-medium text-gray-700">Department *</Label>
+                    <Input
                       type="text"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
@@ -1352,8 +1362,8 @@ export function ApplicationPage() {
                   </div>
 
                   <div>
-                    <label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</label>
-                    <input
+                    <Label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</Label>
+                    <Input
                       type="text"
                       value={formData.specialization}
                       onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
@@ -1418,14 +1428,14 @@ export function ApplicationPage() {
                   </p>
                 )}
 
-                <button
+                <Button
                   onClick={handleProceedToVerification}
                   disabled={loading || selectedProjects.length === 0}
-                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full px-6 py-6"
                   title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Save details and proceed to verify group members' : 'Submit your application'}
                 >
                   {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
-                </button>
+                </Button>
               </>
             )}
 
@@ -1438,12 +1448,12 @@ export function ApplicationPage() {
                 >
                   Leave Group
                 </button>
-                <button
+                <Button
                   onClick={() => setStep('member-waiting')}
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                  className="flex-1 px-6 py-6"
                 >
                   Back to Waiting
-                </button>
+                </Button>
               </div>
             )}
           </motion.div>
@@ -1545,14 +1555,16 @@ export function ApplicationPage() {
                               </span>
                             )}
                             {isGroupLeader && member._id !== user?.id && (
-                              <button
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => handleRemoveMember(member._id)}
                                 disabled={loading}
-                                className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:opacity-50"
+                                className="px-2 py-1 text-xs"
                                 title="Remove member"
                               >
                                 Remove
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -1616,14 +1628,15 @@ export function ApplicationPage() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setStep('application')}
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-all"
+                className="flex-1 px-6 py-6"
               >
                 Back to Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSubmitApplication}
                 disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => {
                   const memberUserId = member._id || member.id;
@@ -1635,7 +1648,7 @@ export function ApplicationPage() {
                     return detailUserIdString === memberUserIdString;
                   });
                 })}
-                className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex-1 px-6 py-6"
                 title={
                   groupMembers.length < 2
                     ? 'Group needs at least 2 members'
@@ -1654,7 +1667,7 @@ export function ApplicationPage() {
                 }
               >
                 {loading ? <Loader className="animate-spin mx-auto" /> : 'Confirm & Submit Application'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}

@@ -1,51 +1,57 @@
-import { forwardRef, InputHTMLAttributes } from 'react';
-import { cn } from '../../utils/cn';
+import * as React from "react"
+import { cn } from "../../lib/utils"
+import { Label } from "./label"
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
-  variant?: 'default' | 'glass';
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  error?: string
+  helperText?: string
+  variant?: 'default' | 'glass'
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, variant = 'default', ...props }, ref) => {
-    const baseClasses = 'w-full px-4 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed';
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, label, error, helperText, variant = 'default', ...props }, ref) => {
 
-    const variantClasses = {
-      default: 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-primary/20',
-      // Map glass to default for consistency
-      glass: 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-primary/20',
-    };
+    // Base Shadcn Input Styles
+    const inputClasses = cn(
+      "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      variant === 'glass' && "bg-white/50 backdrop-blur-sm border-slate-200", // Maintain glass variant support
+      error && "border-error focus-visible:ring-error",
+      className
+    )
 
-    const errorClasses = error ? 'border-error focus:border-error focus:ring-error/20' : '';
+    if (!label && !error && !helperText) {
+      return (
+        <input
+          type={type}
+          className={inputClasses}
+          ref={ref}
+          {...props}
+        />
+      )
+    }
 
     return (
-      <div className="space-y-1">
-        {label && (
-          <label className="block text-sm font-medium text-text">
-            {label}
-          </label>
-        )}
+      <div className="space-y-2">
+        {label && <Label>{label}</Label>}
         <input
+          type={type}
+          className={inputClasses}
           ref={ref}
-          className={cn(
-            baseClasses,
-            variantClasses[variant],
-            errorClasses,
-            className
-          )}
           {...props}
         />
         {error && (
-          <p className="text-sm text-error">{error}</p>
+          <p className="text-sm font-medium text-error">{error}</p>
         )}
         {helperText && !error && (
           <p className="text-sm text-textSecondary">{helperText}</p>
         )}
       </div>
-    );
+    )
   }
-);
+)
+Input.displayName = "Input"
 
-Input.displayName = 'Input';
+export { Input }
+

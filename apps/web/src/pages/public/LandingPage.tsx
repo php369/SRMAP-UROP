@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../utils/constants';
 import { ScrollReveal as Reveal } from '../../components/ui/ScrollReveal';
 import TiltedCard from '../../components/ui/TiltedCard';
+import { Button, Badge } from '../../components/ui';
 
 
 export function LandingPage() {
@@ -53,28 +54,29 @@ export function LandingPage() {
 
           <div className="flex items-center gap-6">
             {!isAuthenticated && (
-              <Link
-                to={ROUTES.LOGIN}
-                className="text-sm font-semibold text-slate-600 hover:text-srm-600 transition-colors dark:text-slate-400 dark:hover:text-srm-400"
-              >
-                Sign In
-              </Link>
+              <Button asChild variant="ghost" className="text-sm font-semibold text-slate-600 hover:text-srm-600 transition-colors dark:text-slate-400 dark:hover:text-srm-400 hover:bg-transparent">
+                <Link to={ROUTES.LOGIN}>
+                  Sign In
+                </Link>
+              </Button>
             )}
-            <Link
-              to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}
-              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg dark:bg-srm-400 dark:text-slate-900 dark:hover:bg-srm-500"
+            <Button
+              asChild
+              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg dark:bg-srm-400 dark:text-slate-900 dark:hover:bg-srm-500 h-auto"
             >
-              {isLoading ? '...' : isAuthenticated ? 'Dashboard' : 'Portal Access'}
-            </Link>
+              <Link to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}>
+                {isLoading ? '...' : isAuthenticated ? 'Dashboard' : 'Portal Access'}
+              </Link>
+            </Button>
           </div>
         </nav>
 
         {/* 2. Hero Content (z-10) */}
         <div className="relative z-10 w-full max-w-5xl mx-auto px-6 lg:px-8 text-center pt-12 md:pt-16 pb-20">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-slate-200/50 text-slate-600 text-xs font-semibold mb-8 animate-fade-in-up dark:bg-slate-900/80 dark:border-slate-800/50 dark:text-slate-400">
+          <Badge variant="outline" className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border-slate-200/50 text-slate-600 text-xs font-semibold mb-8 animate-fade-in-up dark:bg-slate-900/80 dark:border-slate-800/50 dark:text-slate-400 hover:bg-white/80">
             <span className="h-1.5 w-1.5 rounded-full bg-srm-500 animate-pulse"></span>
             Academic Year 2025-26
-          </div>
+          </Badge>
 
           <Reveal duration={1.0} direction="up" fullWidth>
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-slate-900 mb-8 leading-[1.1] dark:text-white">
