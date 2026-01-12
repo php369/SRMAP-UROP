@@ -1,9 +1,10 @@
-import { ReactNode, useEffect, useState, Suspense } from 'react';
+import { ReactNode, useEffect, useState, Suspense, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { UserOnboardingModal } from '../modals/UserOnboardingModal';
 import { useAuth } from '../../contexts/AuthContext';
+import Lenis from 'lenis';
 
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
@@ -17,6 +18,8 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
   // Refresh user data every 5 minutes to catch role changes
   useUserRefresh(5 * 60 * 1000);
@@ -32,7 +35,40 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Initialize Lenis for smooth scrolling on the container
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion || !scrollContainerRef.current) {
+      return;
+    }
 
+    const lenis = new Lenis({
+      wrapper: scrollContainerRef.current,
+      content: scrollContainerRef.current.firstElementChild as HTMLElement || undefined,
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // easeOutExpo
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
+    });
+
+    lenisRef.current = lenis;
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    const rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
+  }, [isMobile]);
 
   return (
     <div
@@ -80,7 +116,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             ? ''
             : 'bg-white rounded-2xl shadow-sm border border-slate-200/60'
             }`}>
-            <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}>
+            <div
+              ref={scrollContainerRef}
+              className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}
+            >
               <div className="max-w-7xl mx-auto min-h-full">
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
