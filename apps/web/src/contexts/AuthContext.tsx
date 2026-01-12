@@ -31,11 +31,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     updateUser,
   } = useAuthStore();
 
-  // Initialize auth check on mount
+  // Listen for session expiration events
+  // NOTE: Auth initialization is handled in App.tsx (single source of truth)
   useEffect(() => {
-    checkAuth();
-
-    // Listen for session expiration events
     const handleSessionExpired = () => {
       console.log('🔒 Session expired, logging out');
       logout();
@@ -46,30 +44,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       window.removeEventListener('session-expired', handleSessionExpired);
     };
-  }, [checkAuth, logout]);
+  }, [logout]);
 
   // Role-based access control helpers
   const hasRole = (role: string | string[]): boolean => {
     if (!user) return false;
-    
+
     // Helper to check if a role matches (including student role variants)
     const roleMatches = (requiredRole: string, userRole: string): boolean => {
       if (requiredRole === userRole) return true;
-      
+
       // If checking for 'student', also match specific student roles
       if (requiredRole === 'student') {
-        return userRole === 'idp-student' || 
-               userRole === 'urop-student' || 
-               userRole === 'capstone-student';
+        return userRole === 'idp-student' ||
+          userRole === 'urop-student' ||
+          userRole === 'capstone-student';
       }
-      
+
       return false;
     };
-    
+
     if (Array.isArray(role)) {
       return role.some(r => roleMatches(r, user.role));
     }
-    
+
     return roleMatches(role, user.role);
   };
 
