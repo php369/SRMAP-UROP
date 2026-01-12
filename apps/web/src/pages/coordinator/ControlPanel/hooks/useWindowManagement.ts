@@ -41,14 +41,14 @@ export const useWindowManagement = () => {
         startDate = convertLocalDateTimeToISO(windowForm.startDate);
         endDate = convertLocalDateTimeToISO(windowForm.endDate);
       }
-      
+
       if (editingWindow) {
         // For editing, use single window approach (existing functionality)
         if (!windowForm.useCommonDates || !startDate || !endDate) {
           toast.error('Please use common dates mode when editing a window');
           return false;
         }
-        
+
         const payload = {
           windowType: windowForm.windowTypes[0],
           projectType: windowForm.projectTypes[0],
@@ -56,9 +56,9 @@ export const useWindowManagement = () => {
           startDate,
           endDate
         };
-        
+
         const response = await api.put(`/control/windows/${editingWindow._id}`, payload);
-        
+
         if (response.success) {
           toast.success('Window updated successfully');
           await fetchWindows();
@@ -70,14 +70,14 @@ export const useWindowManagement = () => {
       } else {
         // For creating, create multiple windows based on selections
         const windowsToCreate = [];
-        
+
         for (const windowType of windowForm.windowTypes) {
           for (const projectType of windowForm.projectTypes) {
             const windowKey = `${windowType}-${projectType}`;
-            
+
             // Use individual dates if available, otherwise use common dates
             let windowStartDate, windowEndDate;
-            
+
             if (!windowForm.useCommonDates && windowForm.individualDates[windowKey]) {
               windowStartDate = convertLocalDateTimeToISO(windowForm.individualDates[windowKey].startDate);
               windowEndDate = convertLocalDateTimeToISO(windowForm.individualDates[windowKey].endDate);
@@ -85,7 +85,7 @@ export const useWindowManagement = () => {
               windowStartDate = startDate;
               windowEndDate = endDate;
             }
-            
+
             windowsToCreate.push({
               windowType,
               projectType,
@@ -95,21 +95,21 @@ export const useWindowManagement = () => {
             });
           }
         }
-        
+
         console.log(`Creating ${windowsToCreate.length} windows:`, windowsToCreate);
-        
+
         // Create all windows
         const results = await Promise.allSettled(
           windowsToCreate.map(payload => api.post('/control/windows', payload))
         );
-        
+
         // Count successful and failed creations
-        const successful = results.filter(result => 
+        const successful = results.filter(result =>
           result.status === 'fulfilled' && result.value.success
         ).length;
-        
+
         const failed = results.length - successful;
-        
+
         if (successful > 0) {
           if (failed === 0) {
             toast.success(`Successfully created ${successful} window${successful > 1 ? 's' : ''}`);
@@ -140,7 +140,7 @@ export const useWindowManagement = () => {
     try {
       const generatedWindows = [];
       const { bulkSettings } = windowForm;
-      
+
       // Generate proposal windows
       generatedWindows.push({
         windowType: 'proposal' as WindowType,
@@ -148,7 +148,7 @@ export const useWindowManagement = () => {
         startDate: convertLocalDateTimeToISO(bulkSettings.proposal.startDate),
         endDate: convertLocalDateTimeToISO(bulkSettings.proposal.endDate)
       });
-      
+
       // Generate application windows
       generatedWindows.push({
         windowType: 'application' as WindowType,
@@ -156,15 +156,15 @@ export const useWindowManagement = () => {
         startDate: convertLocalDateTimeToISO(bulkSettings.application.startDate),
         endDate: convertLocalDateTimeToISO(bulkSettings.application.endDate)
       });
-      
+
       // Generate assessment windows (submission + assessment for each CLA type)
       const assessmentTypes: AssessmentType[] = ['CLA-1', 'CLA-2', 'CLA-3', 'External'];
       const phaseKeys = ['cla1', 'cla2', 'cla3', 'external'] as const;
-      
+
       assessmentTypes.forEach((assessmentType, index) => {
         const phaseKey = phaseKeys[index];
         const phaseSettings = bulkSettings[phaseKey];
-        
+
         // Submission window
         generatedWindows.push({
           windowType: 'submission' as WindowType,
@@ -173,7 +173,7 @@ export const useWindowManagement = () => {
           startDate: convertLocalDateTimeToISO(phaseSettings.submissionStart),
           endDate: convertLocalDateTimeToISO(phaseSettings.submissionEnd)
         });
-        
+
         // Assessment window
         generatedWindows.push({
           windowType: 'assessment' as WindowType,
@@ -183,7 +183,7 @@ export const useWindowManagement = () => {
           endDate: convertLocalDateTimeToISO(phaseSettings.assessmentEnd)
         });
       });
-      
+
       // Generate grade release windows
       generatedWindows.push({
         windowType: 'grade_release' as WindowType,
@@ -191,21 +191,21 @@ export const useWindowManagement = () => {
         startDate: convertLocalDateTimeToISO(bulkSettings.gradeRelease.startDate),
         endDate: convertLocalDateTimeToISO(bulkSettings.gradeRelease.endDate)
       });
-      
+
       console.log(`Creating ${generatedWindows.length} windows for ${selectedProjectType}:`, generatedWindows);
-      
+
       // Create all windows
       const results = await Promise.allSettled(
         generatedWindows.map(windowData => api.post('/control/windows', windowData))
       );
-      
+
       // Count successful and failed creations
-      const successful = results.filter(result => 
+      const successful = results.filter(result =>
         result.status === 'fulfilled' && result.value.success
       ).length;
-      
+
       const failed = results.length - successful;
-      
+
       if (successful > 0) {
         if (failed === 0) {
           toast.success(`Successfully created all ${successful} windows for ${selectedProjectType}! 🎉`);
@@ -245,29 +245,13 @@ export const useWindowManagement = () => {
     }
   }, [fetchWindows]);
 
-  const updateWindowStatuses = useCallback(async () => {
-    try {
-      const response = await api.post('/control/windows/update-statuses');
 
-      if (response.success) {
-        toast.success((response as any).message || 'Window statuses updated');
-        await fetchWindows();
-        return true;
-      } else {
-        toast.error(response.error?.message || 'Failed to update window statuses');
-        return false;
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update window statuses');
-      return false;
-    }
-  }, [fetchWindows]);
 
   const prepareEditWindow = useCallback((window: Window): WindowForm => {
     // Convert UTC dates to local datetime-local format
     const startDate = new Date(window.startDate);
     const endDate = new Date(window.endDate);
-    
+
     return {
       windowTypes: [window.windowType],
       projectTypes: [window.projectType],
@@ -296,7 +280,7 @@ export const useWindowManagement = () => {
     createWindow,
     createBulkWindows,
     deleteWindow,
-    updateWindowStatuses,
+
     prepareEditWindow
   };
 };

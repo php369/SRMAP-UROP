@@ -46,7 +46,7 @@ export function ControlPanel() {
     createWindow,
     createBulkWindows,
     deleteWindow,
-    updateWindowStatuses,
+
     prepareEditWindow
   } = useWindowManagement();
 
@@ -202,7 +202,7 @@ export function ControlPanel() {
             {/* Quick Actions */}
             <QuickActions
               onManageWindows={() => setCurrentView('windows')}
-              onUpdateStatuses={updateWindowStatuses}
+
               onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
               isExternalEvaluatorsEnabled={isExternalEvaluatorsEnabled}
             />

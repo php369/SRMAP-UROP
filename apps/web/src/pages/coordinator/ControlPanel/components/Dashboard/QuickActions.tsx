@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
-import { CalendarIcon, RefreshCwIcon, ChevronRightIcon, UserCheckIcon } from '../../../../../components/ui/Icons';
+import { CalendarIcon, ChevronRightIcon, UserCheckIcon } from '../../../../../components/ui/Icons';
 
 interface QuickActionsProps {
   onManageWindows: () => void;
-  onUpdateStatuses: () => void;
+
   onManageExternalEvaluators: () => void;
   isExternalEvaluatorsEnabled: boolean;
 }
 
-export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExternalEvaluators, isExternalEvaluatorsEnabled }: QuickActionsProps) {
+export function QuickActions({ onManageWindows, onManageExternalEvaluators, isExternalEvaluatorsEnabled }: QuickActionsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -84,34 +84,7 @@ export function QuickActions({ onManageWindows, onUpdateStatuses, onManageExtern
           </div>
         </motion.div>
 
-        {/* System Status Card */}
-        <motion.div
-          whileHover={{ y: -5, scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          className="p-6 bg-[#f9f9f9] rounded-xl hover:bg-white hover:shadow-xl hover:shadow-green-500/10 transition-all"
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-white rounded-lg shadow-sm">
-              <RefreshCwIcon className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
-              <p className="text-sm text-gray-600">Monitor and update system status</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={onUpdateStatuses}
-              className="w-full px-4 py-2 bg-gray-white border border-gray-200 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 hover:border-green-200 flex items-center justify-center gap-2 transition-all shadow-sm"
-            >
-              <RefreshCwIcon className="w-4 h-4" />
-              Update Window Statuses
-            </button>
-            <p className="text-xs text-gray-500 text-center">
-              Updates window statuses based on current time
-            </p>
-          </div>
-        </motion.div>
+
       </div>
     </motion.div>
   );
