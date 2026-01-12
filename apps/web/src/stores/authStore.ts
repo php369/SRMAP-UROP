@@ -247,6 +247,64 @@ export const useAuthStore = create<AuthStore>()(
         checkAuth: async () => {
           set({ isLoading: true });
 
+          /* ----------------------------------------------------- */
+          /*  MOCK AUTH START - DELETE THIS BLOCK BEFORE PRODUCTION */
+          /* ----------------------------------------------------- */
+          // @ts-ignore - Dev only feature
+          if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+            try {
+              const urlParams = new URLSearchParams(window.location.search);
+              const mockRole = urlParams.get('mock_role');
+              const mockToken = urlParams.get('mock_token');
+
+              if (mockRole) {
+                // Dynamic import to avoid bundling mock data in production if tree-shaken correctly
+                // though explicit deletion is safer
+                const { getMockUser } = await import('../utils/mockAuth');
+                const mockUser = getMockUser(mockRole);
+
+                if (mockUser) {
+                  console.log(`🕵️‍♂️ MOCK AUTH: Logging in as ${mockRole}`, mockUser);
+
+                  // MOCK TOKEN handling
+                  // If user provides a real backend token via URL, use it!
+                  if (mockToken) {
+                    console.log('🔑 MOCK AUTH: Injecting backend token from URL');
+                    sessionManager.setTokens(mockToken, 'mock-refresh-token');
+                    persistentAuth.saveSession(mockToken, 'mock-refresh-token', mockUser, true);
+
+                    set({
+                      user: mockUser,
+                      token: mockToken,
+                      refreshToken: 'mock-refresh-token',
+                      isAuthenticated: true,
+                      isLoading: false,
+                    });
+                    return;
+                  }
+
+                  // IDP/UROP/CAPSTONE differentiation usually comes from backend logic
+                  // but for UI mock purposes, the User object structure matters most.
+                  set({
+                    user: mockUser,
+                    token: 'mock-token-xyz',
+                    refreshToken: 'mock-refresh-token-xyz',
+                    isAuthenticated: true,
+                    isLoading: false,
+                  });
+                  return;
+                } else {
+                  console.warn(`⚠️ MOCK AUTH: Invalid role '${mockRole}' requested`);
+                }
+              }
+            } catch (e) {
+              console.error('Mock auth failed', e);
+            }
+          }
+          /* ----------------------------------------------------- */
+          /*  MOCK AUTH END                                       */
+          /* ----------------------------------------------------- */
+
           try {
             // First, try to restore from persistent session
             const persistentSession = persistentAuth.restoreSession();
