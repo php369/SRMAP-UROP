@@ -45,8 +45,15 @@ class PersistentAuth {
     };
 
     // Use localStorage for persistent sessions, sessionStorage for temporary
-    const storage = rememberMe ? localStorage : sessionStorage;
-    
+    // UNLESS in Mock Auth mode, then always use sessionStorage for isolation
+    let storage: Storage;
+    // @ts-ignore
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      storage = sessionStorage;
+    } else {
+      storage = rememberMe ? localStorage : sessionStorage;
+    }
+
     storage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     storage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
@@ -68,9 +75,14 @@ class PersistentAuth {
    * Restore authentication session
    */
   restoreSession(): AuthSession | null {
+    // @ts-ignore
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      return this.getSessionFromStorage(sessionStorage);
+    }
+
     // Try localStorage first (persistent sessions)
     let session = this.getSessionFromStorage(localStorage);
-    
+
     // If not found, try sessionStorage (temporary sessions)
     if (!session) {
       session = this.getSessionFromStorage(sessionStorage);
@@ -108,7 +120,15 @@ class PersistentAuth {
     const session = this.getCurrentSession();
     if (session) {
       session.lastActivity = Date.now();
-      const storage = session.rememberMe ? localStorage : sessionStorage;
+
+      let storage: Storage;
+      // @ts-ignore
+      if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+        storage = sessionStorage;
+      } else {
+        storage = session.rememberMe ? localStorage : sessionStorage;
+      }
+
       storage.setItem('auth_session', JSON.stringify(session));
     }
   }
@@ -124,7 +144,7 @@ class PersistentAuth {
       storage.removeItem(STORAGE_KEYS.USER_DATA);
       storage.removeItem('auth_session');
     });
-    
+
     localStorage.removeItem('auth_backup');
     console.log('🧹 Session cleared');
   }
@@ -141,6 +161,11 @@ class PersistentAuth {
    * Get current session data
    */
   getCurrentSession(): AuthSession | null {
+    // @ts-ignore
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      return this.getSessionFromStorage(sessionStorage);
+    }
+
     // Try localStorage first
     let session = this.getSessionFromStorage(localStorage);
     if (!session) {
@@ -155,14 +180,14 @@ class PersistentAuth {
   private initializeSessionMonitoring(): void {
     // Track user activity
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
+
     let activityTimeout: number | null = null;
-    
+
     const trackActivity = () => {
       if (activityTimeout) {
         clearTimeout(activityTimeout);
       }
-      
+
       activityTimeout = window.setTimeout(() => {
         this.updateActivity();
       }, 30000); // Update activity every 30 seconds of activity
@@ -233,10 +258,10 @@ class PersistentAuth {
     if (session) {
       session.expiresAt = Date.now() + this.SESSION_DURATION;
       session.lastActivity = Date.now();
-      
+
       const storage = session.rememberMe ? localStorage : sessionStorage;
       storage.setItem('auth_session', JSON.stringify(session));
-      
+
       console.log('⏰ Session extended');
     }
   }
@@ -254,11 +279,11 @@ class PersistentAuth {
   shouldExtendSession(): boolean {
     const session = this.getCurrentSession();
     if (!session) return false;
-    
+
     // Extend if session expires within 7 days and user has been active recently
     const timeUntilExpiry = session.expiresAt - Date.now();
     const timeSinceActivity = Date.now() - session.lastActivity;
-    
+
     return timeUntilExpiry < (7 * 24 * 60 * 60 * 1000) && timeSinceActivity < (24 * 60 * 60 * 1000);
   }
 

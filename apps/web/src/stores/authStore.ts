@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, LoginCredentials } from '../types';
 import { apiClient } from '../utils/api';
 import { STORAGE_KEYS } from '../utils/constants';
@@ -523,6 +523,10 @@ export const useAuthStore = create<AuthStore>()(
     },
     {
       name: 'auth-store',
+      // @ts-ignore
+      storage: import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true'
+        ? createJSONStorage(() => sessionStorage)
+        : undefined, // Defaults to localStorage
       partialize: (state) => ({
         user: state.user,
         token: state.token,

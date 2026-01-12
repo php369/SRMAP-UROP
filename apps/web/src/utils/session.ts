@@ -4,7 +4,7 @@ export class SessionManager {
   private static instance: SessionManager;
   private refreshTimer: number | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SessionManager {
     if (!SessionManager.instance) {
@@ -13,36 +13,48 @@ export class SessionManager {
     return SessionManager.instance;
   }
 
+  // Storage helper
+  private getStorage(): Storage {
+    // @ts-ignore - Dev only feature
+    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+      return sessionStorage;
+    }
+    return localStorage;
+  }
+
   // Token management
   getToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    return this.getStorage().getItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    return this.getStorage().getItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   setTokens(token: string, refreshToken: string): void {
-    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    const storage = this.getStorage();
+    storage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     this.scheduleTokenRefresh(token);
   }
 
   clearTokens(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    const storage = this.getStorage();
+    storage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    storage.removeItem(STORAGE_KEYS.USER_DATA);
     this.clearRefreshTimer();
   }
 
   // User data management
   getUserData(): any | null {
-    const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    const storage = this.getStorage();
+    const userData = storage.getItem(STORAGE_KEYS.USER_DATA);
     return userData ? JSON.parse(userData) : null;
   }
 
   setUserData(userData: any): void {
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+    this.getStorage().setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
   }
 
   // Token expiration handling
@@ -65,7 +77,7 @@ export class SessionManager {
   isTokenExpired(token: string): boolean {
     const payload = this.parseJWT(token);
     if (!payload || !payload.exp) return true;
-    
+
     const currentTime = Math.floor(Date.now() / 1000);
     return payload.exp < currentTime;
   }
@@ -78,13 +90,13 @@ export class SessionManager {
   // Automatic token refresh
   scheduleTokenRefresh(token: string): void {
     this.clearRefreshTimer();
-    
+
     const expirationTime = this.getTokenExpirationTime(token);
     if (!expirationTime) return;
 
     // Refresh token 5 minutes before expiration
     const refreshTime = expirationTime - Date.now() - (5 * 60 * 1000);
-    
+
     if (refreshTime > 0) {
       this.refreshTimer = window.setTimeout(() => {
         this.triggerTokenRefresh();
@@ -133,10 +145,10 @@ export class SessionManager {
   startSessionMonitoring(): void {
     // Monitor for token refresh events
     window.addEventListener('token-refresh-needed', this.handleTokenRefresh);
-    
+
     // Monitor for storage changes (multiple tabs)
     window.addEventListener('storage', this.handleStorageChange);
-    
+
     // Monitor for page visibility changes
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
