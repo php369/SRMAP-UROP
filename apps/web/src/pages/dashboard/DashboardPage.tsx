@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader } from '../../components/ui/Loader';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+
 import { isStudentRole } from '../../utils/constants';
 import { api } from '../../utils/api';
 import { StudentDashboard } from './StudentDashboard';
@@ -10,23 +10,7 @@ import { CoordinatorDashboard } from './CoordinatorDashboard';
 import { AdminDashboard } from './AdminDashboard';
 import { ScrollReveal as Reveal } from '../../components/ui/ScrollReveal';
 
-// Configure axios base URL (only once)
-if (!axios.defaults.baseURL) {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-}
 
-// Add auth token interceptor (only once)
-let interceptorAdded = false;
-if (!interceptorAdded) {
-  axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem('srm_portal_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-  interceptorAdded = true;
-}
 
 interface GroupData {
   _id: string;
