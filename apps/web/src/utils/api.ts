@@ -1,5 +1,6 @@
 import { ApiResponse } from '../types';
-import { API_BASE_URL, STORAGE_KEYS } from './constants';
+import { API_BASE_URL } from './constants';
+import { sessionManager } from './session';
 
 // API Client Configuration
 class ApiClient {
@@ -14,10 +15,11 @@ class ApiClient {
     };
   }
 
-  // Get auth token from localStorage or sessionStorage
+  // Get auth token from SessionManager (handles local/session storage logic)
   private getAuthToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || 
-           sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    // We must use the singleton instance to ensure we respect the storage strategy
+    // chosen by the auth system (localStorage vs sessionStorage)
+    return sessionManager.getToken();
   }
 
   // Build request headers
@@ -83,20 +85,20 @@ class ApiClient {
     if (error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
       return true;
     }
-    
+
     // Timeout errors
     if (error.message?.includes('timeout')) {
       return true;
     }
-    
+
     // 5xx server errors (except 501 Not Implemented)
     if (error.status >= 500 && error.status !== 501) {
       return true;
     }
-    
+
     // DO NOT retry 429 - rate limit errors need time to reset
     // Retrying immediately makes the problem worse
-    
+
     return false;
   }
 
@@ -118,9 +120,8 @@ class ApiClient {
     retries = 3
   ): Promise<ApiResponse<T>> {
     // Create unique key for request deduplication
-    const requestKey = `${options.method || 'GET'}:${endpoint}:${
-      options.body instanceof FormData ? 'FormData' : JSON.stringify(options.body || {})
-    }`;
+    const requestKey = `${options.method || 'GET'}:${endpoint}:${options.body instanceof FormData ? 'FormData' : JSON.stringify(options.body || {})
+      }`;
 
     // Check if identical request is already pending
     if (this.pendingRequests.has(requestKey)) {
@@ -148,18 +149,18 @@ class ApiClient {
         if (retries > 0 && this.isRetryableError(error)) {
           const attempt = 3 - retries;
           const delay = this.getBackoffDelay(attempt);
-          
+
           console.warn(`Request failed, retrying in ${delay}ms... (${retries} retries left)`, {
             endpoint,
             error: error.message,
           });
-          
+
           await this.delay(delay);
           // Remove from pending before retry
           this.pendingRequests.delete(requestKey);
           return this.makeRequest<T>(endpoint, options, retries - 1);
         }
-        
+
         // No more retries or non-retryable error
         throw error;
       } finally {
