@@ -101,7 +101,7 @@ export function Sidebar() {
       const el = navItemRefs.current[activeItem.path];
       if (el) {
         setGlassState({
-          top: el.offsetTop - 2,
+          top: el.offsetTop - 4,
           height: el.offsetHeight,
           width: el.offsetWidth,
           left: el.offsetLeft,
