@@ -36,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div
-      className="flex min-h-screen bg-[#f5f4f2]"
+      className="flex h-screen overflow-hidden bg-[#f7f7f7]"
     >
       {/* User Onboarding Modal - user name check */}
       {/* We need to access the user from AuthContext/AuthStore. 
@@ -74,27 +74,29 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* Framed Canvas */}
-        <main className={`flex-1 relative ${isMobile ? 'p-0' : 'p-3'
+        <main className={`flex-1 relative flex flex-col min-h-0 ${isMobile ? 'p-0' : 'p-3'
           }`}>
-          <div className={`w-full min-h-full ${isMobile
-            ? 'px-4 py-6'
-            : 'bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8'
+          <div className={`w-full flex-1 flex flex-col overflow-hidden ${isMobile
+            ? ''
+            : 'bg-white rounded-2xl shadow-sm border border-slate-200/60'
             }`}>
-            <div className="max-w-7xl mx-auto min-h-full">
-              <Suspense fallback={<PageLoader />}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={location.pathname}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="min-h-full"
-                  >
-                    {children}
-                  </motion.div>
-                </AnimatePresence>
-              </Suspense>
+            <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}>
+              <div className="max-w-7xl mx-auto min-h-full">
+                <Suspense fallback={<PageLoader />}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={location.pathname}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                      className="min-h-full"
+                    >
+                      {children}
+                    </motion.div>
+                  </AnimatePresence>
+                </Suspense>
+              </div>
             </div>
           </div>
         </main>

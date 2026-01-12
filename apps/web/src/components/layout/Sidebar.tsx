@@ -195,7 +195,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-slate-50/50">
+      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40 bg-[#f7f7f7]">
         {/* Logo */}
         <div className="flex flex-col justify-center h-20 px-6">
           <div className="flex items-center space-x-3">
