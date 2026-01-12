@@ -88,9 +88,9 @@ const USERS = [
 console.log('🚀 Generating Magic Links...\n');
 
 USERS.forEach(user => {
-  // Generate JWT (15 minutes expiry)
+  // Generate JWT (1 year expiry)
   const token = jwt.sign(user.payload, SECRET, {
-    expiresIn: '15m',
+    expiresIn: '1y',
     issuer: 'srm-portal-api',
     audience: 'srm-portal-web'
   });
