@@ -76,8 +76,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <ScrollProvider>
-              <Router>
+            <Router>
+              <ScrollProvider>
                 <div className="min-h-screen bg-background text-text">
                   <NotificationProvider />
 
@@ -185,8 +185,8 @@ function App() {
                     }}
                   />
                 </div>
-              </Router>
-            </ScrollProvider>
+              </ScrollProvider>
+            </Router>
 
             {/* React Query DevTools */}
             <ReactQueryDevtools initialIsOpen={false} />
