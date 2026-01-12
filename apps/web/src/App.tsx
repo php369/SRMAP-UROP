@@ -41,7 +41,6 @@ const FacultyApplicationsPage = lazy(() => import('./pages/faculty/ApplicationsP
 const FacultyAssessmentPage = lazy(() => import('./pages/faculty/AssessmentPage').then(m => ({ default: m.FacultyAssessmentPage })));
 const FacultyMeetingsPage = lazy(() => import('./pages/faculty/MeetingsPage').then(m => ({ default: m.FacultyMeetingsPage })));
 const EligibilityUpload = lazy(() => import('./pages/admin/EligibilityUpload').then(m => ({ default: m.EligibilityUpload })));
-const WindowManagement = lazy(() => import('./pages/admin/WindowManagement').then(m => ({ default: m.WindowManagement })));
 
 // Layout
 import { AppLayout } from './components/layout/AppLayout';
@@ -160,11 +159,7 @@ function App() {
                                       <EligibilityUpload />
                                     </AuthGuard>
                                   } />
-                                  <Route path="/admin/windows" element={
-                                    <AuthGuard requiredRole="admin">
-                                      <WindowManagement />
-                                    </AuthGuard>
-                                  } />
+
 
                                   {/* Catch all route */}
                                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

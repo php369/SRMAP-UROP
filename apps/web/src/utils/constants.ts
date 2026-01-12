@@ -76,35 +76,15 @@ export const THEMES = {
       info: MODERN_PALETTE.BLUE_500,
     },
   },
-  // Dark mode removed as per redesign requirements
-  DARK: {
-    mode: 'light' as const, // Fallback to light
-    colors: {
-      primary: MODERN_PALETTE.SRM_400,
-      primaryGradient: `linear-gradient(135deg, ${MODERN_PALETTE.SRM_400} 0%, ${MODERN_PALETTE.SRM_600} 100%)`,
-      secondary: MODERN_PALETTE.SLATE_500,
-      accent: MODERN_PALETTE.SRM_600,
-      background: MODERN_PALETTE.SLATE_50,
-      surface: MODERN_PALETTE.WHITE,
-      glass: 'rgba(255, 255, 255, 0.9)',
-      text: MODERN_PALETTE.SLATE_900,
-      textSecondary: MODERN_PALETTE.SLATE_600,
-      border: MODERN_PALETTE.SLATE_200,
-      success: MODERN_PALETTE.EMERALD_600,
-      warning: MODERN_PALETTE.AMBER_500,
-      error: MODERN_PALETTE.RED_500,
-      info: MODERN_PALETTE.BLUE_500,
-    },
-  },
 } as const;
 
 // Role-based Navigation
 const studentNavigation = [
-  { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
-  { label: 'Application', path: ROUTES.APPLICATION, icon: 'Users' },
-  { label: 'Submission', path: ROUTES.SUBMISSION, icon: 'Upload' },
-  { label: 'Assessment', path: ROUTES.ASSESSMENT, icon: 'FileText' },
-  { label: 'Meetings', path: ROUTES.MEETINGS, icon: 'Calendar' },
+  { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
+  { label: 'Application', path: ROUTES.APPLICATION, icon: 'Users', color: '#14B8A6' },
+  { label: 'Submission', path: ROUTES.SUBMISSION, icon: 'Upload', color: '#7C3AED' },
+  { label: 'Assessment', path: ROUTES.ASSESSMENT, icon: 'FileText', color: '#F59E0B' },
+  { label: 'Meetings', path: ROUTES.MEETINGS, icon: 'Calendar', color: '#06B6D4' },
 ];
 
 export const ROLE_NAVIGATION = {
@@ -113,24 +93,23 @@ export const ROLE_NAVIGATION = {
   'urop-student': studentNavigation,
   'capstone-student': studentNavigation,
   faculty: [
-    { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
-    { label: 'My Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen' },
-    { label: 'Applications', path: '/dashboard/faculty/applications', icon: 'Users' },
-    { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award' },
-    { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar' },
+    { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
+    { label: 'Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen', color: '#EA580C' },
+    { label: 'Applications', path: '/dashboard/faculty/applications', icon: 'Users', color: '#14B8A6' },
+    { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award', color: '#F59E0B' },
+    { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar', color: '#06B6D4' },
   ],
   coordinator: [
-    { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
-    { label: 'My Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen' },
-    { label: 'Applications', path: '/dashboard/faculty/applications', icon: 'Users' },
-    { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award' },
-    { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar' },
-    { label: 'Control Panel', path: '/dashboard/control', icon: 'Settings' },
+    { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
+    { label: 'Projects', path: ROUTES.FACULTY_PROJECTS, icon: 'FolderOpen', color: '#EA580C' },
+    { label: 'Applications', path: '/dashboard/faculty/applications', icon: 'Users', color: '#14B8A6' },
+    { label: 'Assessment', path: '/dashboard/faculty/assessment', icon: 'Award', color: '#F59E0B' },
+    { label: 'Meetings', path: '/dashboard/faculty/meetings', icon: 'Calendar', color: '#06B6D4' },
+    { label: 'Control Panel', path: '/dashboard/control', icon: 'Settings', color: '#DC2626' },
   ],
   admin: [
-    { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: 'Home' },
-    { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload' },
-    { label: 'Windows', path: '/dashboard/admin/windows', icon: 'Calendar' },
+    { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
+    { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload', color: '#22C55E' },
   ],
 } as const;
 

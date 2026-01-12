@@ -215,7 +215,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4 relative">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Menu</div>
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Navigation</div>
 
           {/* Glass Surface Active Indicator */}
           {glassState.opacity > 0 && (
@@ -254,18 +254,19 @@ export function Sidebar() {
                   return cn(
                     'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative z-10',
                     isCurrentPage
-                      ? 'text-primary'
-                      : 'text-slate-600 hover:text-slate-900' // Removed hover:bg-[#eeedeb] because glass surface handles "active", maybe we want hover effect too?
-                    // User requirement: "Other nav items remain unchanged" -> implies usage of standard hover?
-                    // Wait, "GlassSurface aligns perfectly with that item". 
-                    // "Fallback to a normal highlight (background color) for touch devices" -> Logic for mobile is distinct.
-                    // For desktop inactive items, do we keep hover bg? 
-                    // "Sidebar remains usable without hover" - okay.
-                    // If I remove hover bg, inactive items have no hover state?
-                    // Usually you keep a subtle hover for inactive items. 
-                    // Let's keep hover:bg-[#eeedeb] for inactive items, but remove bg for active.
-                    // Updated ternary below:
-                  ) + (isCurrentPage ? '' : ' hover:bg-[#eeedeb]');
+                      ? '' // Color is handled via style
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#eeedeb]'
+                  );
+                }}
+                style={() => {
+                  const currentPath = location.pathname;
+                  const isCurrentPage = currentPath === item.path ||
+                    (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+
+                  if (isCurrentPage) {
+                    return { color: (item as any).color || '#2563EB' };
+                  }
+                  return {};
                 }}
               >
                 {() => {
@@ -273,20 +274,27 @@ export function Sidebar() {
                   const isCurrentPage = currentPath === item.path ||
                     (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
+                  // Use the item color if active, otherwise fallback/slate
+                  const itemColor = (item as any).color || '#2563EB';
+
                   return (
                     <>
                       <div
                         className={cn(
                           "flex-shrink-0 transition-colors duration-200",
-                          isCurrentPage ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+                          // removed text-primary classes, handled by inline style on parent or specific style here
                         )}
+                        style={{ color: isCurrentPage ? itemColor : '#64748B' }}
                       >
                         {IconComponent && <IconComponent className="w-5 h-5" />}
                       </div>
-                      <span className={cn(
-                        "ml-3 transition-transform duration-200",
-                        isCurrentPage ? "scale-105 font-semibold" : ""
-                      )}>
+                      <span
+                        className={cn(
+                          "ml-3 transition-transform duration-200",
+                          isCurrentPage ? "font-bold" : "" // Removed scale-105 to keep it simpler as requested? "continue to make it bold as it is". It was scale-105 + font-semibold. I'll keep font-bold.
+                        )}
+                        style={{ color: isCurrentPage ? itemColor : '#64748B' }}
+                      >
                         {item.label}
                       </span>
                     </>
@@ -423,9 +431,18 @@ export function Sidebar() {
                           return cn(
                             'group flex items-center px-4 py-3.5 text-base font-medium rounded-2xl transition-all duration-300 relative overflow-hidden',
                             isCurrentPage
-                              ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                              ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20' // Keeping bg-primary/10 as highlight, but we need to override text color
                               : 'text-textSecondary hover:bg-surface/50 hover:text-text'
                           );
+                        }}
+                        style={() => {
+                          const currentPath = location.pathname;
+                          const isCurrentPage = currentPath === item.path ||
+                            (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
+                          if (isCurrentPage) {
+                            return { color: (item as any).color || '#2563EB' };
+                          }
+                          return {};
                         }}
                       >
                         {() => {
@@ -433,21 +450,26 @@ export function Sidebar() {
                           const isCurrentPage = currentPath === item.path ||
                             (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
+                          const itemColor = (item as any).color || '#2563EB';
+
                           return (
                             <>
                               {isCurrentPage && (
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-r-full" />
+                                <div
+                                  className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full"
+                                  style={{ backgroundColor: itemColor }}
+                                />
                               )}
 
                               <div
                                 className={cn(
                                   "flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
-                                  isCurrentPage ? "text-primary" : "text-textSecondary/70 group-hover:text-text"
                                 )}
+                                style={{ color: isCurrentPage ? itemColor : '#64748B' }}
                               >
                                 {IconComponent && <IconComponent />}
                               </div>
-                              <span className="ml-4 tracking-wide">{item.label}</span>
+                              <span className="ml-4 tracking-wide" style={{ color: isCurrentPage ? itemColor : '#64748B' }}>{item.label}</span>
                             </>
                           );
                         }}
