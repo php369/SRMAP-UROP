@@ -274,26 +274,25 @@ export function Sidebar() {
                   const isCurrentPage = currentPath === item.path ||
                     (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
-                  // Use the item color if active, otherwise fallback/slate
-                  const itemColor = (item as any).color || '#2563EB';
+                  // Use the item color if active, otherwise fallback to Slate if no color defined (though all have colors now)
+                  const itemColor = (item as any).color || '#64748B';
 
                   return (
                     <>
                       <div
                         className={cn(
                           "flex-shrink-0 transition-colors duration-200",
-                          // removed text-primary classes, handled by inline style on parent or specific style here
                         )}
-                        style={{ color: isCurrentPage ? itemColor : '#64748B' }}
+                        style={{ color: itemColor }}
                       >
                         {IconComponent && <IconComponent className="w-5 h-5" />}
                       </div>
                       <span
                         className={cn(
                           "ml-3 transition-transform duration-200",
-                          isCurrentPage ? "font-bold" : "" // Removed scale-105 to keep it simpler as requested? "continue to make it bold as it is". It was scale-105 + font-semibold. I'll keep font-bold.
+                          isCurrentPage ? "font-bold" : ""
                         )}
-                        style={{ color: isCurrentPage ? itemColor : '#64748B' }}
+                        style={{ color: itemColor }}
                       >
                         {item.label}
                       </span>
@@ -450,7 +449,7 @@ export function Sidebar() {
                           const isCurrentPage = currentPath === item.path ||
                             (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
-                          const itemColor = (item as any).color || '#2563EB';
+                          const itemColor = (item as any).color || '#64748B';
 
                           return (
                             <>
@@ -465,11 +464,11 @@ export function Sidebar() {
                                 className={cn(
                                   "flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
                                 )}
-                                style={{ color: isCurrentPage ? itemColor : '#64748B' }}
+                                style={{ color: itemColor }}
                               >
                                 {IconComponent && <IconComponent />}
                               </div>
-                              <span className="ml-4 tracking-wide" style={{ color: isCurrentPage ? itemColor : '#64748B' }}>{item.label}</span>
+                              <span className="ml-4 tracking-wide" style={{ color: itemColor }}>{item.label}</span>
                             </>
                           );
                         }}
