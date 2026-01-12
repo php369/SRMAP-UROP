@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
@@ -184,6 +185,7 @@ function App() {
                       className: 'bg-surface text-text border border-border',
                     }}
                   />
+                  <Analytics />
                 </div>
               </ScrollProvider>
             </Router>
