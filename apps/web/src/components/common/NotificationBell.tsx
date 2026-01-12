@@ -47,18 +47,27 @@ export function NotificationBell({ variant = 'default' }: NotificationBellProps)
     const popoverContent = (
         <>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-900">Notifications</h3>
+                {!isSidebar && (
+                    <h3 className="font-semibold text-slate-900">Notifications</h3>
+                )}
+                {isSidebar && <div className="flex-1" />}
+                {/* For sidebar, title is removed, but we keep button aligned appropriately or remove header? 
+                    "the popover, shouldn't contain Notification title" 
+                    If I remove H3, the mark all button will be alone. 
+                    If sidebar, maybe align it end? 
+                */}
+
                 {unreadCount > 0 && (
                     <button
                         onClick={() => markAllAsRead()}
-                        className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                        className="text-xs text-primary hover:text-primary/80 font-medium transition-colors ml-auto"
                     >
                         Mark all as read
                     </button>
                 )}
             </div>
 
-            <div className={cn("overflow-y-auto", isSidebar ? "max-h-[300px]" : "max-h-[60vh]")}>
+            <div className={cn("overflow-y-auto", isSidebar ? "max-h-[50vh]" : "max-h-[60vh]")}>
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center px-4">
                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
@@ -131,17 +140,19 @@ export function NotificationBell({ variant = 'default' }: NotificationBellProps)
                         <div className="w-9 h-9 bg-[#e2e2e2] rounded-lg flex items-center justify-center relative">
                             <BellIcon className="w-5 h-5 text-slate-700" />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-white">
-                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                <span className="absolute -top-1 -right-1 min-w-[1rem] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-white">
+                                    {unreadCount}
                                 </span>
                             )}
                         </div>
                     </div>
                     <div className="ml-3 flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
-                        <span className="text-xs text-slate-500">
-                            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
-                        </span>
+                        {unreadCount > 0 && (
+                            <span className="text-xs text-slate-500">
+                                {unreadCount} unread
+                            </span>
+                        )}
                     </div>
                 </button>
 
