@@ -297,14 +297,13 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* User info - Clickable Profile Menu */}
+        {/* Notifications Section */}
         <div className="px-4 pb-2">
-          <div className="flex items-center justify-between mb-2 px-2">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Account</div>
-            <NotificationBell />
-          </div>
+          <NotificationBell variant="sidebar" />
         </div>
-        <div className="p-4 mt-auto relative" ref={profileMenuRef}>
+
+        {/* Profile Section */}
+        <div className="p-4 relative" ref={profileMenuRef}>
           {/* Profile Menu Popup */}
           {isProfileMenuOpen && (
             <div className="absolute bottom-full left-4 right-4 mb-2 p-1 bg-white rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
