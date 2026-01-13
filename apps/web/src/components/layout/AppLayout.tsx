@@ -124,7 +124,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={location.pathname}
+                      key={location.pathname.startsWith('/dashboard/control') ? '/dashboard/control' : location.pathname}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}

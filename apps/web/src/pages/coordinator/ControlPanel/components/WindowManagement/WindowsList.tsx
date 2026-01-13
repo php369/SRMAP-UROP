@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Plus, Calendar } from 'lucide-react';
 import { Window, ProjectType } from '../../types';
 import { getWorkflowOrder } from '../../utils/windowHelpers';
 import { WindowCard } from './WindowCard';
@@ -10,6 +11,7 @@ interface WindowsListProps {
   onShowInactiveToggle: (show: boolean) => void;
   onEditWindow: (window: Window) => void;
   onDeleteWindow: (window: Window) => void;
+  onCreateWindow: () => void;
 }
 
 export function WindowsList({
@@ -18,7 +20,8 @@ export function WindowsList({
   showInactiveWindows,
   onShowInactiveToggle,
   onEditWindow,
-  onDeleteWindow
+  onDeleteWindow,
+  onCreateWindow
 }: WindowsListProps) {
   if (windowsLoading) {
     return (
@@ -194,10 +197,22 @@ export function WindowsList({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+          className="text-center py-16 bg-surface rounded-lg border border-border border-dashed"
         >
-          <p className="text-center text-gray-500 py-8">
-            No windows created yet. Create your first window to get started.
+          <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+            <Calendar className="w-8 h-8 text-textSecondary" />
+          </div>
+          <h3 className="text-lg font-semibold text-text mb-2">No Windows Created</h3>
+          <p className="text-textSecondary max-w-sm mx-auto text-base px-4 mb-6">
+            Get started by creating your first assessment window or setting up a complete semester plan.
           </p>
+          <button
+            onClick={onCreateWindow}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors mx-auto shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Create Window
+          </button>
         </motion.div>
       )}
     </div>

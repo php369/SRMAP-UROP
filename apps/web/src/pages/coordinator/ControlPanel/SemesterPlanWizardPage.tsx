@@ -18,6 +18,7 @@ const WIZARD_STEPS = [
     { id: 'cla-3', label: 'CLA-3 Cycle', icon: ClipboardList, description: 'Final continuous assessment' },
     { id: 'external', label: 'External Review', icon: ClipboardList, description: 'External evaluator assessment' },
     { id: 'grade-release', label: 'Grade Release', icon: Calendar, description: 'Final grade publication' },
+    { id: 'preview', label: 'Preview Plan', icon: CheckCircle2, description: 'Review and confirm schedule' },
 ];
 
 const INITIAL_FORM: WindowForm = {
@@ -117,6 +118,55 @@ export function SemesterPlanWizardPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper component for Preview Phase timeline items
+    const TimelineItem = ({ label, dateRange, color = "slate" }: { label: string, dateRange: { start?: string, end?: string } | { startDate?: string, endDate?: string } | { submissionStart?: string, submissionEnd?: string, assessmentStart?: string, assessmentEnd?: string }, color?: "slate" | "blue" | "amber" | "green" }) => {
+        const formatDate = (dateStr?: string) => {
+            if (!dateStr) return 'Not Set';
+            return new Date(dateStr).toLocaleString('en-IN', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+            });
+        };
+
+        const getDates = () => {
+            // Handle different structure for linear vs cycle phases
+            if ('startDate' in dateRange) {
+                return { start: dateRange.startDate, end: dateRange.endDate };
+            }
+            // For cycles, we show submission window primarily, or both? Let's show specific sub-items in parent
+            return { start: (dateRange as any).submissionStart, end: (dateRange as any).submissionEnd };
+        };
+
+        return (
+            <div className={`pl-4 border-l-2 border-${color}-200 ml-2 relative pb-6 last:pb-0`}>
+                <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-${color}-100 border-2 border-${color}-500`} />
+                <div>
+                    <h4 className="font-medium text-slate-900 text-sm">{label}</h4>
+                    {/* Logic to display dates based on type */}
+                    {'startDate' in dateRange ? (
+                        <p className="text-xs text-slate-500 mt-1">
+                            {formatDate(dateRange.startDate)} - {formatDate(dateRange.endDate)}
+                        </p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            <div className="bg-blue-50/50 p-2 rounded border border-blue-100">
+                                <span className="text-[10px] font-bold text-blue-700 uppercase block mb-0.5">Submission</span>
+                                <span className="text-xs text-slate-600 block">
+                                    {formatDate((dateRange as any).submissionStart)} - {formatDate((dateRange as any).submissionEnd)}
+                                </span>
+                            </div>
+                            <div className="bg-amber-50/50 p-2 rounded border border-amber-100">
+                                <span className="text-[10px] font-bold text-amber-700 uppercase block mb-0.5">Assessment</span>
+                                <span className="text-xs text-slate-600 block">
+                                    {formatDate((dateRange as any).assessmentStart)} - {formatDate((dateRange as any).assessmentEnd)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     const renderStepContent = () => {
@@ -254,21 +304,36 @@ export function SemesterPlanWizardPage() {
                 </div>
             );
         }
+
+        // 4. Preview Phase
+        if (step.id === 'preview') {
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+                    <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-4 flex-shrink-0">
+                        <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Plan Summary</h3>
+                        <p className="text-sm text-slate-500">for {selectedProjectType} projects</p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                        <TimelineItem label="Proposal Phase" dateRange={form.bulkSettings.proposal} color="slate" />
+                        <TimelineItem label="Application Phase" dateRange={form.bulkSettings.application} color="slate" />
+                        <TimelineItem label="CLA-1 Cycle" dateRange={form.bulkSettings.cla1} color="blue" />
+                        <TimelineItem label="CLA-2 Cycle" dateRange={form.bulkSettings.cla2} color="blue" />
+                        <TimelineItem label="CLA-3 Cycle" dateRange={form.bulkSettings.cla3} color="blue" />
+                        <TimelineItem label="External Review" dateRange={form.bulkSettings.external} color="amber" />
+                        <TimelineItem label="Grade Release" dateRange={form.bulkSettings.gradeRelease} color="green" />
+                    </div>
+                </div>
+            );
+        }
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-8 max-w-7xl mx-auto p-6 md:p-8">
+        <div className="h-full flex flex-col md:flex-row gap-8 max-w-7xl mx-auto p-6 md:p-8">
 
             {/* Sidebar Stepper */}
             <div className="w-full md:w-80 flex-shrink-0 space-y-8">
                 <div>
-                    <button
-                        onClick={() => navigate('/dashboard/control/windows')}
-                        className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors mb-6 text-sm font-medium"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Windows
-                    </button>
                     <h1 className="text-2xl font-bold text-slate-900">Semester Plan</h1>
                     <p className="text-slate-500 mt-2 text-sm leading-relaxed">
                         Configure the entire semester schedule for a project type in sequence.
@@ -321,7 +386,7 @@ export function SemesterPlanWizardPage() {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden max-h-[800px]">
                 {/* Header */}
                 <div className="p-8 border-b border-slate-100 flex items-center justify-between">
                     <div>

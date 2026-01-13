@@ -255,7 +255,7 @@ export function ExternalEvaluatorsTab() {
             <h3 className="text-lg font-semibold text-text mb-2">No Projects to Assign</h3>
             <p className="text-textSecondary max-w-lg mx-auto text-base px-4">
               There are no groups or solo students currently available for external evaluator assignment.
-              Projects typically appear here once they are approved in the respective windows.
+              Projects will appear here once they are approved in the respective windows.
             </p>
           </div>
         ) : (

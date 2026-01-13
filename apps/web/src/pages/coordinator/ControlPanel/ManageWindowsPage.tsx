@@ -131,6 +131,7 @@ export function ManageWindowsPage() {
                 onShowInactiveToggle={setShowInactiveWindows}
                 onEditWindow={handleEditWindow}
                 onDeleteWindow={handleDeleteWindow}
+                onCreateWindow={() => setShowCreationDrawer(true)}
             />
 
             {/* Modal for Creation/Editing */}
