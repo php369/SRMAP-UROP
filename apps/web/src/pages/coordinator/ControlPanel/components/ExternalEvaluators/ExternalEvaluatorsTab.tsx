@@ -130,7 +130,7 @@ export function ExternalEvaluatorsTab() {
           </button>
           <button
             onClick={handleAutoAssign}
-            disabled={loading || isModificationRestricted || assignments.length === 0}
+            disabled={loading || isModificationRestricted || assignments.length === 0 || evaluators.length === 0}
             className="flex-1 w-full sm:w-auto justify-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
             title={isModificationRestricted ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
           >
@@ -229,9 +229,9 @@ export function ExternalEvaluatorsTab() {
       {/* Assignments List */}
       <div className="space-y-4">
         {assignmentsLoading ? (
-          <div className="text-center py-8">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Loading assignments...</p>
+          <div className="text-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-textSecondary mx-auto mb-4" />
+            <p className="text-textSecondary text-base">Loading assignments...</p>
           </div>
         ) : filteredAssignments.length > 0 ? (
           <div className="grid gap-4">
@@ -248,20 +248,35 @@ export function ExternalEvaluatorsTab() {
             ))}
           </div>
         ) : assignments.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Projects Found</h3>
-            <p className="text-gray-500">
-              No groups or solo students are available for external evaluator assignment.
+          <div className="text-center py-16 bg-surface rounded-lg border border-border border-dashed">
+            <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+              <Filter className="w-8 h-8 text-textSecondary" />
+            </div>
+            <h3 className="text-lg font-semibold text-text mb-2">No Projects to Assign</h3>
+            <p className="text-textSecondary max-w-lg mx-auto text-base px-4">
+              There are no groups or solo students currently available for external evaluator assignment.
+              Projects typically appear here once they are approved in the respective windows.
             </p>
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Results Found</h3>
-            <p className="text-gray-500">
-              Try adjusting your search terms or filters to find assignments.
+          <div className="text-center py-16 bg-surface rounded-lg border border-border">
+            <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+              <Search className="w-8 h-8 text-textSecondary" />
+            </div>
+            <h3 className="text-lg font-semibold text-text mb-2">No Matching Results</h3>
+            <p className="text-textSecondary text-base mb-4">
+              We couldn't find any assignments matching your search or filters.
             </p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterStatus('all');
+                setFilterType('all');
+              }}
+              className="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium"
+            >
+              Clear all filters
+            </button>
           </div>
         )}
       </div>

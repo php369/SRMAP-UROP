@@ -59,7 +59,7 @@ export function ControlPanelLanding({
                 {/* Manage Windows Card */}
                 <div
                     onClick={onManageWindows}
-                    className="group relative bg-white rounded-xl shadow-sm border border-slate-200 p-6 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 overflow-hidden"
+                    className="group relative bg-surface rounded-xl shadow-sm border border-border p-6 cursor-pointer hover:shadow-md hover:border-blue-500/30 transition-all duration-200 overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
                         <CalendarIcon className="w-32 h-32 text-blue-600" />
@@ -67,29 +67,29 @@ export function ControlPanelLanding({
 
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                                <CalendarIcon className="w-8 h-8 text-blue-600" />
+                            <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 dark:bg-blue-900/20 dark:group-hover:bg-blue-900/30 transition-colors">
+                                <CalendarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                             </div>
                             {activeWindowsCount > 0 && (
-                                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider rounded-full">
+                                <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wider rounded-full">
                                     {activeWindowsCount} Active
                                 </span>
                             )}
                         </div>
 
-                        <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-700 transition-colors">
+                        <h3 className="text-xl font-bold text-text mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             Manage Windows
                         </h3>
-                        <p className="text-slate-500 text-sm mb-6 max-w-xs">
+                        <p className="text-textSecondary text-sm mb-6 max-w-xs">
                             Configure semester phases, set timelines, and manage submission windows.
                         </p>
 
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</span>
-                                <span className="text-sm font-medium text-slate-700">{deadlineText}</span>
+                                <span className="text-xs font-semibold text-textSecondary/70 uppercase tracking-wider">Status</span>
+                                <span className="text-sm font-medium text-text">{deadlineText}</span>
                             </div>
-                            <div className="p-2 bg-slate-50 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
+                            <div className="p-2 bg-background rounded-full group-hover:bg-blue-600 group-hover:text-white transition-all text-textSecondary">
                                 <ChevronRightIcon className="w-5 h-5" />
                             </div>
                         </div>
@@ -99,10 +99,10 @@ export function ControlPanelLanding({
                 {/* External Evaluators Card */}
                 <div
                     onClick={isExternalEvaluatorsEnabled ? onManageExternalEvaluators : undefined}
-                    className={`group relative bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 overflow-hidden
+                    className={`group relative bg-surface rounded-xl shadow-sm border border-border p-6 transition-all duration-200 overflow-hidden
             ${isExternalEvaluatorsEnabled
-                            ? 'cursor-pointer hover:shadow-md hover:border-purple-200'
-                            : 'opacity-60 cursor-not-allowed bg-slate-50'
+                            ? 'cursor-pointer hover:shadow-md hover:border-purple-500/30'
+                            : 'opacity-60 cursor-not-allowed bg-background'
                         }`}
                 >
                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
@@ -111,39 +111,39 @@ export function ControlPanelLanding({
 
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-4">
-                            <div className={`p-3 rounded-lg transition-colors ${isExternalEvaluatorsEnabled ? 'bg-purple-50 group-hover:bg-purple-100' : 'bg-slate-200'}`}>
-                                <UserCheckIcon className={`w-8 h-8 ${isExternalEvaluatorsEnabled ? 'text-purple-600' : 'text-slate-500'}`} />
+                            <div className={`p-3 rounded-lg transition-colors ${isExternalEvaluatorsEnabled ? 'bg-purple-50 group-hover:bg-purple-100 dark:bg-purple-900/20 dark:group-hover:bg-purple-900/30' : 'bg-muted'}`}>
+                                <UserCheckIcon className={`w-8 h-8 ${isExternalEvaluatorsEnabled ? 'text-purple-600 dark:text-purple-400' : 'text-textSecondary'}`} />
                             </div>
                             {!isExternalEvaluatorsEnabled && (
-                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold uppercase tracking-wider rounded-full">
+                                <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider rounded-full">
                                     Locked
                                 </span>
                             )}
                         </div>
 
-                        <h3 className={`text-xl font-bold mb-2 transition-colors ${isExternalEvaluatorsEnabled ? 'text-slate-900 group-hover:text-purple-700' : 'text-slate-500'}`}>
+                        <h3 className={`text-xl font-bold mb-2 transition-colors ${isExternalEvaluatorsEnabled ? 'text-text group-hover:text-purple-600 dark:group-hover:text-purple-400' : 'text-textSecondary'}`}>
                             External Evaluators
                         </h3>
-                        <p className="text-slate-500 text-sm mb-6 max-w-xs">
+                        <p className="text-textSecondary text-sm mb-6 max-w-xs">
                             Assign external faculty for final project evaluations and manage allocations.
                         </p>
 
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
                             <div className="flex flex-col">
                                 {isExternalEvaluatorsEnabled ? (
                                     <>
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Action</span>
-                                        <span className="text-sm font-medium text-slate-700">Assign Evaluators</span>
+                                        <span className="text-xs font-semibold text-textSecondary/70 uppercase tracking-wider">Action</span>
+                                        <span className="text-sm font-medium text-text">Assign Evaluators</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Prerequisite</span>
-                                        <span className="text-sm font-medium text-slate-500">Application Ends</span>
+                                        <span className="text-xs font-semibold text-textSecondary/70 uppercase tracking-wider">Prerequisite</span>
+                                        <span className="text-sm font-medium text-textSecondary">Application Ends</span>
                                     </>
                                 )}
                             </div>
                             {isExternalEvaluatorsEnabled && (
-                                <div className="p-2 bg-slate-50 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-all text-slate-400">
+                                <div className="p-2 bg-background rounded-full group-hover:bg-purple-600 group-hover:text-white transition-all text-textSecondary">
                                     <ChevronRightIcon className="w-5 h-5" />
                                 </div>
                             )}

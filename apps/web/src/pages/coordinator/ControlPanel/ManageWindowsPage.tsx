@@ -89,15 +89,15 @@ export function ManageWindowsPage() {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white shadow-xl p-4 md:p-6 rounded-xl border border-slate-200"
+            className="bg-surface shadow-xl p-4 md:p-6 rounded-xl border border-border"
         >
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                 <div>
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900">
-                        <Calendar className="w-6 h-6 text-[#4a5569]" />
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-text">
+                        <Calendar className="w-6 h-6 text-textSecondary" />
                         Manage Windows
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="text-sm text-textSecondary mt-1">
                         Create and monitor assessment timelines.
                     </p>
                 </div>
@@ -106,7 +106,7 @@ export function ManageWindowsPage() {
                     {/* Split CTA */}
                     <button
                         onClick={() => setShowCreationDrawer(true)}
-                        className="flex-1 md:flex-none px-4 py-2 bg-[#005bca] text-white rounded-lg hover:bg-[#004bca] flex items-center justify-center gap-2 transition-colors shadow-sm"
+                        className="flex-1 md:flex-none px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
                         Create Window
@@ -115,7 +115,7 @@ export function ManageWindowsPage() {
                     {/* Future Wizard Link */}
                     <button
                         onClick={() => navigate('/dashboard/control/wizard')}
-                        className="flex-1 md:flex-none px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 md:flex-none px-4 py-2 bg-surface text-textSecondary border border-border rounded-lg hover:bg-surface/50 flex items-center justify-center gap-2 transition-colors"
                     >
                         <Wand2 className="w-4 h-4 text-purple-600" />
                         Setup Semester Plan
