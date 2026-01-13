@@ -4,7 +4,7 @@ import { Plus, Wand2, Calendar } from 'lucide-react';
 
 // Components
 import { WindowsList } from './components/WindowManagement/WindowsList';
-import { WindowCreationDrawer } from './components/WindowManagement/WindowCreationDrawer';
+import { WindowCreationModal } from './components/WindowManagement/WindowCreationModal';
 import { DeleteConfirmationModal } from './components/Modals/DeleteConfirmationModal';
 
 // Hooks
@@ -133,8 +133,8 @@ export function ManageWindowsPage() {
                 onDeleteWindow={handleDeleteWindow}
             />
 
-            {/* Drawer for Creation/Editing */}
-            <WindowCreationDrawer
+            {/* Modal for Creation/Editing */}
+            <WindowCreationModal
                 isOpen={showCreationDrawer}
                 onClose={() => {
                     setShowCreationDrawer(false);

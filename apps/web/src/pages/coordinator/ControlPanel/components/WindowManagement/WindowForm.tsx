@@ -1,6 +1,9 @@
 import { WindowForm as WindowFormType, WindowType, ProjectType, AssessmentType, Window } from '../../types';
 import { DateRangePicker } from "@heroui/date-picker";
 import { parseZonedDateTime } from "@internationalized/date";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../../components/ui/select";
+import { Label } from "../../../../../components/ui/label";
+import { Layers, Calendar, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 interface WindowFormProps {
   windowForm: WindowFormType;
@@ -24,9 +27,6 @@ export function WindowForm({
   const getDateRangeValue = () => {
     try {
       if (windowForm.startDate && windowForm.endDate) {
-        // Ensure the string has no timezone offset before appending [Asia/Kolkata]
-        // If it comes as ISO with Z, we might need to strip it, but existing logic stores "local" ISO.
-        // We will treat the stored string as the "IST" time literal.
         const startStr = windowForm.startDate.replace('Z', '').replace(/\+.*$/, '');
         const endStr = windowForm.endDate.replace('Z', '').replace(/\+.*$/, '');
 
@@ -41,17 +41,14 @@ export function WindowForm({
     return null;
   };
 
-  // Helper to handle date range changes
   const handleDateRangeChange = (value: any) => {
     if (value && value.start && value.end) {
-      // Format to ISO-like string preserving the selected time literal
       const format = (date: any) => {
         const year = date.year;
         const month = String(date.month).padStart(2, '0');
         const day = String(date.day).padStart(2, '0');
         const hour = String(date.hour).padStart(2, '0');
         const minute = String(date.minute).padStart(2, '0');
-        // Return ISO format which is expected by backend, but represents IST time
         return `${year}-${month}-${day}T${hour}:${minute}:00`;
       };
 
@@ -70,127 +67,139 @@ export function WindowForm({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-        <div>
-          <h3 className="text-2xl font-bold text-gray-900">
-            {editingWindow ? 'Edit Window' : 'Create New Window'}
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            Configure the window details and schedule
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Current System Time</div>
-          <div className="text-sm font-mono bg-gray-50 px-3 py-1 rounded-md text-gray-700">
-            {new Date().toLocaleString('en-IN', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-              hour12: true
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8 mb-8">
-        <div className="space-y-6">
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Window Type <span className="text-red-500">*</span></label>
-            <div className="relative">
-              <select
-                value={windowForm.windowTypes[0] || ''}
-                onChange={(e) => setWindowForm({
-                  ...windowForm,
-                  windowTypes: [e.target.value as WindowType]
-                })}
-                className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 disabled:opacity-50"
-              >
-                <option value="">Select Type...</option>
-                <option value="proposal">Proposal</option>
-                <option value="application">Application</option>
-                <option value="submission">Submission</option>
-                <option value="assessment">Assessment</option>
-                <option value="grade_release">Grade Release</option>
-              </select>
-            </div>
-          </div>
-
+    <div className="space-y-6">
+      {!editingWindow && (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Project Type <span className="text-red-500">*</span></label>
-            <select
-              value={windowForm.projectTypes[0] || ''}
-              onChange={(e) => setWindowForm({
+            <p className="text-sm font-medium text-blue-900">Pro Tip</p>
+            <p className="text-sm text-blue-700">
+              You are creating a single window. Ensure previous phases (like Proposal/Application) are completed before opening subsequent ones.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="windowType" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-slate-500" />
+              Window Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={windowForm.windowTypes[0] || ''}
+              onValueChange={(value: string) => setWindowForm({
                 ...windowForm,
-                projectTypes: [e.target.value as ProjectType]
+                windowTypes: [value as WindowType]
               })}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800"
             >
-              <option value="">Select Project...</option>
-              <option value="IDP">IDP</option>
-              <option value="UROP">UROP</option>
-              <option value="CAPSTONE">CAPSTONE</option>
-            </select>
+              <SelectTrigger id="windowType" className="w-full">
+                <SelectValue placeholder="Select Type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="proposal">Proposal</SelectItem>
+                <SelectItem value="application">Application</SelectItem>
+                <SelectItem value="submission">Submission</SelectItem>
+                <SelectItem value="assessment">Assessment</SelectItem>
+                <SelectItem value="grade_release">Grade Release</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="projectType" className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-slate-500" />
+              Project Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={windowForm.projectTypes[0] || ''}
+              onValueChange={(value: string) => setWindowForm({
+                ...windowForm,
+                projectTypes: [value as ProjectType]
+              })}
+            >
+              <SelectTrigger id="projectType" className="w-full">
+                <SelectValue placeholder="Select Project..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="IDP">IDP</SelectItem>
+                <SelectItem value="UROP">UROP</SelectItem>
+                <SelectItem value="CAPSTONE">CAPSTONE</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {(windowForm.windowTypes.includes('submission') || windowForm.windowTypes.includes('assessment')) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Assessment Type <span className="text-red-500">*</span></label>
-              <select
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <Label htmlFor="assessmentType" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-slate-500" />
+                Assessment Type <span className="text-red-500">*</span>
+              </Label>
+              <Select
                 value={windowForm.assessmentType}
-                onChange={(e) => setWindowForm({
+                onValueChange={(value: string) => setWindowForm({
                   ...windowForm,
-                  assessmentType: e.target.value as AssessmentType
+                  assessmentType: value as AssessmentType
                 })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800"
               >
-                <option value="">Select Assessment...</option>
-                <option value="CLA-1">CLA-1</option>
-                <option value="CLA-2">CLA-2</option>
-                <option value="CLA-3">CLA-3</option>
-                <option value="External">External</option>
-              </select>
+                <SelectTrigger id="assessmentType" className="w-full">
+                  <SelectValue placeholder="Select Assessment..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CLA-1">CLA-1</SelectItem>
+                  <SelectItem value="CLA-2">CLA-2</SelectItem>
+                  <SelectItem value="CLA-3">CLA-3</SelectItem>
+                  <SelectItem value="External">External</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>
 
-        <div className="space-y-6">
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">Duration <span className="text-red-500">*</span></span>
-            <DateRangePicker
-              value={getDateRangeValue()}
-              onChange={handleDateRangeChange}
-              label="Window Duration"
-              variant="bordered"
-              description="Select the start and end dates for this window"
-              hideTimeZone
-              granularity="minute"
-              visibleMonths={1}
-              className="max-w-xs"
-            />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              Duration <span className="text-red-500">*</span>
+            </Label>
+            <div className="border rounded-md p-1 shadow-sm hover:border-slate-300 transition-colors">
+              <DateRangePicker
+                value={getDateRangeValue()}
+                onChange={handleDateRangeChange}
+                variant="bordered"
+                label={undefined}
+                aria-label="Select Window Duration"
+                description={undefined}
+                hideTimeZone
+                granularity="minute"
+                visibleMonths={1}
+                className="w-full"
+                classNames={{
+                  base: "w-full",
+                  inputWrapper: "shadow-sm border border-slate-200 bg-transparent hover:border-slate-300 data-[hover=true]:bg-transparent group-data-[focus=true]:bg-transparent px-3",
+                }}
+              />
+            </div>
+            <p className="text-xs text-slate-500 px-1">
+              Select start and end dates/times in IST.
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+      <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
         <button
           onClick={onCancel}
-          className="px-6 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+          className="px-4 py-2 text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 font-medium transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={onSubmit}
           disabled={loading}
-          className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg shadow-blue-600/20 transition-all"
+          className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm transition-all"
         >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              {editingWindow ? 'Updating...' : 'Creating...'}
-            </span>
-          ) : (
-            editingWindow ? 'Update Window' : 'Create Window'
-          )}
+          {loading ? 'Processing...' : (editingWindow ? 'Update Window' : 'Create Window')}
         </button>
       </div>
     </div>
