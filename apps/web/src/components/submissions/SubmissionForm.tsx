@@ -25,12 +25,12 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     presentationUrl: '',
     comments: ''
   });
-  
+
   const [reportFile, setReportFile] = useState<File | null>(null);
   const [presentationFile, setPresentationFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const reportFileRef = useRef<HTMLInputElement>(null);
   const presentationFileRef = useRef<HTMLInputElement>(null);
 
@@ -94,7 +94,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     // Check that either presentation file or URL is provided (but not both)
     const hasPresentationFile = !!presentationFile;
     const hasPresentationUrl = !!formData.presentationUrl?.trim();
-    
+
     if (hasPresentationFile && hasPresentationUrl) {
       newErrors.presentation = 'Please provide either a presentation file OR a presentation URL, not both';
     }
@@ -105,7 +105,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -130,7 +130,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-textPrimary mb-2">Submit Project</h2>
         <p className="text-textSecondary">
-          Upload your project files and provide the GitHub repository link. 
+          Upload your project files and provide the GitHub repository link.
           All fields except comments are required.
         </p>
       </div>
@@ -150,6 +150,12 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
             error={errors.githubUrl}
             disabled={isSubmitting}
           />
+          {errors.githubUrl && (
+            <p className="text-sm text-red-500 mt-1 flex items-center">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              {errors.githubUrl}
+            </p>
+          )}
           <p className="text-xs text-textSecondary mt-1">
             Provide the link to your project's GitHub repository
           </p>
@@ -169,7 +175,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
               onChange={(e) => handleFileSelect('report', e.target.files?.[0] || null)}
               className="hidden"
             />
-            
+
             {!reportFile ? (
               <Button
                 type="button"
@@ -201,7 +207,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
                 </Button>
               </div>
             )}
-            
+
             {errors.reportFile && (
               <p className="text-sm text-red-500 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
@@ -217,7 +223,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
             <Presentation className="inline w-4 h-4 mr-2" />
             Presentation (File OR URL)
           </label>
-          
+
           {/* Presentation File */}
           <div className="space-y-3">
             <div>
@@ -228,7 +234,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
                 onChange={(e) => handleFileSelect('presentation', e.target.files?.[0] || null)}
                 className="hidden"
               />
-              
+
               {!presentationFile ? (
                 <Button
                   type="button"
@@ -273,14 +279,20 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
               error={errors.presentationUrl}
               disabled={isSubmitting || !!presentationFile}
             />
-            
+            {errors.presentationUrl && (
+              <p className="text-sm text-red-500 mt-1 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {errors.presentationUrl}
+              </p>
+            )}
+
             {errors.presentationFile && (
               <p className="text-sm text-red-500 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.presentationFile}
               </p>
             )}
-            
+
             {errors.presentation && (
               <p className="text-sm text-red-500 flex items-center">
                 <AlertCircle className="w-4 h-4 mr-1" />
@@ -288,7 +300,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
               </p>
             )}
           </div>
-          
+
           <p className="text-xs text-textSecondary mt-1">
             Upload a file or provide a link to Google Slides, Canva, Prezi, etc.
           </p>
@@ -341,7 +353,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
               </>
             )}
           </Button>
-          
+
           <Button
             type="button"
             variant="outline"

@@ -6,12 +6,12 @@ import { Textarea } from '../ui/Textarea';
 import { GroupSubmission } from '../../types';
 import { SubmissionService } from '../../services/submissionService';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
-import { 
-  FileText, 
-  Presentation, 
-  Github, 
-  Calendar, 
-  User, 
+import {
+  FileText,
+  Presentation,
+  Github,
+  Calendar,
+  User,
   MessageSquare,
   ExternalLink,
   Download,
@@ -47,11 +47,11 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
         submission._id,
         editedComments
       );
-      
+
       if (onUpdate) {
         onUpdate(updatedSubmission);
       }
-      
+
       setIsEditingComments(false);
     } catch (error) {
       console.error('Failed to update comments:', error);
@@ -67,6 +67,10 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const openLink = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -96,7 +100,7 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
             <span className="text-textSecondary">Submitted:</span>
             <span className="text-textPrimary">{formatDate(submission.submittedAt)}</span>
           </div>
-          
+
           <div className="flex items-center space-x-2 text-sm">
             <User className="w-4 h-4 text-textSecondary" />
             <span className="text-textSecondary">By:</span>
@@ -165,7 +169,7 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
               <Presentation className="w-4 h-4 mr-2" />
               Presentation
             </h4>
-            
+
             {submission.presentationFile ? (
               <div className="flex items-center justify-between p-3 bg-surface border border-border rounded-lg">
                 <div className="flex items-center space-x-2">
@@ -236,7 +240,7 @@ export const SubmissionCard: React.FC<SubmissionCardProps> = ({
               </Button>
             )}
           </div>
-          
+
           {isEditingComments ? (
             <div className="space-y-2">
               <Textarea
