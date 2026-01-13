@@ -43,7 +43,7 @@ export function ControlPanel() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-6">
+    <div className="flex-1">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <Breadcrumb items={getBreadcrumbs()} className="mb-4" />

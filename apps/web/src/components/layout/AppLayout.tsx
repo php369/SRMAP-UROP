@@ -120,7 +120,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               ref={scrollContainerRef}
               className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}
             >
-              <div className="max-w-7xl mx-auto min-h-full">
+              <div className="max-w-7xl mx-auto h-full flex flex-col">
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -129,7 +129,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      className="min-h-full"
+                      className="flex-1"
                     >
                       {children}
                     </motion.div>
