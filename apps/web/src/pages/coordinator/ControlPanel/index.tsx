@@ -10,7 +10,8 @@ import { useWindowForm } from './hooks/useWindowForm';
 
 // Components
 import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection';
-import { QuickActions } from './components/Dashboard/QuickActions';
+import { ControlPanelLanding } from './components/Dashboard/ControlPanelLanding';
+import { Breadcrumb } from '../../../components/ui/Breadcrumb';
 import { WindowsList } from './components/WindowManagement/WindowsList';
 import { WindowForm } from './components/WindowManagement/WindowForm';
 import { BulkCreationModal } from './components/WindowManagement/BulkCreationModal';
@@ -155,38 +156,36 @@ export function ControlPanel() {
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 text-slate-900">
-                {currentView === 'dashboard' ? 'Control Panel' :
-                  currentView === 'windows' ? 'Manage Windows' :
-                    'External Evaluators'}
-              </h1>
-              <p className="text-slate-500">
-                {currentView === 'dashboard'
-                  ? 'Overview of system statistics and quick actions'
-                  : currentView === 'windows'
-                    ? 'Create, edit, and manage assessment windows'
-                    : 'Assign and manage external evaluators for projects'
-                }
-              </p>
-            </div>
-            {(currentView === 'windows' || currentView === 'external-evaluators') && (
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className="w-full md:w-auto px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg flex items-center justify-center gap-2 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                Back to Dashboard
-              </button>
-            )}
-          </div>
-        </motion.div>
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', path: '/dashboard' },
+              { label: 'Control Panel', path: currentView === 'dashboard' ? undefined : '/dashboard/control' },
+              ...(currentView === 'windows' ? [{ label: 'Manage Windows' }] : []),
+              ...(currentView === 'external-evaluators' ? [{ label: 'External Evaluators' }] : [])
+            ]}
+            className="mb-4"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-3xl font-bold mb-2 text-slate-900">
+              {currentView === 'dashboard' ? 'Control Panel' :
+                currentView === 'windows' ? 'Manage Windows' :
+                  'External Evaluators'}
+            </h1>
+            <p className="text-slate-500">
+              {currentView === 'dashboard'
+                ? 'Overview of system statistics and quick actions'
+                : currentView === 'windows'
+                  ? 'Create, edit, and manage assessment windows'
+                  : 'Assign and manage external evaluators for projects'
+              }
+            </p>
+          </motion.div>
+        </div>
 
         {currentView === 'dashboard' ? (
           /* Dashboard View */
@@ -199,10 +198,10 @@ export function ControlPanel() {
               />
             )}
 
-            {/* Quick Actions */}
-            <QuickActions
+            {/* Landing Page View */}
+            <ControlPanelLanding
+              windows={windows}
               onManageWindows={() => setCurrentView('windows')}
-
               onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
               isExternalEvaluatorsEnabled={isExternalEvaluatorsEnabled}
             />
