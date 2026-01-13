@@ -1,333 +1,70 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Plus, Calendar } from 'lucide-react';
-import toast from 'react-hot-toast';
-
-// Hooks
-import { useWindowManagement } from './hooks/useWindowManagement';
-import { useGradeRelease } from './hooks/useGradeRelease';
-import { useWindowForm } from './hooks/useWindowForm';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Components
-import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection';
-import { ControlPanelLanding } from './components/Dashboard/ControlPanelLanding';
 import { Breadcrumb } from '../../../components/ui/Breadcrumb';
-import { WindowsList } from './components/WindowManagement/WindowsList';
-import { WindowForm } from './components/WindowManagement/WindowForm';
-import { BulkCreationModal } from './components/WindowManagement/BulkCreationModal';
-import { CreationModeModal } from './components/Modals/CreationModeModal';
-import { DeleteConfirmationModal } from './components/Modals/DeleteConfirmationModal';
-import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+
+// Pages
+import { ControlPanelHome } from './ControlPanelHome';
+import { ManageWindowsPage } from './ManageWindowsPage';
+import { SemesterPlanWizardPage } from './SemesterPlanWizardPage';
 import { ExternalEvaluatorsTab } from './components/ExternalEvaluators/ExternalEvaluatorsTab';
 
-// Types
-import { Window, ProjectType } from './types';
-
 export function ControlPanel() {
-  // State
-  const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
-  const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
-  const [showInactiveWindows, setShowInactiveWindows] = useState(false);
-  const [showCreationModeModal, setShowCreationModeModal] = useState(false);
-  const [creationMode, setCreationMode] = useState<'individual' | 'bulk'>('individual');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [windowToDelete, setWindowToDelete] = useState<Window | null>(null);
-  const [showWindowForm, setShowWindowForm] = useState(false);
-  const [showBulkCreationModal, setShowBulkCreationModal] = useState(false);
-  const [editingWindow, setEditingWindow] = useState<Window | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
+  const location = useLocation();
 
-  const [currentView, setCurrentView] = useState<'dashboard' | 'windows' | 'external-evaluators'>('dashboard');
+  // Smart Breadcrumb Logic
+  const getBreadcrumbs = () => {
+    const crumbs: { label: string; path?: string }[] = [
+      { label: 'Dashboard', path: '/dashboard' },
+      { label: 'Control Panel', path: '/dashboard/control' }
+    ];
 
-  // Hooks
-  const {
-    windows,
-    windowsLoading,
-    fetchWindows,
-    createWindow,
-    createBulkWindows,
-    deleteWindow,
-
-    prepareEditWindow
-  } = useWindowManagement();
-
-  const {
-    releasedGrades,
-    checkReleasedGrades,
-    releaseGrades,
-    isGradeReleaseWindowActive
-  } = useGradeRelease();
-
-  const {
-    windowForm,
-    setWindowForm,
-    resetForm,
-    validateForm
-  } = useWindowForm(windows);
-
-  // Load initial data
-  useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([
-        fetchWindows(),
-        checkReleasedGrades()
-      ]);
-    };
-
-    loadData();
-  }, [fetchWindows, checkReleasedGrades]);
-
-  // Handlers
-  const handleCreateWindow = async () => {
-    if (!validateForm()) return;
-
-    setFormLoading(true);
-    const success = await createWindow(windowForm, editingWindow);
-    setFormLoading(false);
-
-    if (success) {
-      setShowWindowForm(false);
-      setEditingWindow(null);
-      resetForm();
-    }
-  };
-
-  const handleBulkWindowCreation = async (selectedProjectType: ProjectType) => {
-    setFormLoading(true);
-    const success = await createBulkWindows(windowForm, selectedProjectType);
-    setFormLoading(false);
-
-    if (success) {
-      setShowBulkCreationModal(false);
-      resetForm();
-    }
-  };
-
-  const handleEditWindow = (window: Window) => {
-    const editForm = prepareEditWindow(window);
-    setWindowForm(editForm);
-    setEditingWindow(window);
-    setShowWindowForm(true);
-  };
-
-  const handleDeleteWindow = (window: Window) => {
-    setWindowToDelete(window);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteWindow = async () => {
-    if (!windowToDelete) return;
-
-    const success = await deleteWindow(windowToDelete._id);
-    if (success) {
-      setShowDeleteModal(false);
-      setWindowToDelete(null);
-    }
-  };
-
-  const handleReleaseFinalGrades = async (projectType: ProjectType) => {
-    if (releasedGrades[projectType]) {
-      toast.error(`Final grades for ${projectType} have already been released.`);
-      return;
+    if (location.pathname.includes('/windows')) {
+      crumbs.push({ label: 'Manage Windows', path: '/dashboard/control/windows' });
+    } else if (location.pathname.includes('/wizard')) {
+      crumbs.push(
+        { label: 'Manage Windows', path: '/dashboard/control/windows' },
+        { label: 'Setup Semester Plan', path: '/dashboard/control/wizard' }
+      );
+    } else if (location.pathname.includes('/external-evaluators')) {
+      crumbs.push({ label: 'External Evaluators', path: '/dashboard/control/external-evaluators' });
     }
 
-    setGradeReleaseProjectType(projectType);
-    setShowGradeReleaseModal(true);
-  };
-
-  const confirmGradeRelease = async () => {
-    if (!gradeReleaseProjectType) return;
-
-    const success = await releaseGrades(gradeReleaseProjectType);
-    if (success) {
-      // Grades released
+    // Don't link to the current page's breadcrumb
+    if (crumbs.length > 0) {
+      // Create a new object for the last item without the path, 
+      // avoiding direct mutation or delete operator issues on references
+      const lastItem = crumbs[crumbs.length - 1];
+      crumbs[crumbs.length - 1] = { label: lastItem.label };
     }
-    setShowGradeReleaseModal(false);
-    setGradeReleaseProjectType(null);
-  };
 
-  // Check if External Evaluators should be enabled
-  // Enabled if ANY project type's application window is over
-  const now = new Date();
-  const isExternalEvaluatorsEnabled = windows.some(w =>
-    w.windowType === 'application' && new Date(w.endDate) < now
-  );
+    return crumbs;
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: 'Dashboard', path: '/dashboard' },
-              { label: 'Control Panel', path: currentView === 'dashboard' ? undefined : '/dashboard/control' },
-              ...(currentView === 'windows' ? [{ label: 'Manage Windows' }] : []),
-              ...(currentView === 'external-evaluators' ? [{ label: 'External Evaluators' }] : [])
-            ]}
-            className="mb-4"
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h1 className="text-3xl font-bold mb-2 text-slate-900">
-              {currentView === 'dashboard' ? 'Control Panel' :
-                currentView === 'windows' ? 'Manage Windows' :
-                  'External Evaluators'}
-            </h1>
-            <p className="text-slate-500">
-              {currentView === 'dashboard'
-                ? 'Overview of system statistics and quick actions'
-                : currentView === 'windows'
-                  ? 'Create, edit, and manage assessment windows'
-                  : 'Assign and manage external evaluators for projects'
-              }
-            </p>
-          </motion.div>
+          <Breadcrumb items={getBreadcrumbs()} className="mb-4" />
         </div>
 
-        {currentView === 'dashboard' ? (
-          /* Dashboard View */
-          <>
-            {/* Grade Release Section - Only show when grade release window is active */}
-            {isGradeReleaseWindowActive(windows) && (
-              <GradeReleaseSection
-                releasedGrades={releasedGrades}
-                onReleaseGrades={handleReleaseFinalGrades}
-              />
-            )}
-
-            {/* Landing Page View */}
-            <ControlPanelLanding
-              windows={windows}
-              onManageWindows={() => setCurrentView('windows')}
-              onManageExternalEvaluators={() => setCurrentView('external-evaluators')}
-              isExternalEvaluatorsEnabled={isExternalEvaluatorsEnabled}
-            />
-          </>
-        ) : currentView === 'windows' ? (
-          /* Windows Management View */
-          <>
-            <>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white shadow-xl p-4 md:p-6 rounded-xl border border-slate-200"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900">
-                    <Calendar className="w-6 h-6 text-[#4a5569]" />
-                    Manage Windows
-                  </h2>
-                  <div className="flex items-center gap-3">
-
-                    <button
-                      onClick={() => setShowCreationModeModal(true)}
-                      className="px-4 py-2 bg-[#005bca] text-white rounded-lg hover:bg-[#004bca] flex items-center gap-2 transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Create Window
-                    </button>
-                  </div>
-                </div>
-
-                {/* Windows List */}
-                <WindowsList
-                  windows={windows}
-                  windowsLoading={windowsLoading}
-                  showInactiveWindows={showInactiveWindows}
-                  onShowInactiveToggle={setShowInactiveWindows}
-                  onEditWindow={handleEditWindow}
-                  onDeleteWindow={handleDeleteWindow}
-                />
-              </motion.div>
-            </>
-          </>
-        ) : (
-          /* External Evaluators View */
-          <ExternalEvaluatorsTab />
-        )}
-
-        {/* Individual Window Creation Form */}
-        {showWindowForm && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50">
-            <div className="bg-surface rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
-              <WindowForm
-                windowForm={windowForm}
-                setWindowForm={setWindowForm}
-                editingWindow={editingWindow}
-                onSubmit={handleCreateWindow}
-                onCancel={() => {
-                  setShowWindowForm(false);
-                  setEditingWindow(null);
-                  resetForm();
-                }}
-                loading={formLoading}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Bulk Creation Modal */}
-        <BulkCreationModal
-          isOpen={showBulkCreationModal}
-          windowForm={windowForm}
-          setWindowForm={setWindowForm}
-          onSubmit={handleBulkWindowCreation}
-          loading={formLoading}
-          onCancel={() => {
-            setShowBulkCreationModal(false);
-            resetForm();
-          }}
-        />
-
-        {/* Creation Mode Selection Modal */}
-        <CreationModeModal
-          isOpen={showCreationModeModal}
-          creationMode={creationMode}
-          onModeChange={setCreationMode}
-          onContinue={() => {
-            setShowCreationModeModal(false);
-            if (creationMode === 'individual') {
-              setShowWindowForm(true);
-            } else {
-              setShowBulkCreationModal(true);
-            }
-          }}
-          onCancel={() => {
-            setShowCreationModeModal(false);
-            setCreationMode('individual');
-            resetForm();
-          }}
-        />
-
-        {/* Delete Confirmation Modal */}
-        <DeleteConfirmationModal
-          isOpen={showDeleteModal}
-          window={windowToDelete}
-          onConfirm={confirmDeleteWindow}
-          onCancel={() => {
-            setShowDeleteModal(false);
-            setWindowToDelete(null);
-          }}
-        />
-
-        {/* Grade Release Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={showGradeReleaseModal}
-          onClose={() => {
-            setShowGradeReleaseModal(false);
-            setGradeReleaseProjectType(null);
-          }}
-          onConfirm={confirmGradeRelease}
-          title="Release Final Grades"
-          message={`Are you sure you want to release FINAL grades for ${gradeReleaseProjectType}?`}
-          details="This will make all completed evaluations (CLA-1, CLA-2, CLA-3, and External) visible to students. This action cannot be undone."
-          confirmText="Yes, Release Grades"
-          cancelText="Cancel"
-          type="warning"
-        />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Routes>
+              <Route index element={<ControlPanelHome />} />
+              <Route path="windows" element={<ManageWindowsPage />} />
+              <Route path="wizard" element={<SemesterPlanWizardPage />} />
+              <Route path="external-evaluators" element={<ExternalEvaluatorsTab />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

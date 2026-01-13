@@ -147,7 +147,7 @@ function App() {
 
                                   {/* Coordinator routes */}
 
-                                  <Route path="/control" element={
+                                  <Route path="/control/*" element={
                                     <AuthGuard requiredRole="coordinator">
                                       <ControlPanel />
                                     </AuthGuard>
