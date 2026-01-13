@@ -4,6 +4,8 @@ export class SessionManager {
   private static instance: SessionManager;
   private refreshTimer: number | null = null;
 
+  private useSessionStorage = false;
+
   private constructor() { }
 
   static getInstance(): SessionManager {
@@ -13,10 +15,14 @@ export class SessionManager {
     return SessionManager.instance;
   }
 
+  // FORCE SESSION STORAGE (for Mock Auth)
+  enableSessionStorage(): void {
+    this.useSessionStorage = true;
+  }
+
   // Storage helper
   private getStorage(): Storage {
-    // @ts-ignore - Dev only feature
-    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
+    if (this.useSessionStorage) {
       return sessionStorage;
     }
     return localStorage;

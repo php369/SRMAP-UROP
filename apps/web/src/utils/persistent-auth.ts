@@ -45,14 +45,7 @@ class PersistentAuth {
     };
 
     // Use localStorage for persistent sessions, sessionStorage for temporary
-    // UNLESS in Mock Auth mode, then always use sessionStorage for isolation
-    let storage: Storage;
-    // @ts-ignore
-    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
-      storage = sessionStorage;
-    } else {
-      storage = rememberMe ? localStorage : sessionStorage;
-    }
+    const storage = rememberMe ? localStorage : sessionStorage;
 
     storage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
@@ -75,10 +68,7 @@ class PersistentAuth {
    * Restore authentication session
    */
   restoreSession(): AuthSession | null {
-    // @ts-ignore
-    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
-      return this.getSessionFromStorage(sessionStorage);
-    }
+
 
     // Try localStorage first (persistent sessions)
     let session = this.getSessionFromStorage(localStorage);
@@ -121,13 +111,7 @@ class PersistentAuth {
     if (session) {
       session.lastActivity = Date.now();
 
-      let storage: Storage;
-      // @ts-ignore
-      if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
-        storage = sessionStorage;
-      } else {
-        storage = session.rememberMe ? localStorage : sessionStorage;
-      }
+      const storage = session.rememberMe ? localStorage : sessionStorage;
 
       storage.setItem('auth_session', JSON.stringify(session));
     }
@@ -161,10 +145,7 @@ class PersistentAuth {
    * Get current session data
    */
   getCurrentSession(): AuthSession | null {
-    // @ts-ignore
-    if (import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true') {
-      return this.getSessionFromStorage(sessionStorage);
-    }
+
 
     // Try localStorage first
     let session = this.getSessionFromStorage(localStorage);
