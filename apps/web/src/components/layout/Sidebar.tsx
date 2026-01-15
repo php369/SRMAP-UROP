@@ -237,10 +237,10 @@ export function Sidebar() {
                 ref={(el) => (navItemRefs.current[item.path] = el)}
                 onClick={(e) => {
                   const currentPath = location.pathname;
-                  const isCurrentPage = currentPath === item.path ||
-                    (item.path !== ROUTES.DASHBOARD && currentPath.startsWith(item.path));
 
-                  if (isCurrentPage) {
+                  // Only prevent default if we are EXACTLY on the item path
+                  // This allows clicking the link when on a sub-page to navigate back to the main page
+                  if (currentPath === item.path) {
                     e.preventDefault();
                     document.dispatchEvent(new CustomEvent('refresh-active-view'));
                   }
