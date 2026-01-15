@@ -22,11 +22,7 @@ export function ControlPanelHome() {
     const [showGradeReleaseModal, setShowGradeReleaseModal] = useState(false);
     const [gradeReleaseProjectType, setGradeReleaseProjectType] = useState<ProjectType | null>(null);
 
-    // Determine if External Evaluators is enabled
-    const now = new Date();
-    const isExternalEvaluatorsEnabled = windows.some(w =>
-        w.windowType === 'application' && new Date(w.endDate) < now
-    );
+
 
     const handleReleaseFinalGrades = async (projectType: ProjectType) => {
         if (releasedGrades[projectType]) {
@@ -60,7 +56,7 @@ export function ControlPanelHome() {
                 windows={windows}
                 onManageWindows={() => navigate('windows')}
                 onManageExternalEvaluators={() => navigate('external-evaluators')}
-                isExternalEvaluatorsEnabled={isExternalEvaluatorsEnabled}
+                isExternalEvaluatorsEnabled={true}
             />
 
             {/* Grade Release Confirmation Modal */}

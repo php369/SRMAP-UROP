@@ -4,6 +4,7 @@ import { useExternalEvaluators } from '../../hooks/useExternalEvaluators';
 import { AssignmentCard } from './AssignmentCard';
 import { EvaluatorStats } from './EvaluatorStats';
 import { useWindowStatus } from '../../../../../hooks/useWindowStatus';
+import { ProjectType } from '../../types';
 
 export function ExternalEvaluatorsTab() {
   const { windows } = useWindowStatus();
@@ -28,16 +29,19 @@ export function ExternalEvaluatorsTab() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'unassigned' | 'conflicts'>('all');
   const [filterType, setFilterType] = useState<'all' | 'group' | 'solo'>('all');
 
-  // Check if external evaluation window is active for any project type
-  const isExternalEvaluationActive = windows.some(window =>
-    window.windowType === 'assessment' &&
-    window.assessmentType === 'External' &&
-    new Date() >= new Date(window.startDate) &&
-    new Date() <= new Date(window.endDate)
-  );
+  const [selectedProjectType, setSelectedProjectType] = useState<ProjectType | null>(null);
 
-  // Check if any assignment modification should be restricted
-  const isModificationRestricted = isExternalEvaluationActive;
+  // Check if application window is ended for the selected project type
+  // We can only assign evaluators if the application phase is OVER
+  // Check if application window is ended for the selected project type
+  // We can only assign evaluators if the application phase is OVER
+  const isApplicationWindowActive = selectedProjectType ? windows.some(window =>
+    window.windowType === 'application' &&
+    window.projectType === selectedProjectType &&
+    new Date() <= new Date(window.endDate)
+  ) : false;
+
+  const isModificationRestricted = !selectedProjectType || isApplicationWindowActive;
 
   // Load data on component mount
   useEffect(() => {
@@ -120,9 +124,21 @@ export function ExternalEvaluatorsTab() {
           <p className="text-textSecondary">Manage external evaluator assignments for projects</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Project Type Selector */}
+          <select
+            value={selectedProjectType || ''}
+            onChange={(e) => setSelectedProjectType(e.target.value as ProjectType)}
+            className="w-full sm:w-auto px-4 py-2 bg-surface border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text font-medium"
+          >
+            <option value="" disabled>Select Project Type</option>
+            <option value="IDP">IDP</option>
+            <option value="UROP">UROP</option>
+            <option value="CAPSTONE">Capstone</option>
+          </select>
+
           <button
             onClick={handleRefresh}
-            disabled={assignmentsLoading || evaluatorsLoading}
+            disabled={assignmentsLoading || evaluatorsLoading || !selectedProjectType}
             className="flex-1 w-full sm:w-auto justify-center px-4 py-2 bg-surface border border-border text-text hover:bg-surface/80 flex items-center gap-2 disabled:opacity-50 rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${(assignmentsLoading || evaluatorsLoading) ? 'animate-spin' : ''}`} />
@@ -132,7 +148,7 @@ export function ExternalEvaluatorsTab() {
             onClick={handleAutoAssign}
             disabled={loading || isModificationRestricted || assignments.length === 0 || evaluators.length === 0}
             className="flex-1 w-full sm:w-auto justify-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
-            title={isModificationRestricted ? 'Cannot auto-assign during active external evaluation window' : 'Automatically assign external evaluators'}
+            title={isModificationRestricted ? 'Please select a valid project type where application phase has ended' : 'Automatically assign external evaluators'}
           >
             <Zap className="w-4 h-4" />
             Auto Assign Evaluators
@@ -167,14 +183,25 @@ export function ExternalEvaluatorsTab() {
         </div>
       )}
 
-      {/* Warning for active external evaluation window */}
-      {isExternalEvaluationActive && (
+      {/* Warning for active application window or no selection */}
+      {!selectedProjectType ? (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div>
+            <p className="text-blue-700 dark:text-blue-300 font-medium">Select a Project Type</p>
+            <p className="text-blue-600 dark:text-blue-400 text-sm">
+              Please select a project type above to manage external evaluator assignments.
+            </p>
+          </div>
+        </div>
+      ) : isApplicationWindowActive && (
         <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-warning" />
           <div>
-            <p className="text-warning font-medium">External Evaluation Window Active</p>
+            <p className="text-warning font-medium">Application Phase Active</p>
             <p className="text-warning/90 text-sm">
-              Assignment modifications are restricted during active external evaluation windows.
+              The application phase for <strong>{selectedProjectType}</strong> is still active.
+              You can only assign external evaluators after the application phase has ended.
             </p>
           </div>
         </div>
