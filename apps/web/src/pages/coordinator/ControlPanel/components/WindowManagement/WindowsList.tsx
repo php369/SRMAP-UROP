@@ -3,6 +3,7 @@ import { Plus, Calendar } from 'lucide-react';
 import { Window, ProjectType } from '../../types';
 import { getWorkflowOrder } from '../../utils/windowHelpers';
 import { WindowCard } from './WindowCard';
+import { WindowsListSkeleton } from '../LoadingSkeletons';
 
 interface WindowsListProps {
   windows: Window[];
@@ -24,76 +25,7 @@ export function WindowsList({
   onCreateWindow
 }: WindowsListProps) {
   if (windowsLoading) {
-    return (
-      <div className="space-y-6">
-        {/* Loading Toggle Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4 bg-gray-100 rounded-lg"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-            <div className="flex items-center space-x-3">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-28"></div>
-              <div className="h-6 w-11 bg-gray-200 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
-        </motion.div>
-
-        {/* Loading Windows by Project Type */}
-        {['IDP', 'UROP', 'CAPSTONE'].map((projectType, projectIndex) => (
-          <motion.div
-            key={projectType}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + projectIndex * 0.1 }}
-            className="space-y-3"
-          >
-            {/* Project Type Header Loading */}
-            <div className="flex items-center space-x-2">
-              <div className="h-7 bg-gray-200 rounded animate-pulse w-16"></div>
-              <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
-            </div>
-
-            {/* Window Cards Loading */}
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + projectIndex * 0.1 + i * 0.05 }}
-                  className="p-4 border-2 border-gray-200 rounded-lg bg-white"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* Window Title and Status Loading */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="h-5 bg-gray-200 rounded animate-pulse w-24"></div>
-                        <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
-                        <div className="h-6 bg-gray-200 rounded animate-pulse w-20"></div>
-                      </div>
-                      {/* Date Information Loading */}
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-44"></div>
-                      </div>
-                    </div>
-                    {/* Action Buttons Loading */}
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="w-9 h-9 bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    );
+    return <WindowsListSkeleton />;
   }
 
   const filteredWindows = windows.filter(w => {
@@ -110,7 +42,7 @@ export function WindowsList({
     <div className="space-y-6">
       {/* Show/Hide Inactive Windows Toggle */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-surface/50 border border-border rounded-lg"
       >
@@ -137,84 +69,88 @@ export function WindowsList({
       </motion.div>
 
       {/* Windows organized by project type */}
-      {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((projectType, projectIndex) => {
-        const projectWindows = filteredWindows
-          .filter(window => window.projectType === projectType)
-          .sort((a, b) => {
-            // First, sort by workflow order (proposal → application → submission → assessment → grade_release)
-            const aWorkflowOrder = getWorkflowOrder(a.windowType, a.assessmentType);
-            const bWorkflowOrder = getWorkflowOrder(b.windowType, b.assessmentType);
+      {
+        (['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((projectType, projectIndex) => {
+          const projectWindows = filteredWindows
+            .filter(window => window.projectType === projectType)
+            .sort((a, b) => {
+              // First, sort by workflow order (proposal → application → submission → assessment → grade_release)
+              const aWorkflowOrder = getWorkflowOrder(a.windowType, a.assessmentType);
+              const bWorkflowOrder = getWorkflowOrder(b.windowType, b.assessmentType);
 
-            if (aWorkflowOrder !== bWorkflowOrder) {
-              return aWorkflowOrder - bWorkflowOrder; // Ascending workflow order
-            }
+              if (aWorkflowOrder !== bWorkflowOrder) {
+                return aWorkflowOrder - bWorkflowOrder; // Ascending workflow order
+              }
 
-            // Within same workflow step, sort by start time (earliest first - ascending order)
-            const aStart = new Date(a.startDate);
-            const bStart = new Date(b.startDate);
-            return aStart.getTime() - bStart.getTime();
-          });
+              // Within same workflow step, sort by start time (earliest first - ascending order)
+              const aStart = new Date(a.startDate);
+              const bStart = new Date(b.startDate);
+              return aStart.getTime() - bStart.getTime();
+            });
 
-        if (projectWindows.length === 0) return null;
+          if (projectWindows.length === 0) return null;
 
-        return (
+          return (
+            <motion.div
+              key={projectType}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + projectIndex * 0.1 }}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <h2 className="text-xl font-bold text-text">{projectType}</h2>
+                <span className="px-2 py-1 text-xs bg-surface border border-border text-textSecondary rounded-full">
+                  {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {projectWindows.map((window, windowIndex) => (
+                  <motion.div
+                    key={window._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + projectIndex * 0.1 + windowIndex * 0.05 }}
+                  >
+                    <WindowCard
+                      window={window}
+                      onEdit={onEditWindow}
+                      onDelete={onDeleteWindow}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })
+      }
+
+      {
+        windows.length === 0 && (
           <motion.div
-            key={projectType}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + projectIndex * 0.1 }}
-            className="space-y-3"
+            transition={{ delay: 0.3 }}
+            className="text-center py-16 bg-surface rounded-lg border border-border border-dashed"
           >
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xl font-bold text-text">{projectType}</h2>
-              <span className="px-2 py-1 text-xs bg-surface border border-border text-textSecondary rounded-full">
-                {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
-              </span>
+            <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+              <Calendar className="w-8 h-8 text-textSecondary" />
             </div>
-
-            <div className="space-y-3">
-              {projectWindows.map((window, windowIndex) => (
-                <motion.div
-                  key={window._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + projectIndex * 0.1 + windowIndex * 0.05 }}
-                >
-                  <WindowCard
-                    window={window}
-                    onEdit={onEditWindow}
-                    onDelete={onDeleteWindow}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            <h3 className="text-lg font-semibold text-text mb-2">No Windows Created</h3>
+            <p className="text-textSecondary max-w-sm mx-auto text-base px-4 mb-6">
+              Get started by creating your first assessment window or setting up a complete semester plan.
+            </p>
+            <button
+              onClick={onCreateWindow}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors mx-auto shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Create Window
+            </button>
           </motion.div>
-        );
-      })}
-
-      {windows.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-center py-16 bg-surface rounded-lg border border-border border-dashed"
-        >
-          <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
-            <Calendar className="w-8 h-8 text-textSecondary" />
-          </div>
-          <h3 className="text-lg font-semibold text-text mb-2">No Windows Created</h3>
-          <p className="text-textSecondary max-w-sm mx-auto text-base px-4 mb-6">
-            Get started by creating your first assessment window or setting up a complete semester plan.
-          </p>
-          <button
-            onClick={onCreateWindow}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors mx-auto shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Create Window
-          </button>
-        </motion.div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

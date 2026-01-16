@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { EvaluatorListSkeleton } from '../LoadingSkeletons';
 import { Search, Filter, RefreshCw, Zap, AlertCircle, ChevronDown, Check } from 'lucide-react';
 import { useExternalEvaluators } from '../../hooks/useExternalEvaluators';
 import { AssignmentCard } from './AssignmentCard';
@@ -280,11 +281,8 @@ export function ExternalEvaluatorsTab() {
 
       {/* Assignments List */}
       <div className="space-y-4">
-        {assignmentsLoading ? (
-          <div className="text-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-textSecondary mx-auto mb-4" />
-            <p className="text-textSecondary text-base">Loading assignments...</p>
-          </div>
+        {assignmentsLoading || evaluatorsLoading ? (
+          <EvaluatorListSkeleton />
         ) : filteredAssignments.length > 0 ? (
           <div className="grid gap-4">
             {filteredAssignments.map((assignment) => (

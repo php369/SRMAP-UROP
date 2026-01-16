@@ -86,9 +86,7 @@ export function ManageWindowsPage() {
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+        <div
             className="bg-surface shadow-xl p-4 md:p-6 rounded-xl border border-border"
         >
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
@@ -174,6 +172,6 @@ export function ManageWindowsPage() {
                     setWindowToDelete(null);
                 }}
             />
-        </motion.div>
+        </div>
     );
 }

@@ -8,6 +8,8 @@ import { useWindowManagement } from './hooks/useWindowManagement';
 import { now, getLocalTimeZone, parseZonedDateTime } from '@internationalized/date';
 import { ConflictWarningModal } from './components/Modals/ConflictWarningModal';
 
+import { WizardSkeleton } from './components/LoadingSkeletons';
+
 // --- CONSTANTS & CONFIG ---
 
 const PHASE_COLORS = {
@@ -44,10 +46,13 @@ const CHRONOLOGICAL_PHASES = [
 
 export function IndividualWindowWizardPage() {
     const navigate = useNavigate();
-    const { createWindow, windows, fetchWindows } = useWindowManagement();
+    const { createWindow, windows, fetchWindows, windowsLoading } = useWindowManagement();
 
     // State
     const [currentStep, setCurrentStep] = useState(0);
+
+    // ...
+
     const [maxStepReached, setMaxStepReached] = useState(0);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -232,6 +237,12 @@ export function IndividualWindowWizardPage() {
         }
     }, [currentStep, selectedWindowType, nextExpectedPhase]);
 
+
+
+    // --- LOADING STATE CHECK (Must be after all hooks) ---
+    if (windowsLoading) {
+        return <WizardSkeleton />;
+    }
 
     // --- VALIDATION ---
 
