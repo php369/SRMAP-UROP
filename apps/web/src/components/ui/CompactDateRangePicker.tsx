@@ -139,6 +139,13 @@ export function DateRangePickerField({
                 errorMessage={errorMessage}
                 isInvalid={!!errorMessage}
 
+                // Ensure the popover has a marker class for Modal interaction handling
+                popoverProps={{
+                    classNames: {
+                        content: "heroui-datepicker-popover-content"
+                    }
+                }}
+
                 // Core Settings
                 hideTimeZone
                 hourCycle={12}
@@ -153,7 +160,7 @@ export function DateRangePickerField({
                 // Calendar styling for range highlighting
                 calendarProps={{
                     classNames: {
-                        base: "bg-white shadow-xl rounded-xl border border-slate-200",
+                        base: "bg-white shadow-xl rounded-xl border border-slate-200 heroui-datepicker-popup",
                         headerWrapper: "pt-4 bg-white",
                         header: "text-slate-700 font-semibold",
                         prevButton: "text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full",

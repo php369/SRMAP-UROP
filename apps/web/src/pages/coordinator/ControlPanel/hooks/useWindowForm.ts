@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { WindowForm, ProjectType, AssessmentType, Window, WindowCombination } from '../types';
-import { 
-  isWindowCombinationDisabled, 
-  validateSequentialWindows, 
+import {
+  isWindowCombinationDisabled,
+  validateSequentialWindows,
   validateIndividualWindowCreation,
-  isWindowTypeAvailable 
+  isWindowTypeAvailable
 } from '../utils/windowValidation';
 
 const initialWindowForm: WindowForm = {
@@ -37,7 +37,7 @@ export const useWindowForm = (windows: Window[]) => {
   // Auto-deselect invalid window types when project types change
   const handleProjectTypeChange = useCallback((projectType: ProjectType, isChecked: boolean, editingWindow?: Window | null) => {
     let newProjectTypes: ProjectType[];
-    
+
     if (isChecked) {
       newProjectTypes = [...windowForm.projectTypes, projectType];
     } else {
@@ -48,19 +48,19 @@ export const useWindowForm = (windows: Window[]) => {
     const validWindowTypes = windowForm.windowTypes.filter(windowType => {
       // If no project types selected, keep all window types
       if (newProjectTypes.length === 0) return true;
-      
+
       // Check if this window type is valid for at least one selected project type
       return newProjectTypes.some(projType => {
         // Check workflow availability
         const isWorkflowAvailable = isWindowTypeAvailable(windowType, projType, undefined, windows, editingWindow);
-        
+
         // Check for existing windows
-        const existingCheck = isWindowCombinationDisabled(windowType, projType, 
+        const existingCheck = isWindowCombinationDisabled(windowType, projType,
           windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined,
           windows,
           editingWindow
         );
-        
+
         return isWorkflowAvailable && !existingCheck.disabled;
       });
     });
@@ -125,31 +125,34 @@ export const useWindowForm = (windows: Window[]) => {
           return false;
         }
 
-        // Check for existing windows
-        const existingCheck = isWindowCombinationDisabled(windowType, projectType, 
-          windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined,
-          windows,
-          editingWindow
-        );
+        // Check for existing windows (Skip if editing, as we are the existing window)
+        const existingCheck = editingWindow
+          ? { disabled: false, reason: '' }
+          : isWindowCombinationDisabled(windowType, projectType,
+            windowType === 'assessment' ? windowForm.assessmentType as AssessmentType : undefined,
+            windows,
+            editingWindow
+          );
+
         if (existingCheck.disabled) {
           toast.error(`Cannot create ${windowType.replace('_', ' ')} for ${projectType}: ${existingCheck.reason}`);
           return false;
         }
 
         // Enhanced sequential timing validation
-        const proposedStartDate = windowForm.useCommonDates ? 
-          new Date(windowForm.startDate) : 
+        const proposedStartDate = windowForm.useCommonDates ?
+          new Date(windowForm.startDate) :
           new Date(windowForm.individualDates[`${windowType}-${projectType}`]?.startDate || '');
-          
+
         if (proposedStartDate && !isNaN(proposedStartDate.getTime())) {
           const sequentialCheck = validateSequentialWindows(
-            windowType, 
-            projectType, 
+            windowType,
+            projectType,
             windowType === 'assessment' || windowType === 'submission' ? windowForm.assessmentType as AssessmentType : undefined,
             proposedStartDate,
             windows
           );
-          
+
           if (!sequentialCheck.valid) {
             toast.error(`Sequential validation failed: ${sequentialCheck.reason}`);
             return false;
@@ -173,14 +176,14 @@ export const useWindowForm = (windows: Window[]) => {
     } else {
       // For individual dates mode, validate each window combination
       const windowCombinations = getWindowCombinations();
-      
+
       for (const combination of windowCombinations) {
         const individualDate = windowForm.individualDates[combination.key];
         if (!individualDate || !individualDate.startDate || !individualDate.endDate) {
           toast.error(`Please set dates for ${combination.key.replace('-', ' - ')}`);
           return false;
         }
-        
+
         if (new Date(individualDate.endDate) <= new Date(individualDate.startDate)) {
           toast.error(`End date must be after start date for ${combination.key.replace('-', ' - ')}`);
           return false;
@@ -196,7 +199,7 @@ export const useWindowForm = (windows: Window[]) => {
           windows,
           editingWindow
         );
-        
+
         if (validationErrors.length > 0) {
           toast.error(`${combination.key.replace('-', ' - ')}: ${validationErrors[0]}`);
           return false;
@@ -217,7 +220,7 @@ export const useWindowForm = (windows: Window[]) => {
             windows,
             editingWindow
           );
-          
+
           if (validationErrors.length > 0) {
             toast.error(`${windowType.replace('_', ' ')} - ${projectType}: ${validationErrors[0]}`);
             return false;

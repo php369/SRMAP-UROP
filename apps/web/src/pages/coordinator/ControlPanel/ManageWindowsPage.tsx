@@ -50,7 +50,7 @@ export function ManageWindowsPage() {
 
     // Handlers
     const handleCreateWindow = async () => {
-        if (!validateForm()) return;
+        if (!validateForm(editingWindow)) return;
 
         setFormLoading(true);
         const success = await createWindow(windowForm, editingWindow);
