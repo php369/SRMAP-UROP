@@ -14,6 +14,7 @@ interface DateRangePickerFieldProps {
     errorMessage?: string;
     isRequired?: boolean;
     minValue?: ZonedDateTime;
+    maxValue?: ZonedDateTime;
     color?: string;
 }
 
@@ -56,6 +57,7 @@ export function DateRangePickerField({
     errorMessage,
     isRequired,
     minValue,
+    maxValue,
     color
 }: DateRangePickerFieldProps) {
 
@@ -132,6 +134,7 @@ export function DateRangePickerField({
                 value={getPickerValue()}
                 onChange={handleChange}
                 minValue={effectiveMinValue}
+                maxValue={maxValue}
                 isRequired={isRequired}
                 errorMessage={errorMessage}
                 isInvalid={!!errorMessage}

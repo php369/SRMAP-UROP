@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { api } from '@/utils/api';
 import { parseZonedDateTime, getLocalTimeZone, now } from '@internationalized/date';
 import { ConflictWarningModal } from './components/Modals/ConflictWarningModal';
+import { useWindowManagement } from './hooks/useWindowManagement';
 
 // Color Palette defined by user
 const PHASE_COLORS = {
@@ -141,6 +142,7 @@ const createInitialForm = (): WindowForm => ({
 
 export function SemesterPlanWizardPage() {
     const navigate = useNavigate();
+    const { createBulkWindows } = useWindowManagement();
     const [currentStep, setCurrentStep] = useState(0);
     const [maxStepReached, setMaxStepReached] = useState(0); // Track progress
     const [selectedProjectType, setSelectedProjectType] = useState<ProjectType | ''>('');
@@ -476,17 +478,19 @@ export function SemesterPlanWizardPage() {
             }
 
             // 2. Proceed with creation if no conflict
-            await api.post('/windows/bulk', {
-                projectType: selectedProjectType,
-                settings: form.bulkSettings
-            });
-            toast.success("Semester plan created successfully!");
-            navigate('/dashboard/control/windows');
+            // 2. Proceed with creation if no conflict
+            const success = await createBulkWindows(form, selectedProjectType);
+
+            if (success) {
+                // Toast is handled by the hook
+                // Wait a moment for the toast to be readable before navigating
+                setTimeout(() => {
+                    navigate('/dashboard/control/windows');
+                }, 1000);
+            }
         } catch (error) {
             console.error(error);
-            // If api.get fails, it might mean no windows or network error. 
-            // In a real app we'd handle 404 vs 500. Assuming empty array return for no results.
-            toast.error("Failed to create semester plan");
+            toast.error("An unexpected error occurred");
         } finally {
             setLoading(false);
         }
@@ -569,7 +573,14 @@ export function SemesterPlanWizardPage() {
                         {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => (
                             <button
                                 key={type}
-                                onClick={() => setSelectedProjectType(type)}
+                                onClick={() => {
+                                    if (selectedProjectType !== type) {
+                                        setSelectedProjectType(type);
+                                        setForm(createInitialForm());
+                                        setErrors({});
+                                        setMaxStepReached(0);
+                                    }
+                                }}
                                 className={`
                                     relative p-6 rounded-xl border-2 text-left transition-all duration-200
                                     ${selectedProjectType === type

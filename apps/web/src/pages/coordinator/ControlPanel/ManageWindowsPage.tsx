@@ -105,7 +105,7 @@ export function ManageWindowsPage() {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     {/* Split CTA */}
                     <button
-                        onClick={() => setShowCreationDrawer(true)}
+                        onClick={() => navigate('/dashboard/control/individual')}
                         className="flex-1 md:flex-none px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
@@ -131,7 +131,7 @@ export function ManageWindowsPage() {
                 onShowInactiveToggle={setShowInactiveWindows}
                 onEditWindow={handleEditWindow}
                 onDeleteWindow={handleDeleteWindow}
-                onCreateWindow={() => setShowCreationDrawer(true)}
+                onCreateWindow={() => navigate('/dashboard/control/individual')}
             />
 
             {/* Modal for Creation/Editing */}

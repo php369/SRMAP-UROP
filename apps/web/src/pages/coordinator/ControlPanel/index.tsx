@@ -8,6 +8,7 @@ import { Breadcrumb } from '../../../components/ui/Breadcrumb';
 import { ControlPanelHome } from './ControlPanelHome';
 import { ManageWindowsPage } from './ManageWindowsPage';
 import { SemesterPlanWizardPage } from './SemesterPlanWizardPage';
+import { IndividualWindowWizardPage } from './IndividualWindowWizardPage';
 import { ExternalEvaluatorsTab } from './components/ExternalEvaluators/ExternalEvaluatorsTab';
 
 export function ControlPanel() {
@@ -26,6 +27,11 @@ export function ControlPanel() {
       crumbs.push(
         { label: 'Manage Windows', path: '/dashboard/control/windows' },
         { label: 'Setup Semester Plan', path: '/dashboard/control/wizard' }
+      );
+    } else if (location.pathname.includes('/individual')) {
+      crumbs.push(
+        { label: 'Manage Windows', path: '/dashboard/control/windows' },
+        { label: 'Create Window', path: '/dashboard/control/individual' }
       );
     } else if (location.pathname.includes('/external-evaluators')) {
       crumbs.push({ label: 'External Evaluators', path: '/dashboard/control/external-evaluators' });
@@ -61,6 +67,7 @@ export function ControlPanel() {
               <Route index element={<ControlPanelHome />} />
               <Route path="windows" element={<ManageWindowsPage />} />
               <Route path="wizard" element={<SemesterPlanWizardPage />} />
+              <Route path="individual" element={<IndividualWindowWizardPage />} />
               <Route path="external-evaluators" element={<ExternalEvaluatorsTab />} />
             </Routes>
           </motion.div>
