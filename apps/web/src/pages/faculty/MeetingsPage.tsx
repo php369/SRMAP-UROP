@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
-import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
+import { CompactDatePicker } from '../../components/ui/CompactDatePicker';
 import { api } from '../../utils/api';
 
 interface Meeting {
@@ -663,10 +663,12 @@ export function FacultyMeetingsPage() {
             )}
           </div>
 
-          <SmartDateTimeInput
+          <CompactDatePicker
+            label="Meeting Date & Time"
             value={scheduleData.meetingDate}
             onChange={(value) => setScheduleData({ ...scheduleData, meetingDate: value })}
-            label="Meeting Date & Time"
+            isRequired
+            color="#2563EB"
           />
 
           <div>
