@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Wand2, Calendar } from 'lucide-react';
+import { Plus, Wand2, Calendar, ChevronDown } from 'lucide-react';
 
 // Components
 import { WindowsList } from './components/WindowManagement/WindowsList';
@@ -104,22 +104,36 @@ export function ManageWindowsPage() {
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     {/* Split CTA */}
-                    <button
-                        onClick={() => navigate('/dashboard/control/individual')}
-                        className="flex-1 md:flex-none px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create Window
-                    </button>
+                    {/* Combined Split Button */}
+                    <div className="relative group flex items-stretch rounded-lg shadow-sm">
+                        <button
+                            onClick={() => navigate('/dashboard/control/individual')}
+                            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-l-lg font-medium flex items-center gap-2 text-sm transition-colors border-r border-white/20"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Create Window
+                        </button>
 
-                    {/* Future Wizard Link */}
-                    <button
-                        onClick={() => navigate('/dashboard/control/wizard')}
-                        className="flex-1 md:flex-none px-4 py-2 bg-surface text-textSecondary border border-border rounded-lg hover:bg-surface/50 flex items-center justify-center gap-2 transition-colors"
-                    >
-                        <Wand2 className="w-4 h-4 text-purple-600" />
-                        Setup Semester Plan
-                    </button>
+                        {/* Dropdown Trigger */}
+                        <div className="relative">
+                            <button
+                                className="bg-primary hover:bg-primary/90 text-white px-2 py-2 rounded-r-lg h-full flex items-center justify-center transition-colors focus:outline-none border-l border-white/20"
+                                id="create-dropdown-trigger"
+                            >
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 hidden group-focus-within:block focus-within:block z-50">
+                                <button
+                                    onClick={() => navigate('/dashboard/control/wizard')}
+                                    className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+                                >
+                                    Create Semester Plan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
