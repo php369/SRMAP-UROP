@@ -5,7 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
-import { SmartDateTimeInput } from '../../components/ui/SmartDateTimeInput';
+
+import { CompactDatePicker } from '../../components/ui/CompactDatePicker';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Badge } from '../../components/ui/Badge';
 
@@ -767,10 +768,12 @@ export function MeetingsPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Meeting</h2>
 
               <form onSubmit={handleScheduleMeeting} className="space-y-4">
-                <SmartDateTimeInput
+                <CompactDatePicker
+                  label="Meeting Date & Time"
                   value={scheduleForm.meetingDate}
                   onChange={(value) => setScheduleForm({ ...scheduleForm, meetingDate: value })}
-                  label="Meeting Date & Time"
+                  isRequired
+                  color="#2563EB" // Blue for meetings
                 />
 
                 <div>
