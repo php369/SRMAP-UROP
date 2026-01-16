@@ -44,7 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     const lenis = new Lenis({
       wrapper: scrollContainerRef.current,
-      content: scrollContainerRef.current.firstElementChild as HTMLElement || undefined,
+      // content: scrollContainerRef.current.firstElementChild as HTMLElement || undefined, // Let Lenis detect content
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // easeOutExpo
       orientation: 'vertical',
@@ -63,10 +63,22 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     const rafId = requestAnimationFrame(raf);
 
+    // Connect ResizeObserver to handle dynamic content height changes
+    const content = scrollContainerRef.current?.firstElementChild;
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (content) {
+      resizeObserver = new ResizeObserver(() => {
+        lenis.resize();
+      });
+      resizeObserver.observe(content);
+    }
+
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
       lenisRef.current = null;
+      resizeObserver?.disconnect();
     };
   }, [isMobile]);
 
@@ -118,9 +130,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             }`}>
             <div
               ref={scrollContainerRef}
-              className={`flex-1 overflow-y-auto ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}
+              className="flex-1 overflow-y-auto"
             >
-              <div className="max-w-7xl mx-auto h-full flex flex-col">
+              <div className={`max-w-7xl mx-auto min-h-full flex flex-col ${isMobile ? 'px-4 py-6 pb-24' : 'p-8'}`}>
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
                     <motion.div

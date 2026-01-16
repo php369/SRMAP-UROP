@@ -122,7 +122,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-8 p-6">
       {/* Header with greeting */}
-      <Reveal direction="down">
+      <Reveal direction="down" fullWidth>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4 border-b border-slate-200/60">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
@@ -130,9 +130,8 @@ export function DashboardPage() {
             </h1>
 
           </div>
-          <div className="text-left md:text-right flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl border border-slate-100 shadow-sm">
-            <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Today</p>
-            <p className="text-xl font-mono text-slate-700 font-medium">
+          <div className="text-right self-end md:self-auto flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl shadow-sm">
+            <p className="text-xl font-mono text-slate-600 font-medium">
               {new Date().toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',

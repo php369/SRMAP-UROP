@@ -1,4 +1,5 @@
 import { HeroUIProvider } from "@heroui/react";
+import { I18nProvider } from "@react-aria/i18n";
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -18,9 +19,11 @@ setupSystemThemeListener()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   // <React.StrictMode> // Disabled to prevent duplicate auth requests in development
-  <HeroUIProvider>
-    <App />
-  </HeroUIProvider>
+  <I18nProvider locale="en-IN">
+    <HeroUIProvider>
+      <App />
+    </HeroUIProvider>
+  </I18nProvider>
   // </React.StrictMode>,
 )
 

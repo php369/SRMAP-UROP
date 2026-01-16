@@ -263,3 +263,87 @@
     @apply bg-background text-foreground;
   }
 }
+/* =====================================================
+   HeroUI DateRangePicker Custom Styling
+   ===================================================== */
+
+/* Time inputs container - make side-by-side */
+[data-slot="time-input-wrapper"] {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 1rem !important;
+  padding: 0.5rem 1rem 1rem !important;
+}
+
+/* Each time input - equal width */
+[data-slot="time-input-wrapper"] > div {
+  flex: 1 !important;
+}
+
+/* Time input labels */
+[data-slot="time-input-wrapper"] label,
+[data-slot="time-input-wrapper"] span[data-slot="label"] {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #64748b !important;
+  margin-bottom: 0.25rem !important;
+  display: block !important;
+}
+
+/* Time input fields styling */
+[data-slot="time-input-wrapper"] [data-slot="input-wrapper"] {
+  background: #f1f5f9 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+/* =====================================================
+   Range Calendar Highlighting
+   ===================================================== */
+
+/* Date cells - base */
+[data-slot="cell"] button {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Range selection background */
+[data-slot="cell"][data-selected="true"] {
+  position: relative !important;
+}
+
+/* 
+ * Start and End date buttons - DARKER blue circle 
+ * Using multiple selector patterns to catch HeroUI's attributes
+ */
+[data-slot="cell"][data-selection-start="true"] button,
+[data-slot="cell"][data-selection-end="true"] button,
+td[data-selection-start="true"] span,
+td[data-selection-end="true"] span,
+[data-slot="cell"] button[data-selection-start="true"],
+[data-slot="cell"] button[data-selection-end="true"],
+/* HeroUI may also use aria-selected with other markers */
+[data-slot="cell"]:first-of-type[aria-selected="true"] button,
+[data-slot="cell"]:last-of-type[aria-selected="true"] button {
+  background-color: #1d4ed8 !important; /* blue-700 - darker */
+  color: white !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+}
+
+/* Range middle date buttons - lighter blue */
+[data-slot="cell"][data-selected="true"]:not([data-selection-start="true"]):not([data-selection-end="true"]) button,
+[data-slot="cell"][data-range-selection="true"]:not([data-selection-start="true"]):not([data-selection-end="true"]) button {
+  background-color: #dbeafe !important; /* blue-100 - lighter */
+  color: #1e40af !important;
+  border-radius: 9999px !important;
+}
+
+/* Hover state for date cells */
+[data-slot="cell"] button:hover:not([data-selected="true"]) {
+  background: #f1f5f9 !important;
+  border-radius: 9999px !important;
+}
+
