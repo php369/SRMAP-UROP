@@ -6,6 +6,7 @@ export interface IGroupMemberDetails extends Document {
   userId: mongoose.Types.ObjectId;
   department: string;
   specialization?: string;
+  cgpa?: number;
   submittedAt: Date;
   createdAt: Date;
   updatedAt: Date;
