@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Layers, Calendar, ClipboardList, AlertCircle, FolderOpen, FileText, Check } from 'lucide-react';
 import { ProjectType, WindowForm, WindowType, AssessmentType, Window } from './types';
 import { DateRangePickerField } from '../../../components/ui/CompactDateRangePicker';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useWindowManagement } from './hooks/useWindowManagement';
 import { now, getLocalTimeZone, parseZonedDateTime } from '@internationalized/date';
 import { ConflictWarningModal } from './components/Modals/ConflictWarningModal';

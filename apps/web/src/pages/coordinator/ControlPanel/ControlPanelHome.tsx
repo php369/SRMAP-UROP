@@ -6,7 +6,7 @@ import { GradeReleaseSection } from './components/Dashboard/GradeReleaseSection'
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { useState } from 'react';
 import { ProjectType } from './types';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function ControlPanelHome() {
     const navigate = useNavigate();

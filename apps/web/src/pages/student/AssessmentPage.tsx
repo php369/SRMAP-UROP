@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { FinalGradeCard } from '../../components/assessment/FinalGradeCard';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { GlassCard } from '../../components/ui/GlassCard';

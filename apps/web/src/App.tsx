@@ -2,7 +2,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from './components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
 
 // Stores
@@ -173,13 +173,7 @@ function App() {
                   </Suspense>
 
                   {/* Toast notifications */}
-                  <Toaster
-                    position="top-right"
-                    toastOptions={{
-                      duration: 4000,
-                      className: 'bg-surface text-text border border-border',
-                    }}
-                  />
+                  <Toaster />
                   <Analytics />
                 </div>
               </ScrollProvider>

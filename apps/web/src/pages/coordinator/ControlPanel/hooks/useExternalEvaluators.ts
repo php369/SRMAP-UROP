@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { api } from '../../../../utils/api';
 import { ExternalEvaluator, ExternalEvaluatorAssignment } from '../types';
 

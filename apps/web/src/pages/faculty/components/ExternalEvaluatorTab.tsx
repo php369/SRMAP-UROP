@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, User, FileText, Calendar, MessageSquare, Star } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -70,7 +70,7 @@ export function ExternalEvaluatorTab() {
   useEffect(() => {
     const fetchAssignments = async () => {
       if (!user?.id) return;
-      
+
       setLoading(true);
       try {
         const response = await api.get(`/student-evaluations/external-assignments/${user.id}`) as ApiResponse<ExternalAssignment[]>;
@@ -126,12 +126,12 @@ export function ExternalEvaluatorTab() {
     }
 
     try {
-      const studentId = selectedAssignment.submissionType === 'group' 
+      const studentId = selectedAssignment.submissionType === 'group'
         ? selectedAssignment.groupId?.members[0]._id // For group, we'll need to handle all members
         : selectedAssignment.studentInfo?._id;
 
-      const groupId = selectedAssignment.submissionType === 'group' 
-        ? selectedAssignment.groupId?._id 
+      const groupId = selectedAssignment.submissionType === 'group'
+        ? selectedAssignment.groupId?._id
         : null;
 
       const response = await api.put('/student-evaluations/external/score', {
@@ -194,18 +194,16 @@ export function ExternalEvaluatorTab() {
               key={assignment._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                selectedAssignment?._id === assignment._id
+              className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all ${selectedAssignment?._id === assignment._id
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
-              }`}
+                }`}
               onClick={() => handleAssignmentSelect(assignment)}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    assignment.submissionType === 'group' ? 'bg-blue-100' : 'bg-purple-100'
-                  }`}>
+                  <div className={`p-2 rounded-lg ${assignment.submissionType === 'group' ? 'bg-blue-100' : 'bg-purple-100'
+                    }`}>
                     {assignment.submissionType === 'group' ? (
                       <Users className="w-5 h-5 text-blue-600" />
                     ) : (
@@ -214,8 +212,8 @@ export function ExternalEvaluatorTab() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900">
-                      {assignment.submissionType === 'group' 
-                        ? assignment.groupId?.groupCode 
+                      {assignment.submissionType === 'group'
+                        ? assignment.groupId?.groupCode
                         : assignment.studentInfo?.name}
                     </h4>
                     <p className="text-sm text-gray-600">
@@ -255,7 +253,7 @@ export function ExternalEvaluatorTab() {
           {selectedAssignment ? (
             <>
               <h3 className="text-lg font-semibold text-gray-900">Assignment Details</h3>
-              
+
               {/* Project Information */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h4 className="font-semibold text-gray-900 mb-4">Project Information</h4>
@@ -338,7 +336,7 @@ export function ExternalEvaluatorTab() {
                       This will be converted to a score out of 50 for final grading
                     </p>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Comments (Optional)

@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Button, Input, Label, Textarea } from '../../components/ui';
 import { Badge } from '../../components/ui/Badge';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { api } from '../../utils/api';

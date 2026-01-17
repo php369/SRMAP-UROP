@@ -4,7 +4,7 @@ import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircl
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { getCurrentSubmissionAssessmentType, isSubmissionOpenForAssessmentType } from '../../utils/assessmentHelper';
 import { useWindowStatus } from '../../hooks/useWindowStatus';

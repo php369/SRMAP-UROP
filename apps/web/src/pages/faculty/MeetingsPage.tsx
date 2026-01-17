@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard, Button, Input, Label, Modal, Textarea } from '../../components/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/Badge';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 import { CompactDatePicker } from '../../components/ui/CompactDatePicker';
 import { api } from '../../utils/api';

@@ -4,7 +4,7 @@ import { Users, User, CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
 
 import { GlassCard } from '../../components/ui';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';

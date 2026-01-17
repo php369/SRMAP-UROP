@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 // GlassCard removed
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 
 interface StudentDashboardProps {

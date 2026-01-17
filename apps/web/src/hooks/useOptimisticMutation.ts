@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 /**
  * Custom hook for optimistic updates with React Query
@@ -42,7 +42,7 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown, TCo
 
   return useMutation<TData, Error, TVariables, TContext>({
     mutationFn,
-    
+
     // Optimistic update
     onMutate: async (variables) => {
       // Cancel any outgoing refetches
@@ -65,7 +65,7 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown, TCo
       if (successMessage) {
         toast.success(successMessage);
       }
-      
+
       if (onSuccess) {
         onSuccess(data, variables, context);
       }
@@ -74,7 +74,7 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown, TCo
     // On error, rollback
     onError: (error, variables, context) => {
       // Rollback to previous data
-      if (context && 'previousData' in context) {
+      if (context && typeof context === 'object' && 'previousData' in context) {
         queryClient.setQueryData(queryKey, (context as any).previousData);
       }
 

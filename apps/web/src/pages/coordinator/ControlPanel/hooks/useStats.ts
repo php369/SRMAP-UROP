@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { api } from '../../../../utils/api';
 import { Stats } from '../types';
 
@@ -12,7 +12,7 @@ export const useStats = () => {
     try {
       const response = await api.get('/control/stats');
       if (response.success) {
-        setStats(response.data);
+        setStats(response.data as Stats);
       }
     } catch (error: any) {
       console.error('Error fetching stats:', error);

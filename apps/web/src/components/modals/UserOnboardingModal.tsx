@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { userService } from '../../services/userService';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface UserOnboardingModalProps {
     isOpen: boolean;

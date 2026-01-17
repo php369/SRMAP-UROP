@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { WindowForm, ProjectType, AssessmentType, Window, WindowCombination } from '../types';
 import {
   isWindowCombinationDisabled,

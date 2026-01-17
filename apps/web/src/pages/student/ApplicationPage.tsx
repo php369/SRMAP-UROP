@@ -4,7 +4,7 @@ import { Users, User, Code, ArrowRight, CheckCircle, XCircle, Loader } from 'luc
 import { useAuth } from '../../contexts/AuthContext';
 import { generateGroupCode, formatGroupCode } from '../../utils/codeGenerator';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 import { GlassCard } from '../../components/ui/GlassCard';

@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../../../components/ui/dropdown-menu";
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function ExternalEvaluatorsTab() {
   const { windows } = useWindowStatus();

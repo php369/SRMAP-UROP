@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ExternalEvaluator, EvaluatorAssignment } from '../types/externalEvaluator';
 import { ExternalEvaluatorService } from '../services/externalEvaluatorService';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function useExternalEvaluators() {
     const [evaluators, setEvaluators] = useState<ExternalEvaluator[]>([]);

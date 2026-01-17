@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 
 import { CompactDatePicker } from '../../components/ui/CompactDatePicker';
