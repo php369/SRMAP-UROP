@@ -81,6 +81,8 @@ export interface Stats {
       _id: string;
       title: string;
       date: string;
+      startDate: string;
+      status: 'active' | 'upcoming';
       daysLeft: number;
     }>;
   };

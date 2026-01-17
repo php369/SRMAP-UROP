@@ -488,12 +488,23 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
     };
 
     // Format Upcoming Deadlines
-    const upcomingDeadlines = upcomingWindows.map(window => ({
-      _id: window._id,
-      title: `${window.projectType} ${window.windowType.replace(/([A-Z])/g, ' $1').trim()}`, // Format "applicationSubmission" -> "application Submission"
-      date: window.endDate,
-      daysLeft: Math.ceil((new Date(window.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    }));
+    // Format Upcoming Deadlines
+    const upcomingDeadlines = upcomingWindows.map(window => {
+      const now = new Date();
+      const startDate = new Date(window.startDate);
+      const isUpcoming = startDate > now;
+      const targetDate = isUpcoming ? window.startDate : window.endDate;
+      const daysLeft = Math.ceil((new Date(targetDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        _id: window._id,
+        title: `${window.projectType} ${window.windowType.replace(/([A-Z])/g, ' $1').trim()}`,
+        date: targetDate, // Uses start date if upcoming, end date if active
+        startDate: window.startDate,
+        status: isUpcoming ? 'upcoming' as const : 'active' as const,
+        daysLeft: daysLeft
+      };
+    });
 
     // Get project breakdown
     const projectsByType = await Project.aggregate([

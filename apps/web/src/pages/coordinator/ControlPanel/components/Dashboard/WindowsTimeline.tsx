@@ -54,29 +54,46 @@ export const WindowsTimeline = ({ stats, loading }: WindowsTimelineProps) => {
                             className="relative pl-14"
                         >
                             {/* Timeline marker */}
-                            <div className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 bg-white z-10 ${window.daysLeft <= 3 ? 'border-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.1)]' : 'border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.1)]'
+                            <div className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 bg-white z-10 ${window.status === 'upcoming'
+                                    ? 'border-indigo-500 shadow-[0_0_0_4px_rgba(99,102,241,0.1)]'
+                                    : window.daysLeft <= 3
+                                        ? 'border-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.1)]'
+                                        : 'border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.1)]'
                                 }`} />
 
                             <div className="bg-white border border-slate-100 p-4 rounded-xl flex items-center justify-between group hover:border-indigo-100 hover:shadow-md transition-all duration-300">
                                 <div>
-                                    <h4 className="font-bold text-slate-800 capitalize tracking-tight flex items-center gap-2">
-                                        {window.title}
-                                        {window.daysLeft <= 3 && (
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-bold text-slate-800 capitalize tracking-tight">
+                                            {window.title}
+                                        </h4>
+                                        {window.status === 'active' && window.daysLeft <= 3 && (
                                             <span className="text-[10px] bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full uppercase font-black tracking-widest">Urgent</span>
                                         )}
-                                    </h4>
-                                    <p className="text-xs font-medium text-slate-400 mt-1 flex items-center gap-1.5">
+                                        {window.status === 'upcoming' && (
+                                            <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full uppercase font-black tracking-widest">Upcoming</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
                                         <Clock className="w-3 h-3" />
-                                        Closes on {new Date(window.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        {window.status === 'upcoming' ? 'Starts on ' : 'Closes on '}
+                                        {new Date(window.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                                     </p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
-                                        <div className={`text-lg font-black ${window.daysLeft <= 3 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        <div className={`text-lg font-black ${window.status === 'upcoming'
+                                                ? 'text-indigo-600'
+                                                : window.daysLeft <= 3
+                                                    ? 'text-rose-600'
+                                                    : 'text-emerald-600'
+                                            }`}>
                                             {window.daysLeft}
                                         </div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Days Left</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            {window.status === 'upcoming' ? 'Days to Start' : 'Days Left'}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
