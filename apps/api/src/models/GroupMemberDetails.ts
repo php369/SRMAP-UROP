@@ -33,6 +33,11 @@ const GroupMemberDetailsSchema = new Schema<IGroupMemberDetails>({
     trim: true,
     maxlength: 100
   },
+  cgpa: {
+    type: Number,
+    min: 0,
+    max: 10
+  },
   submittedAt: {
     type: Date,
     default: Date.now

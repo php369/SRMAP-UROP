@@ -149,7 +149,7 @@ export async function getApplicationsForUser(
     }
 
     const query: any = {};
-    
+
     // If user is in a group, get group applications
     if (user.currentGroupId) {
       query.groupId = user.currentGroupId;
@@ -158,7 +158,7 @@ export async function getApplicationsForUser(
       query.studentId = userId;
     }
 
-    logger.info('Querying applications for user:', { 
+    logger.info('Querying applications for user:', {
       userId: userId.toString(),
       query,
       hasGroup: !!user.currentGroupId
@@ -169,7 +169,7 @@ export async function getApplicationsForUser(
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
-    logger.info('Applications query result for user:', { 
+    logger.info('Applications query result for user:', {
       userId: userId.toString(),
       count: applications.length,
       applicationIds: applications.map(app => app._id?.toString()),
@@ -198,10 +198,10 @@ export async function getUserApplications(
     if (studentId) query.studentId = studentId;
     if (groupId) query.groupId = groupId;
 
-    logger.info('Querying applications with:', { 
-      query, 
-      studentId: studentId?.toString(), 
-      groupId: groupId?.toString() 
+    logger.info('Querying applications with:', {
+      query,
+      studentId: studentId?.toString(),
+      groupId: groupId?.toString()
     });
 
     const applications = await Application.find(query)
@@ -209,7 +209,7 @@ export async function getUserApplications(
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
-    logger.info('Applications query result:', { 
+    logger.info('Applications query result:', {
       count: applications.length,
       applicationIds: applications.map(app => app._id?.toString()),
       statuses: applications.map(app => app.status)
@@ -237,10 +237,10 @@ export async function getApprovedApplication(
     if (studentId) query.studentId = studentId;
     if (groupId) query.groupId = groupId;
 
-    logger.info('Querying approved application with:', { 
-      query, 
-      studentId: studentId?.toString(), 
-      groupId: groupId?.toString() 
+    logger.info('Querying approved application with:', {
+      query,
+      studentId: studentId?.toString(),
+      groupId: groupId?.toString()
     });
 
     const application = await Application.findOne(query)
@@ -249,7 +249,7 @@ export async function getApprovedApplication(
       .populate('groupId', 'groupCode groupName leaderId members status')
       .populate('studentId', 'name email studentId');
 
-    logger.info('Approved application query result:', { 
+    logger.info('Approved application query result:', {
       found: !!application,
       applicationId: application?._id?.toString(),
       status: application?.status,
@@ -465,6 +465,56 @@ export async function rejectApplication(
     return application;
   } catch (error) {
     logger.error('Error rejecting application:', error);
+    throw error;
+  }
+}
+
+/**
+ * Revoke an application
+ * @param applicationId - Application ID to revoke
+ * @param userId - ID of the user requesting revocation
+ * @returns Object indicating success
+ */
+export async function revokeApplication(
+  applicationId: string | mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      throw new Error('Application not found');
+    }
+
+    // Only pending applications can be revoked
+    if (application.status !== 'pending') {
+      throw new Error(`Cannot revoke application with status: ${application.status}`);
+    }
+
+    // Verify ownership
+    if (application.groupId) {
+      // For group applications, only the leader can revoke
+      const group = await Group.findById(application.groupId);
+      if (!group) {
+        throw new Error('Group associated with application not found');
+      }
+
+      const leaderId = group.leaderId?._id || group.leaderId;
+      if (leaderId.toString() !== userId.toString()) {
+        throw new Error('Only the group leader can revoke this application');
+      }
+    } else {
+      // For solo applications, only the student who applied can revoke
+      if (application.studentId!.toString() !== userId.toString()) {
+        throw new Error('You do not have permission to revoke this application');
+      }
+    }
+
+    await Application.findByIdAndDelete(applicationId);
+    logger.info(`Application ${applicationId} revoked by user ${userId}`);
+
+    return { success: true, message: 'Application revoked successfully' };
+  } catch (error: any) {
+    logger.error('Error revoking application:', error);
     throw error;
   }
 }

@@ -9,6 +9,7 @@ import {
   getFacultyApplications,
   acceptApplication,
   rejectApplication,
+  revokeApplication,
   unfreezeApplication,
   getAllApplications
 } from '../services/applicationService';
@@ -182,15 +183,15 @@ router.get('/my-application', authenticate, authorize('student'), async (req, re
 
     // Check if user is in a group
     const group = await getUserGroup(userId);
-    logger.info('User group status:', { 
-      hasGroup: !!group, 
+    logger.info('User group status:', {
+      hasGroup: !!group,
       groupId: group?._id?.toString(),
-      groupStatus: group?.status 
+      groupStatus: group?.status
     });
 
     // Try to get applications both ways to ensure we don't miss any
     let applications: any[] = [];
-    
+
     if (group) {
       // User is in a group - get group applications
       const groupApplications = await getUserApplications(undefined, group._id);
@@ -213,7 +214,7 @@ router.get('/my-application', authenticate, authorize('student'), async (req, re
       }
     }
 
-    logger.info('Final applications result:', { 
+    logger.info('Final applications result:', {
       count: applications.length,
       applicationIds: applications.map(app => app._id?.toString())
     });
@@ -248,14 +249,14 @@ router.get('/approved', authenticate, authorize('student'), async (req, res) => 
 
     // Check if user is in a group
     const group = await getUserGroup(userId);
-    logger.info('User group status:', { 
-      hasGroup: !!group, 
+    logger.info('User group status:', {
+      hasGroup: !!group,
       groupId: group?._id?.toString(),
-      groupStatus: group?.status 
+      groupStatus: group?.status
     });
 
     let approvedApplication: any = null;
-    
+
     if (group) {
       // User is in a group - get group's approved application
       approvedApplication = await getApprovedApplication(undefined, group._id);
@@ -278,7 +279,7 @@ router.get('/approved', authenticate, authorize('student'), async (req, res) => 
       return;
     }
 
-    logger.info('Approved application result:', { 
+    logger.info('Approved application result:', {
       applicationId: approvedApplication._id?.toString(),
       projectId: approvedApplication.projectId?._id?.toString(),
       status: approvedApplication.status
@@ -487,6 +488,33 @@ router.post('/:id/unfreeze', authenticate, authorize('coordinator'), async (req,
       error: {
         code: 'UNFREEZE_APPLICATION_FAILED',
         message: 'Failed to unfreeze application',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * DELETE /api/applications/:id
+ * Revoke an application
+ * Accessible by: student (owner/leader)
+ */
+router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await revokeApplication(
+      new mongoose.Types.ObjectId(id),
+      new mongoose.Types.ObjectId(req.user!.id)
+    );
+
+    res.json(result);
+  } catch (error: any) {
+    logger.error('Error revoking application:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'REVOKE_APPLICATION_FAILED',
+        message: error.message || 'Failed to revoke application',
         timestamp: new Date().toISOString(),
       },
     });

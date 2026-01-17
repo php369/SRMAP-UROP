@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import {
   createGroup,
@@ -14,7 +14,7 @@ import mongoose from 'mongoose';
 import Group from '../models/Group';
 import GroupMemberDetails from '../models/GroupMemberDetails';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/groups
@@ -629,16 +629,16 @@ router.get('/my-groups', authenticate, authorize('student'), async (req, res) =>
  */
 router.get('/my-group', authenticate, authorize('student'), async (req, res) => {
   try {
-    logger.info('🔍 Getting group for user:', { 
+    logger.info('🔍 Getting group for user:', {
       userId: req.user!.id,
-      userRole: req.user!.role 
+      userRole: req.user!.role
     });
-    
+
     const group = await getUserGroup(
       new mongoose.Types.ObjectId(req.user!.id)
     );
 
-    logger.info('📊 Group query result:', { 
+    logger.info('📊 Group query result:', {
       found: !!group,
       groupId: group?._id?.toString(),
       groupCode: group?.groupCode,
@@ -824,7 +824,7 @@ router.get('/', authenticate, authorize('faculty', 'coordinator', 'admin'), asyn
 router.post('/:id/member-details', authenticate, authorize('student'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { department, specialization } = req.body;
+    const { department, specialization, cgpa } = req.body;
 
     if (!department) {
       res.status(400).json({
@@ -868,9 +868,10 @@ router.post('/:id/member-details', authenticate, authorize('student'), async (re
     // Create or update member details
     const memberDetails = await GroupMemberDetails.findOneAndUpdate(
       { groupId: id, userId: req.user!.id },
-      { 
+      {
         department: department.trim(),
         specialization: specialization?.trim() || '',
+        cgpa: cgpa ? Number(cgpa) : undefined,
         submittedAt: new Date()
       },
       { upsert: true, new: true }

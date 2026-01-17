@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Users, User, CheckCircle, XCircle, Loader, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, User, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp, Edit2, Search } from 'lucide-react';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
+import { Card, CardHeader, CardContent, CardFooter } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { ApplicationEmptyState } from './components/ApplicationEmptyState';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
 
 interface Application {
     _id: string;
@@ -48,6 +54,7 @@ interface Application {
 
 export function ApplicationReviewPage() {
     const { user } = useAuth();
+    const { isApplicationOpen } = useWindowStatus();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedApp, setExpandedApp] = useState<string | null>(null);
@@ -158,173 +165,186 @@ export function ApplicationReviewPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+                    <p className="text-slate-500 font-medium animate-pulse">Loading applications...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (applications.length === 0) {
+        return (
+            <div className="flex-1 flex flex-col w-full h-full items-center justify-center p-6">
+                <ApplicationEmptyState
+                    title="Application Review"
+                    subtitle="Student Applications"
+                    description="No applications received yet."
+                    subDescription="When students apply to your projects, they will appear here for your review."
+                    theme="teal"
+                />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8"
-                >
-                    <h1 className="text-3xl font-bold mb-2">Application Review</h1>
-                    <p className="text-gray-600">Review and manage student applications for your projects</p>
-                </motion.div>
+        <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full flex flex-col"
+            >
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
+                        Application Review
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">
+                        Review and manage student applications for your projects
+                    </p>
+                </div>
 
                 {/* Pending Applications */}
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">
-                        Pending Applications ({pendingApplications.length})
-                    </h2>
+                <div className="mb-10 space-y-6">
+                    <div className="flex items-center gap-2">
+                        <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 text-sm px-3 py-1">
+                            Pending ({pendingApplications.length})
+                        </Badge>
+                    </div>
 
                     {pendingApplications.length === 0 ? (
-                        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                            <div className="text-6xl mb-4">📭</div>
-                            <h3 className="text-xl font-semibold mb-2">No Pending Applications</h3>
-                            <p className="text-gray-600">
-                                You don't have any pending applications to review at this time.
-                            </p>
+                        <div className="border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-slate-50/50 dark:bg-slate-900/50">
+                            <p className="text-slate-500 text-sm">No pending applications to review</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="grid gap-4">
                             {pendingApplications.map((application) => (
-                                <motion.div
-                                    key={application._id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl shadow-lg overflow-hidden"
-                                >
+                                <Card key={application._id} className="overflow-hidden border-l-4 border-l-teal-500 hover:shadow-md transition-shadow">
                                     <div className="p-6">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center mb-2">
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            <div className="flex-1 space-y-3">
+                                                <div className="flex items-center gap-3">
                                                     {application.groupId ? (
-                                                        <Users className="w-5 h-5 text-blue-500 mr-2" />
+                                                        <div className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                                            <Users className="w-5 h-5" />
+                                                        </div>
                                                     ) : (
-                                                        <User className="w-5 h-5 text-green-500 mr-2" />
+                                                        <div className="p-2 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400">
+                                                            <User className="w-5 h-5" />
+                                                        </div>
                                                     )}
-                                                    <span className="font-medium text-gray-600">
-                                                        {application.groupId ? 'Group Application' : 'Solo Application'}
-                                                    </span>
+                                                    <div>
+                                                        <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+                                                            {application.projectId.title}
+                                                        </h3>
+                                                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                            {application.groupId ? 'Group Application' : 'Individual Application'} • {application.department}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <h3 className="text-xl font-bold mb-1">
-                                                    {application.projectId.title}
-                                                </h3>
-                                                <p className="text-sm text-gray-600 mb-2">
-                                                    {application.projectId.brief}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                    <span>Department: {application.department}</span>
-                                                    {application.specialization && (
-                                                        <span>Specialization: {application.specialization}</span>
-                                                    )}
-                                                    <span>Submitted: {new Date(application.createdAt).toLocaleDateString()}</span>
+
+                                                <div className="pl-14">
+                                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+                                                        {application.projectId.brief}
+                                                    </p>
+                                                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                                                        <span>Submitted: {new Date(application.createdAt).toLocaleDateString()}</span>
+                                                        {application.specialization && <span>• Spec: {application.specialization}</span>}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => toggleExpand(application._id)}
-                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                {expandedApp === application._id ? (
-                                                    <ChevronUp className="w-5 h-5" />
-                                                ) : (
-                                                    <ChevronDown className="w-5 h-5" />
-                                                )}
-                                            </button>
+
+                                            <div className="flex flex-col gap-2 min-w-[140px] justify-center">
+                                                <Button
+                                                    onClick={() => handleAcceptApplication(application._id, application.projectId._id)}
+                                                    disabled={processingApp === application._id}
+                                                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                                                    size="sm"
+                                                >
+                                                    {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept'}
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleRejectApplication(application._id)}
+                                                    disabled={processingApp === application._id}
+                                                    variant="outline"
+                                                    className="w-full text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                                                    size="sm"
+                                                >
+                                                    Reject
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => toggleExpand(application._id)}
+                                                    className="w-full text-slate-400 hover:text-teal-600"
+                                                >
+                                                    {expandedApp === application._id ? (
+                                                        <span className="flex items-center gap-1">Hide Details <ChevronUp className="w-3 h-3" /></span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1">View Details <ChevronDown className="w-3 h-3" /></span>
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
 
-                                        {/* Expanded Details */}
-                                        {expandedApp === application._id && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="mt-4 pt-4 border-t border-gray-200"
-                                            >
-                                                {application.groupId ? (
-                                                    <div>
-                                                        <h4 className="font-bold mb-2">Group Details</h4>
-                                                        <p className="text-sm text-gray-600 mb-2">
-                                                            Group Code: <span className="font-mono font-bold">{application.groupId.groupCode}</span>
-                                                        </p>
-                                                        <p className="text-sm text-gray-600 mb-2">
-                                                            Group Leader: {application.groupId.leaderId.name} ({application.groupId.leaderId.studentId})
-                                                        </p>
-                                                        <div className="mb-3">
-                                                            <p className="text-sm font-medium mb-1">Members:</p>
-                                                            <ul className="list-disc list-inside text-sm text-gray-600">
-                                                                {application.groupId.members.map((member) => (
-                                                                    <li key={member._id}>
-                                                                        {member.name} ({member.studentId}) - {member.email}
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
+                                        <AnimatePresence>
+                                            {expandedApp === application._id && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 ml-14">
+                                                        <div className="grid md:grid-cols-2 gap-8 text-sm">
+                                                            {application.groupId ? (
+                                                                <div className="space-y-3">
+                                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">Group Information</p>
+                                                                    <div className="grid grid-cols-[100px_1fr] gap-2">
+                                                                        <span className="text-slate-500">Code:</span>
+                                                                        <span className="font-mono text-slate-700 dark:text-slate-300">{application.groupId.groupCode}</span>
+                                                                        <span className="text-slate-500">Leader:</span>
+                                                                        <span className="text-slate-700 dark:text-slate-300">{application.groupId.leaderId.name}</span>
+                                                                    </div>
+                                                                    <div className="mt-2">
+                                                                        <p className="text-xs font-medium text-slate-500 mb-2">MEMBERS</p>
+                                                                        <ul className="space-y-1">
+                                                                            {application.groupId.members.map(m => (
+                                                                                <li key={m._id} className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                                                                    • {m.name}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="space-y-3">
+                                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">Student Information</p>
+                                                                    <div className="grid grid-cols-[100px_1fr] gap-2">
+                                                                        <span className="text-slate-500">Name:</span>
+                                                                        <span className="text-slate-700 dark:text-slate-300">{application.studentId?.name}</span>
+                                                                        <span className="text-slate-500">Email:</span>
+                                                                        <span className="text-slate-700 dark:text-slate-300">{application.studentId?.email}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="space-y-3">
+                                                                <p className="font-semibold text-slate-900 dark:text-slate-100">Academic Details</p>
+                                                                <div className="grid grid-cols-[100px_1fr] gap-2">
+                                                                    <span className="text-slate-500">CGPA:</span>
+                                                                    <span className="text-slate-700 dark:text-slate-300 font-mono">{application.cgpa?.toFixed(2) || 'N/A'}</span>
+                                                                    <span className="text-slate-500">Semester:</span>
+                                                                    <span className="text-slate-700 dark:text-slate-300">{application.semester}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <div>
-                                                        <h4 className="font-bold mb-2">Student Details</h4>
-                                                        <p className="text-sm text-gray-600">
-                                                            Name: {application.studentId?.name}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Student ID: {application.studentId?.studentId}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Email: {application.studentId?.email}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Department: {application.studentId?.department}
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {application.cgpa && (
-                                                    <p className="text-sm text-gray-600 mt-2">
-                                                        CGPA: {application.cgpa.toFixed(2)}
-                                                    </p>
-                                                )}
-                                            </motion.div>
-                                        )}
-
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-3 mt-4">
-                                            <button
-                                                onClick={() => handleAcceptApplication(application._id, application.projectId._id)}
-                                                disabled={processingApp === application._id}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                            >
-                                                {processingApp === application._id ? (
-                                                    <Loader className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        Accept
-                                                    </>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => handleRejectApplication(application._id)}
-                                                disabled={processingApp === application._id}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                            >
-                                                {processingApp === application._id ? (
-                                                    <Loader className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <XCircle className="w-4 h-4" />
-                                                        Reject
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
-                                </motion.div>
+                                </Card>
                             ))}
                         </div>
                     )}
@@ -332,90 +352,69 @@ export function ApplicationReviewPage() {
 
                 {/* Reviewed Applications */}
                 {reviewedApplications.length > 0 && (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-4">
-                            Reviewed Applications ({reviewedApplications.length})
-                        </h2>
-                        <div className="space-y-4">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-slate-600 border-slate-200">
+                                History ({reviewedApplications.length})
+                            </Badge>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
                             {reviewedApplications.map((application) => (
-                                <motion.div
-                                    key={application._id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl shadow-lg p-6"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                {application.groupId ? (
-                                                    <Users className="w-5 h-5 text-blue-500" />
+                                <Card key={application._id} className="opacity-75 hover:opacity-100 transition-opacity">
+                                    <div className="p-5">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-2">
+                                                {application.status === 'approved' ? (
+                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Accepted</Badge>
                                                 ) : (
-                                                    <User className="w-5 h-5 text-green-500" />
+                                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">Rejected</Badge>
                                                 )}
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${application.status === 'approved'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                                <span className="text-xs text-slate-400">
+                                                    {application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString() : ''}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold">{application.projectId.title}</h3>
-                                                {application.status === 'approved' && (
-                                                    <button
-                                                        onClick={() => startEditingTitle(application.projectId._id, application.projectId.title)}
-                                                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                                        title="Edit project title"
-                                                    >
-                                                        <Edit2 className="w-4 h-4 text-gray-500" />
-                                                    </button>
-                                                )}
-                                            </div>
+                                            {application.status === 'approved' && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 text-slate-400 hover:text-teal-600"
+                                                    onClick={() => startEditingTitle(application.projectId._id, application.projectId.title)}
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </Button>
+                                            )}
+                                        </div>
 
-                                            {editingProject === application.projectId._id && (
-                                                <div className="mt-2 flex gap-2">
-                                                    <input
-                                                        type="text"
+                                        <div className="space-y-2">
+                                            {editingProject === application.projectId._id ? (
+                                                <div className="flex gap-2 items-center">
+                                                    <Input
                                                         value={newProjectTitle}
                                                         onChange={(e) => setNewProjectTitle(e.target.value)}
-                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                        placeholder="New project title"
+                                                        className="h-8 text-sm"
                                                     />
-                                                    <button
-                                                        onClick={() => handleUpdateProjectTitle(application.projectId._id)}
-                                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                                                    >
-                                                        Save
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingProject(null);
-                                                            setNewProjectTitle('');
-                                                        }}
-                                                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                    <Button size="sm" onClick={() => handleUpdateProjectTitle(application.projectId._id)} className="h-8 bg-teal-600 text-white">Save</Button>
+                                                    <Button size="sm" variant="ghost" onClick={() => setEditingProject(null)} className="h-8">Cancel</Button>
                                                 </div>
+                                            ) : (
+                                                <h4 className="font-medium text-slate-900 dark:text-slate-100 line-clamp-1">
+                                                    {application.projectId.title}
+                                                </h4>
                                             )}
 
-                                            <p className="text-sm text-gray-600 mb-2">
-                                                {application.groupId
-                                                    ? `Group: ${application.groupId.groupCode} (${application.groupId.members.length} members)`
-                                                    : `Student: ${application.studentId?.name}`
-                                                }
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                Reviewed: {application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString() : 'N/A'}
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                {application.groupId ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                                                {application.groupId ? application.groupId.members.length + ' Students' : application.studentId?.name}
                                             </p>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </Card>
                             ))}
                         </div>
                     </div>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 }

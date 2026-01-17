@@ -1,33 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, User, CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
-
-import { GlassCard } from '../../components/ui';
+import { Users, User, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp, Edit2, Search, FileText } from 'lucide-react';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { Card, CardHeader, CardContent, CardFooter } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { PhaseEmptyState } from './components/PhaseEmptyState';
+import { ApplicationEmptyState } from './components/ApplicationEmptyState';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
-import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
 
 interface Application {
   _id: string;
-  groupId?: {
-    _id: string;
-    groupCode: string;
-    groupNumber?: number;
-    members: Array<{
-      _id: string;
-      name: string;
-      email: string;
-      studentId: string;
-    }>;
-    leaderId: {
-      _id: string;
-      name: string;
-      email: string;
-      studentId: string;
-    };
-  };
   studentId?: {
     _id: string;
     name: string;
@@ -35,13 +21,28 @@ interface Application {
     studentId: string;
     department: string;
   };
+  groupId?: {
+    _id: string;
+    groupCode: string;
+    leaderId: {
+      _id: string;
+      name: string;
+      email: string;
+      studentId: string;
+    };
+    members: Array<{
+      _id: string;
+      name: string;
+      email: string;
+      studentId: string;
+    }>;
+  };
   projectId: {
     _id: string;
     title: string;
     brief: string;
     facultyName: string;
   };
-  projectType: string;
   department: string;
   stream?: string;
   specialization?: string;
@@ -53,75 +54,62 @@ interface Application {
 }
 
 export function FacultyApplicationsPage() {
-  const { isApplicationOpen, loading: windowLoading } = useWindowStatus();
+  const { user } = useAuth();
+  const { isApplicationOpen } = useWindowStatus();
   const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [initializing, setInitializing] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [expandedApp, setExpandedApp] = useState<string | null>(null);
+  const [processingApp, setProcessingApp] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [newProjectTitle, setNewProjectTitle] = useState('');
 
   useEffect(() => {
-    const initializeData = async () => {
-      setInitializing(true);
-      try {
-        await fetchApplications();
-      } catch (error) {
-        console.error('Error initializing applications data:', error);
-      } finally {
-        setInitializing(false);
-      }
-    };
-
-    initializeData();
+    fetchApplications();
   }, []);
 
-  // Check if any application window is open (for any project type)
-  const canReviewApplications = ['IDP', 'UROP', 'CAPSTONE'].some(type => isApplicationOpen(type));
-
   const fetchApplications = async () => {
-    setLoading(true);
     try {
-      const response = await api.get('/applications/faculty');
+      setLoading(true);
+      const response = await api.get<Application[]>('/applications/faculty');
       if (response.success && response.data) {
-        setApplications(response.data as Application[]);
-      } else {
-        setApplications([]);
+        setApplications(response.data);
       }
     } catch (error) {
-      toast.error('Failed to fetch applications');
-      setApplications([]);
+      console.error('Error fetching applications:', error);
+      toast.error('Failed to load applications');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAccept = async (applicationId: string, projectId: string) => {
-    if (!confirm('Are you sure you want to accept this application?')) {
+  const handleAcceptApplication = async (applicationId: string, projectId: string) => {
+    if (!confirm('Are you sure you want to accept this application? This will assign the project to this student/group and reject other applicants.')) {
       return;
     }
 
+    setProcessingApp(applicationId);
     try {
-      const response = await api.post(`/applications/${applicationId}/accept`, { projectId });
+      const response = await api.post(`/applications/${applicationId}/accept`, {
+        projectId
+      });
 
       if (response.success) {
-        toast.success('Application accepted successfully');
-        fetchApplications();
-        setSelectedApplication(null);
+        toast.success('Application accepted successfully!');
+        await fetchApplications();
       } else {
         toast.error(response.error?.message || 'Failed to accept application');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to accept application');
+    } finally {
+      setProcessingApp(null);
     }
   };
 
-  const handleReject = async (applicationId: string) => {
-    const reason = prompt('Enter rejection reason (optional):');
+  const handleRejectApplication = async (applicationId: string) => {
+    const reason = prompt('Optional: Provide a reason for rejection');
 
-    if (!confirm('Are you sure you want to reject this application?')) {
-      return;
-    }
-
+    setProcessingApp(applicationId);
     try {
       const response = await api.post(`/applications/${applicationId}/reject`, {
         reason: reason || undefined
@@ -129,346 +117,311 @@ export function FacultyApplicationsPage() {
 
       if (response.success) {
         toast.success('Application rejected');
-        fetchApplications();
-        setSelectedApplication(null);
+        await fetchApplications();
       } else {
         toast.error(response.error?.message || 'Failed to reject application');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to reject application');
+    } finally {
+      setProcessingApp(null);
     }
   };
 
+  const handleUpdateProjectTitle = async (projectId: string) => {
+    if (!newProjectTitle.trim()) {
+      toast.error('Please enter a new title');
+      return;
+    }
 
+    try {
+      const response = await api.put(`/projects/${projectId}`, {
+        title: newProjectTitle
+      });
 
-  const filteredApplications = applications.filter(app =>
-    filterStatus === 'all' ? true : app.status === filterStatus
-  );
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      pending: 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/30',
-      approved: 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 border-green-300 dark:border-green-500/30',
-      rejected: 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 border-red-300 dark:border-red-500/30'
-    };
-
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${styles[status as keyof typeof styles]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
+      if (response.success) {
+        toast.success('Project title updated successfully!');
+        setEditingProject(null);
+        setNewProjectTitle('');
+        await fetchApplications();
+      } else {
+        toast.error(response.error?.message || 'Failed to update project title');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update project title');
+    }
   };
 
-  // Show loading while initializing
-  if (initializing || windowLoading) {
+  const toggleExpand = (appId: string) => {
+    setExpandedApp(expandedApp === appId ? null : appId);
+  };
+
+  const startEditingTitle = (projectId: string, currentTitle: string) => {
+    setEditingProject(projectId);
+    setNewProjectTitle(currentTitle);
+  };
+
+  const pendingApplications = applications.filter(app => app.status === 'pending');
+  const reviewedApplications = applications.filter(app => app.status !== 'pending');
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse">Loading applications...</p>
+        </div>
       </div>
     );
   }
 
-  // Show window closed message if application window is not open
-  if (!canReviewApplications) {
-    return <WindowClosedMessage windowType="application" showAllProjectTypes={true} />;
+  // Check if any application window is open
+  const isAnyWindowOpen = ['IDP', 'UROP', 'CAPSTONE'].some(type => isApplicationOpen(type));
+
+  if (applications.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center -m-8 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-transparent">
+        <ApplicationEmptyState
+          title={isAnyWindowOpen ? "Application Review" : "Applications Closed"}
+          subtitle="Student Applications"
+          description={isAnyWindowOpen ? "No applications received yet." : "Application window is currently closed."}
+          subDescription={isAnyWindowOpen ? "When students apply to your projects, they will appear here for your review." : "No applications can be received while the window is closed."}
+          theme="teal"
+          icon={FileText}
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto space-y-6"
+        className="w-full flex flex-col"
       >
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-text">Applications</h1>
-          <p className="text-textSecondary mt-1">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
+            Application Review
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             Review and manage student applications for your projects
           </p>
         </div>
 
-        {/* Filters */}
-        <GlassCard className="p-4">
-          <div className="flex items-center gap-3">
-            <Filter className="w-5 h-5 text-textSecondary" />
-            <div className="flex gap-2">
-              {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-                <Button
-                  key={status}
-                  variant={filterStatus === status ? "default" : "ghost"}
-                  onClick={() => setFilterStatus(status)}
-                  className={`h-auto py-2 ${filterStatus === status
-                    ? ''
-                    : 'bg-white/5 text-textSecondary hover:bg-white/10'
-                    }`}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                  <span className="ml-2 text-xs opacity-70">
-                    ({applications.filter(a => status === 'all' ? true : a.status === status).length})
-                  </span>
-                </Button>
+        {/* Pending Applications */}
+        <div className="mb-10 space-y-6">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 text-sm px-3 py-1">
+              Pending ({pendingApplications.length})
+            </Badge>
+          </div>
+
+          {pendingApplications.length === 0 ? (
+            <div className="border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-slate-50/50 dark:bg-slate-900/50">
+              <p className="text-slate-500 text-sm">No pending applications to review</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {pendingApplications.map((application) => (
+                <Card key={application._id} className="overflow-hidden border-l-4 border-l-teal-500 hover:shadow-md transition-shadow">
+                  <div className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          {application.groupId ? (
+                            <div className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                              <Users className="w-5 h-5" />
+                            </div>
+                          ) : (
+                            <div className="p-2 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400">
+                              <User className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
+                              {application.projectId.title}
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {application.groupId ? 'Group Application' : 'Individual Application'} • {application.department}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pl-14">
+                          <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+                            {application.projectId.brief}
+                          </p>
+                          <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
+                            <span>Submitted: {new Date(application.createdAt).toLocaleDateString()}</span>
+                            {application.specialization && <span>• Spec: {application.specialization}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 min-w-[140px] justify-center">
+                        <Button
+                          onClick={() => handleAcceptApplication(application._id, application.projectId._id)}
+                          disabled={processingApp === application._id}
+                          className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                          size="sm"
+                        >
+                          {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept'}
+                        </Button>
+                        <Button
+                          onClick={() => handleRejectApplication(application._id)}
+                          disabled={processingApp === application._id}
+                          variant="outline"
+                          className="w-full text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                          size="sm"
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleExpand(application._id)}
+                          className="w-full text-slate-400 hover:text-teal-600"
+                        >
+                          {expandedApp === application._id ? (
+                            <span className="flex items-center gap-1">Hide Details <ChevronUp className="w-3 h-3" /></span>
+                          ) : (
+                            <span className="flex items-center gap-1">View Details <ChevronDown className="w-3 h-3" /></span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedApp === application._id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 ml-14">
+                            <div className="grid md:grid-cols-2 gap-8 text-sm">
+                              {application.groupId ? (
+                                <div className="space-y-3">
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100">Group Information</p>
+                                  <div className="grid grid-cols-[100px_1fr] gap-2">
+                                    <span className="text-slate-500">Code:</span>
+                                    <span className="font-mono text-slate-700 dark:text-slate-300">{application.groupId.groupCode}</span>
+                                    <span className="text-slate-500">Leader:</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{application.groupId.leaderId.name}</span>
+                                  </div>
+                                  <div className="mt-2">
+                                    <p className="text-xs font-medium text-slate-500 mb-2">MEMBERS</p>
+                                    <ul className="space-y-1">
+                                      {application.groupId.members.map(m => (
+                                        <li key={m._id} className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                          • {m.name} <span className="text-xs text-slate-400">({m.studentId})</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100">Student Information</p>
+                                  <div className="grid grid-cols-[100px_1fr] gap-2">
+                                    <span className="text-slate-500">Name:</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{application.studentId?.name}</span>
+                                    <span className="text-slate-500">ID:</span>
+                                    <span className="font-mono text-slate-700 dark:text-slate-300">{application.studentId?.studentId}</span>
+                                    <span className="text-slate-500">Email:</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{application.studentId?.email}</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="space-y-3">
+                                <p className="font-semibold text-slate-900 dark:text-slate-100">Academic Details</p>
+                                <div className="grid grid-cols-[100px_1fr] gap-2">
+                                  <span className="text-slate-500">CGPA:</span>
+                                  <span className="text-slate-700 dark:text-slate-300 font-mono">{application.cgpa?.toFixed(2) || 'N/A'}</span>
+                                  <span className="text-slate-500">Semester:</span>
+                                  <span className="text-slate-700 dark:text-slate-300">{application.semester}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Reviewed Applications */}
+        {reviewedApplications.length > 0 && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-slate-600 border-slate-200">
+                History ({reviewedApplications.length})
+              </Badge>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {reviewedApplications.map((application) => (
+                <Card key={application._id} className="opacity-75 hover:opacity-100 transition-opacity">
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        {application.status === 'approved' ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Accepted</Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">Rejected</Badge>
+                        )}
+                        <span className="text-xs text-slate-400">
+                          {application.reviewedAt ? new Date(application.reviewedAt).toLocaleDateString() : ''}
+                        </span>
+                      </div>
+                      {application.status === 'approved' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-teal-600"
+                          onClick={() => startEditingTitle(application.projectId._id, application.projectId.title)}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {editingProject === application.projectId._id ? (
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            value={newProjectTitle}
+                            onChange={(e) => setNewProjectTitle(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                          <Button size="sm" onClick={() => handleUpdateProjectTitle(application.projectId._id)} className="h-8 bg-teal-600 text-white">Save</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingProject(null)} className="h-8">Cancel</Button>
+                        </div>
+                      ) : (
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 line-clamp-1">
+                          {application.projectId.title}
+                        </h4>
+                      )}
+
+                      <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        {application.groupId ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                        {application.groupId ? application.groupId.members.length + ' Students' : application.studentId?.name}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
           </div>
-        </GlassCard>
-
-        {/* Applications List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredApplications.length === 0 ? (
-          <GlassCard className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold text-text mb-2">No Applications</h3>
-              <p className="text-textSecondary">
-                {filterStatus === 'all'
-                  ? 'No applications received yet'
-                  : `No ${filterStatus} applications`}
-              </p>
-            </div>
-          </GlassCard>
-        ) : (
-          <div className="grid gap-4">
-            {filteredApplications.map((application) => (
-              <motion.div
-                key={application._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <GlassCard className="p-6 hover:bg-white/10 transition-all">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        {application.groupId ? (
-                          <Users className="w-5 h-5 text-primary" />
-                        ) : (
-                          <User className="w-5 h-5 text-secondary" />
-                        )}
-                        <h3 className="text-lg font-semibold text-text">
-                          {application.groupId
-                            ? `${application.groupId.leaderId?.name || 'Group Leader'}${application.groupId.groupNumber ? ` - Group #${application.groupId.groupNumber}` : ` (${application.groupId.groupCode})`}`
-                            : application.studentId?.name}
-                        </h3>
-                        {application.groupId && (
-                          <span className="text-xs text-textSecondary">
-                            (Group Leader)
-                          </span>
-                        )}
-                        {getStatusBadge(application.status)}
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-secondary/20 text-blue-800 dark:text-secondary text-xs font-medium rounded-lg border border-blue-300 dark:border-secondary/30">
-                          {application.projectType}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div>
-                          <span className="text-sm font-medium text-text">Project: </span>
-                          <span className="text-sm text-textSecondary">
-                            {application.projectId.title}
-                          </span>
-                        </div>
-                        {application.groupId && (
-                          <div>
-                            <span className="text-sm font-medium text-text">Members: </span>
-                            <span className="text-sm text-textSecondary">
-                              {application.groupId.members.length} students
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex gap-4 text-sm text-textSecondary">
-                          {application.cgpa && <span>CGPA: {application.cgpa.toFixed(2)}</span>}
-                          {application.cgpa && application.specialization && <span>•</span>}
-                          {application.specialization && <span>{application.specialization}</span>}
-                          {application.specialization && <span>•</span>}
-                          <span>{application.department}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-textSecondary">
-                        <span>Applied: {new Date(application.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 ml-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSelectedApplication(application)}
-                        className="h-8 w-8 hover:bg-white/10"
-                        title="View details"
-                      >
-                        <Eye className="w-4 h-4 text-text" />
-                      </Button>
-
-                      {application.status === 'pending' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleAccept(application._id, application.projectId._id)}
-                            className="h-8 w-8 hover:bg-success/10 text-success hover:text-success"
-                            title="Accept application"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleReject(application._id)}
-                            className="h-8 w-8 hover:bg-error/10 text-error hover:text-error"
-                            title="Reject"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
         )}
       </motion.div>
-
-      {/* Details Modal */}
-      <AnimatePresence>
-        {selectedApplication && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedApplication(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-            >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Application Details</h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Type</label>
-                    <p className="text-gray-900 capitalize">{selectedApplication.groupId ? 'Group' : 'Solo'}</p>
-                  </div>
-
-                  {selectedApplication.groupId && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Group Members {selectedApplication.groupId?.groupNumber ? `(Group #${selectedApplication.groupId.groupNumber})` : `(${selectedApplication.groupId?.groupCode})`}
-                      </label>
-                      <div className="mt-2 space-y-2">
-                        {selectedApplication.groupId.members.map((member) => (
-                          <div key={member._id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-900 font-medium">{member.name}</p>
-                              <p className="text-xs text-gray-600">{member.email}</p>
-                              <p className="text-xs text-gray-500">ID: {member.studentId}</p>
-                            </div>
-                            {member._id === selectedApplication.groupId?.leaderId._id && (
-                              <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
-                                Leader
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {!selectedApplication.groupId && selectedApplication.studentId && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Student</label>
-                      <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-900 font-medium">{selectedApplication.studentId.name}</p>
-                        <p className="text-sm text-gray-600">{selectedApplication.studentId.email}</p>
-                        <p className="text-sm text-gray-500">ID: {selectedApplication.studentId.studentId}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Project</label>
-                    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-gray-900 font-medium">{selectedApplication.projectId.title}</p>
-                      {selectedApplication.projectId.brief && (
-                        <p className="text-xs text-gray-600 mt-1">{selectedApplication.projectId.brief}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedApplication.cgpa && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">CGPA</label>
-                        <p className="text-gray-900">{selectedApplication.cgpa.toFixed(2)}</p>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Department</label>
-                      <p className="text-gray-900">{selectedApplication.department}</p>
-                    </div>
-                  </div>
-
-                  {selectedApplication.specialization && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Specialization</label>
-                      <p className="text-gray-900">{selectedApplication.specialization}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <div className="mt-1">{getStatusBadge(selectedApplication.status)}</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedApplication(null)}
-                    className="flex-1"
-                  >
-                    Close
-                  </Button>
-                  {selectedApplication.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleReject(selectedApplication._id)}
-                        className="flex-1"
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          handleAccept(selectedApplication._id, selectedApplication.projectId._id);
-                        }}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Accept
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
     </div>
   );
 }

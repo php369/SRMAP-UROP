@@ -1,23 +1,25 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Brain } from 'lucide-react';
+import { Sparkles, FileSearch, LucideIcon } from 'lucide-react';
 import { GradientBorderBox } from '../../../components/ui/GradientBorderBox';
 import { cn } from '../../../utils/cn';
 
-interface PhaseEmptyStateProps {
+interface ApplicationEmptyStateProps {
     title?: string;
     subtitle?: string;
     description?: string;
     subDescription?: string;
-    theme?: 'orange' | 'teal';
+    theme?: 'orange' | 'teal' | 'blue';
+    icon?: LucideIcon;
 }
 
-export function PhaseEmptyState({
-    title = "Project Proposals",
-    subtitle = "Research Portal",
-    description = "The proposal submission window has not been scheduled yet.",
-    subDescription = "You are encouraged to brainstorm your next breakthrough research ideas while proposals remains locked.",
-    theme = 'orange'
-}: PhaseEmptyStateProps) {
+export function ApplicationEmptyState({
+    title = "Applications Closed",
+    subtitle = "Application Portal",
+    description = "The application window is currently closed.",
+    subDescription = "You can view your existing applications or wait for the next window to open.",
+    theme = 'teal',
+    icon: Icon = FileSearch
+}: ApplicationEmptyStateProps) {
     const themeColors = {
         orange: {
             bg: "bg-orange-500/10 dark:bg-orange-600/10",
@@ -38,6 +40,16 @@ export function PhaseEmptyState({
             sparkle: "text-teal-500/20 dark:text-teal-500/10",
             line: "bg-teal-300 dark:bg-teal-800",
             dot: "bg-teal-500"
+        },
+        blue: {
+            bg: "bg-blue-500/10 dark:bg-blue-600/10",
+            text: "text-blue-600",
+            border: "border-blue-200 dark:border-blue-800",
+            iconBg: "bg-blue-500/10 dark:bg-blue-500/20",
+            iconRing: "ring-blue-500/20",
+            sparkle: "text-blue-500/20 dark:text-blue-500/10",
+            line: "bg-blue-300 dark:bg-blue-800",
+            dot: "bg-blue-500"
         }
     };
 
@@ -97,7 +109,7 @@ export function PhaseEmptyState({
                                 <Sparkles className="w-24 h-24" />
                             </motion.div>
                             <div className={cn("relative p-6 rounded-3xl ring-1", colors.iconBg, colors.text, colors.iconRing)}>
-                                <Brain className="w-12 h-12" />
+                                <Icon className="w-12 h-12" />
                             </div>
                         </div>
 

@@ -12,6 +12,34 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/Card';
+import {
+  Loader2,
+  FileText,
+  ChevronRight,
+  LayoutGrid,
+  UserPlus,
+  UserCheck,
+  ShieldCheck,
+  GraduationCap,
+  Briefcase,
+  Maximize2,
+  Minimize2,
+  Eye,
+  Trash2,
+  ExternalLink,
+  Info,
+  RefreshCw
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '../../components/ui/dialog';
+import { ApplicationEmptyState } from '../faculty/components/ApplicationEmptyState';
 
 interface Project {
   _id: string;
@@ -44,6 +72,27 @@ export function ApplicationPage() {
   const [existingApplications, setExistingApplications] = useState<any[]>([]);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [isProjectListExpanded, setIsProjectListExpanded] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+
+  const handleRevokeApplication = async (applicationId: string) => {
+    if (!window.confirm('Are you sure you want to revoke this application? This will remove it from the faculty dashboard as well.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.delete<any>(`/applications/${applicationId}`);
+      if (response.success) {
+        toast.success('Application revoked successfully');
+        await fetchExistingApplication();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error?.message || 'Failed to revoke application');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Check if application window is open
   const canApply = eligibleProjectType ? isApplicationOpen(eligibleProjectType) : false;
@@ -219,7 +268,7 @@ export function ApplicationPage() {
     }
   };
 
-  const submitMemberDetails = async (department: string, specialization?: string, isLeaderSubmission = false) => {
+  const submitMemberDetails = async (department: string, specialization: string, cgpa: string, isLeaderSubmission = false) => {
     if (!groupId) {
       toast.error('No group found');
       return false;
@@ -233,13 +282,15 @@ export function ApplicationPage() {
         groupId,
         department,
         specialization,
+        cgpa,
         isLeaderSubmission,
         userId: user?.id
       });
 
       const response = await api.post(`/groups/${groupId}/member-details`, {
         department: department.trim(),
-        specialization: specialization?.trim() || ''
+        specialization: specialization?.trim() || '',
+        cgpa: cgpa
       });
 
       console.log('Member details response:', response);
@@ -566,8 +617,8 @@ export function ApplicationPage() {
       return;
     }
 
-    if (!formData.department) {
-      toast.error('Please fill all required fields');
+    if (!formData.department || !formData.cgpa) {
+      toast.error('Please fill all required fields (Department and CGPA)');
       return;
     }
 
@@ -578,10 +629,11 @@ export function ApplicationPage() {
       try {
         console.log('Saving leader details before verification:', {
           department: formData.department,
-          specialization: formData.specialization
+          specialization: formData.specialization,
+          cgpa: formData.cgpa
         });
 
-        const success = await submitMemberDetails(formData.department, formData.specialization, true);
+        const success = await submitMemberDetails(formData.department, formData.specialization, formData.cgpa.toString(), true);
         if (success) {
           console.log('Leader details saved successfully');
           // Refresh member details to include the leader's data
@@ -659,41 +711,51 @@ export function ApplicationPage() {
   if (existingApplications.length > 0) {
     console.log('✅ ApplicationPage: Showing existing applications view');
     return (
-      <div className="min-h-screen p-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold mb-2 text-slate-900">Your Applications</h1>
-                <p className="text-slate-500">
-                  {canApply
-                    ? 'Track the status of your project applications'
-                    : 'Showing approved applications (application window is closed)'}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    console.log('Manual refresh triggered');
-                    fetchExistingApplication();
-                  }}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-700 transition-all text-sm shadow-sm"
-                >
-                  Refresh Status
-                </button>
-                {eligibleProjectType && (
-                  <div className="px-4 py-2 bg-indigo-50 border border-primary/10 rounded-lg">
-                    <p className="text-sm text-primary font-medium">Eligible for</p>
-                    <p className="text-lg font-bold text-indigo-700">{eligibleProjectType}</p>
-                  </div>
-                )}
-              </div>
+      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full flex flex-col"
+        >
+          <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
+                Your Applications
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">
+                {canApply
+                  ? 'Track the status of your project applications'
+                  : 'Showing approved applications (application window is closed)'}
+              </p>
             </div>
-          </motion.div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={fetchExistingApplication}
+                disabled={loading}
+                className="group text-slate-600 hover:text-teal-600 border-slate-200 bg-white dark:bg-slate-900 shadow-sm transition-all"
+              >
+                <motion.div
+                  className="flex items-center"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <motion.div
+                    animate={loading ? { rotate: 360 } : { rotate: 0 }}
+                    transition={loading ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
+                    className="mr-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </motion.div>
+                  Refresh
+                </motion.div>
+              </Button>
+              {eligibleProjectType && (
+                <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 px-3 py-1.5 text-sm">
+                  Eligible for {eligibleProjectType}
+                </Badge>
+              )}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {existingApplications
@@ -704,84 +766,222 @@ export function ApplicationPage() {
                 return application.status === 'approved';
               })
               .map((application: any) => (
-                <GlassCard
-                  key={application._id}
-                  className="p-6 h-full flex flex-col"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      {application.groupId ? (
-                        <Users className="w-6 h-6 text-primary mr-2" />
-                      ) : (
-                        <User className="w-6 h-6 text-emerald-500 mr-2" />
-                      )}
-                      <span className="text-sm font-medium text-slate-500">
-                        {application.groupId ? 'Group' : 'Solo'}
-                      </span>
-                    </div>
-                    <Badge variant={
-                      application.status === 'approved' ? 'success' :
-                        application.status === 'items' ? 'warning' : 'default'
-                    }>
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </Badge>
-                  </div>
-
-                  <h3 className="font-bold text-lg mb-2 text-slate-900">
-                    {application.projectId?.title || 'Project Title'}
-                  </h3>
-
-                  {application.projectId?.brief && (
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-3 flex-grow">
-                      {application.projectId.brief}
-                    </p>
-                  )}
-
-                  <div className="space-y-2 text-sm pt-4 border-t border-slate-100 mt-auto">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Department:</span>
-                      <span className="font-medium text-slate-900">{application.department}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Submitted:</span>
-                      <span className="font-medium text-slate-900">
-                        {new Date(application.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {application.reviewedAt && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Reviewed:</span>
-                        <span className="font-medium text-slate-900">
-                          {new Date(application.reviewedAt).toLocaleDateString()}
+                <Card key={application._id} className="h-full flex flex-col border-l-4 border-l-teal-500 hover:shadow-lg transition-all duration-300">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        {application.groupId ? (
+                          <div className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                            <Users className="w-5 h-5" />
+                          </div>
+                        ) : (
+                          <div className="p-2 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400">
+                            <User className="w-5 h-5" />
+                          </div>
+                        )}
+                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {application.groupId ? 'Group' : 'Solo'}
                         </span>
                       </div>
-                    )}
-                    {application.status === 'approved' && application.projectId?.facultyName && (
-                      <div className="mt-3 p-2 bg-emerald-50 border border-emerald-100 rounded-lg">
-                        <p className="text-xs text-emerald-800 font-medium">Assigned Faculty:</p>
-                        <p className="text-sm text-emerald-900">{application.projectId.facultyName}</p>
+                      <Badge variant={
+                        application.status === 'approved' ? 'success' :
+                          application.status === 'rejected' ? 'error' : 'secondary'
+                      } className={
+                        application.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200' :
+                          application.status === 'rejected' ? 'bg-red-100 text-red-700 hover:bg-red-100 border-red-200' :
+                            'bg-slate-100 text-slate-700 hover:bg-slate-100 border-slate-200'
+                      }>
+                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-4 text-lg line-clamp-1 leading-tight">
+                      {application.projectId?.title || 'Project Title'}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 min-h-[2.5em]">
+                      {application.projectId?.brief}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow pt-0">
+                    <div className="space-y-3 text-sm mt-4">
+                      <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800">
+                        <span className="text-slate-500">Department</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{application.department}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800">
+                        <span className="text-slate-500">Submitted</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {new Date(application.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {application.reviewedAt && (
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800">
+                          <span className="text-slate-500">Reviewed</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {new Date(application.reviewedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="bg-slate-50/50 dark:bg-slate-900/50 pt-4 flex flex-col gap-3">
+                    {application.status === 'approved' && application.projectId?.facultyName ? (
+                      <div className="w-full flex items-center gap-2 p-2 bg-green-50/50 border border-green-100 rounded-lg">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-green-700 font-medium">Assigned Faculty</p>
+                          <p className="text-sm text-green-900 truncate font-semibold">{application.projectId.facultyName}</p>
+                        </div>
+                      </div>
+                    ) : application.status === 'pending' ? (
+                      <div className="w-full flex items-center gap-2 p-2 bg-amber-50/50 border border-amber-100 rounded-lg">
+                        <Info className="w-4 h-4 text-amber-600" />
+                        <p className="text-xs text-amber-700 font-medium italic">Pending faculty review...</p>
+                      </div>
+                    ) : (
+                      <div className="w-full flex items-center gap-2 p-2 bg-red-50/50 border border-red-100 rounded-lg">
+                        <XCircle className="w-4 h-4 text-red-600" />
+                        <p className="text-xs text-red-700 font-medium italic">Application was rejected</p>
                       </div>
                     )}
-                  </div>
-                </GlassCard>
+
+                    <div className="w-full grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 text-xs font-medium"
+                        onClick={() => setSelectedApplication(application)}
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1.5" /> View
+                      </Button>
+                      {application.status === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 border-slate-200"
+                          onClick={() => handleRevokeApplication(application._id)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Revoke
+                        </Button>
+                      )}
+                    </div>
+                  </CardFooter>
+                </Card>
               ))}
           </div>
 
-          <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="flex items-start">
-              <CheckCircle className="w-6 h-6 text-primary mr-3 mt-1" />
-              <div>
-                <h3 className="font-bold text-slate-900 mb-2">Application Status Guide</h3>
-                <div className="space-y-1 text-sm text-slate-600">
-                  <p><strong>Pending:</strong> Your application is under review</p>
-                  <p><strong>Approved:</strong> Congratulations! Your application has been accepted</p>
-                  <p><strong>Rejected:</strong> You can apply to other projects or reapply to this project</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          {/* Modal for viewing application details */}
+          <Dialog open={!!selectedApplication} onOpenChange={(open) => !open && setSelectedApplication(null)}>
+            <DialogContent className="max-w-2xl overflow-hidden p-0 border-teal-200 dark:border-teal-800">
+              {selectedApplication && (
+                <>
+                  <div className="bg-teal-600 p-6 text-white">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <FileText className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-xl font-bold text-white">Application Details</DialogTitle>
+                        <DialogDescription className="text-teal-100">
+                          Submitted on {new Date(selectedApplication.createdAt).toLocaleDateString()}
+                        </DialogDescription>
+                      </div>
+                    </div>
+                    <Badge className={`
+                      px-3 py-1 text-xs font-bold uppercase
+                      ${selectedApplication.status === 'approved' ? 'bg-green-500 text-white' :
+                        selectedApplication.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'}
+                    `}>
+                      {selectedApplication.status}
+                    </Badge>
+                  </div>
+
+                  <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {/* Project Section */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4" /> Project Information
+                      </h4>
+                      <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+                          {selectedApplication.projectId?.title}
+                        </h3>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
+                          {selectedApplication.projectId?.brief}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" className="bg-teal-50 text-teal-700 border-teal-100">
+                            {selectedApplication.projectId?.facultyName}
+                          </Badge>
+                          <Badge variant="outline">
+                            {selectedApplication.projectId?.department}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Applicant Information */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Application Type</p>
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          {selectedApplication.groupId ? (
+                            <><Users className="w-4 h-4 text-blue-500" /> Group Application</>
+                          ) : (
+                            <><User className="w-4 h-4 text-teal-500" /> Solo Application</>
+                          )}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Department</p>
+                        <p className="text-sm font-medium">{selectedApplication.department}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Specialization</p>
+                        <p className="text-sm font-medium">{selectedApplication.specialization || 'Not specified'}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-slate-400 uppercase">CGPA on Submission</p>
+                        <p className="text-sm font-medium">{selectedApplication.cgpa || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    {/* Rejection Reason if any */}
+                    {selectedApplication.status === 'rejected' && selectedApplication.metadata?.rejectionReason && (
+                      <div className="p-4 rounded-xl bg-red-50 border border-red-100 dark:bg-red-900/10 dark:border-red-900/20">
+                        <h4 className="text-sm font-bold text-red-900 dark:text-red-400 mb-1 flex items-center gap-2">
+                          <Info className="w-4 h-4" /> Rejection Reason
+                        </h4>
+                        <p className="text-sm text-red-800 dark:text-red-300 italic">
+                          "{selectedApplication.metadata.rejectionReason}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter className="p-6 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
+                    {selectedApplication.status === 'pending' && (
+                      <Button
+                        variant="destructive"
+                        className="mr-auto"
+                        onClick={() => {
+                          handleRevokeApplication(selectedApplication._id);
+                          setSelectedApplication(null);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Revoke Application
+                      </Button>
+                    )}
+                    <Button variant="outline" onClick={() => setSelectedApplication(null)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+        </motion.div >
+      </div >
     );
   }
 
@@ -791,18 +991,11 @@ export function ApplicationPage() {
   if (initializing || windowLoading || !eligibleProjectType) {
     console.log('⏳ ApplicationPage: Showing loading state');
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <Loader className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-          <h2 className="text-2xl font-bold mb-2 text-slate-900">Loading Application</h2>
-          <p className="text-slate-500">
-            Please wait while we load your application data...
-          </p>
-        </motion.div>
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse">Loading application data...</p>
+        </div>
       </div>
     );
   }
@@ -818,281 +1011,387 @@ export function ApplicationPage() {
 
   if (eligibleProjectType && !canApply && existingApplications.length === 0) {
     console.log('🚫 ApplicationPage: Window closed and no existing applications, showing closed message');
-    return <WindowClosedMessage windowType="application" projectType={eligibleProjectType} />;
+    return (
+      <div className="w-full flex flex-col items-center justify-center -m-8 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-transparent">
+        <ApplicationEmptyState
+          title="Applications Closed"
+          subtitle={`${eligibleProjectType} Applications`}
+          description="The application window is currently closed."
+          subDescription="Please wait for the window to open. Come back later."
+          theme="teal"
+          icon={FileText}
+        />
+      </div>
+    );
   }
 
   console.log('🎯 ApplicationPage: Showing main application interface');
 
+  // Steps definition for progress indicator
+  const steps = [
+    { id: 'choice', label: 'Type' },
+    { id: 'group-formation', label: 'Team' },
+    { id: 'member-details', label: 'Details' },
+    { id: 'member-waiting', label: 'Status' },
+    { id: 'application', label: 'Form' },
+    { id: 'verify-members', label: 'Review' }
+  ];
+
+  const getCurrentStepIndex = () => {
+    switch (step) {
+      case 'choice': return 0;
+      case 'group-formation': return 1;
+      case 'member-details': return 2;
+      case 'member-waiting': return 3;
+      case 'application': return 4;
+      case 'verify-members': return 5;
+      default: return 0;
+    }
+  };
+
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="w-full">
+      <div className="max-w-5xl mx-auto space-y-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Project Application</h1>
-              <p className="text-gray-600">Apply for your preferred projects</p>
-            </div>
-            {eligibleProjectType && (
-              <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
-                <p className="text-sm text-gray-600">Eligible for</p>
-                <p className="text-lg font-bold text-blue-700">{eligibleProjectType}</p>
-              </div>
-            )}
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
+              Project Application
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              Apply for your preferred {eligibleProjectType} projects
+            </p>
           </div>
+          {eligibleProjectType && (
+            <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 px-4 py-1.5 text-sm h-auto self-start md:self-auto">
+              Eligible for {eligibleProjectType}
+            </Badge>
+          )}
         </motion.div>
+
+        {/* Custom Progress Stepper */}
+        {!groupId && step === 'choice' ? null : (
+          <div className="w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm mb-8 overflow-x-auto">
+            <div className="flex items-center justify-between min-w-[300px]">
+              {steps.map((s, idx) => {
+                // Simplified visible steps for cleaner UI
+                // Only show relevant steps based on flow (Group vs Solo)
+                const showStep = applicationType === 'solo'
+                  ? ['choice', 'application'].includes(s.id)
+                  : true; // Show all for group for now, or refine
+
+                if (!showStep) return null;
+
+                const isCompleted = getCurrentStepIndex() > idx;
+                const isCurrent = getCurrentStepIndex() === idx;
+
+                return (
+                  <div key={s.id} className="flex items-center flex-1 last:flex-none">
+                    <div className={`flex items-center gap-2 ${isCurrent ? 'text-teal-600 font-bold' : isCompleted ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-colors
+                         ${isCurrent ? 'border-teal-600 bg-teal-50 text-teal-600' :
+                          isCompleted ? 'border-teal-500 bg-teal-500 text-white' :
+                            'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'}`}>
+                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+                      </div>
+                      <span className="hidden sm:inline">{s.label}</span>
+                    </div>
+                    {idx < steps.length - 1 && (
+                      <div className={`h-0.5 flex-1 mx-4 transition-colors ${isCompleted ? 'bg-teal-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Choice */}
         {step === 'choice' && !groupId && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="grid md:grid-cols-2 gap-6"
           >
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <Card
+              className="cursor-pointer hover:border-teal-500 hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
               onClick={() => handleChoiceSelection('solo')}
-              className="p-8 bg-white rounded-xl shadow-lg border-2 border-transparent hover:border-blue-500 transition-all"
             >
-              <User className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Solo Application</h3>
-              <p className="text-gray-600">Work independently on your project</p>
-            </motion.button>
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <User className="w-24 h-24 text-teal-600" />
+              </div>
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <User className="w-6 h-6" />
+                </div>
+                <CardTitle className="text-2xl">Solo Application</CardTitle>
+                <CardDescription>Work independently on your project</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Direct submission</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Independent grading</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Faster process</li>
+                </ul>
+              </CardContent>
+            </Card>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <Card
+              className="cursor-pointer hover:border-teal-500 hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
               onClick={() => handleChoiceSelection('group')}
-              className="p-8 bg-white rounded-xl shadow-lg border-2 border-transparent hover:border-blue-500 transition-all"
             >
-              <Users className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Group Application</h3>
-              <p className="text-gray-600">Collaborate with 2-4 team members</p>
-            </motion.button>
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Users className="w-24 h-24 text-teal-600" />
+              </div>
+              <CardHeader>
+                <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6" />
+                </div>
+                <CardTitle className="text-2xl">Group Application</CardTitle>
+                <CardDescription>Collaborate with 2-4 team members</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Team collaboration</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Shared responsibility</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Complex projects</li>
+                </ul>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
         {/* Step 1.5: Landing Page for Existing Group Members */}
         {step === 'choice' && groupId && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
           >
-            <h2 className="text-2xl font-bold mb-6">You're in a Group!</h2>
-
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center mb-3">
-                <Users className="w-6 h-6 text-blue-500 mr-3" />
-                <div>
-                  <p className="font-medium text-blue-900">Group Code: {formatGroupCode(groupCode)}</p>
-                  <p className="text-sm text-blue-700">
-                    {isGroupLeader ? 'You are the group leader' : 'You are a group member'}
-                  </p>
+            <Card className="border-teal-200 dark:border-teal-800 shadow-md">
+              <CardHeader className="bg-teal-50/50 dark:bg-teal-900/10 border-b border-teal-100 dark:border-teal-800/50 pb-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl text-teal-900 dark:text-teal-100">You're in a Group!</CardTitle>
+                    <CardDescription>
+                      You are currently part of an active group.
+                    </CardDescription>
+                  </div>
+                  <Badge variant={isGroupLeader ? 'default' : 'secondary'} className={isGroupLeader ? "bg-teal-600" : ""}>
+                    {isGroupLeader ? 'Group Leader' : 'Member'}
+                  </Badge>
                 </div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3">Group Members ({groupMembers.length})</h3>
-              <div className="space-y-2">
-                {groupMembers.map((member: any, index: number) => (
-                  <div key={member._id || index} className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3 text-sm">
-                        {member.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{member.name || 'Unknown'}</p>
-                        <p className="text-xs text-gray-600">{member.email || 'No email'}</p>
-                      </div>
+              </CardHeader>
+              <CardContent className="pt-8">
+                <div className="mb-8 p-6 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-teal-100 text-teal-600 rounded-lg">
+                      <Users className="w-6 h-6" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {member._id === user?.id && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                          You
-                        </span>
-                      )}
-                      {isGroupLeader && member._id === user?.id && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                          Leader
-                        </span>
-                      )}
+                    <div>
+                      <p className="text-sm text-slate-500 font-medium uppercase tracking-wider">Group Code</p>
+                      <p className="text-3xl font-mono font-bold text-slate-900 dark:text-slate-100 tracking-widest">
+                        {formatGroupCode(groupCode)}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <div className="flex gap-3">
-              {!isGroupLeader && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    Team Members <Badge variant="outline">{groupMembers.length}</Badge>
+                  </h3>
+                  <div className="grid gap-3">
+                    {groupMembers.map((member: any, index: number) => (
+                      <div key={member._id || index} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-800 transition-colors flex items-center justify-between group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 font-bold border border-slate-200 dark:border-slate-700">
+                            {member.name?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                              {member.name || 'Unknown'}
+                              {member._id === user?.id && <Badge variant="secondary" className="text-xs h-5">You</Badge>}
+                              {isGroupLeader && member._id === user?.id && <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200 text-xs h-5">Leader</Badge>}
+                            </p>
+                            <p className="text-sm text-slate-500">{member.email || 'No email'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="bg-slate-50/50 dark:bg-slate-900/50 p-6 flex gap-4">
+                {!isGroupLeader && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleLeaveGroup}
+                    disabled={loading}
+                    className="h-12 px-6"
+                  >
+                    Leave Group
+                  </Button>
+                )}
+                {isGroupLeader && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteGroup}
+                    disabled={loading}
+                    className="h-12 px-6"
+                  >
+                    Delete Group
+                  </Button>
+                )}
                 <Button
-                  variant="destructive"
-                  onClick={handleLeaveGroup}
-                  disabled={loading}
-                  className="px-6 py-6"
+                  onClick={() => {
+                    if (isGroupLeader) {
+                      setStep('application');
+                    } else if (hasSubmittedDetails) {
+                      setStep('member-waiting');
+                    } else {
+                      setStep('member-details');
+                    }
+                    setApplicationType('group');
+                  }}
+                  className="flex-1 h-12 text-lg bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-200 dark:shadow-none"
                 >
-                  Leave Group
+                  Continue Application <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>
-              )}
-              {isGroupLeader && (
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteGroup}
-                  disabled={loading}
-                  className="px-6 py-6"
-                >
-                  Delete Group
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  if (isGroupLeader) {
-                    setStep('application');
-                  } else if (hasSubmittedDetails) {
-                    setStep('member-waiting');
-                  } else {
-                    setStep('member-details');
-                  }
-                  setApplicationType('group');
-                }}
-                className="flex-1 px-6 py-6"
-              >
-                Continue Application
-              </Button>
-            </div>
+              </CardFooter>
+            </Card>
           </motion.div>
         )}
 
         {/* Step 2: Group Formation */}
         {step === 'group-formation' && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto"
           >
-            <h2 className="text-2xl font-bold mb-6">Group Formation</h2>
-
-            {!groupAction && (
+            {!groupAction ? (
               <div className="grid md:grid-cols-2 gap-6">
-                <button
+                <Card
+                  className="cursor-pointer hover:border-teal-500 hover:shadow-lg transition-all duration-300 text-center py-8"
                   onClick={() => setGroupAction('create')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-all"
                 >
-                  <Code className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-                  <h3 className="font-bold mb-2">Create Group</h3>
-                  <p className="text-sm text-gray-600">Generate a code for others to join</p>
-                </button>
+                  <CardContent className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-teal-50 rounded-full text-teal-600">
+                      <UserPlus className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Create Group</h3>
+                      <p className="text-sm text-slate-500 mt-2">Generate a unique code and invite others</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <button
+                <Card
+                  className="cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all duration-300 text-center py-8"
                   onClick={() => setGroupAction('join')}
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-all"
                 >
-                  <Users className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-                  <h3 className="font-bold mb-2">Join Group</h3>
-                  <p className="text-sm text-gray-600">Enter a code to join existing group</p>
-                </button>
+                  <CardContent className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-blue-50 rounded-full text-blue-600">
+                      <Users className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Join Group</h3>
+                      <p className="text-sm text-slate-500 mt-2">Enter a code to join an existing team</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+            ) : (
+              <Card className="border-teal-200 dark:border-teal-800 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-center text-2xl">
+                    {groupAction === 'create' ? 'Create New Group' : 'Join Existing Group'}
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    {groupAction === 'create' ? 'Get your team started' : 'Enter the code shared by your leader'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {groupAction === 'create' && (
+                    <div className="text-center space-y-6">
+                      {!groupCode ? (
+                        <div className="py-8">
+                          <Button
+                            onClick={handleCreateGroup}
+                            disabled={loading}
+                            size="lg"
+                            className="bg-teal-600 hover:bg-teal-700 text-white min-w-[200px]"
+                          >
+                            {loading ? <Loader2 className="animate-spin mr-2" /> : 'Generate Group Code'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+                          <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <p className="text-sm text-slate-500 mb-2 uppercase tracking-wide">Your Group Code</p>
+                            <p className="text-4xl font-mono font-bold text-teal-600 tracking-[0.2em]">{formatGroupCode(groupCode)}</p>
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            Share this code with your team members (2-4 members total)
+                          </p>
+                          <div className="flex gap-4 justify-center pt-4">
+                            <Button variant="ghost" onClick={handleDeleteGroup} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                              Cancel
+                            </Button>
+                            <Button onClick={() => setStep('application')} className="bg-teal-600 hover:bg-teal-700 text-white">
+                              Continue <ArrowRight className="ml-2 w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {groupAction === 'join' && (
+                    <div className="max-w-sm mx-auto space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-center block">Enter 6-Character Code</Label>
+                        <Input
+                          type="text"
+                          value={inputCode}
+                          onChange={(e) => {
+                            const rawValue = e.target.value;
+                            const cleanValue = rawValue.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
+                            setInputCode(cleanValue);
+                          }}
+                          maxLength={6}
+                          placeholder="ABC123"
+                          className="text-center text-3xl font-mono tracking-widest h-16 uppercase"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleJoinGroup}
+                        disabled={loading || inputCode.length !== 6}
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {loading ? <Loader2 className="animate-spin mr-2" /> : 'Join Group'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setGroupAction(null)}
+                        className="w-full"
+                      >
+                        Back
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
-            {groupAction === 'create' && !groupCode && (
-              <div className="text-center">
-                <p className="mb-4">Click below to generate your group code</p>
-                <Button
-                  onClick={handleCreateGroup}
-                  disabled={loading}
-                  className="px-6 py-6"
-                >
-                  {loading ? <Loader className="animate-spin" /> : 'Generate Code'}
-                </Button>
-              </div>
-            )}
-
-            {groupCode && (
-              <div className="text-center">
-                <p className="mb-4">Your group code:</p>
-                <div className="text-4xl font-bold text-blue-500 mb-4">
-                  {formatGroupCode(groupCode)}
-                </div>
-                <p className="text-sm text-gray-600 mb-6">
-                  Share this code with your team members (2-4 members total)
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteGroup}
-                    disabled={loading}
-                    className="px-6 py-6"
-                  >
-                    Delete Group
-                  </Button>
-                  <Button
-                    onClick={() => setStep('application')}
-                    className="px-6 py-6"
-                  >
-                    Continue to Application <ArrowRight className="inline ml-2" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {groupAction === 'join' && (
-              <div>
-                <label className="block mb-2 font-medium">Enter Group Code</label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Enter the 6-character code (e.g., ABC123) or paste the full code with hyphen (ABC-123)
-                </p>
-                <Input
-                  type="text"
-                  value={inputCode}
-                  onChange={(e) => {
-                    // Remove hyphens and any non-alphanumeric characters, then convert to uppercase
-                    const rawValue = e.target.value;
-                    const cleanValue = rawValue.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
-                    setInputCode(cleanValue);
-
-                    // If user typed a hyphen, show a helpful message
-                    if (rawValue.includes('-') && rawValue !== cleanValue) {
-                      console.log('Hyphen removed from typed input');
-                    }
-                  }}
-                  onPaste={(e) => {
-                    // Handle paste events to remove hyphens and format properly
-                    e.preventDefault();
-                    const pastedText = e.clipboardData.getData('text').trim();
-                    console.log('Pasted text:', pastedText);
-
-                    // Remove all non-alphanumeric characters (including hyphens) and convert to uppercase
-                    const cleanValue = pastedText.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
-                    console.log('Cleaned value:', cleanValue);
-
-                    setInputCode(cleanValue);
-
-                    // Show feedback to user
-                    if (pastedText.includes('-') && cleanValue.length === 6) {
-                      toast.success(`Code "${pastedText}" pasted and formatted as "${cleanValue}"`);
-                    } else if (cleanValue.length === 6) {
-                      toast.success('Group code pasted successfully!');
-                    } else if (cleanValue.length > 0) {
-                      toast.error(`Invalid code length. Expected 6 characters, got ${cleanValue.length}.`);
-                    } else {
-                      toast.error('No valid characters found in pasted text.');
-                    }
-                  }}
-                  maxLength={6}
-                  placeholder="ABC123 or ABC-123"
-                  className="w-full text-center text-2xl font-bold mb-4"
-                />
-                <Button
-                  onClick={handleJoinGroup}
-                  disabled={loading || inputCode.length !== 6}
-                  className="w-full px-6 py-6"
-                >
-                  {loading ? <Loader className="animate-spin mx-auto" /> : 'Join Group'}
+            {/* Back Button for Choice Step */}
+            {!groupCode && !groupAction && (
+              <div className="mt-6 text-center">
+                <Button variant="link" onClick={() => setStep('choice')} className="text-slate-500">
+                  Back to specifiction choice
                 </Button>
               </div>
             )}
@@ -1102,83 +1401,97 @@ export function ApplicationPage() {
         {/* Step 3: Member Details Submission */}
         {step === 'member-details' && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-2xl mx-auto"
           >
-            <h2 className="text-2xl font-bold mb-6">Submit Your Details</h2>
-
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start">
-                <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-bold text-blue-900 mb-2">Required Information</h3>
-                  <p className="text-sm text-blue-800">
-                    Please provide your department and specialization details. Your group leader will use this information when submitting the application.
-                  </p>
+            <Card className="border-teal-200 dark:border-teal-800 shadow-xl">
+              <CardHeader className="bg-teal-50/50 dark:bg-teal-900/10 border-b border-teal-100 dark:border-teal-800/50">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-teal-100 text-teal-600 rounded-full">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <CardTitle>Additional Details</CardTitle>
+                    <CardDescription>We need some academic info to proceed</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+              <CardContent className="pt-8">
+                {groupCode && (
+                  <div className="mb-6 flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                    <span className="text-sm text-slate-500">Group Code</span>
+                    <span className="font-mono font-bold text-teal-600">{formatGroupCode(groupCode)}</span>
+                  </div>
+                )}
 
-            {groupCode && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
-                <div className="text-2xl font-bold text-blue-500">
-                  {formatGroupCode(groupCode)}
-                </div>
-              </div>
-            )}
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const department = formData.get('department') as string;
+                  const specialization = formData.get('specialization') as string;
+                  const cgpa = formData.get('cgpa') as string;
 
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const department = formData.get('department') as string;
-              const specialization = formData.get('specialization') as string;
+                  if (await submitMemberDetails(department, specialization, cgpa)) {
+                    setStep('member-waiting');
+                  }
+                }} className="space-y-6">
 
-              if (await submitMemberDetails(department, specialization)) {
-                setStep('member-waiting');
-              }
-            }} className="space-y-4 mb-6">
-              <div>
-                <Label className="block mb-2 font-medium text-gray-700">Department *</Label>
-                <Input
-                  type="text"
-                  name="department"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., Computer Science"
-                />
-              </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Department <span className="text-red-500">*</span></Label>
+                      <Input
+                        name="department"
+                        required
+                        placeholder="e.g. Computer Science"
+                        className="h-11"
+                      />
+                    </div>
 
-              <div>
-                <Label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</Label>
-                <Input
-                  type="text"
-                  name="specialization"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., AI/ML, Data Science"
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label>CGPA <span className="text-red-500">*</span></Label>
+                      <Input
+                        name="cgpa"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="10"
+                        required
+                        placeholder="e.g. 9.5"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleLeaveGroup}
-                  disabled={loading}
-                  className="px-6 py-6"
-                >
-                  Leave Group
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-6 py-6"
-                >
-                  {loading ? <Loader className="animate-spin mx-auto" /> : 'Submit Details'}
-                </Button>
-              </div>
-            </form>
+                  <div className="space-y-2">
+                    <Label>Specialization (Optional)</Label>
+                    <Input
+                      name="specialization"
+                      placeholder="e.g. AI/ML, Data Science"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex gap-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleLeaveGroup}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      Leave Group
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+                      disabled={loading}
+                    >
+                      {loading ? <Loader2 className="animate-spin mr-2" /> : 'Submit Details'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
@@ -1187,488 +1500,487 @@ export function ApplicationPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            className="max-w-3xl mx-auto"
           >
-            <h2 className="text-2xl font-bold mb-6">Waiting for Group Leader</h2>
-
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-start">
-                <CheckCircle className="w-6 h-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-bold text-green-900 mb-2">Details Submitted Successfully</h3>
-                  <p className="text-sm text-green-800">
-                    Your department and specialization details have been submitted. Your group leader is now filling out the application form and selecting projects.
-                  </p>
+            <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
+              <div className="bg-teal-600 p-8 text-center text-white">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                  <CheckCircle className="w-8 h-8 text-white" />
                 </div>
+                <h2 className="text-2xl font-bold">You're All Set!</h2>
+                <p className="text-teal-100 mt-2 max-w-md mx-auto">
+                  Your details have been submitted. Your group leader is now selecting projects and finalizing the application.
+                </p>
               </div>
-            </div>
 
-            {groupCode && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
-                <div className="text-2xl font-bold text-blue-500">
-                  {formatGroupCode(groupCode)}
-                </div>
-              </div>
-            )}
+              <CardContent className="p-8">
+                <div className="mb-8">
+                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <LayoutGrid className="w-5 h-5 text-slate-400" />
+                    Available Projects
+                  </h3>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-4">Available Projects</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Here are the projects your group leader can choose from:
-              </p>
-
-              {projects.length === 0 ? (
-                <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                  <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 mb-2">No projects available yet</p>
-                  <p className="text-sm text-gray-500">
-                    Projects will be posted by faculty soon. Check back later!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {projects.map((project) => (
-                    <div
-                      key={project._id}
-                      className="p-4 border-2 border-gray-200 rounded-lg"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-bold mb-1">{project.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="text-gray-500">
-                              Faculty: {project.facultyName} ({project.facultyIdNumber})
-                            </span>
-                            <span className="text-gray-500">Dept: {project.department}</span>
+                  <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
+                    {projects.length === 0 ? (
+                      <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+                        <p className="text-slate-500">No projects listed yet.</p>
+                      </div>
+                    ) : (
+                      projects.map(project => (
+                        <div key={project._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                          <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">{project.title}</h4>
+                          <p className="text-sm text-slate-500 mb-3">{project.brief}</p>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <Badge variant="outline" className="bg-white">
+                              {project.facultyName}
+                            </Badge>
+                            <Badge variant="secondary">
+                              {project.department}
+                            </Badge>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      ))
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div className="flex gap-3">
-              <Button
-                variant="destructive"
-                onClick={handleLeaveGroup}
-                disabled={loading}
-                className="px-6 py-6"
-              >
-                Leave Group
-              </Button>
-              <Button
-                onClick={() => window.location.reload()}
-                className="flex-1 px-6 py-6"
-              >
-                Refresh Status
-              </Button>
-            </div>
+                <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-6">
+                  <Button variant="ghost" onClick={handleLeaveGroup} className="text-red-500 hover:text-red-600">
+                    Leave Group
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    <Loader2 className="w-4 h-4 mr-2" /> Refresh Status
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
         {/* Step 5: Application Form */}
         {step === 'application' && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl mx-auto"
           >
-            <h2 className="text-2xl font-bold mb-6">
-              Application Form
-              {applicationType === 'group' && isGroupLeader && (
-                <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                  Group Leader
-                </span>
-              )}
-            </h2>
-
-            {applicationType === 'group' && !isGroupLeader && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-start">
-                  <XCircle className="w-6 h-6 text-red-500 mr-3 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-bold text-red-900 mb-2">Access Restricted</h3>
-                    <p className="text-sm text-red-800">
-                      Only the group leader can fill out and submit the application form. Please wait for your leader to complete the application.
-                    </p>
+            <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
+              <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <Briefcase className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <h2 className="text-xl font-bold font-display">Application Form</h2>
+                    <p className="text-teal-100 text-sm">Select projects and submit</p>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
-              <>
-                {applicationType === 'group' && (
+                <div className="flex items-center gap-3">
+                  {applicationType === 'solo' && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep('choice');
+                        setApplicationType(null);
+                      }}
+                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      Back
+                    </Button>
+                  )}
+                  {applicationType === 'group' && !isGroupLeader && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep('member-waiting')}
+                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      Back
+                    </Button>
+                  )}
+                  {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
+                    <Button
+                      onClick={handleProceedToVerification}
+                      disabled={loading || selectedProjects.length === 0}
+                      className={`
+                        h-10 px-6 font-bold shadow-lg transition-all
+                        ${selectedProjects.length > 0
+                          ? 'bg-white text-teal-600 hover:bg-teal-50'
+                          : 'bg-white/10 text-white/50 cursor-not-allowed border-white/10'}
+                      `}
+                    >
+                      {loading ? <Loader2 className="animate-spin mr-2" /> : applicationType === 'group' ? 'Review & Submit' : 'Submit Now'}
+                    </Button>
+                  )}
+                  {applicationType === 'group' && isGroupLeader && (
+                    <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 hidden md:flex">
+                      Group Leader
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <CardContent className="p-8 space-y-8">
+                {/* Access Warning for Non-Leaders */}
+                {applicationType === 'group' && !isGroupLeader && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-4">
+                    <div className="p-2 bg-red-100 rounded-full text-red-600">
+                      <XCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-red-900">Access Restricted</h3>
+                      <p className="text-sm text-red-800 mt-1">
+                        Only the group leader can fill out and submit the application form. Please wait for your leader to complete this step.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Main Form Content */}
+                {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
                   <>
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-start">
-                        <Users className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-bold text-blue-900 mb-2">Group Application</h3>
+                    {applicationType === 'group' && (
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                          <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                            <Users className="w-4 h-4" /> Group Application
+                          </h3>
                           <p className="text-sm text-blue-800">
-                            You are filling this application on behalf of your entire group. Your department and specialization details will be automatically saved when you proceed to verification.
+                            You are submitting on behalf of your group. Members' details will be automatically included.
                           </p>
                         </div>
-                      </div>
-                    </div>
-
-                    {groupCode && (
-                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Your Group Code:</p>
-                            <div className="text-xl font-bold text-blue-500">
-                              {formatGroupCode(groupCode)}
+                        {groupCode && (
+                          <div className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Group Code</p>
+                              <p className="text-xl font-mono font-bold text-slate-900">{formatGroupCode(groupCode)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500 mb-1">Members</p>
+                              <Badge variant="secondary">{groupMembers.length}/4</Badge>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-500">Share with team members</p>
-                            <p className="text-xs text-gray-500">Members: {groupMembers.length}/4</p>
-                            {isGroupLeader && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleDeleteGroup}
-                                disabled={loading}
-                                className="mt-2 text-xs"
-                                title="Delete group and remove all members"
-                              >
-                                Delete Group
-                              </Button>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
                     )}
+
+                    <div className="space-y-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label>Department <span className="text-red-500">*</span></Label>
+                          <Input
+                            value={formData.department}
+                            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                            placeholder="e.g. Computer Science"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Specialization (Optional)</Label>
+                          <Input
+                            value={formData.specialization}
+                            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                            placeholder="e.g. AI/ML"
+                          />
+                        </div>
+
+                        {applicationType === 'solo' && (
+                          <div className="space-y-2">
+                            <Label>CGPA <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="10"
+                              value={formData.cgpa || ''}
+                              onChange={(e) => setFormData({ ...formData, cgpa: parseFloat(e.target.value) })}
+                              placeholder="e.g. 9.5"
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                              Select Projects <Badge variant={selectedProjects.length > 0 ? 'default' : 'secondary'} className={selectedProjects.length > 0 ? 'bg-teal-600' : ''}>{selectedProjects.length}/3</Badge>
+                            </h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsProjectListExpanded(!isProjectListExpanded)}
+                              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8"
+                            >
+                              {isProjectListExpanded ? (
+                                <><Minimize2 className="w-4 h-4 mr-2" /> Compact View</>
+                              ) : (
+                                <><Maximize2 className="w-4 h-4 mr-2" /> Expand View</>
+                              )}
+                            </Button>
+                          </div>
+                          <span className="text-sm text-slate-500 hidden sm:inline">Select up to 3 projects in order of preference</span>
+                        </div>
+
+                        <div
+                          className={`grid gap-4 overflow-y-auto pr-2 custom-scrollbar transition-all duration-300 ${isProjectListExpanded ? 'max-h-[800px]' : 'max-h-[500px]'
+                            }`}
+                          data-lenis-prevent
+                        >
+                          {projects.length === 0 ? (
+                            <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                              <p className="text-slate-500">No projects available for selection yet.</p>
+                            </div>
+                          ) : (
+                            projects.map(project => {
+                              const isSelected = selectedProjects.includes(project._id);
+                              const selectionIndex = selectedProjects.indexOf(project._id) + 1;
+
+                              return (
+                                <div
+                                  key={project._id}
+                                  onClick={() => handleProjectSelection(project._id)}
+                                  className={`
+                                        relative p-6 rounded-xl border-2 transition-all cursor-pointer group
+                                        ${isSelected
+                                      ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/10 shadow-md'
+                                      : 'border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 hover:bg-white dark:hover:bg-slate-900'
+                                    }
+                                      `}
+                                >
+                                  <div className="flex items-start gap-4">
+                                    <div className={`
+                                            w-6 h-6 rounded-full flex items-center justify-center border transition-colors flex-shrink-0 mt-1
+                                            ${isSelected ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300 bg-white dark:bg-slate-800 text-transparent group-hover:border-teal-400'}
+                                          `}>
+                                      {isSelected ? <CheckCircle className="w-4 h-4" /> : null}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                          <h4 className={`font-bold text-lg mb-1 ${isSelected ? 'text-teal-900 dark:text-teal-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                                            {project.title}
+                                          </h4>
+                                          <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-3">
+                                            {project.brief}
+                                          </p>
+
+                                          {project.prerequisites && (
+                                            <div className="mb-3 text-xs bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 p-2 rounded text-amber-900 dark:text-amber-100">
+                                              <span className="font-bold">Prerequisites: </span>
+                                              {project.prerequisites}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {isSelected && (
+                                          <Badge className="bg-teal-600 pointer-events-none whitespace-nowrap">
+                                            Choice #{selectionIndex}
+                                          </Badge>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                          <User className="w-3 h-3" /> {project.facultyName}
+                                        </span>
+                                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                          <GraduationCap className="w-3 h-3" /> {project.department}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedProjects.length === 0 && projects.length > 0 && (
+                        <p className="text-center text-sm text-red-500 mt-3 animate-pulse">
+                          Please select at least one project to proceed
+                        </p>
+                      )}
+                    </div>
                   </>
                 )}
 
-                {/* Form Fields */}
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <Label className="block mb-2 font-medium text-gray-700">Department *</Label>
-                    <Input
-                      type="text"
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., Computer Science"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block mb-2 font-medium text-gray-700">Specialization (Optional)</Label>
-                    <Input
-                      type="text"
-                      value={formData.specialization}
-                      onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="e.g., AI/ML, Data Science"
-                    />
-                  </div>
-                </div>
-
-                {/* Project Selection */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold mb-4">
-                    Select Projects (up to 3) - {selectedProjects.length}/3 selected
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Choose the projects you're interested in working on. You can select up to 3 projects in order of preference.
-                  </p>
-
-                  {projects.length === 0 ? (
-                    <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                      <Code className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-600 mb-2">No projects available yet</p>
-                      <p className="text-sm text-gray-500">
-                        Projects will be posted by faculty soon. Check back later!
-                      </p>
+                {applicationType === 'group' && !isGroupLeader && (
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                    <p className="text-slate-600 mb-4 font-medium italic">
+                      "Wait for your group leader to finalize the project selection..."
+                    </p>
+                    <div className="flex justify-center gap-4">
+                      <Button variant="destructive" onClick={handleLeaveGroup} disabled={loading}>
+                        Leave Group
+                      </Button>
+                      <Button variant="outline" onClick={() => setStep('member-waiting')}>
+                        Back to Status
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {projects.map((project) => (
-                        <div
-                          key={project._id}
-                          onClick={() => handleProjectSelection(project._id)}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedProjects.includes(project._id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-bold mb-1">{project.title}</h4>
-                              <p className="text-sm text-gray-600 mb-2">{project.brief}</p>
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="text-gray-500">
-                                  Faculty: {project.facultyName} ({project.facultyIdNumber})
-                                </span>
-                                <span className="text-gray-500">Dept: {project.department}</span>
-                              </div>
-                            </div>
-                            {selectedProjects.includes(project._id) && (
-                              <CheckCircle className="w-6 h-6 text-blue-500 flex-shrink-0" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedProjects.length === 0 && projects.length > 0 && (
-                  <p className="text-sm text-amber-600 mb-3 text-center">
-                    ⚠️ Please select at least one project to continue
-                  </p>
+                  </div>
                 )}
-
-                <Button
-                  onClick={handleProceedToVerification}
-                  disabled={loading || selectedProjects.length === 0}
-                  className="w-full px-6 py-6"
-                  title={selectedProjects.length === 0 ? 'Please select at least one project' : applicationType === 'group' ? 'Save details and proceed to verify group members' : 'Submit your application'}
-                >
-                  {loading ? <Loader className="animate-spin mx-auto" /> : applicationType === 'group' ? 'Continue to Verification' : 'Submit Application'}
-                </Button>
-              </>
-            )}
-
-            {applicationType === 'group' && !isGroupLeader && (
-              <div className="flex gap-3">
-                <button
-                  onClick={handleLeaveGroup}
-                  disabled={loading}
-                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
-                >
-                  Leave Group
-                </button>
-                <Button
-                  onClick={() => setStep('member-waiting')}
-                  className="flex-1 px-6 py-6"
-                >
-                  Back to Waiting
-                </Button>
-              </div>
-            )}
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
         {/* Step 4: Verify Group Members (Group Applications Only) */}
         {step === 'verify-members' && applicationType === 'group' && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-3xl mx-auto"
           >
-            <h2 className="text-2xl font-bold mb-6">Verify Group Members</h2>
+            <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
+              <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <h2 className="text-xl font-bold font-display">Final Verification</h2>
+                    <p className="text-teal-100 text-sm">Review team and projects</p>
+                  </div>
+                </div>
 
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start">
-                <CheckCircle className="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep('application')}
+                    disabled={loading}
+                    className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                  >
+                    Edit Form
+                  </Button>
+                  <Button
+                    onClick={handleSubmitApplication}
+                    className="h-10 px-6 bg-white text-teal-600 hover:bg-teal-50 font-bold shadow-lg transition-all"
+                    disabled={loading || groupMembers.length < 2 || groupMembers.some(m => !memberDetails.some(d => (d.userId?._id || d.userId) === (m._id || m.id)))}
+                  >
+                    {loading ? <Loader2 className="animate-spin mr-2" /> : 'Confirm & Submit'}
+                  </Button>
+                </div>
+              </div>
+
+              <CardContent className="p-8 space-y-8">
+                {/* Member Verification List */}
                 <div>
-                  <h3 className="font-bold text-blue-900 mb-2">Important: Verify Your Team</h3>
-                  <p className="text-sm text-blue-800">
-                    Please confirm that all group members listed below are correct before submitting your application.
-                    Once submitted, you cannot modify the group composition.
-                  </p>
-                </div>
-              </div>
-            </div>
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                    <Users className="w-5 h-5 text-teal-600" /> Team Members <Badge>{groupMembers.length}</Badge>
+                  </h3>
 
-            {groupCode && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">Group Code:</p>
-                <div className="text-2xl font-bold text-blue-500">
-                  {formatGroupCode(groupCode)}
-                </div>
-              </div>
-            )}
+                  <div className="grid gap-3">
+                    {groupMembers.map((member: any, index: number) => {
+                      const memberDetail = memberDetails.find(detail => {
+                        const detailUserId = detail.userId?._id || detail.userId;
+                        const memberUserId = member._id || member.id;
+                        const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                        const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                        return detailUserIdString === memberUserIdString;
+                      });
+                      const hasSubmittedDetailsAndCgpa = !!memberDetail && memberDetail.cgpa !== undefined && memberDetail.cgpa !== null;
 
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-4">Group Members ({groupMembers.length})</h3>
-
-              {groupMembers.length === 0 ? (
-                <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600">Loading group members...</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {groupMembers.map((member: any, index: number) => {
-                    const memberDetail = memberDetails.find(detail => {
-                      const detailUserId = detail.userId?._id || detail.userId;
-                      const memberUserId = member._id || member.id;
-                      const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                      const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-                      return detailUserIdString === memberUserIdString;
-                    });
-                    const hasSubmittedDetails = !!memberDetail;
-
-                    return (
-                      <div
-                        key={member._id || index}
-                        className={`p-4 border-2 rounded-lg ${hasSubmittedDetails ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
+                      return (
+                        <div
+                          key={member._id || index}
+                          className={`p-4 border rounded-xl flex items-center justify-between transition-colors
+                               ${hasSubmittedDetailsAndCgpa
+                              ? 'border-green-200 bg-green-50/50 dark:bg-green-900/10'
+                              : 'border-amber-200 bg-amber-50/50 dark:bg-amber-900/10'}
+                             `}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
+                                 ${hasSubmittedDetails ? 'bg-green-500' : 'bg-amber-500'}
+                               `}>
                               {member.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <p className="font-medium">{member.name || 'Unknown'}</p>
-                              <p className="text-sm text-gray-600">{member.email || 'No email'}</p>
-                              {member.studentId && (
-                                <p className="text-xs text-gray-500">ID: {member.studentId}</p>
-                              )}
-                              {memberDetail && (
-                                <div className="mt-1">
-                                  <p className="text-xs text-green-700">
-                                    <strong>Dept:</strong> {memberDetail.department}
-                                    {memberDetail.specialization && (
-                                      <span> | <strong>Spec:</strong> {memberDetail.specialization}</span>
-                                    )}
-                                  </p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-slate-900 dark:text-slate-100">{member.name || 'Unknown'}</p>
+                                {member._id === user?.id && <Badge variant="secondary" className="text-[10px] h-5">You</Badge>}
+                                {isGroupLeader && member._id === user?.id && <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200 text-[10px] h-5">Leader</Badge>}
+                              </div>
+                              <p className="text-xs text-slate-500">{member.email}</p>
+
+                              {memberDetail ? (
+                                <div className="flex items-center gap-2 mt-1 text-xs text-green-700">
+                                  <span><CheckCircle className="inline w-3 h-3 mr-1" /> Ready</span>
+                                  <span className="text-slate-400">|</span>
+                                  <span className="text-slate-600">{memberDetail.department}</span>
                                 </div>
+                              ) : (
+                                <p className="text-xs text-amber-600 mt-1 font-medium flex items-center gap-1">
+                                  <XCircle className="w-3 h-3" /> Details Pending
+                                </p>
                               )}
                             </div>
                           </div>
+
                           <div className="flex items-center gap-2">
-                            {hasSubmittedDetails ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-amber-500" />
-                            )}
-                            {member._id === user?.id && (
-                              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                You
-                              </span>
-                            )}
-                            {isGroupLeader && member._id === user?.id && (
-                              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                                Leader
-                              </span>
-                            )}
                             {isGroupLeader && member._id !== user?.id && (
                               <Button
-                                variant="destructive"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveMember(member._id)}
                                 disabled={loading}
-                                className="px-2 py-1 text-xs"
-                                title="Remove member"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
                               >
                                 Remove
                               </Button>
                             )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
 
-              {groupMembers.length < 2 && (
-                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800">
-                    ⚠️ Your group needs at least 2 members to submit an application.
-                    Share your group code with team members to have them join.
-                  </p>
-                </div>
-              )}
-
-              {/* Check if all members have submitted details */}
-              {groupMembers.length >= 2 && (
-                (() => {
-                  const membersWithoutDetails = groupMembers.filter(member => {
-                    const memberUserId = member._id || member.id;
-                    const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-
-                    return !memberDetails.some(detail => {
-                      const detailUserId = detail.userId?._id || detail.userId;
-                      const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                      return detailUserIdString === memberUserIdString;
-                    });
-                  });
-
-                  return membersWithoutDetails.length > 0 && (
-                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm text-amber-800">
-                        ⚠️ The following members haven't submitted their details yet: {' '}
-                        {membersWithoutDetails.map(m => m.name || 'Unknown').join(', ')}
+                {groupMembers.length < 2 && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+                    <div className="p-2 bg-amber-100 rounded-full h-fit text-amber-600">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-amber-900 text-sm">Minimum Members Required</h4>
+                      <p className="text-sm text-amber-800 mt-1">
+                        Your group needs at least 2 members to submit an application. Please invite more members using your group code.
                       </p>
                     </div>
-                  );
-                })()
-              )}
-            </div>
+                  </div>
+                )}
 
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3">Selected Projects</h3>
-              <div className="space-y-2">
-                {selectedProjects.map((projectId, index) => {
-                  const project = projects.find(p => p._id === projectId);
-                  return project ? (
-                    <div key={projectId} className="p-3 bg-gray-50 rounded-lg flex items-start">
-                      <span className="font-bold text-blue-500 mr-3">{index + 1}.</span>
-                      <div>
-                        <p className="font-medium">{project.title}</p>
-                        <p className="text-sm text-gray-600">{project.facultyName}</p>
-                      </div>
-                    </div>
-                  ) : null;
-                })}
-              </div>
-            </div>
+                {/* Selected Projects Summary */}
+                <div>
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                    <LayoutGrid className="w-5 h-5 text-teal-600" /> Selected Projects
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedProjects.map((projectId, index) => {
+                      const project = projects.find(p => p._id === projectId);
+                      return project ? (
+                        <div key={projectId} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm border border-teal-200">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 dark:text-slate-100">{project.title}</p>
+                            <p className="text-xs text-slate-500">{project.facultyName}</p>
+                          </div>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
 
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                onClick={() => setStep('application')}
-                disabled={loading}
-                className="flex-1 px-6 py-6"
-              >
-                Back to Edit
-              </Button>
-              <Button
-                onClick={handleSubmitApplication}
-                disabled={loading || groupMembers.length < 2 || !groupMembers.every(member => {
-                  const memberUserId = member._id || member.id;
-                  const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-
-                  return memberDetails.some(detail => {
-                    const detailUserId = detail.userId?._id || detail.userId;
-                    const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                    return detailUserIdString === memberUserIdString;
-                  });
-                })}
-                className="flex-1 px-6 py-6"
-                title={
-                  groupMembers.length < 2
-                    ? 'Group needs at least 2 members'
-                    : !groupMembers.every(member => {
-                      const memberUserId = member._id || member.id;
-                      const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-
-                      return memberDetails.some(detail => {
-                        const detailUserId = detail.userId?._id || detail.userId;
-                        const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                        return detailUserIdString === memberUserIdString;
-                      });
-                    })
-                      ? 'All members must submit their details'
-                      : 'Confirm and submit application'
-                }
-              >
-                {loading ? <Loader className="animate-spin mx-auto" /> : 'Confirm & Submit Application'}
-              </Button>
-            </div>
+                {/* Bottom info for clarity */}
+                <p className="text-center text-sm text-slate-500 italic">
+                  Review the team and selected projects carefully before confirming.
+                </p>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
       </div>
