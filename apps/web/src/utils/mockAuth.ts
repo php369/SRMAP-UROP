@@ -60,6 +60,21 @@ export const MOCK_USERS: Record<string, User> = {
         updatedAt: '2025-12-11T08:28:11.059Z'
     },
 
+    // 3.5 Faculty 2
+    srmap_faculty_2: {
+        id: '693a8070ab5b370f9d5076b3',
+        name: 'Gunatit Jariwala',
+        email: 'gunatit_jariwala@srmap.edu.in',
+        role: 'faculty',
+        profile: {},
+        preferences: {
+            theme: 'light',
+            notifications: true
+        },
+        createdAt: '2025-12-11T08:27:28.535Z',
+        updatedAt: '2025-12-11T08:28:01.245Z'
+    },
+
     // 4. IDP Student (Solo)
     srmap_idp: {
         id: '693a804dab5b370f9d5076a1',

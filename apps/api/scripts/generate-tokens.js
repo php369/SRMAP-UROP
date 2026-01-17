@@ -48,6 +48,15 @@ const USERS = [
     }
   },
   {
+    key: 'srmap_faculty_2',
+    payload: {
+      userId: '693a8070ab5b370f9d5076b3',
+      email: 'gunatit_jariwala@srmap.edu.in',
+      name: 'Gunatit Jariwala',
+      role: 'faculty'
+    }
+  },
+  {
     key: 'srmap_idp',
     payload: {
       userId: '693a804dab5b370f9d5076a1',
