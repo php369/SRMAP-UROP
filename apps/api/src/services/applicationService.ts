@@ -170,6 +170,13 @@ export async function getApplicationsForUser(
 
     const applications = await Application.find(query)
       .populate('projectId', 'title brief facultyName department')
+      .populate({
+        path: 'groupId',
+        populate: [
+          { path: 'members', select: 'name email studentId' },
+          { path: 'leaderId', select: 'name email studentId' }
+        ]
+      })
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
@@ -210,6 +217,13 @@ export async function getUserApplications(
 
     const applications = await Application.find(query)
       .populate('projectId', 'title brief facultyName department')
+      .populate({
+        path: 'groupId',
+        populate: [
+          { path: 'members', select: 'name email studentId' },
+          { path: 'leaderId', select: 'name email studentId' }
+        ]
+      })
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
@@ -250,7 +264,13 @@ export async function getApprovedApplication(
     const application = await Application.findOne(query)
       .populate('projectId', 'title brief facultyName department')
       .populate('reviewedBy', 'name email')
-      .populate('groupId', 'groupCode groupName leaderId members status')
+      .populate({
+        path: 'groupId',
+        populate: [
+          { path: 'members', select: 'name email studentId' },
+          { path: 'leaderId', select: 'name email studentId' }
+        ]
+      })
       .populate('studentId', 'name email studentId');
 
     logger.info('Approved application query result:', {

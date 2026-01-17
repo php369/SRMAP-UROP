@@ -1716,19 +1716,57 @@ export function ApplicationPage() {
               </div>
 
               <CardContent className="p-8">
+                {/* Team Progress Overview for Members - Always Visible */}
+                <div className="mb-8 p-4 bg-teal-50/30 border border-teal-100 rounded-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold text-teal-800 uppercase tracking-widest flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5" /> Team Overview
+                    </h3>
+                    <Badge variant="outline" className="bg-white border-teal-200 text-teal-700 font-mono text-[10px]">
+                      {formatGroupCode(groupCode)}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 bg-white/60 p-2.5 rounded-xl border border-teal-50">
+                      <div className="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold shadow-sm ring-4 ring-teal-50">
+                        {groupData?.leaderId?.name?.charAt(0) || 'L'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate">{groupData?.leaderId?.name || 'Loading...'}</p>
+                        <p className="text-[10px] text-teal-600 font-medium">Group Leader</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white/60 p-2.5 rounded-xl border border-teal-50">
+                      <div className="flex -space-x-3 overflow-hidden p-1">
+                        {groupData?.members?.map((m: any, i: number) => (
+                          <div key={i} className="w-9 h-9 rounded-full bg-teal-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-teal-700 shadow-sm first:ml-0">
+                            {m.name?.charAt(0) || 'M'}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-slate-900">{groupData?.members?.length}/4 Members</p>
+                        <p className="text-[10px] text-slate-500">Forming complete</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mb-8">
                   <h3 className="font-semibold text-lg mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <LayoutGrid className="w-5 h-5 text-slate-400" />
+                    <div className="flex items-center gap-2 text-slate-900">
+                      <LayoutGrid className="w-5 h-5 text-teal-600" />
                       {groupData?.draftProjects?.length > 0 ? "Leader's Draft Selection" : 'Available Projects'}
                     </div>
                     {groupData?.draftProjects?.length > 0 && (
-                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">Selection in Progress</Badge>
+                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200 animate-pulse flex gap-1.5 items-center">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Selection in Progress
+                      </Badge>
                     )}
                   </h3>
 
                   <div
-                    className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 overscroll-contain relative z-20 pointer-events-auto"
+                    className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 overscroll-contain relative z-20 pointer-events-auto custom-scrollbar"
                     data-lenis-prevent="true"
                     onWheel={(e) => {
                       e.stopPropagation();
@@ -1736,41 +1774,47 @@ export function ApplicationPage() {
                   >
                     {groupData?.draftProjects?.length > 0 ? (
                       groupData.draftProjects.map((project: any, idx: number) => (
-                        <div key={project._id} className="p-4 rounded-xl border-2 border-teal-100 bg-teal-50/30 dark:bg-teal-900/10 relative group">
-                          <div className="absolute -left-2 -top-2 w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">
+                        <div key={project._id} className="p-4 rounded-xl border border-teal-100 bg-teal-50/20 dark:bg-teal-900/10 flex gap-4 transition-all hover:bg-teal-50/40">
+                          <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold shadow-md flex-shrink-0">
                             {idx + 1}
                           </div>
-                          <h4 className="font-bold text-slate-900 dark:text-teal-100 mb-1">{project.title}</h4>
-                          <p className="text-sm text-slate-500 mb-3 line-clamp-2">{project.brief}</p>
-                          <div className="flex flex-wrap gap-2 text-[10px]">
-                            <Badge variant="outline" className="bg-white border-teal-100 text-teal-700">
-                              {project.facultyName}
-                            </Badge>
-                            <Badge variant="secondary" className="bg-slate-100 text-slate-600">
-                              {project.department}
-                            </Badge>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-slate-900 dark:text-teal-100 mb-1 leading-tight">{project.title}</h4>
+                            <p className="text-[11px] text-slate-500 mb-3 line-clamp-2 leading-relaxed">{project.brief}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline" className="bg-white/50 border-teal-100 text-[9px] h-4.5 py-0">
+                                {project.facultyName}
+                              </Badge>
+                              <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[9px] h-4.5 py-0 font-medium">
+                                {project.department}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       ))
-                    ) : projects.length === 0 ? (
-                      <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
-                        <p className="text-slate-500">No projects listed yet.</p>
-                      </div>
                     ) : (
-                      projects.map(project => (
-                        <div key={project._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                          <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">{project.title}</h4>
-                          <p className="text-sm text-slate-500 mb-3">{project.brief}</p>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <Badge variant="outline" className="bg-white">
-                              {project.facultyName}
-                            </Badge>
-                            <Badge variant="secondary">
-                              {project.department}
-                            </Badge>
+                      <>
+                        {projects.length === 0 ? (
+                          <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+                            <p className="text-slate-500">No projects listed yet.</p>
                           </div>
-                        </div>
-                      ))
+                        ) : (
+                          projects.map(project => (
+                            <div key={project._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                              <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">{project.title}</h4>
+                              <p className="text-sm text-slate-500 mb-3 line-clamp-2">{project.brief}</p>
+                              <div className="flex flex-wrap gap-2 text-xs">
+                                <Badge variant="outline" className="bg-white">
+                                  {project.facultyName}
+                                </Badge>
+                                <Badge variant="secondary">
+                                  {project.department}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1783,70 +1827,341 @@ export function ApplicationPage() {
               </CardContent>
             </Card>
           </motion.div>
-        )}
+        )
+        }
 
         {/* Step 5: Application Form */}
-        {step === 'application' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto"
-          >
-            <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
-              <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <Briefcase className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="hidden sm:block">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold font-display">Application Form</h2>
-                      {applicationType === 'group' && isGroupLeader && (
-                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 py-0">
-                          Group Leader
-                        </Badge>
-                      )}
+        {
+          step === 'application' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-4xl mx-auto"
+            >
+              <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
+                <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <Briefcase className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-teal-100 text-sm">Select projects and submit</p>
+                    <div className="hidden sm:block">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold font-display">Application Form</h2>
+                        {applicationType === 'group' && isGroupLeader && (
+                          <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 py-0">
+                            Group Leader
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-teal-100 text-sm">Select projects and submit</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {applicationType === 'solo' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setStep('choice');
+                          setApplicationType(null);
+                        }}
+                        className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                      >
+                        Back
+                      </Button>
+                    )}
+                    {applicationType === 'group' && !isGroupLeader && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setStep('member-waiting')}
+                        className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                      >
+                        Back
+                      </Button>
+                    )}
+                    {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
+                      <Button
+                        onClick={handleProceedToVerification}
+                        disabled={loading || selectedProjects.length === 0}
+                        className={`
+                        h-10 px-6 font-bold shadow-lg transition-all
+                        ${selectedProjects.length > 0
+                            ? 'bg-white text-teal-600 hover:bg-teal-50'
+                            : 'bg-white/10 text-white/50 cursor-not-allowed border-white/10'}
+                      `}
+                      >
+                        {loading ? <Loader2 className="animate-spin mr-2" /> : applicationType === 'group' ? 'Review & Submit' : 'Submit Now'}
+                      </Button>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          setIsRefreshing(true);
+                          await fetchExistingGroup();
+                          setTimeout(() => setIsRefreshing(false), 800);
+                          toast.success('Application data refreshed');
+                        }}
+                        className="h-10 w-10 text-white hover:bg-white/10"
+                        title="Sync Form"
+                      >
+                        <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDeleteGroup}
+                        className="h-10 w-10 text-white hover:bg-white/10"
+                        title="Discard Application & Group"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {applicationType === 'solo' && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setStep('choice');
-                        setApplicationType(null);
-                      }}
-                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
-                    >
-                      Back
-                    </Button>
-                  )}
+                <CardContent className="p-8 space-y-8">
+                  {/* Access Warning for Non-Leaders */}
                   {applicationType === 'group' && !isGroupLeader && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setStep('member-waiting')}
-                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
-                    >
-                      Back
-                    </Button>
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-4">
+                      <div className="p-2 bg-red-100 rounded-full text-red-600">
+                        <XCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-red-900">Access Restricted</h3>
+                        <p className="text-sm text-red-800 mt-1">
+                          Only the group leader can fill out and submit the application form. Please wait for your leader to complete this step.
+                        </p>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Main Form Content */}
                   {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
-                    <Button
-                      onClick={handleProceedToVerification}
-                      disabled={loading || selectedProjects.length === 0}
-                      className={`
-                        h-10 px-6 font-bold shadow-lg transition-all
-                        ${selectedProjects.length > 0
-                          ? 'bg-white text-teal-600 hover:bg-teal-50'
-                          : 'bg-white/10 text-white/50 cursor-not-allowed border-white/10'}
-                      `}
-                    >
-                      {loading ? <Loader2 className="animate-spin mr-2" /> : applicationType === 'group' ? 'Review & Submit' : 'Submit Now'}
-                    </Button>
+                    <>
+                      {applicationType === 'group' && (
+                        <div className="flex flex-col md:flex-row gap-6">
+                          <div className="flex-1 p-4 bg-teal-50 border border-teal-200 rounded-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                              <Users className="w-16 h-16" />
+                            </div>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-bold text-teal-900 mb-2 flex items-center gap-2">
+                                  <Users className="w-4 h-4" /> Group Application
+                                </h3>
+                                <p className="text-sm text-teal-800">
+                                  You are submitting on behalf of your group members.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          {groupCode && (
+                            <div className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Group Code</p>
+                                <p className="text-xl font-mono font-bold text-slate-900">{formatGroupCode(groupCode)}</p>
+                              </div>
+                              <div className="text-right flex flex-col items-end gap-1">
+                                <p className="text-xs text-slate-500">Status</p>
+                                <Badge variant="secondary" className="bg-teal-100 text-teal-700 hover:bg-teal-100 whitespace-nowrap">
+                                  {groupMembers.length}/4 Joined
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label>Department <span className="text-red-500">*</span></Label>
+                            <Input
+                              value={formData.department}
+                              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                              placeholder="e.g. Computer Science"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Specialization (Optional)</Label>
+                            <Input
+                              value={formData.specialization}
+                              onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                              placeholder="e.g. AI/ML"
+                            />
+                          </div>
+
+                          {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
+                            <div className="space-y-2">
+                              <Label>CGPA <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="10"
+                                value={formData.cgpa || ''}
+                                onChange={(e) => setFormData({ ...formData, cgpa: parseFloat(e.target.value) })}
+                                placeholder="e.g. 9.5"
+                                required
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-lg font-bold flex items-center gap-2">
+                                Select Projects <Badge variant={selectedProjects.length > 0 ? 'default' : 'secondary'} className={selectedProjects.length > 0 ? 'bg-teal-600' : ''}>{selectedProjects.length}/3</Badge>
+                              </h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsProjectListExpanded(!isProjectListExpanded)}
+                                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8"
+                              >
+                                {isProjectListExpanded ? (
+                                  <><Minimize2 className="w-4 h-4 mr-2" /> Compact View</>
+                                ) : (
+                                  <><Maximize2 className="w-4 h-4 mr-2" /> Expand View</>
+                                )}
+                              </Button>
+                            </div>
+                            <span className="text-sm text-slate-500 hidden sm:inline">Select up to 3 projects in order of preference</span>
+                          </div>
+
+                          <div
+                            className={`grid gap-4 overflow-y-auto pr-2 custom-scrollbar transition-all duration-300 ${isProjectListExpanded ? 'max-h-[800px]' : 'max-h-[500px]'
+                              }`}
+                            data-lenis-prevent
+                          >
+                            {projects.length === 0 ? (
+                              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                <p className="text-slate-500">No projects available for selection yet.</p>
+                              </div>
+                            ) : (
+                              projects.map(project => {
+                                const isSelected = selectedProjects.includes(project._id);
+                                const selectionIndex = selectedProjects.indexOf(project._id) + 1;
+
+                                return (
+                                  <div
+                                    key={project._id}
+                                    onClick={() => handleProjectSelection(project._id)}
+                                    className={`
+                                        relative p-6 rounded-xl border-2 transition-all cursor-pointer group
+                                        ${isSelected
+                                        ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/10 shadow-md'
+                                        : 'border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 hover:bg-white dark:hover:bg-slate-900'
+                                      }
+                                      `}
+                                  >
+                                    <div className="flex items-start gap-4">
+                                      <div className={`
+                                            w-6 h-6 rounded-full flex items-center justify-center border transition-colors flex-shrink-0 mt-1
+                                            ${isSelected ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300 bg-white dark:bg-slate-800 text-transparent group-hover:border-teal-400'}
+                                          `}>
+                                        {isSelected ? <CheckCircle className="w-4 h-4" /> : null}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div>
+                                            <h4 className={`font-bold text-lg mb-1 ${isSelected ? 'text-teal-900 dark:text-teal-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                                              {project.title}
+                                            </h4>
+                                            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-3">
+                                              {project.brief}
+                                            </p>
+
+                                            {project.prerequisites && (
+                                              <div className="mb-3 text-xs bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 p-2 rounded text-amber-900 dark:text-amber-100">
+                                                <span className="font-bold">Prerequisites: </span>
+                                                {project.prerequisites}
+                                              </div>
+                                            )}
+                                          </div>
+                                          {isSelected && (
+                                            <Badge className="bg-teal-600 pointer-events-none whitespace-nowrap">
+                                              Choice #{selectionIndex}
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                                          <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                            <User className="w-3 h-3" /> {project.facultyName}
+                                          </span>
+                                          <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                            <GraduationCap className="w-3 h-3" /> {project.department}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+
+                        {selectedProjects.length === 0 && projects.length > 0 && (
+                          <p className="text-center text-sm text-red-500 mt-3 animate-pulse">
+                            Please select at least one project to proceed
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
+
+                  {applicationType === 'group' && !isGroupLeader && (
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                      <p className="text-slate-600 mb-4 font-medium italic">
+                        "Wait for your group leader to finalize the project selection..."
+                      </p>
+                      <div className="flex justify-center gap-4">
+                        <Button variant="destructive" onClick={handleLeaveGroup} disabled={loading}>
+                          Leave Group
+                        </Button>
+                        <Button variant="outline" onClick={() => setStep('member-waiting')}>
+                          Back to Status
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        }
+
+        {/* Step 4: Verify Group Members (Group Applications Only) */}
+        {
+          step === 'verify-members' && applicationType === 'group' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-3xl mx-auto"
+            >
+              <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
+                <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <ShieldCheck className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold font-display">Final Verification</h2>
+                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 font-mono">
+                          {formatGroupCode(groupCode)}
+                        </Badge>
+                      </div>
+                      <p className="text-teal-100 text-sm">Review team and projects</p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <Button
                       variant="ghost"
@@ -1855,417 +2170,153 @@ export function ApplicationPage() {
                         setIsRefreshing(true);
                         await fetchExistingGroup();
                         setTimeout(() => setIsRefreshing(false), 800);
-                        toast.success('Application data refreshed');
+                        toast.success('Team status updated');
                       }}
                       className="h-10 w-10 text-white hover:bg-white/10"
-                      title="Sync Form"
+                      title="Refresh Team"
                     >
                       <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDeleteGroup}
-                      className="h-10 w-10 text-white hover:bg-white/10"
-                      title="Discard Application & Group"
+                      variant="outline"
+                      onClick={() => setStep('application')}
+                      disabled={loading}
+                      className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      Edit Form
+                    </Button>
+                    <Button
+                      onClick={handleSubmitApplication}
+                      className="h-10 px-6 bg-white text-teal-600 hover:bg-teal-50 font-bold shadow-lg transition-all"
+                      disabled={loading || groupMembers.length < 2 || groupMembers.some(m => !memberDetails.some(d => (d.userId?._id || d.userId) === (m._id || m.id)))}
+                    >
+                      {loading ? <Loader2 className="animate-spin mr-2" /> : 'Confirm & Submit'}
                     </Button>
                   </div>
                 </div>
-              </div>
 
-              <CardContent className="p-8 space-y-8">
-                {/* Access Warning for Non-Leaders */}
-                {applicationType === 'group' && !isGroupLeader && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-4">
-                    <div className="p-2 bg-red-100 rounded-full text-red-600">
-                      <XCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-red-900">Access Restricted</h3>
-                      <p className="text-sm text-red-800 mt-1">
-                        Only the group leader can fill out and submit the application form. Please wait for your leader to complete this step.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <CardContent className="p-8 space-y-8">
+                  {/* Member Verification List */}
+                  <div>
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                      <Users className="w-5 h-5 text-teal-600" /> Team Members <Badge>{groupMembers.length}</Badge>
+                    </h3>
 
-                {/* Main Form Content */}
-                {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
-                  <>
-                    {applicationType === 'group' && (
-                      <div className="flex flex-col md:flex-row gap-6">
-                        <div className="flex-1 p-4 bg-teal-50 border border-teal-200 rounded-xl relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <Users className="w-16 h-16" />
-                          </div>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-bold text-teal-900 mb-2 flex items-center gap-2">
-                                <Users className="w-4 h-4" /> Group Application
-                              </h3>
-                              <p className="text-sm text-teal-800">
-                                You are submitting on behalf of your group members.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        {groupCode && (
-                          <div className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                            <div>
-                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Group Code</p>
-                              <p className="text-xl font-mono font-bold text-slate-900">{formatGroupCode(groupCode)}</p>
-                            </div>
-                            <div className="text-right flex flex-col items-end gap-1">
-                              <p className="text-xs text-slate-500">Status</p>
-                              <Badge variant="secondary" className="bg-teal-100 text-teal-700 hover:bg-teal-100 whitespace-nowrap">
-                                {groupMembers.length}/4 Joined
-                              </Badge>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="grid gap-3">
+                      {groupMembers.map((member: any, index: number) => {
+                        const memberDetail = memberDetails.find(detail => {
+                          const detailUserId = detail.userId?._id || detail.userId;
+                          const memberUserId = member._id || member.id;
+                          const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
+                          const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
+                          return detailUserIdString === memberUserIdString;
+                        });
+                        const hasSubmittedDetailsAndCgpa = !!memberDetail && memberDetail.cgpa !== undefined && memberDetail.cgpa !== null;
 
-                    <div className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label>Department <span className="text-red-500">*</span></Label>
-                          <Input
-                            value={formData.department}
-                            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                            placeholder="e.g. Computer Science"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Specialization (Optional)</Label>
-                          <Input
-                            value={formData.specialization}
-                            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                            placeholder="e.g. AI/ML"
-                          />
-                        </div>
-
-                        {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
-                          <div className="space-y-2">
-                            <Label>CGPA <span className="text-red-500">*</span></Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              max="10"
-                              value={formData.cgpa || ''}
-                              onChange={(e) => setFormData({ ...formData, cgpa: parseFloat(e.target.value) })}
-                              placeholder="e.g. 9.5"
-                              required
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                              Select Projects <Badge variant={selectedProjects.length > 0 ? 'default' : 'secondary'} className={selectedProjects.length > 0 ? 'bg-teal-600' : ''}>{selectedProjects.length}/3</Badge>
-                            </h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsProjectListExpanded(!isProjectListExpanded)}
-                              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8"
-                            >
-                              {isProjectListExpanded ? (
-                                <><Minimize2 className="w-4 h-4 mr-2" /> Compact View</>
-                              ) : (
-                                <><Maximize2 className="w-4 h-4 mr-2" /> Expand View</>
-                              )}
-                            </Button>
-                          </div>
-                          <span className="text-sm text-slate-500 hidden sm:inline">Select up to 3 projects in order of preference</span>
-                        </div>
-
-                        <div
-                          className={`grid gap-4 overflow-y-auto pr-2 custom-scrollbar transition-all duration-300 ${isProjectListExpanded ? 'max-h-[800px]' : 'max-h-[500px]'
-                            }`}
-                          data-lenis-prevent
-                        >
-                          {projects.length === 0 ? (
-                            <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                              <p className="text-slate-500">No projects available for selection yet.</p>
-                            </div>
-                          ) : (
-                            projects.map(project => {
-                              const isSelected = selectedProjects.includes(project._id);
-                              const selectionIndex = selectedProjects.indexOf(project._id) + 1;
-
-                              return (
-                                <div
-                                  key={project._id}
-                                  onClick={() => handleProjectSelection(project._id)}
-                                  className={`
-                                        relative p-6 rounded-xl border-2 transition-all cursor-pointer group
-                                        ${isSelected
-                                      ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/10 shadow-md'
-                                      : 'border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 hover:bg-white dark:hover:bg-slate-900'
-                                    }
-                                      `}
-                                >
-                                  <div className="flex items-start gap-4">
-                                    <div className={`
-                                            w-6 h-6 rounded-full flex items-center justify-center border transition-colors flex-shrink-0 mt-1
-                                            ${isSelected ? 'bg-teal-500 border-teal-500 text-white' : 'border-slate-300 bg-white dark:bg-slate-800 text-transparent group-hover:border-teal-400'}
-                                          `}>
-                                      {isSelected ? <CheckCircle className="w-4 h-4" /> : null}
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                          <h4 className={`font-bold text-lg mb-1 ${isSelected ? 'text-teal-900 dark:text-teal-100' : 'text-slate-900 dark:text-slate-100'}`}>
-                                            {project.title}
-                                          </h4>
-                                          <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-3">
-                                            {project.brief}
-                                          </p>
-
-                                          {project.prerequisites && (
-                                            <div className="mb-3 text-xs bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 p-2 rounded text-amber-900 dark:text-amber-100">
-                                              <span className="font-bold">Prerequisites: </span>
-                                              {project.prerequisites}
-                                            </div>
-                                          )}
-                                        </div>
-                                        {isSelected && (
-                                          <Badge className="bg-teal-600 pointer-events-none whitespace-nowrap">
-                                            Choice #{selectionIndex}
-                                          </Badge>
-                                        )}
-                                      </div>
-
-                                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                                          <User className="w-3 h-3" /> {project.facultyName}
-                                        </span>
-                                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                                          <GraduationCap className="w-3 h-3" /> {project.department}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-
-                      {selectedProjects.length === 0 && projects.length > 0 && (
-                        <p className="text-center text-sm text-red-500 mt-3 animate-pulse">
-                          Please select at least one project to proceed
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {applicationType === 'group' && !isGroupLeader && (
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
-                    <p className="text-slate-600 mb-4 font-medium italic">
-                      "Wait for your group leader to finalize the project selection..."
-                    </p>
-                    <div className="flex justify-center gap-4">
-                      <Button variant="destructive" onClick={handleLeaveGroup} disabled={loading}>
-                        Leave Group
-                      </Button>
-                      <Button variant="outline" onClick={() => setStep('member-waiting')}>
-                        Back to Status
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Step 4: Verify Group Members (Group Applications Only) */}
-        {step === 'verify-members' && applicationType === 'group' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-3xl mx-auto"
-          >
-            <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
-              <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <ShieldCheck className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="hidden sm:block">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold font-display">Final Verification</h2>
-                      <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 font-mono">
-                        {formatGroupCode(groupCode)}
-                      </Badge>
-                    </div>
-                    <p className="text-teal-100 text-sm">Review team and projects</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={async () => {
-                      setIsRefreshing(true);
-                      await fetchExistingGroup();
-                      setTimeout(() => setIsRefreshing(false), 800);
-                      toast.success('Team status updated');
-                    }}
-                    className="h-10 w-10 text-white hover:bg-white/10"
-                    title="Refresh Team"
-                  >
-                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep('application')}
-                    disabled={loading}
-                    className="h-10 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
-                  >
-                    Edit Form
-                  </Button>
-                  <Button
-                    onClick={handleSubmitApplication}
-                    className="h-10 px-6 bg-white text-teal-600 hover:bg-teal-50 font-bold shadow-lg transition-all"
-                    disabled={loading || groupMembers.length < 2 || groupMembers.some(m => !memberDetails.some(d => (d.userId?._id || d.userId) === (m._id || m.id)))}
-                  >
-                    {loading ? <Loader2 className="animate-spin mr-2" /> : 'Confirm & Submit'}
-                  </Button>
-                </div>
-              </div>
-
-              <CardContent className="p-8 space-y-8">
-                {/* Member Verification List */}
-                <div>
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                    <Users className="w-5 h-5 text-teal-600" /> Team Members <Badge>{groupMembers.length}</Badge>
-                  </h3>
-
-                  <div className="grid gap-3">
-                    {groupMembers.map((member: any, index: number) => {
-                      const memberDetail = memberDetails.find(detail => {
-                        const detailUserId = detail.userId?._id || detail.userId;
-                        const memberUserId = member._id || member.id;
-                        const detailUserIdString = typeof detailUserId === 'string' ? detailUserId : (detailUserId as any)?.toString?.();
-                        const memberUserIdString = typeof memberUserId === 'string' ? memberUserId : (memberUserId as any)?.toString?.();
-                        return detailUserIdString === memberUserIdString;
-                      });
-                      const hasSubmittedDetailsAndCgpa = !!memberDetail && memberDetail.cgpa !== undefined && memberDetail.cgpa !== null;
-
-                      return (
-                        <div
-                          key={member._id || index}
-                          className={`p-4 border rounded-xl flex items-center justify-between transition-colors
+                        return (
+                          <div
+                            key={member._id || index}
+                            className={`p-4 border rounded-xl flex items-center justify-between transition-all group
                                ${hasSubmittedDetailsAndCgpa
-                              ? 'border-green-200 bg-green-50/50 dark:bg-green-900/10'
-                              : 'border-amber-200 bg-amber-50/50 dark:bg-amber-900/10'}
+                                ? 'border-teal-200 bg-teal-50/30 dark:bg-teal-900/10'
+                                : 'border-amber-200 bg-amber-50/50 dark:bg-amber-900/10'}
                              `}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
-                                 ${hasSubmittedDetails ? 'bg-green-500' : 'bg-amber-500'}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white
+                                 ${hasSubmittedDetailsAndCgpa ? 'bg-teal-600' : 'bg-amber-500'}
                                `}>
-                              {member.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-bold text-slate-900 dark:text-slate-100">{member.name || 'Unknown'}</p>
-                                {member._id === user?.id && <Badge variant="secondary" className="text-[10px] h-5">You</Badge>}
-                                {isGroupLeader && member._id === user?.id && <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200 text-[10px] h-5">Leader</Badge>}
+                                {member.name?.charAt(0).toUpperCase() || 'U'}
                               </div>
-                              <p className="text-xs text-slate-500">{member.email}</p>
-
-                              {memberDetail ? (
-                                <div className="flex items-center gap-2 mt-1 text-xs text-green-700">
-                                  <span><CheckCircle className="inline w-3 h-3 mr-1" /> Ready</span>
-                                  <span className="text-slate-400">|</span>
-                                  <span className="text-slate-600">{memberDetail.department}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-slate-900 dark:text-slate-100">{member.name || 'Unknown'}</p>
+                                  {member._id === user?.id && <Badge variant="secondary" className="bg-teal-100 text-teal-700 text-[10px] h-5">You</Badge>}
+                                  {isGroupLeader && member._id === user?.id && <Badge className="bg-teal-600 text-white border-0 text-[10px] h-5">Leader</Badge>}
                                 </div>
-                              ) : (
-                                <p className="text-xs text-amber-600 mt-1 font-medium flex items-center gap-1">
-                                  <XCircle className="w-3 h-3" /> Details Pending
-                                </p>
+                                <p className="text-xs text-slate-500">{member.email}</p>
+
+                                {memberDetail ? (
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-teal-200 text-[9px] h-4 py-0 flex gap-1 items-center">
+                                      <CheckCircle className="w-2.5 h-2.5" /> Ready
+                                    </Badge>
+                                    <span className="text-[10px] text-slate-400">{memberDetail.department}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 mt-1.5 text-amber-600">
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-semibold">Details Pending</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {isGroupLeader && member._id !== user?.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMember(member._id)}
+                                  disabled={loading}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  Remove
+                                </Button>
                               )}
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            {isGroupLeader && member._id !== user?.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(member._id)}
-                                disabled={loading}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                Remove
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {groupMembers.length < 2 && (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
-                    <div className="p-2 bg-amber-100 rounded-full h-fit text-amber-600">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-amber-900 text-sm">Minimum Members Required</h4>
-                      <p className="text-sm text-amber-800 mt-1">
-                        Your group needs at least 2 members to submit an application. Please invite more members using your group code.
-                      </p>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
 
-                {/* Selected Projects Summary */}
-                <div>
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                    <LayoutGrid className="w-5 h-5 text-teal-600" /> Selected Projects
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedProjects.map((projectId, index) => {
-                      const project = projects.find(p => p._id === projectId);
-                      return project ? (
-                        <div key={projectId} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm border border-teal-200">
-                            {index + 1}
+                  {groupMembers.length < 2 && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+                      <div className="p-2 bg-amber-100 rounded-full h-fit text-amber-600">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-amber-900 text-sm">Minimum Members Required</h4>
+                        <p className="text-sm text-amber-800 mt-1">
+                          Your group needs at least 2 members to submit an application. Please invite more members using your group code.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Projects Summary */}
+                  <div>
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                      <LayoutGrid className="w-5 h-5 text-teal-600" /> Selected Projects
+                    </h3>
+                    <div className="space-y-3">
+                      {selectedProjects.map((projectId, index) => {
+                        const project = projects.find(p => p._id === projectId);
+                        return project ? (
+                          <div key={projectId} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm border border-teal-200">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 dark:text-slate-100">{project.title}</p>
+                              <p className="text-xs text-slate-500">{project.facultyName}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-slate-100">{project.title}</p>
-                            <p className="text-xs text-slate-500">{project.facultyName}</p>
-                          </div>
-                        </div>
-                      ) : null;
-                    })}
+                        ) : null;
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                {/* Bottom info for clarity */}
-                <p className="text-center text-sm text-slate-500 italic">
-                  Review the team and selected projects carefully before confirming.
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                  {/* Bottom info for clarity */}
+                  <p className="text-center text-sm text-slate-500 italic">
+                    Review the team and selected projects carefully before confirming.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        }
         {/* Final Confirmation Modal */}
         <ConfirmationModal
           isOpen={confirmConfig.isOpen}
@@ -2276,7 +2327,7 @@ export function ApplicationPage() {
           type={confirmConfig.type}
           confirmText={confirmConfig.type === 'danger' ? 'Delete Permanently' : 'Confirm'}
         />
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
