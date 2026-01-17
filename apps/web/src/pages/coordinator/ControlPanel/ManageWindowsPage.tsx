@@ -109,7 +109,7 @@ export function ManageWindowsPage() {
                     {/* Combined Split Button */}
                     <div className="relative group flex items-stretch rounded-lg shadow-sm">
                         <button
-                            onClick={() => navigate('/dashboard/control/individual')}
+                            onClick={() => navigate('../individual')}
                             className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-l-lg font-medium flex items-center gap-2 text-sm transition-colors border-r border-white/20"
                         >
                             <Plus className="w-4 h-4" />
@@ -128,7 +128,7 @@ export function ManageWindowsPage() {
                             {/* Dropdown Menu */}
                             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 hidden group-focus-within:block focus-within:block z-50">
                                 <button
-                                    onClick={() => navigate('/dashboard/control/wizard')}
+                                    onClick={() => navigate('../wizard')}
                                     className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                                 >
                                     Create Semester Plan
@@ -147,7 +147,7 @@ export function ManageWindowsPage() {
                 onShowInactiveToggle={setShowInactiveWindows}
                 onEditWindow={handleEditWindow}
                 onDeleteWindow={handleDeleteWindow}
-                onCreateWindow={() => navigate('/dashboard/control/individual')}
+                onCreateWindow={() => navigate('../individual')}
             />
 
             {/* Modal for Creation/Editing */}

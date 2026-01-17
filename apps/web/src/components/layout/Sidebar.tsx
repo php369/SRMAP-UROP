@@ -19,7 +19,8 @@ import {
   SettingsIcon,
   CheckCircleIcon,
   CalendarIcon,
-  XIcon
+  XIcon,
+  ShieldIcon
 } from '../ui/Icons';
 import { NotificationBell } from '../common/NotificationBell';
 
@@ -37,6 +38,7 @@ const IconComponents = {
   Settings: SettingsIcon,
   CheckCircle: CheckCircleIcon,
   Calendar: CalendarIcon,
+  Shield: ShieldIcon,
 };
 
 const GlassSurface = ({

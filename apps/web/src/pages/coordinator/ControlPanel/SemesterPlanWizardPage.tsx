@@ -429,7 +429,7 @@ export function SemesterPlanWizardPage() {
         if (currentStep > 0) {
             setCurrentStep(prev => prev - 1);
         } else {
-            navigate('/dashboard/control/windows');
+            navigate('../windows');
         }
     };
 
@@ -485,7 +485,7 @@ export function SemesterPlanWizardPage() {
                 // Toast is handled by the hook
                 // Wait a moment for the toast to be readable before navigating
                 setTimeout(() => {
-                    navigate('/dashboard/control/windows');
+                    navigate('../windows');
                 }, 1000);
             }
         } catch (error) {

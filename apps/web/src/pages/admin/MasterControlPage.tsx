@@ -11,7 +11,8 @@ import {
     Briefcase,
     Layers,
     UserCog,
-    Loader2
+    Loader2,
+    Shield
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { apiClient } from '@/utils/api';
@@ -141,7 +142,7 @@ const MasterControlPage = () => {
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-[#154259] rounded-2xl shadow-lg shadow-[#154259]/20">
-                            <Activity className="w-8 h-8 text-white" />
+                            <Shield className="w-8 h-8 text-white" />
                         </div>
                         <div>
                             <h1 className="text-4xl font-black text-slate-900 tracking-tight font-heading">

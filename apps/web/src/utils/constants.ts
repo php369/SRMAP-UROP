@@ -111,7 +111,8 @@ export const ROLE_NAVIGATION = {
   admin: [
     { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
     { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload', color: '#22C55E' },
-    { label: 'Master Control', path: '/dashboard/admin/system', icon: 'Settings', color: '#154259' },
+    { label: 'Control Panel', path: '/dashboard/admin/control', icon: 'Settings', color: '#DC2626' },
+    { label: 'Master Control', path: '/dashboard/admin/system', icon: 'Shield', color: '#154259' },
   ],
 
 } as const;

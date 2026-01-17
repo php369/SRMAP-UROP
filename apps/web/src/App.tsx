@@ -166,6 +166,11 @@ function App() {
                                       <MasterControlPage />
                                     </AuthGuard>
                                   } />
+                                  <Route path="/admin/control/*" element={
+                                    <AuthGuard requiredRole="admin">
+                                      <ControlPanel />
+                                    </AuthGuard>
+                                  } />
 
 
                                   {/* Catch all route */}

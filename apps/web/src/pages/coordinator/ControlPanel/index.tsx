@@ -16,25 +16,29 @@ export function ControlPanel() {
 
   // Smart Breadcrumb Logic
   const getBreadcrumbs = () => {
+    // Determine base path based on current location (admin vs coordinator)
+    const isAdmin = location.pathname.includes('/admin/control');
+    const basePath = isAdmin ? '/dashboard/admin/control' : '/dashboard/control';
+
     const crumbs: { label: string; path?: string }[] = [
       { label: 'Dashboard', path: '/dashboard' },
-      { label: 'Control Panel', path: '/dashboard/control' }
+      { label: isAdmin ? 'Coordinator Control' : 'Control Panel', path: basePath }
     ];
 
     if (location.pathname.includes('/windows')) {
-      crumbs.push({ label: 'Manage Windows', path: '/dashboard/control/windows' });
+      crumbs.push({ label: 'Manage Windows', path: `${basePath}/windows` });
     } else if (location.pathname.includes('/wizard')) {
       crumbs.push(
-        { label: 'Manage Windows', path: '/dashboard/control/windows' },
-        { label: 'Setup Semester Plan', path: '/dashboard/control/wizard' }
+        { label: 'Manage Windows', path: `${basePath}/windows` },
+        { label: 'Setup Semester Plan', path: `${basePath}/wizard` }
       );
     } else if (location.pathname.includes('/individual')) {
       crumbs.push(
-        { label: 'Manage Windows', path: '/dashboard/control/windows' },
-        { label: 'Create Window', path: '/dashboard/control/individual' }
+        { label: 'Manage Windows', path: `${basePath}/windows` },
+        { label: 'Create Window', path: `${basePath}/individual` }
       );
     } else if (location.pathname.includes('/external-evaluators')) {
-      crumbs.push({ label: 'External Evaluators', path: '/dashboard/control/external-evaluators' });
+      crumbs.push({ label: 'External Evaluators', path: `${basePath}/external-evaluators` });
     }
 
     // Don't link to the current page's breadcrumb

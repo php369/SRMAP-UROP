@@ -325,7 +325,7 @@ export function IndividualWindowWizardPage() {
         if (currentStep > 0) {
             setCurrentStep(prev => prev - 1);
         } else {
-            navigate('/dashboard/control/windows');
+            navigate('../windows');
         }
     };
 
@@ -373,7 +373,7 @@ export function IndividualWindowWizardPage() {
 
             const success = await createWindow(form, null);
             if (success) {
-                setTimeout(() => navigate('/dashboard/control/windows'), 1000);
+                setTimeout(() => navigate('../windows'), 1000);
             }
         } catch (error) {
             console.error(error);

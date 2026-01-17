@@ -42,6 +42,7 @@ import {
     RefreshCw,
     UserCheck,
     Maximize2,
+    Shield,
 } from 'lucide-react';
 
 // Helper to enforce defaults while allowing overrides
@@ -92,6 +93,7 @@ export const LockIcon = withDefaults(Lock);
 export const RefreshCwIcon = withDefaults(RefreshCw);
 export const UserCheckIcon = withDefaults(UserCheck);
 export const Maximize2Icon = withDefaults(Maximize2);
+export const ShieldIcon = withDefaults(Shield);
 
 // Status Icons
 export const AlertTriangleIcon = withDefaults(AlertTriangle);
