@@ -7,7 +7,8 @@ import {
   getGroupById,
   getGroupByCode,
   getUserGroup,
-  getGroupsByProjectType
+  getGroupsByProjectType,
+  updateDraftProjects
 } from '../services/groupService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
@@ -1138,6 +1139,52 @@ router.delete('/:id', authenticate, authorize('student'), async (req, res) => {
       error: {
         code: 'DELETE_GROUP_FAILED',
         message: 'Failed to delete group',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+});
+
+/**
+ * PATCH /api/groups/:id/draft-projects
+ * Update draft project selection (leader only)
+ * Accessible by: students (group leaders only)
+ */
+router.patch('/:id/draft-projects', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { projectIds } = req.body;
+
+    if (!projectIds || !Array.isArray(projectIds)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_PROJECT_IDS',
+          message: 'projectIds must be an array of project IDs',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    const group = await updateDraftProjects(
+      new mongoose.Types.ObjectId(req.user!.id),
+      id,
+      projectIds
+    );
+
+    res.json({
+      success: true,
+      data: group,
+      message: 'Draft projects updated successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error updating draft projects:', error);
+    res.status(error.message?.includes('Only the group leader') ? 403 : 500).json({
+      success: false,
+      error: {
+        code: 'UPDATE_DRAFTS_FAILED',
+        message: error.message || 'Failed to update draft projects',
         timestamp: new Date().toISOString(),
       },
     });

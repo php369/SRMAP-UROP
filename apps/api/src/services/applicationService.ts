@@ -49,6 +49,10 @@ export async function createApplications(data: {
       if (!group) {
         throw new Error('Group not found');
       }
+
+      // Clear draft projects on final submission
+      group.draftProjects = [];
+      await group.save();
     }
 
     // Verify all selected projects exist and are published

@@ -262,13 +262,13 @@ export async function leaveGroup(
       } catch (error) {
         logger.error('Error cleaning up all member details:', error);
       }
-      
+
       // Update all members' currentGroupId to null
       await User.updateMany(
         { _id: { $in: group.members } },
         { $unset: { currentGroupId: 1 } }
       );
-      
+
       await Group.findByIdAndDelete(groupId);
       logger.info(`Group ${group.groupId} deleted as leader left`);
       return null;
@@ -353,7 +353,7 @@ export async function getUserGroup(
 ): Promise<IGroup | null> {
   try {
     logger.info('Looking for group for user:', { userId: userId.toString() });
-    
+
     const group = await Group.findOne({
       members: userId,
       status: { $in: ['forming', 'complete', 'applied', 'approved', 'frozen'] }
@@ -361,13 +361,15 @@ export async function getUserGroup(
       .populate('leaderId', 'name email studentId')
       .populate('members', 'name email studentId')
       .populate('assignedFacultyId', 'name email facultyId')
-      .populate('externalEvaluatorId', 'name email facultyId');
+      .populate('externalEvaluatorId', 'name email facultyId')
+      .populate('draftProjects', 'title brief facultyName department');
 
-    logger.info('Group query result:', { 
+    logger.info('Group query result:', {
       found: !!group,
       groupId: group?._id?.toString(),
       status: group?.status,
-      memberCount: group?.members?.length
+      memberCount: group?.members?.length,
+      hasDrafts: group?.draftProjects?.length
     });
 
     return group;
@@ -437,5 +439,42 @@ export async function getGroupsByProjectType(
   } catch (error) {
     logger.error('Error getting groups by project type:', error);
     return [];
+  }
+}
+
+/**
+ * Update draft projects for a group
+ * @param leaderId - ID of the leader updating the drafts
+ * @param groupId - Group ID
+ * @param projectIds - Array of Project IDs
+ * @returns Updated group
+ */
+export async function updateDraftProjects(
+  leaderId: mongoose.Types.ObjectId,
+  groupId: string | mongoose.Types.ObjectId,
+  projectIds: (string | mongoose.Types.ObjectId)[]
+): Promise<IGroup> {
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) throw new Error('Group not found');
+
+    // Authorization check
+    if (group.leaderId.toString() !== leaderId.toString()) {
+      throw new Error('Only the group leader can update draft projects');
+    }
+
+    // Convert string IDs to ObjectIds if necessary
+    const objectIds = projectIds.map(id =>
+      typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id
+    );
+
+    group.draftProjects = objectIds;
+    await group.save();
+
+    logger.info(`Draft projects updated for group ${group.groupId} by leader ${leaderId}`);
+    return group;
+  } catch (error) {
+    logger.error('Error updating draft projects:', error);
+    throw error;
   }
 }

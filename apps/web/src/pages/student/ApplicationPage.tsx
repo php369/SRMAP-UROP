@@ -29,7 +29,8 @@ import {
   Trash2,
   ExternalLink,
   Info,
-  RefreshCw
+  RefreshCw,
+  LogOut
 } from 'lucide-react';
 import {
   Dialog,
@@ -39,6 +40,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '../../components/ui/dialog';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { ApplicationEmptyState } from '../faculty/components/ApplicationEmptyState';
 
 interface Project {
@@ -60,6 +62,7 @@ export function ApplicationPage() {
   const [groupAction, setGroupAction] = useState<'create' | 'join' | null>(null);
   const [groupCode, setGroupCode] = useState('');
   const [groupId, setGroupId] = useState('');
+  const [groupData, setGroupData] = useState<any | null>(null);
   const [inputCode, setInputCode] = useState('');
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [memberDetails, setMemberDetails] = useState<any[]>([]);
@@ -74,24 +77,54 @@ export function ApplicationPage() {
   const [initializing, setInitializing] = useState(true);
   const [isProjectListExpanded, setIsProjectListExpanded] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Clear input code and reset actions when navigating back or switching steps
+  useEffect(() => {
+    if (step === 'choice') {
+      setGroupAction(null);
+      setInputCode('');
+    } else if (!groupAction) {
+      setInputCode('');
+    }
+  }, [groupAction, step]);
+
+  // Confirmation Modal semi-dynamic state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'warning' | 'danger' | 'info' | 'success';
+    action: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    action: () => { },
+  });
 
   const handleRevokeApplication = async (applicationId: string) => {
-    if (!window.confirm('Are you sure you want to revoke this application? This will remove it from the faculty dashboard as well.')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await api.delete<any>(`/applications/${applicationId}`);
-      if (response.success) {
-        toast.success('Application revoked successfully');
-        await fetchExistingApplication();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Revoke Application',
+      message: 'Are you sure you want to revoke this application? This will remove it from the faculty dashboard as well.',
+      type: 'danger',
+      action: async () => {
+        try {
+          setLoading(true);
+          const response = await api.delete<any>(`/applications/${applicationId}`);
+          if (response.success) {
+            toast.success('Application revoked successfully');
+            await fetchExistingApplication();
+          }
+        } catch (error: any) {
+          toast.error(error.response?.data?.error?.message || 'Failed to revoke application');
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'Failed to revoke application');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   // Check if application window is open
@@ -193,30 +226,48 @@ export function ApplicationPage() {
       const response = await api.get('/groups/my-group');
       if (response.success && response.data) {
         const group = response.data as any;
+        setGroupData(group);
         setGroupCode(group.groupCode);
         setGroupId(group._id);
-        // Ensure members are properly set - the API should populate this
         const members = group.members || [];
         setGroupMembers(members);
 
-        // Check if current user is the group leader
         const isLeader = group.leaderId?._id === user?.id || group.leaderId === user?.id;
         setIsGroupLeader(isLeader);
 
-        console.log('Group fetched:', {
-          groupCode: group.groupCode,
-          memberCount: members.length,
-          isLeader
-        });
+        // If the leader has draft projects, initialize selectedProjects
+        if (isLeader && group.draftProjects && group.draftProjects.length > 0) {
+          const draftIds = group.draftProjects.map((p: any) => p._id || p);
+          setSelectedProjects(draftIds);
+        }
 
-        // Fetch member details if in a group
         if (group._id) {
           await fetchMemberDetails(group._id);
         }
+      } else {
+        // If response is successful but data is null/missing, handle as no group found
+        if (groupId) {
+          console.log('Group missing, resetting state...');
+          setGroupData(null);
+          setGroupId('');
+          setGroupCode('');
+          setGroupMembers([]);
+          setStep('choice');
+          setApplicationType(null);
+        }
       }
-    } catch (error) {
-      // No existing group, that's fine
-      console.log('No existing group found');
+    } catch (error: any) {
+      console.log('Error or no existing group found:', error);
+      // If we previously had a group but now it's gone (e.g. 404), reset
+      if (groupId) {
+        setGroupData(null);
+        setGroupId('');
+        setGroupCode('');
+        setGroupMembers([]);
+        setStep('choice');
+        setApplicationType(null);
+        toast.info('Group no longer exists. Returning to home.');
+      }
     }
   };
 
@@ -320,58 +371,33 @@ export function ApplicationPage() {
     }
   };
 
-  const handleLeaveGroup = async () => {
-    if (!groupId) return;
-
-    if (!confirm('Are you sure you want to leave this group? This action cannot be undone.')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.post(`/groups/${groupId}/leave`);
-      if (response.success) {
-        setGroupCode('');
-        setGroupId('');
-        setGroupMembers([]);
-        setMemberDetails([]);
-        setIsGroupLeader(false);
-        setHasSubmittedDetails(false);
-        toast.success('Left group successfully!');
-        setStep('choice');
-      } else {
-        toast.error(response.error?.message || 'Failed to leave group');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to leave group');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRemoveMember = async (memberId: string) => {
     if (!groupId) return;
 
-    if (!confirm('Are you sure you want to remove this member from the group?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await api.post(`/groups/${groupId}/remove-member-enhanced`, {
-        memberId
-      });
-      if (response.success) {
-        toast.success('Member removed successfully!');
-        await fetchExistingGroup();
-      } else {
-        toast.error(response.error?.message || 'Failed to remove member');
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Remove Member',
+      message: 'Are you sure you want to remove this member from the group?',
+      type: 'warning',
+      action: async () => {
+        setLoading(true);
+        try {
+          const response = await api.post(`/groups/${groupId}/remove-member-enhanced`, {
+            memberId
+          });
+          if (response.success) {
+            toast.success('Member removed successfully!');
+            await fetchExistingGroup();
+          } else {
+            toast.error(response.error?.message || 'Failed to remove member');
+          }
+        } catch (error: any) {
+          toast.error(error.message || 'Failed to remove member');
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to remove member');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const fetchExistingApplication = async () => {
@@ -533,34 +559,87 @@ export function ApplicationPage() {
   const handleDeleteGroup = async () => {
     if (!groupId) return;
 
-    if (!confirm('Are you sure you want to delete this group? This action cannot be undone. All members will be removed from the group.')) {
-      return;
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete everything?',
+      message: 'This will delete the group AND any pending application. All members will be freed. This action cannot be undone.',
+      type: 'danger',
+      action: async () => {
+        setLoading(true);
+        try {
+          // If we have a pending application, we might want to revoke it first or ensure the backend handles it.
+          // The backend currently deletes member details and group.
+          // Let's assume we want to ensure any application is also gone.
+          if (existingApplications.length > 0) {
+            // For simplicity, we assume one group application at a time.
+            const groupApp = existingApplications.find(app => (app.groupId?._id || app.groupId) === groupId);
+            if (groupApp) {
+              await api.delete(`/applications/${groupApp._id}`);
+            }
+          }
 
-    setLoading(true);
-    try {
-      const response = await api.delete(`/groups/${groupId}`);
-      if (response.success) {
-        // Reset all group-related state
-        setGroupCode('');
-        setGroupId('');
-        setGroupMembers([]);
-        setMemberDetails([]);
-        setIsGroupLeader(false);
-        setHasSubmittedDetails(false);
-        setApplicationType(null);
-        setSelectedProjects([]);
+          const response = await api.delete(`/groups/${groupId}`);
+          if (response.success) {
+            // Reset all group-related state
+            setGroupCode('');
+            setGroupId('');
+            setGroupMembers([]);
+            setMemberDetails([]);
+            setIsGroupLeader(false);
+            setHasSubmittedDetails(false);
+            setApplicationType(null);
+            setSelectedProjects([]);
+            setExistingApplications([]);
 
-        toast.success('Group deleted successfully! All members have been removed.');
-        setStep('choice');
-      } else {
-        toast.error(response.error?.message || 'Failed to delete group');
+            toast.success('Group and associated applications deleted successfully.');
+            setStep('choice');
+          } else {
+            toast.error(response.error?.message || 'Failed to delete group');
+          }
+        } catch (error: any) {
+          toast.error(error.message || 'Failed to delete group');
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete group');
-    } finally {
-      setLoading(false);
-    }
+    });
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!groupId) return;
+
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Leave Group?',
+      message: 'Are you sure you want to leave this group? You will be able to join another group or apply solo afterward.',
+      type: 'warning',
+      action: async () => {
+        setLoading(true);
+        try {
+          const response = await api.post(`/groups/${groupId}/leave`);
+          if (response.success) {
+            // Reset all group-related state
+            setGroupCode('');
+            setGroupId('');
+            setGroupMembers([]);
+            setMemberDetails([]);
+            setIsGroupLeader(false);
+            setHasSubmittedDetails(false);
+            setApplicationType(null);
+            setSelectedProjects([]);
+
+            toast.success(response.message || 'Successfully left the group');
+            setStep('choice');
+          } else {
+            toast.error(response.error?.message || 'Failed to leave group');
+          }
+        } catch (error: any) {
+          toast.error(error.message || 'Failed to leave group');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   const handleJoinGroup = async () => {
@@ -601,13 +680,28 @@ export function ApplicationPage() {
     }
   };
 
-  const handleProjectSelection = (projectId: string) => {
+  const handleProjectSelection = async (projectId: string) => {
+    let newSelection = [...selectedProjects];
     if (selectedProjects.includes(projectId)) {
-      setSelectedProjects(selectedProjects.filter(id => id !== projectId));
+      newSelection = selectedProjects.filter(id => id !== projectId);
     } else if (selectedProjects.length < 3) {
-      setSelectedProjects([...selectedProjects, projectId]);
+      newSelection = [...selectedProjects, projectId];
     } else {
       toast.error('You can select up to 3 projects only');
+      return;
+    }
+
+    setSelectedProjects(newSelection);
+
+    // Sync with backend if it's a group leader
+    if (applicationType === 'group' && isGroupLeader && groupId) {
+      try {
+        await api.patch(`/groups/${groupId}/draft-projects`, {
+          projectIds: newSelection
+        });
+      } catch (error) {
+        console.error('Failed to sync draft projects:', error);
+      }
     }
   };
 
@@ -693,7 +787,7 @@ export function ApplicationPage() {
         const errorMessage = response.error?.message || 'Failed to submit application';
         if (errorMessage.includes('already exists')) {
           toast.error('You have already submitted an application. Refreshing...');
-          setTimeout(() => window.location.reload(), 1500);
+          setTimeout(() => fetchExistingApplication(), 1500);
         } else {
           toast.error(errorMessage);
         }
@@ -731,23 +825,16 @@ export function ApplicationPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={fetchExistingApplication}
-                disabled={loading}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  await fetchExistingApplication();
+                  setTimeout(() => setIsRefreshing(false), 800);
+                }}
+                disabled={loading || isRefreshing}
                 className="group text-slate-600 hover:text-teal-600 border-slate-200 bg-white dark:bg-slate-900 shadow-sm transition-all"
               >
-                <motion.div
-                  className="flex items-center"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    animate={loading ? { rotate: 360 } : { rotate: 0 }}
-                    transition={loading ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
-                    className="mr-2"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </motion.div>
-                  Refresh
-                </motion.div>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
               </Button>
               {eligibleProjectType && (
                 <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 px-3 py-1.5 text-sm">
@@ -783,6 +870,19 @@ export function ApplicationPage() {
                           {application.groupId ? 'Group' : 'Solo'}
                         </span>
                       </div>
+                      {application.groupId?.members && (
+                        <div className="flex -space-x-2">
+                          {application.groupId.members.slice(0, 4).map((member: any) => (
+                            <div
+                              key={member._id}
+                              className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-[8px] font-bold text-teal-700 dark:text-teal-300"
+                              title={member.name}
+                            >
+                              {(member.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <Badge variant={
                         application.status === 'approved' ? 'success' :
                           application.status === 'rejected' ? 'error' : 'secondary'
@@ -921,6 +1021,31 @@ export function ApplicationPage() {
                     </div>
 
                     {/* Applicant Information */}
+                    {/* Team Details showing group mates */}
+                    {selectedApplication.groupId && (
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-teal-600" /> Team Members
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedApplication.groupId.members?.map((member: any) => (
+                            <div key={member._id} className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-[10px] font-bold text-teal-700">
+                                  {(member.name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{member.name || 'Unknown'}</span>
+                                {member._id === selectedApplication.groupId.leaderId && (
+                                  <Badge className="text-[8px] h-3 px-1 bg-teal-50 text-teal-600 border-teal-100">Leader</Badge>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-400">{member.email}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <p className="text-xs font-bold text-slate-400 uppercase">Application Type</p>
@@ -1028,25 +1153,37 @@ export function ApplicationPage() {
   console.log('🎯 ApplicationPage: Showing main application interface');
 
   // Steps definition for progress indicator
-  const steps = [
-    { id: 'choice', label: 'Type' },
-    { id: 'group-formation', label: 'Team' },
-    { id: 'member-details', label: 'Details' },
-    { id: 'member-waiting', label: 'Status' },
-    { id: 'application', label: 'Form' },
-    { id: 'verify-members', label: 'Review' }
-  ];
+  const getSteps = () => {
+    if (applicationType === 'solo') {
+      return [
+        { id: 'choice', label: 'Type' },
+        { id: 'application', label: 'Form' }
+      ];
+    }
+    if (applicationType === 'group') {
+      if (isGroupLeader) {
+        return [
+          { id: 'choice', label: 'Type' },
+          { id: 'group-formation', label: 'Team' },
+          { id: 'application', label: 'Form' },
+          { id: 'verify-members', label: 'Review' }
+        ];
+      } else {
+        return [
+          { id: 'choice', label: 'Type' },
+          { id: 'group-formation', label: 'Team' },
+          { id: 'member-details', label: 'Details' },
+          { id: 'member-waiting', label: 'Status' }
+        ];
+      }
+    }
+    return [{ id: 'choice', label: 'Type' }];
+  };
+
+  const steps = getSteps();
 
   const getCurrentStepIndex = () => {
-    switch (step) {
-      case 'choice': return 0;
-      case 'group-formation': return 1;
-      case 'member-details': return 2;
-      case 'member-waiting': return 3;
-      case 'application': return 4;
-      case 'verify-members': return 5;
-      default: return 0;
-    }
+    return steps.findIndex(s => s.id === step);
   };
 
   return (
@@ -1077,14 +1214,6 @@ export function ApplicationPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm mb-8 overflow-x-auto">
             <div className="flex items-center justify-between min-w-[300px]">
               {steps.map((s, idx) => {
-                // Simplified visible steps for cleaner UI
-                // Only show relevant steps based on flow (Group vs Solo)
-                const showStep = applicationType === 'solo'
-                  ? ['choice', 'application'].includes(s.id)
-                  : true; // Show all for group for now, or refine
-
-                if (!showStep) return null;
-
                 const isCompleted = getCurrentStepIndex() > idx;
                 const isCurrent = getCurrentStepIndex() === idx;
 
@@ -1097,7 +1226,7 @@ export function ApplicationPage() {
                             'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'}`}>
                         {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                       </div>
-                      <span className="hidden sm:inline">{s.label}</span>
+                      <span className="hidden sm:inline whitespace-nowrap">{s.label}</span>
                     </div>
                     {idx < steps.length - 1 && (
                       <div className={`h-0.5 flex-1 mx-4 transition-colors ${isCompleted ? 'bg-teal-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
@@ -1147,7 +1276,7 @@ export function ApplicationPage() {
                 <Users className="w-24 h-24 text-teal-600" />
               </div>
               <CardHeader>
-                <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Users className="w-6 h-6" />
                 </div>
                 <CardTitle className="text-2xl">Group Application</CardTitle>
@@ -1155,9 +1284,9 @@ export function ApplicationPage() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Team collaboration</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Shared responsibility</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-blue-500" /> Complex projects</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Team collaboration</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Shared responsibility</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-teal-500" /> Complex projects</li>
                 </ul>
               </CardContent>
             </Card>
@@ -1200,8 +1329,23 @@ export function ApplicationPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    Team Members <Badge variant="outline">{groupMembers.length}</Badge>
+                  <h3 className="font-semibold text-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      Team Members <Badge variant="outline">{groupMembers.length}</Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        fetchExistingGroup();
+                        toast.success('Member list updated');
+                      }}
+                      className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                      disabled={loading}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
                   </h3>
                   <div className="grid gap-3">
                     {groupMembers.map((member: any, index: number) => (
@@ -1290,11 +1434,11 @@ export function ApplicationPage() {
                 </Card>
 
                 <Card
-                  className="cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all duration-300 text-center py-8"
+                  className="cursor-pointer hover:border-teal-500 hover:shadow-lg transition-all duration-300 text-center py-8"
                   onClick={() => setGroupAction('join')}
                 >
                   <CardContent className="flex flex-col items-center gap-4">
-                    <div className="p-4 bg-blue-50 rounded-full text-blue-600">
+                    <div className="p-4 bg-teal-50 rounded-full text-teal-600">
                       <Users className="w-8 h-8" />
                     </div>
                     <div>
@@ -1352,8 +1496,21 @@ export function ApplicationPage() {
 
                   {groupAction === 'join' && (
                     <div className="max-w-sm mx-auto space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-center block">Enter 6-Character Code</Label>
+                      <div className="relative group">
+                        <Label className="text-center block text-slate-500 font-medium uppercase tracking-wider text-xs mb-4">Enter 6-Character Code</Label>
+                        <div className="flex justify-center gap-2 pointer-events-none">
+                          {[...Array(6)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-12 h-16 border-2 rounded-xl flex items-center justify-center text-3xl font-mono font-bold transition-all duration-200
+                                ${inputCode[i] ? 'border-teal-500 bg-teal-50/50 text-teal-600 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-300'}
+                                ${inputCode.length === i ? 'border-teal-400 ring-4 ring-teal-50 shadow-md' : ''}
+                              `}
+                            >
+                              {inputCode[i] || ''}
+                            </div>
+                          ))}
+                        </div>
                         <Input
                           type="text"
                           value={inputCode}
@@ -1362,15 +1519,21 @@ export function ApplicationPage() {
                             const cleanValue = rawValue.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
                             setInputCode(cleanValue);
                           }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            const pasteData = e.clipboardData.getData('text');
+                            const cleanValue = pasteData.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6);
+                            setInputCode(cleanValue);
+                          }}
                           maxLength={6}
-                          placeholder="ABC123"
-                          className="text-center text-3xl font-mono tracking-widest h-16 uppercase"
+                          className="absolute inset-0 opacity-0 cursor-text w-full h-full"
+                          autoFocus
                         />
                       </div>
                       <Button
                         onClick={handleJoinGroup}
                         disabled={loading || inputCode.length !== 6}
-                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-200 dark:shadow-none transition-all"
                       >
                         {loading ? <Loader2 className="animate-spin mr-2" /> : 'Join Group'}
                       </Button>
@@ -1406,17 +1569,42 @@ export function ApplicationPage() {
             className="max-w-2xl mx-auto"
           >
             <Card className="border-teal-200 dark:border-teal-800 shadow-xl">
-              <CardHeader className="bg-teal-50/50 dark:bg-teal-900/10 border-b border-teal-100 dark:border-teal-800/50">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-teal-100 text-teal-600 rounded-full">
-                    <GraduationCap className="w-6 h-6" />
+              <div className="bg-teal-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <GraduationCap className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <CardTitle>Additional Details</CardTitle>
-                    <CardDescription>We need some academic info to proceed</CardDescription>
+                  <div className="hidden sm:block">
+                    <h2 className="text-xl font-bold font-display">Additional Details</h2>
+                    <p className="text-teal-100 text-sm">We need some academic info to proceed</p>
                   </div>
                 </div>
-              </CardHeader>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLeaveGroup}
+                    className="h-9 px-3 text-white hover:bg-white/10 gap-2 font-medium"
+                  >
+                    <LogOut className="w-4 h-4" /> Leave
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={async () => {
+                      setIsRefreshing(true);
+                      await fetchExistingGroup();
+                      setTimeout(() => setIsRefreshing(false), 800);
+                      toast.success('Group data refreshed');
+                    }}
+                    className="h-10 w-10 text-white hover:bg-white/10"
+                    title="Sync Form"
+                  >
+                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </div>
               <CardContent className="pt-8">
                 {groupCode && (
                   <div className="mb-6 flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
@@ -1472,23 +1660,13 @@ export function ApplicationPage() {
                     />
                   </div>
 
-                  <div className="pt-4 flex gap-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleLeaveGroup}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                      Leave Group
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
-                      disabled={loading}
-                    >
-                      {loading ? <Loader2 className="animate-spin mr-2" /> : 'Submit Details'}
-                    </Button>
-                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white h-11 font-bold shadow-md"
+                    disabled={loading}
+                  >
+                    {loading ? <Loader2 className="animate-spin mr-2" /> : 'Submit Details'}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -1503,7 +1681,31 @@ export function ApplicationPage() {
             className="max-w-3xl mx-auto"
           >
             <Card className="border-teal-200 dark:border-teal-800 shadow-xl overflow-hidden">
-              <div className="bg-teal-600 p-8 text-center text-white">
+              <div className="bg-teal-600 p-8 text-center text-white relative">
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3 text-white hover:bg-white/10 gap-2 font-medium"
+                    onClick={handleLeaveGroup}
+                  >
+                    <LogOut className="w-4 h-4" /> Leave
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={async () => {
+                      setIsRefreshing(true);
+                      await Promise.all([fetchExistingGroup(), fetchExistingApplication()]);
+                      setTimeout(() => setIsRefreshing(false), 800);
+                      toast.success('Status updated');
+                    }}
+                    className="h-10 w-10 text-white hover:bg-white/10"
+                    title="Refresh Now"
+                  >
+                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <CheckCircle className="w-8 h-8 text-white" />
                 </div>
@@ -1515,13 +1717,42 @@ export function ApplicationPage() {
 
               <CardContent className="p-8">
                 <div className="mb-8">
-                  <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                    <LayoutGrid className="w-5 h-5 text-slate-400" />
-                    Available Projects
+                  <h3 className="font-semibold text-lg mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid className="w-5 h-5 text-slate-400" />
+                      {groupData?.draftProjects?.length > 0 ? "Leader's Draft Selection" : 'Available Projects'}
+                    </div>
+                    {groupData?.draftProjects?.length > 0 && (
+                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">Selection in Progress</Badge>
+                    )}
                   </h3>
 
-                  <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
-                    {projects.length === 0 ? (
+                  <div
+                    className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 overscroll-contain relative z-20 pointer-events-auto"
+                    data-lenis-prevent="true"
+                    onWheel={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    {groupData?.draftProjects?.length > 0 ? (
+                      groupData.draftProjects.map((project: any, idx: number) => (
+                        <div key={project._id} className="p-4 rounded-xl border-2 border-teal-100 bg-teal-50/30 dark:bg-teal-900/10 relative group">
+                          <div className="absolute -left-2 -top-2 w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">
+                            {idx + 1}
+                          </div>
+                          <h4 className="font-bold text-slate-900 dark:text-teal-100 mb-1">{project.title}</h4>
+                          <p className="text-sm text-slate-500 mb-3 line-clamp-2">{project.brief}</p>
+                          <div className="flex flex-wrap gap-2 text-[10px]">
+                            <Badge variant="outline" className="bg-white border-teal-100 text-teal-700">
+                              {project.facultyName}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+                              {project.department}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : projects.length === 0 ? (
                       <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
                         <p className="text-slate-500">No projects listed yet.</p>
                       </div>
@@ -1544,13 +1775,10 @@ export function ApplicationPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-6">
-                  <Button variant="ghost" onClick={handleLeaveGroup} className="text-red-500 hover:text-red-600">
-                    Leave Group
-                  </Button>
-                  <Button variant="outline" onClick={() => window.location.reload()}>
-                    <Loader2 className="w-4 h-4 mr-2" /> Refresh Status
-                  </Button>
+                <div className="flex justify-end items-center border-t border-slate-100 dark:border-slate-800 pt-6">
+                  <p className="text-xs text-slate-400 italic">
+                    Waiting for leader to submit...
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -1571,7 +1799,14 @@ export function ApplicationPage() {
                     <Briefcase className="w-6 h-6 text-white" />
                   </div>
                   <div className="hidden sm:block">
-                    <h2 className="text-xl font-bold font-display">Application Form</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-bold font-display">Application Form</h2>
+                      {applicationType === 'group' && isGroupLeader && (
+                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 py-0">
+                          Group Leader
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-teal-100 text-sm">Select projects and submit</p>
                   </div>
                 </div>
@@ -1612,11 +1847,31 @@ export function ApplicationPage() {
                       {loading ? <Loader2 className="animate-spin mr-2" /> : applicationType === 'group' ? 'Review & Submit' : 'Submit Now'}
                     </Button>
                   )}
-                  {applicationType === 'group' && isGroupLeader && (
-                    <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 hidden md:flex">
-                      Group Leader
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={async () => {
+                        setIsRefreshing(true);
+                        await fetchExistingGroup();
+                        setTimeout(() => setIsRefreshing(false), 800);
+                        toast.success('Application data refreshed');
+                      }}
+                      className="h-10 w-10 text-white hover:bg-white/10"
+                      title="Sync Form"
+                    >
+                      <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDeleteGroup}
+                      className="h-10 w-10 text-white hover:bg-white/10"
+                      title="Discard Application & Group"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1641,13 +1896,20 @@ export function ApplicationPage() {
                   <>
                     {applicationType === 'group' && (
                       <div className="flex flex-col md:flex-row gap-6">
-                        <div className="flex-1 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                          <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                            <Users className="w-4 h-4" /> Group Application
-                          </h3>
-                          <p className="text-sm text-blue-800">
-                            You are submitting on behalf of your group. Members' details will be automatically included.
-                          </p>
+                        <div className="flex-1 p-4 bg-teal-50 border border-teal-200 rounded-xl relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Users className="w-16 h-16" />
+                          </div>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-bold text-teal-900 mb-2 flex items-center gap-2">
+                                <Users className="w-4 h-4" /> Group Application
+                              </h3>
+                              <p className="text-sm text-teal-800">
+                                You are submitting on behalf of your group members.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                         {groupCode && (
                           <div className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
@@ -1655,9 +1917,11 @@ export function ApplicationPage() {
                               <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Group Code</p>
                               <p className="text-xl font-mono font-bold text-slate-900">{formatGroupCode(groupCode)}</p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-xs text-slate-500 mb-1">Members</p>
-                              <Badge variant="secondary">{groupMembers.length}/4</Badge>
+                            <div className="text-right flex flex-col items-end gap-1">
+                              <p className="text-xs text-slate-500">Status</p>
+                              <Badge variant="secondary" className="bg-teal-100 text-teal-700 hover:bg-teal-100 whitespace-nowrap">
+                                {groupMembers.length}/4 Joined
+                              </Badge>
                             </div>
                           </div>
                         )}
@@ -1684,7 +1948,7 @@ export function ApplicationPage() {
                           />
                         </div>
 
-                        {applicationType === 'solo' && (
+                        {(applicationType === 'solo' || (applicationType === 'group' && isGroupLeader)) && (
                           <div className="space-y-2">
                             <Label>CGPA <span className="text-red-500">*</span></Label>
                             <Input
@@ -1840,12 +2104,31 @@ export function ApplicationPage() {
                     <ShieldCheck className="w-6 h-6 text-white" />
                   </div>
                   <div className="hidden sm:block">
-                    <h2 className="text-xl font-bold font-display">Final Verification</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-bold font-display">Final Verification</h2>
+                      <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 text-[10px] h-5 font-mono">
+                        {formatGroupCode(groupCode)}
+                      </Badge>
+                    </div>
                     <p className="text-teal-100 text-sm">Review team and projects</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={async () => {
+                      setIsRefreshing(true);
+                      await fetchExistingGroup();
+                      setTimeout(() => setIsRefreshing(false), 800);
+                      toast.success('Team status updated');
+                    }}
+                    className="h-10 w-10 text-white hover:bg-white/10"
+                    title="Refresh Team"
+                  >
+                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => setStep('application')}
@@ -1983,6 +2266,16 @@ export function ApplicationPage() {
             </Card>
           </motion.div>
         )}
+        {/* Final Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={confirmConfig.isOpen}
+          onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+          onConfirm={confirmConfig.action}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          type={confirmConfig.type}
+          confirmText={confirmConfig.type === 'danger' ? 'Delete Permanently' : 'Confirm'}
+        />
       </div>
     </div>
   );

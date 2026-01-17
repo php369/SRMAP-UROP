@@ -23,6 +23,7 @@ export interface IGroup extends Document {
   memberIds?: mongoose.Types.ObjectId[];
   meetUrl?: string;
   calendarEventId?: string;
+  draftProjects: mongoose.Types.ObjectId[]; // Projects selected but not yet submitted
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,7 +116,12 @@ const GroupSchema = new Schema<IGroup>({
   calendarEventId: {
     type: String,
     trim: true
-  }
+  },
+  draftProjects: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Project',
+    default: []
+  }]
 }, {
   timestamps: true,
   toJSON: {
@@ -142,19 +148,19 @@ GroupSchema.pre('save', function (next) {
 });
 
 // Virtual properties for compatibility
-GroupSchema.virtual('projectId').get(function() {
+GroupSchema.virtual('projectId').get(function () {
   return this.assignedProjectId;
 });
 
-GroupSchema.virtual('facultyId').get(function() {
+GroupSchema.virtual('facultyId').get(function () {
   return this.assignedFacultyId;
 });
 
-GroupSchema.virtual('code').get(function() {
+GroupSchema.virtual('code').get(function () {
   return this.groupCode;
 });
 
-GroupSchema.virtual('memberIds').get(function() {
+GroupSchema.virtual('memberIds').get(function () {
   return this.members;
 });
 
