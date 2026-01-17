@@ -190,9 +190,11 @@
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
 }
 
-.theme-transition * {
+/* Global transition rule removed as it interferes with component animations (Sonner, Radix, etc.)
+.theme-transition *:not([data-sonner-toast]):not([data-sonner-toast] *) {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+*/
 
 /* Sidebar specific theme styling */
 .sidebar-title-dark {
@@ -213,7 +215,7 @@ html.theme-loaded {
   .dashboard-container {
     padding: 1rem;
   }
-  
+
   .dashboard-card {
     margin-bottom: 1rem;
   }
@@ -230,6 +232,7 @@ html.theme-loaded {
 
 /* Dashboard accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
+
   .dashboard-transition,
   .dashboard-card,
   .dashboard-nav-item,
@@ -246,7 +249,7 @@ html.theme-loaded {
   .dashboard-card {
     border-width: 2px;
   }
-  
+
   .dashboard-input:focus {
     border-width: 2px;
   }
@@ -258,7 +261,7 @@ html.theme-loaded {
     background-color: white !important;
     color: black !important;
   }
-  
+
   .dashboard-card {
     background-color: white !important;
     border: 1px solid black !important;

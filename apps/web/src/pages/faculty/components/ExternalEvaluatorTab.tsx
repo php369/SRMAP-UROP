@@ -195,8 +195,8 @@ export function ExternalEvaluatorTab() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all ${selectedAssignment?._id === assignment._id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
                 }`}
               onClick={() => handleAssignmentSelect(assignment)}
             >

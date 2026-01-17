@@ -234,7 +234,11 @@ export const validateIndividualWindowCreation = (
     errors.push('End date must be after start date');
   }
 
-  if (!editingWindow && proposedStart <= now) {
+  // Check if we are editing a window that has already started (so we allow its past start date)
+  const isEditingActiveOrPastWindow = editingWindow && new Date(editingWindow.startDate) <= now;
+
+  // Enforce future start date, unless we are editing a window that is already active/past
+  if (proposedStart <= now && !isEditingActiveOrPastWindow) {
     errors.push('Start date must be in the future');
   }
 
