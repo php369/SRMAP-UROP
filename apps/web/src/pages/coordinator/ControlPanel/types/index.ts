@@ -63,12 +63,26 @@ export interface Stats {
   overview: {
     totalProjects: number;
     totalGroups: number;
-    pendingApplications: number;
-    gradedSubmissions: number;
-    activeWindows: number;
     totalApplications: number;
-    totalSubmissions: number;
-    releasedGrades: number;
+    pendingApplications: number;
+    activeWindows: number;
+    averageGroupSize: number;
+    evaluationProgress: {
+      completed: number;
+      total: number;
+      percentage: number;
+    };
+    meetingCompletionRate: {
+      completed: number;
+      total: number;
+      percentage: number;
+    };
+    upcomingDeadlines: Array<{
+      _id: string;
+      title: string;
+      date: string;
+      daysLeft: number;
+    }>;
   };
   breakdown: {
     projectsByType: Array<{ _id: string; count: number }>;

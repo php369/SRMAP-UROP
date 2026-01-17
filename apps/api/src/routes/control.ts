@@ -8,9 +8,11 @@ import { Group } from '../models/Group';
 import { User } from '../models/User';
 import { WindowService } from '../services/windowService';
 import { StudentEvaluationService } from '../services/studentEvaluationService';
+import { StudentEvaluation } from '../models/StudentEvaluation';
+import { MeetingLog } from '../models/MeetingLog';
 import mongoose from 'mongoose';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * Middleware to check if user is coordinator or admin
@@ -31,10 +33,10 @@ const isCoordinatorOrAdmin = (req: Request, res: Response, next: Function) => {
 router.get('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const { projectType, windowType, isActive } = req.query;
-    
+
     // Update window statuses before fetching
     await WindowService.updateWindowStatuses();
-    
+
     const query: any = {};
     if (projectType) query.projectType = projectType;
     if (windowType) query.windowType = windowType;
@@ -70,7 +72,7 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
     console.log('=== CREATE WINDOW REQUEST ===');
     console.log('User:', req.user);
     console.log('Body:', req.body);
-    
+
     const { windowType, projectType, assessmentType, startDate, endDate } = req.body;
 
     // Validate required fields
@@ -104,7 +106,7 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
         { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } }
       ]
     };
-    
+
     // Only add assessmentType to query if it's provided
     if (assessmentType) {
       query.assessmentType = assessmentType;
@@ -112,7 +114,7 @@ router.post('/windows', authenticate, isCoordinatorOrAdmin, async (req: Request,
       // For windows without assessmentType, check for documents where assessmentType is null or undefined
       query.assessmentType = { $in: [null, undefined] };
     }
-    
+
     const overlapping = await Window.findOne(query);
 
     if (overlapping) {
@@ -275,11 +277,11 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
     const { projectType } = req.body;
 
     if (!projectType) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         error: {
           code: 'MISSING_PROJECT_TYPE',
-          message: 'Project type is required' 
+          message: 'Project type is required'
         }
       });
     }
@@ -296,10 +298,10 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
     }
 
     // Import StudentEvaluation model
-    const { StudentEvaluation } = await import('../models/StudentEvaluation');
-    
+    // StudentEvaluation is imported at top level
+
     // Find all groups of the specified project type
-    const groups = await Group.find({ 
+    const groups = await Group.find({
       type: projectType,
       status: 'approved',
       assignedProjectId: { $exists: true }
@@ -335,8 +337,8 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
         isGraded: true,
         isGradeReleased: false
       },
-      { 
-        isGradeReleased: true 
+      {
+        isGradeReleased: true
       }
     );
 
@@ -345,7 +347,7 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
     res.json({
       success: true,
       message: `Released final grades for ${totalReleased} evaluations in ${projectType}`,
-      data: { 
+      data: {
         count: totalReleased,
         studentEvaluations: result.modifiedCount,
         legacySubmissions: submissionResult.modifiedCount
@@ -371,7 +373,7 @@ router.post('/grades/release-final', authenticate, isCoordinatorOrAdmin, async (
 router.post('/windows/update-statuses', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const result = await WindowService.updateWindowStatuses();
-    
+
     res.json({
       success: true,
       message: `Updated ${result.updated} window statuses`,
@@ -401,7 +403,7 @@ router.get('/scheduler/status', authenticate, isCoordinatorOrAdmin, async (_req:
   try {
     const { SchedulerService } = await import('../services/schedulerService');
     const status = SchedulerService.getStatus();
-    
+
     res.json({
       success: true,
       data: status
@@ -433,21 +435,65 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
       totalProjects,
       totalGroups,
       totalApplications,
-      totalSubmissions,
       pendingApplications,
-      gradedSubmissions,
-      releasedGrades,
-      activeWindows
+      activeWindows,
+      // New stats data sources
+      groupsWithMembers,
+      allEvaluationsCount,
+      completedEvaluationsCount,
+      allMeetingsCount,
+      completedMeetingsCount,
+      upcomingWindows
     ] = await Promise.all([
       Project.countDocuments(query),
       Group.countDocuments(query),
       Application.countDocuments(query),
-      Submission.countDocuments(query),
       Application.countDocuments({ ...query, status: 'pending' }),
-      Submission.countDocuments({ ...query, isGraded: true }),
-      Submission.countDocuments({ ...query, isGradeReleased: true }),
-      Window.countDocuments({ ...query, isActive: true })
+      Window.countDocuments({ ...query, isActive: true }),
+      // Fetch groups to calculate average size (only need members array length)
+      Group.find(query).select('members'),
+      // Evaluation stats
+      StudentEvaluation.countDocuments(query),
+      StudentEvaluation.countDocuments({ ...query, isPublished: true }),
+      // Meeting stats
+      query.projectType ? MeetingLog.countDocuments({ projectId: { $in: await Project.find({ type: query.projectType }).distinct('_id') } }) : MeetingLog.countDocuments({}),
+      query.projectType ? MeetingLog.countDocuments({ projectId: { $in: await Project.find({ type: query.projectType }).distinct('_id') }, status: { $in: ['completed', 'approved'] } }) : MeetingLog.countDocuments({ status: { $in: ['completed', 'approved'] } }),
+      // Upcoming deadlines (next 14 days)
+      Window.find({
+        ...query,
+        isActive: true,
+        endDate: {
+          $gte: new Date(),
+          $lte: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+        }
+      }).sort({ endDate: 1 }).select('windowType projectType endDate')
     ]);
+
+    // Calculate Average Group Size
+    const totalStudentsInGroups = groupsWithMembers.reduce((acc, group) => acc + (group.members?.length || 0), 0);
+    const averageGroupSize = totalGroups > 0 ? Number((totalStudentsInGroups / totalGroups).toFixed(1)) : 0;
+
+    // Calculate Evaluation Progress
+    const evaluationProgress = {
+      completed: completedEvaluationsCount,
+      total: allEvaluationsCount,
+      percentage: allEvaluationsCount > 0 ? Math.round((completedEvaluationsCount / allEvaluationsCount) * 100) : 0
+    };
+
+    // Calculate Meeting Completion Rate
+    const meetingCompletionRate = {
+      completed: completedMeetingsCount,
+      total: allMeetingsCount,
+      percentage: allMeetingsCount > 0 ? Math.round((completedMeetingsCount / allMeetingsCount) * 100) : 0
+    };
+
+    // Format Upcoming Deadlines
+    const upcomingDeadlines = upcomingWindows.map(window => ({
+      _id: window._id,
+      title: `${window.projectType} ${window.windowType.replace(/([A-Z])/g, ' $1').trim()}`, // Format "applicationSubmission" -> "application Submission"
+      date: window.endDate,
+      daysLeft: Math.ceil((new Date(window.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    }));
 
     // Get project breakdown
     const projectsByType = await Project.aggregate([
@@ -471,11 +517,12 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
           totalProjects,
           totalGroups,
           totalApplications,
-          totalSubmissions,
           pendingApplications,
-          gradedSubmissions,
-          releasedGrades,
-          activeWindows
+          activeWindows,
+          averageGroupSize,
+          evaluationProgress,
+          meetingCompletionRate,
+          upcomingDeadlines
         },
         breakdown: {
           projectsByType,
@@ -543,7 +590,7 @@ router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (_req: Requ
 router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const assignments = await StudentEvaluationService.getExternalEvaluatorAssignments();
-    
+
     res.json({
       success: true,
       data: assignments,
@@ -569,7 +616,7 @@ router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmi
 router.get('/external-evaluators/validate', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const validation = await StudentEvaluationService.validateAssignmentConstraints();
-    
+
     res.json({
       success: true,
       data: validation,
@@ -595,7 +642,7 @@ router.get('/external-evaluators/validate', authenticate, isCoordinatorOrAdmin, 
 router.get('/external-evaluators/available', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const evaluators = await StudentEvaluationService.getAvailableExternalEvaluators();
-    
+
     res.json({
       success: true,
       data: evaluators,
@@ -621,7 +668,7 @@ router.get('/external-evaluators/available', authenticate, isCoordinatorOrAdmin,
 router.post('/external-evaluators/auto-assign', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const result = await StudentEvaluationService.autoAssignExternalEvaluators();
-    
+
     res.json({
       success: true,
       data: result,
@@ -851,7 +898,7 @@ router.delete('/external-evaluators/assign-solo/:studentId', authenticate, isCoo
 router.post('/external-evaluators/rebalance', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
     const result = await StudentEvaluationService.rebalanceAssignments();
-    
+
     res.json({
       success: true,
       data: result,
