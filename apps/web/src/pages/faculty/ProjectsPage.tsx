@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, AlertCircle, CalendarClock, BookOpen, AlertTriangle } from 'lucide-react';
+import { Plus, AlertCircle, CalendarClock, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { toast } from 'sonner';
@@ -142,15 +142,10 @@ export function FacultyProjectsPage() {
   // Loading Skeleton
   if (initializing || windowLoading) {
     return (
-      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-64 w-full rounded-xl" />
-          ))}
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse">Loading projects...</p>
         </div>
       </div>
     );
@@ -230,8 +225,8 @@ export function FacultyProjectsPage() {
             (hasActiveWindow || projects.length > 0) ? "mt-8 flex-1" : "items-center justify-center flex-1"
           )}>
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}
+              <div className="flex items-center justify-center min-h-[40vh]">
+                <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
               </div>
             ) : projects.length === 0 ? (
               !hasActiveWindow ? (
