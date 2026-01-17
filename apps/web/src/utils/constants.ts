@@ -34,6 +34,7 @@ export const ROUTES = {
   ADMIN: '/dashboard/admin',
   ADMIN_USERS: '/dashboard/admin/users',
   ADMIN_REPORTS: '/dashboard/admin/reports',
+  MASTER_CONTROL: '/dashboard/admin/system',
 } as const;
 
 // Modern SRM Gold Color Palette
@@ -110,7 +111,9 @@ export const ROLE_NAVIGATION = {
   admin: [
     { label: 'Home', path: ROUTES.DASHBOARD, icon: 'Home', color: '#2563EB' },
     { label: 'Eligibility Upload', path: '/dashboard/admin/eligibility', icon: 'Upload', color: '#22C55E' },
+    { label: 'Master Control', path: '/dashboard/admin/system', icon: 'Settings', color: '#154259' },
   ],
+
 } as const;
 
 // Helper function to check if user is a student
