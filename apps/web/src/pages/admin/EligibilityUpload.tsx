@@ -1,7 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, GlowButton } from '../../components/ui';
-import { fadeUp, staggerContainer, staggerItem } from '../../utils/animations';
+import { Users, GraduationCap, UploadCloud, FileText, AlertCircle, Check, Loader2, Download, ArrowLeft, Layout, ClipboardCheck, FileUp, X } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { GlassCard } from '../../components/ui';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "../../components/ui/table";
+import { fadeUp, staggerContainer } from '../../utils/animations';
 import { apiClient } from '../../utils/api';
 
 type UserType = 'student' | 'faculty';
@@ -22,50 +32,138 @@ interface ValidationResult {
     invalidRows: number;
 }
 
+// Steps Configuration
+const STEPS = [
+    { id: 1, title: 'User Type', icon: Users },
+    { id: 2, title: 'Category', icon: Layout },
+    { id: 3, title: 'Upload', icon: FileUp },
+    { id: 4, title: 'Review', icon: ClipboardCheck }
+];
+
 export function EligibilityUpload() {
-    const [userType, setUserType] = useState<UserType>('student');
-    const [projectType, setProjectType] = useState<ProjectType>('IDP');
+    // State
+    const [currentStep, setCurrentStep] = useState(1);
+    const [userType, setUserType] = useState<UserType | null>(null);
+    const [projectType, setProjectType] = useState<ProjectType | null>(null);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
     const [csvData, setCsvData] = useState('');
+    const [dragActive, setDragActive] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
-    const [showPreview, setShowPreview] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
+    const [existingUsers, setExistingUsers] = useState<Map<string, string>>(new Map()); // email -> roleMap
 
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch existing users on mount for duplicate checking
+    useEffect(() => {
+        const fetchExistingUsers = async () => {
+            try {
+                const response = await apiClient.get<{ users: { email: string, role: string }[] }>('/users').catch(() => null);
+                if (response && response.success && response.data?.users) {
+                    const userMap = new Map<string, string>();
+                    response.data.users.forEach(u => {
+                        if (u.email) userMap.set(u.email.toLowerCase(), u.role);
+                    });
+                    setExistingUsers(userMap);
+                }
+            } catch (err) {
+                console.warn('Silent: Duplicate check prep failed', err);
+            }
+        };
+
+        fetchExistingUsers();
+    }, []);
+
+    // Helpers
+    const handleNext = () => {
+        if (currentStep < 4) setCurrentStep(prev => prev + 1);
+    };
+
+    const handleBack = () => {
+        if (currentStep > 1) {
+            // Clean state logic
+            if (currentStep === 2) {
+                setUserType(null);
+                setCurrentStep(1);
+            } else if (currentStep === 3) {
+                if (userType === 'faculty') {
+                    setUserType(null);
+                    setCurrentStep(1);
+                } else {
+                    setProjectType(null);
+                    setCurrentStep(2);
+                }
+            } else if (currentStep === 4) {
+                // If we are in results screen (result !== null), reset everything
+                if (result) {
+                    resetFlow();
+                } else {
+                    setCurrentStep(3);
+                }
+            } else {
+                setCurrentStep(prev => prev - 1);
+            }
+        }
+    };
+
+    const resetFlow = () => {
+        setCurrentStep(1);
+        setUserType(null);
+        setProjectType(null);
+        setCsvFile(null);
+        setCsvData('');
+        setValidationResult(null);
+        setResult(null);
+        setError(null);
+    };
+
+    // Validation Logic
     const validateCSV = (csvContent: string): ValidationResult => {
         const lines = csvContent.trim().split('\n');
         if (lines.length < 1) {
-            return {
-                valid: false,
-                rows: [],
-                totalRows: 0,
-                validRows: 0,
-                invalidRows: 0
-            };
+            return { valid: false, rows: [], totalRows: 0, validRows: 0, invalidRows: 0 };
         }
 
         const rows: ParsedRow[] = [];
         let validCount = 0;
         let invalidCount = 0;
 
-        // Skip header row if it exists (check if first line contains "email")
         const startIndex = lines[0].toLowerCase().includes('email') ? 1 : 0;
 
-        // Validate each email
         for (let i = startIndex; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
 
-            // Extract email (first column or the whole line if no commas)
-            const email = line.split(',')[0].trim();
+            const email = line.split(',')[0].trim().toLowerCase();
             const rowData: Record<string, string> = { email };
             const rowErrors: string[] = [];
 
-            // Validate email
             if (!email || !email.includes('@')) {
                 rowErrors.push('Invalid email format');
             } else if (!email.endsWith('@srmap.edu.in')) {
                 rowErrors.push('Email must end with @srmap.edu.in');
+            } else if (existingUsers.has(email)) {
+                const currentRole = existingUsers.get(email);
+
+                if (userType === 'faculty') {
+                    if (currentRole === 'faculty') {
+                        rowErrors.push('Already registered as Faculty');
+                    } else {
+                        rowErrors.push(`Already registered as ${currentRole?.replace('-student', '').toUpperCase()}`);
+                    }
+                } else {
+                    const targetRole = `${projectType?.toLowerCase()}-student`;
+                    if (currentRole === targetRole) {
+                        rowErrors.push('Already registered for this category');
+                    } else {
+                        // Mismatch check
+                        rowErrors.push(`Mismatch: Registered as ${currentRole?.replace('-student', '').toUpperCase()}`);
+                    }
+                }
             }
 
             const isValid = rowErrors.length === 0;
@@ -73,7 +171,7 @@ export function EligibilityUpload() {
             else invalidCount++;
 
             rows.push({
-                rowNumber: i + 1,
+                rowNumber: rows.length + 1, // Start from 1 sequentially
                 data: rowData,
                 valid: isValid,
                 errors: rowErrors
@@ -89,56 +187,68 @@ export function EligibilityUpload() {
         };
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const content = event.target?.result as string;
-                setCsvData(content);
-                const validation = validateCSV(content);
-                setValidationResult(validation);
-                setShowPreview(true);
-                setError(null);
-                setResult(null);
-            };
-            reader.readAsText(file);
-        }
-    };
-
-    const handleUpload = async () => {
-        if (!csvData) {
-            setError('Please select a CSV file');
+    // File Handling
+    const processFile = (file: File) => {
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            setError('Please upload a valid CSV file');
             return;
         }
 
+        setCsvFile(file);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            setCsvData(content);
+            const validation = validateCSV(content);
+            setValidationResult(validation);
+            setError(null);
+            setResult(null);
+            if (currentStep === 3) handleNext();
+        };
+        reader.readAsText(file);
+    };
+
+    const handleDrag = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+        else if (e.type === 'dragleave') setDragActive(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
+    }, []);
+
+    const handleUpload = async () => {
+        if (!csvData) { setError('Please select a CSV file'); return; }
         if (validationResult && !validationResult.valid) {
-            setError(`Cannot upload: ${validationResult.invalidRows} invalid rows found. Please fix errors first.`);
+            setError(`Cannot upload: ${validationResult.invalidRows} invalid rows found.`);
             return;
         }
 
         setUploading(true);
         setError(null);
-        setResult(null);
 
         try {
-            // Use different endpoints for student vs faculty
-            const endpoint = userType === 'faculty'
-                ? '/eligibility/faculty/upload'
-                : '/eligibility/upload';
-
-            const payload = userType === 'faculty'
-                ? { csvData: csvData }
-                : { csvData: csvData, projectType };
-
+            const endpoint = userType === 'faculty' ? '/eligibility/faculty/upload' : '/eligibility/upload';
+            const payload = userType === 'faculty' ? { csvData } : { csvData, projectType };
             const response = await apiClient.post(endpoint, payload);
-
-            console.log('Upload response:', response);
-            console.log('Response data:', response.data);
 
             if (response.success && response.data) {
                 setResult(response.data);
-                setShowPreview(false);
+                // Refresh duplicate list
+                apiClient.get<{ users: { email: string, role: string }[] }>('/users').then(res => {
+                    if (res?.success && res.data?.users) {
+                        const userMap = new Map<string, string>();
+                        res.data.users.forEach(u => {
+                            if (u.email) userMap.set(u.email.toLowerCase(), u.role);
+                        });
+                        setExistingUsers(userMap);
+                    }
+                }).catch(() => null);
             } else {
                 setError(response.error?.message || 'Upload failed');
             }
@@ -149,418 +259,243 @@ export function EligibilityUpload() {
         }
     };
 
-    const handleReset = () => {
-        setCsvData('');
-        setValidationResult(null);
-        setShowPreview(false);
-        setResult(null);
-        setError(null);
-    };
+    const stepVariants = {
+        hidden: { opacity: 0, x: 20 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const } },
+        exit: { opacity: 0, x: -20, transition: { duration: 0.3 } }
+    } as const;
 
-    const getCSVFormatExample = () => {
-        if (userType === 'student') {
-            return `email
-student1@srmap.edu.in
-student2@srmap.edu.in
-student3@srmap.edu.in`;
-        } else {
-            return `email
-faculty1@srmap.edu.in
-faculty2@srmap.edu.in
-faculty3@srmap.edu.in`;
-        }
-    };
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={stepVariants} className="space-y-4">
+                        <h2 className="text-xl font-heading font-black text-slate-800 mb-6 text-center tracking-tight">Who are you uploading for?</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 pb-2">
+                            <motion.button
+                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(248, 250, 252, 1)' }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => { setUserType('student'); handleNext(); }}
+                                className={`group p-8 rounded-[28px] border-2 transition-all duration-500 relative flex flex-col items-center gap-5 ${userType === 'student' ? 'border-primary bg-primary/5 ring-4 ring-primary/5' : 'border-slate-100 bg-white hover:border-primary/20'}`}
+                            >
+                                <div className={`p-5 rounded-[20px] transition-all duration-500 ${userType === 'student' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-slate-50 text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg'}`}>
+                                    <GraduationCap className="w-10 h-10" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-xl font-black text-slate-800 mb-1">Students</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">Upload eligibility list for student<br />project applications</p>
+                                </div>
+                            </motion.button>
 
-    const getFormatInstructions = () => {
-        if (userType === 'student') {
-            return (
-                <>
-                    <strong>📧 Simple Format: Just list the emails!</strong>
-                    <br />
-                    <br />
-                    • CSV file should contain one email per line
-                    <br />
-                    • All emails must end with @srmap.edu.in
-                    <br />
-                    • Optional: You can include a header row with "email"
-                    <br />
-                    • Select the Project Type (IDP/UROP/CAPSTONE) before uploading
-                    <br />
-                    • Students will be assigned the role based on project type:
-                    <br />
-                    &nbsp;&nbsp;- IDP → idp-student
-                    <br />
-                    &nbsp;&nbsp;- UROP → urop-student
-                    <br />
-                    &nbsp;&nbsp;- CAPSTONE → capstone-student
-                </>
-            );
-        } else {
-            return (
-                <>
-                    <strong>📧 Simple Format: Just list the emails!</strong>
-                    <br />
-                    <br />
-                    • CSV file should contain one email per line
-                    <br />
-                    • All emails must end with @srmap.edu.in
-                    <br />
-                    • Optional: You can include a header row with "email"
-                    <br />
-                    • Faculty members will be created with faculty role
-                </>
-            );
+                            <motion.button
+                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(248, 250, 252, 1)' }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => { setUserType('faculty'); setCurrentStep(3); }}
+                                className={`group p-8 rounded-[28px] border-2 transition-all duration-500 relative flex flex-col items-center gap-5 ${userType === 'faculty' ? 'border-primary bg-primary/5 ring-4 ring-primary/5' : 'border-slate-100 bg-white hover:border-primary/20'}`}
+                            >
+                                <div className={`p-5 rounded-[20px] transition-all duration-500 ${userType === 'faculty' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'bg-slate-50 text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg'}`}>
+                                    <Users className="w-10 h-10" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-xl font-black text-slate-800 mb-1">Faculty</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">Upload faculty roster for<br />project supervision</p>
+                                </div>
+                            </motion.button>
+                        </div>
+                    </motion.div>
+                );
+
+            case 2:
+                const categories = [
+                    { id: 'IDP', name: 'IDP', fullName: 'Interdisciplinary Project' },
+                    { id: 'UROP', name: 'UROP', fullName: 'Undergraduate Research Opportunity program' },
+                    { id: 'CAPSTONE', name: 'Capstone', fullName: 'Capstone Project' }
+                ] as const;
+
+                return (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={stepVariants} className="space-y-8">
+                        <h2 className="text-xl font-heading font-black text-slate-800 text-center tracking-tight">Select Project Category</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 pb-6">
+                            {categories.map((cat) => (
+                                <motion.button
+                                    key={cat.id}
+                                    whileHover={{ scale: 1.03, translateY: -4 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() => { setProjectType(cat.id as ProjectType); handleNext(); }}
+                                    className={`relative p-6 rounded-[28px] border-2 transition-all duration-500 flex flex-col items-center text-center gap-4 h-full min-h-[180px] justify-center ${projectType === cat.id ? 'border-primary bg-primary/5 shadow-inner' : 'border-slate-50 bg-slate-50/50 hover:bg-white hover:border-primary/20'}`}
+                                >
+                                    <div className={`w-28 h-11 rounded-xl flex items-center justify-center font-black text-xs uppercase tracking-wider transition-all duration-500 mb-2 ${projectType === cat.id ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'bg-white text-slate-500 border border-slate-100'}`}>
+                                        {cat.name}
+                                    </div>
+                                    <div className="flex flex-col justify-center min-h-[48px]">
+                                        <p className={`font-black text-sm leading-tight px-1 ${projectType === cat.id ? 'text-slate-900' : 'text-slate-600'}`}>{cat.fullName}</p>
+                                    </div>
+                                    {projectType === cat.id && (
+                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-4 right-4 bg-primary text-white p-1 rounded-full">
+                                            <Check className="w-3 h-3" />
+                                        </motion.div>
+                                    )}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </motion.div>
+                );
+
+            case 3:
+                return (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={stepVariants} className="space-y-6 pb-2">
+                        <div className="text-center space-y-1.5">
+                            <h2 className="text-xl font-black text-slate-800 tracking-tight">Upload CSV File</h2>
+                            <p className="text-slate-400 text-[11px] font-medium">Target Category: <span className="text-primary font-black uppercase text-xs">{userType === 'student' ? projectType : 'Faculty'}</span></p>
+                        </div>
+
+                        <div className={`mx-6 relative border-2 border-dashed rounded-[32px] p-10 transition-all duration-700 group ${dragActive ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-slate-100 bg-slate-50/30 hover:border-primary/30 hover:bg-white'}`}
+                            onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+                            <input ref={fileInputRef} type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])} className="hidden" />
+                            <div className="flex flex-col items-center gap-5">
+                                <motion.div animate={dragActive ? { rotate: [0, -10, 10, 0], scale: 1.05 } : {}} className={`p-6 rounded-[24px] transition-all duration-500 ${dragActive ? 'bg-primary text-white' : 'bg-white text-slate-300 shadow-sm group-hover:text-primary'}`}>
+                                    <UploadCloud className="w-12 h-12" />
+                                </motion.div>
+                                <div className="text-center">
+                                    <p className="text-base font-bold text-slate-700">Drop file here or click to browse</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5 font-medium italic">Standard CSV format required</p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Button onClick={() => fileInputRef.current?.click()} size="sm" className="rounded-[12px] h-10 px-6 font-bold shadow-md shadow-primary/10">Select File</Button>
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                        const template = `email\n${userType === 'student' ? 'student' : 'faculty'}@srmap.edu.in`;
+                                        const blob = new Blob([template], { type: 'text/csv' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a'); a.href = url; a.download = 'template.csv'; a.click();
+                                    }} className="rounded-[12px] h-10 text-slate-400 font-bold hover:bg-slate-50 hover:text-slate-600">
+                                        <Download className="w-3.5 h-3.5 mr-2" /> Template
+                                    </Button>
+                                </div>
+
+                                <div className="mt-4 px-6 py-3 bg-amber-50/40 rounded-[20px] border border-amber-100/50 flex items-center gap-3 max-w-[420px]">
+                                    <AlertCircle className="w-4 h-4 text-amber-500/80 shrink-0" />
+                                    <p className="text-[10px] text-amber-800/80 font-semibold leading-relaxed">
+                                        Emails must end with <span className="font-black underline decoration-amber-200">@srmap.edu.in</span>. System detects duplicates & role mismatches automatically.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+
+            case 4:
+                return (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={stepVariants} className="space-y-5 pb-2">
+                        {!result ? (
+                            <div className="space-y-6 px-6">
+                                <div className="flex items-center justify-center pb-2 border-b border-slate-50 relative">
+                                    <h3 className="text-lg font-black text-slate-800 tracking-tight">Review & Validate</h3>
+                                    <Button variant="ghost" size="sm" onClick={() => { setCsvFile(null); setValidationResult(null); setCurrentStep(3); }} className="absolute right-0 text-slate-400 hover:text-rose-500 hover:bg-rose-50 font-bold rounded-[10px] h-9 px-4 transition-all flex items-center gap-1.5 ">
+                                        <X className="w-3.5 h-3.5" /> Change File
+                                    </Button>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                    {[{ l: 'Total', v: validationResult?.totalRows, c: 'slate-600', bg: 'slate-50' }, { l: 'Valid', v: validationResult?.validRows, c: 'emerald-600', bg: 'emerald-50/60' }, { l: 'Invalid', v: validationResult?.invalidRows, c: 'rose-600', bg: 'rose-50/60' }].map(s => (
+                                        <div key={s.l} className={`p-5 rounded-[24px] ${s.bg} border-2 border-white text-center shadow-sm`}>
+                                            <div className={`text-2xl font-black text-${s.c}`}>{s.v}</div>
+                                            <div className="text-[9px] uppercase font-black tracking-[0.15em] text-slate-400 mt-0.5">{s.l}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="rounded-[32px] border border-slate-100 overflow-hidden bg-white shadow-sm">
+                                    <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                                        <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Data Preview</h4>
+                                        <button onClick={() => setShowPreview(!showPreview)} className="text-[9px] font-black uppercase text-primary tracking-widest">{showPreview ? 'Minimize' : 'Expand'}</button>
+                                    </div>
+                                    {showPreview && (
+                                        <div className="max-h-[240px] overflow-auto">
+                                            <Table>
+                                                <TableHeader className="bg-slate-50 sticky top-0">
+                                                    <TableRow>
+                                                        <TableHead className="font-black uppercase text-[9px] px-6 text-center w-16">#</TableHead>
+                                                        <TableHead className="font-black uppercase text-[9px] text-left">Email Address</TableHead>
+                                                        <TableHead className="font-black uppercase text-[9px] w-32 text-center">Status</TableHead>
+                                                        <TableHead className="font-black uppercase text-[9px] text-center">Errors</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {validationResult?.rows.map((row) => (
+                                                        <TableRow key={row.rowNumber} className={!row.valid ? 'bg-rose-50/30' : ''}>
+                                                            <TableCell className="px-6 text-slate-300 font-black text-center">{row.rowNumber}</TableCell>
+                                                            <TableCell className="font-bold text-slate-700 text-left">{row.data.email}</TableCell>
+                                                            <TableCell className="text-center">{row.valid ? <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 text-[8px] font-black uppercase rounded-full">Approved</span> : <span className="inline-block px-3 py-1 bg-rose-100 text-rose-700 text-[8px] font-black uppercase rounded-full">Rejected</span>}</TableCell>
+                                                            <TableCell className="text-rose-600 text-[9px] font-bold text-center">{row.errors.join(' • ')}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Button size="lg" className="w-full rounded-[24px] h-16 font-black text-lg shadow-xl shadow-primary/20" onClick={handleUpload} disabled={!validationResult?.valid || uploading}>
+                                    {uploading ? <Loader2 className="w-6 h-6 animate-spin mr-3" /> : <UploadCloud className="w-6 h-6 mr-3" />}
+                                    {uploading ? 'Processing Data...' : 'Confirm & Finalize Upload'}
+                                </Button>
+                                {error && <div className="p-5 bg-rose-50 border border-rose-100 rounded-[20px] flex items-center gap-4 text-rose-600 text-sm font-bold shadow-sm"><AlertCircle className="w-5 h-5 shrink-0" />{error}</div>}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16 space-y-10">
+                                <motion.div initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 12, stiffness: 100 }} className="w-32 h-32 bg-emerald-500 rounded-[48px] flex items-center justify-center mx-auto text-white shadow-2xl shadow-emerald-200">
+                                    <Check className="w-16 h-16" />
+                                </motion.div>
+                                <div className="space-y-3">
+                                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">Success!</h2>
+                                    <p className="text-slate-500 font-medium">Successfully processed <span className="text-slate-900 font-black">{result.success}</span> records into the system</p>
+                                </div>
+                                <Button onClick={resetFlow} className="rounded-[22px] h-16 px-12 font-black text-lg">Process Another List</Button>
+                            </div>
+                        )}
+                    </motion.div>
+                );
+            default: return null;
         }
     };
 
     return (
-        <div className="min-h-screen p-8">
-            <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="max-w-4xl mx-auto space-y-6"
-            >
-                {/* Header */}
-                <motion.div variants={fadeUp}>
-                    <h1 className="text-3xl font-bold text-text mb-2">
-                        Eligibility Upload
-                    </h1>
-                    <p className="text-textSecondary">
-                        Upload CSV files to manage student and faculty eligibility for projects
-                    </p>
-                </motion.div>
-
-                {/* Upload Form */}
-                <motion.div variants={staggerItem}>
-                    <GlassCard variant="elevated" className="p-6">
-                        <div className="space-y-6">
-                            {/* Step 1: User Type Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-text mb-3">
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
-                                        1
-                                    </span>
-                                    Select User Type
-                                </label>
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setUserType('student')}
-                                        className={`flex-1 px-6 py-4 rounded-lg transition-all border-2 ${userType === 'student'
-                                            ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
-                                            }`}
-                                    >
-                                        <div className="flex flex-col items-center gap-2">
-                                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                            </svg>
-                                            <span className="font-semibold">Students</span>
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setUserType('faculty')}
-                                        className={`flex-1 px-6 py-4 rounded-lg transition-all border-2 ${userType === 'faculty'
-                                            ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
-                                            }`}
-                                    >
-                                        <div className="flex flex-col items-center gap-2">
-                                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <span className="font-semibold">Faculty</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Step 2: Project Type Selection - Only for Students */}
-                            {userType === 'student' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-text mb-3">
-                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
-                                            2
-                                        </span>
-                                        Select Project Category
-                                    </label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => (
-                                            <button
-                                                key={type}
-                                                onClick={() => setProjectType(type)}
-                                                className={`px-4 py-3 rounded-lg transition-all border-2 ${projectType === type
-                                                    ? 'bg-secondary/20 border-secondary text-secondary'
-                                                    : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
-                                                    }`}
-                                            >
-                                                <span className="font-semibold">{type}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Current Selection Badge */}
-                            <div className="flex items-center gap-2 p-4 bg-primary/10 border border-primary/30 rounded-lg">
-                                <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="text-sm text-text">
-                                    {userType === 'student' ? (
-                                        <>Uploading eligibility for <span className="font-bold text-primary">{projectType}</span> Students</>
-                                    ) : (
-                                        <>Uploading <span className="font-bold text-primary">Faculty Roster</span></>
-                                    )}
-                                </span>
-                            </div>
-
-                            {/* CSV Format Info */}
-                            <div className="bg-info/10 border border-info/30 rounded-lg p-4">
-                                <h3 className="text-sm font-semibold text-text mb-2 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    CSV Format for {userType === 'student' ? 'Students' : 'Faculty'}
-                                </h3>
-                                <pre className="text-xs text-textSecondary font-mono bg-black/20 p-3 rounded overflow-x-auto">
-                                    {getCSVFormatExample()}
-                                </pre>
-                                <p className="text-xs text-textSecondary mt-3">
-                                    {getFormatInstructions()}
-                                </p>
-                            </div>
-
-                            {/* File Upload */}
-                            <div>
-                                <label className="block text-sm font-medium text-text mb-2">
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold mr-2">
-                                        3
-                                    </span>
-                                    Upload CSV File
-                                </label>
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={handleFileUpload}
-                                    className="block w-full text-sm text-textSecondary
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-primary file:text-white
-                    hover:file:bg-primary/90
-                    file:cursor-pointer cursor-pointer"
-                                />
-                            </div>
-
-                            {/* Validation Summary */}
-                            <AnimatePresence>
-                                {validationResult && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="space-y-4"
-                                    >
-                                        {/* Summary Cards */}
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div className="text-center p-4 bg-white/5 border border-white/10 rounded-lg">
-                                                <div className="text-2xl font-bold text-text">
-                                                    {validationResult.totalRows}
-                                                </div>
-                                                <div className="text-xs text-textSecondary">Total Rows</div>
-                                            </div>
-                                            <div className="text-center p-4 bg-success/10 border border-success/30 rounded-lg">
-                                                <div className="text-2xl font-bold text-success">
-                                                    {validationResult.validRows}
-                                                </div>
-                                                <div className="text-xs text-textSecondary">Valid</div>
-                                            </div>
-                                            <div className="text-center p-4 bg-error/10 border border-error/30 rounded-lg">
-                                                <div className="text-2xl font-bold text-error">
-                                                    {validationResult.invalidRows}
-                                                </div>
-                                                <div className="text-xs text-textSecondary">Invalid</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Preview Toggle */}
-                                        <button
-                                            onClick={() => setShowPreview(!showPreview)}
-                                            className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all flex items-center justify-between"
-                                        >
-                                            <span className="font-medium">
-                                                {showPreview ? 'Hide' : 'Show'} Data Preview
-                                            </span>
-                                            <svg
-                                                className={`w-5 h-5 transition-transform ${showPreview ? 'rotate-180' : ''}`}
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-
-                                        {/* Data Preview Table */}
-                                        {showPreview && (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                className="bg-white/5 border border-white/10 rounded-lg overflow-hidden"
-                                            >
-                                                <div className="max-h-96 overflow-auto">
-                                                    <table className="w-full text-sm">
-                                                        <thead className="bg-white/10 sticky top-0">
-                                                            <tr>
-                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Row</th>
-                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Status</th>
-                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Email</th>
-                                                                <th className="px-3 py-2 text-left text-xs font-semibold text-text">Errors</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {validationResult.rows.map((row) => (
-                                                                <tr
-                                                                    key={row.rowNumber}
-                                                                    className={`border-t border-white/5 ${row.valid ? 'bg-success/5' : 'bg-error/5'
-                                                                        }`}
-                                                                >
-                                                                    <td className="px-3 py-2 text-textSecondary">{row.rowNumber}</td>
-                                                                    <td className="px-3 py-2">
-                                                                        {row.valid ? (
-                                                                            <span className="inline-flex items-center gap-1 text-success">
-                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                                </svg>
-                                                                                Valid
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="inline-flex items-center gap-1 text-error">
-                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                                </svg>
-                                                                                Invalid
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-3 py-2 text-text">{row.data.email}</td>
-                                                                    <td className="px-3 py-2">
-                                                                        {row.errors.length > 0 && (
-                                                                            <div className="space-y-1">
-                                                                                {row.errors.map((err, idx) => (
-                                                                                    <div key={idx} className="text-xs text-error">
-                                                                                        • {err}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-3">
-                                {csvData && (
-                                    <button
-                                        onClick={handleReset}
-                                        className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-text transition-all"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                                <GlowButton
-                                    onClick={handleUpload}
-                                    loading={uploading}
-                                    disabled={!csvData || uploading || (validationResult ? !validationResult.valid : false)}
-                                    variant="primary"
-                                    glow={true}
-                                    className="flex-1"
-                                >
-                                    {uploading ? 'Uploading...' : `Upload ${validationResult?.validRows || 0} Records`}
-                                </GlowButton>
-                            </div>
-                        </div>
-                    </GlassCard>
-                </motion.div>
-
-                {/* Result */}
-                {result && (
-                    <motion.div variants={staggerItem}>
-                        <GlassCard variant="elevated" className="p-6">
-                            <h3 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-                                <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Upload Results
-                            </h3>
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-                                <div className="text-center p-4 bg-success/10 border border-success/30 rounded-lg">
-                                    <div className="text-3xl font-bold text-success">
-                                        {result.success || 0}
-                                    </div>
-                                    <div className="text-sm text-textSecondary">Successful</div>
-                                </div>
-                                <div className="text-center p-4 bg-error/10 border border-error/30 rounded-lg">
-                                    <div className="text-3xl font-bold text-error">
-                                        {result.failed || 0}
-                                    </div>
-                                    <div className="text-sm text-textSecondary">Failed</div>
-                                </div>
-                                <div className="text-center p-4 bg-white/5 border border-white/10 rounded-lg">
-                                    <div className="text-3xl font-bold text-text">
-                                        {(result.success || 0) + (result.failed || 0)}
-                                    </div>
-                                    <div className="text-sm text-textSecondary">Total</div>
-                                </div>
-                            </div>
-
-                            {result.errors && result.errors.length > 0 && (
-                                <div className="mt-4">
-                                    <h4 className="text-sm font-semibold text-error mb-2 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Errors:
-                                    </h4>
-                                    <div className="space-y-1 max-h-40 overflow-y-auto">
-                                        {result.errors.map((err: string, idx: number) => (
-                                            <div
-                                                key={idx}
-                                                className="text-xs text-error bg-error/10 px-3 py-2 rounded border border-error/30"
-                                            >
-                                                {err}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </GlassCard>
-                    </motion.div>
-                )}
-
-                {/* Error */}
-                {error && (
-                    <motion.div variants={staggerItem}>
-                        <GlassCard variant="elevated" className="p-4 bg-error/10 border-error/30">
-                            <div className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-error">{error}</p>
-                            </div>
-                        </GlassCard>
-                    </motion.div>
-                )}
+        <div className="max-w-4xl mx-auto space-y-10 pb-8 pt-4">
+            <motion.div initial="initial" animate="animate" className="text-center space-y-2">
+                <motion.div variants={fadeUp} className="inline-block px-3 py-1 bg-slate-50 rounded-full border border-slate-100 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Admin Dashboard</motion.div>
+                <motion.h1 variants={fadeUp} className="text-4xl font-heading font-black text-slate-900 tracking-tight">Eligibility Portal</motion.h1>
+                <motion.p variants={fadeUp} className="text-slate-400 text-sm font-medium">Configure academic eligibility with precision</motion.p>
             </motion.div>
+
+            <div className="max-w-xl mx-auto relative px-6">
+                <div className="absolute top-[18px] left-6 right-6 h-0.5 bg-slate-100 rounded-full -z-10" />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${((currentStep - 1) / 3) * 100}%` }} className="absolute top-[18px] left-6 h-0.5 bg-primary rounded-full -z-10 transition-all duration-1000 ease-in-out" />
+
+                <div className="flex justify-between items-center">
+                    {STEPS.map((s) => (
+                        <div key={s.id} className="flex flex-col items-center gap-2">
+                            <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center border-2 transition-all duration-700 ${s.id === currentStep || s.id < currentStep ? 'bg-primary border-white text-white shadow-lg shadow-primary/20 scale-110' : 'bg-white border-slate-50 text-slate-200'}`}>
+                                {s.id < currentStep ? <Check className="w-4 h-4" /> : <s.icon className={`w-4 h-4 ${s.id === currentStep ? 'text-white' : 'text-slate-300'}`} />}
+                            </div>
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${s.id === currentStep ? 'text-primary' : 'text-slate-300'}`}>{s.title}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+                <GlassCard key="main-container" className="border-none shadow-[0_24px_80px_-16px_rgba(0,0,0,0.06)] rounded-[48px] overflow-hidden relative bg-white" hoverEffect={false}>
+                    <div className="relative min-h-[400px]">
+                        {currentStep > 1 && (
+                            <motion.button initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                onClick={handleBack} className="absolute left-6 top-6 p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-primary hover:bg-primary/5 transition-all z-20">
+                                <ArrowLeft className="w-5 h-5" />
+                            </motion.button>
+                        )}
+                        <div className="p-8 pb-10">{renderStepContent()}</div>
+                    </div>
+                </GlassCard>
+            </AnimatePresence>
         </div>
     );
 }
