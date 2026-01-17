@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, User, CheckCircle, XCircle, Loader, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { api } from '../../utils/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Application {
@@ -62,7 +62,7 @@ export function ApplicationReviewPage() {
     const fetchApplications = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/applications/faculty');
+            const response = await api.get<Application[]>('/applications/faculty');
             if (response.success && response.data) {
                 setApplications(response.data);
             }
