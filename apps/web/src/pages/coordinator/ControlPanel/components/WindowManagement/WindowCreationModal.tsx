@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../../../components/ui/dialog';
 import { WindowForm } from './WindowForm';
 import { WindowForm as WindowFormType, Window } from '../../types';
+import { Loader2 } from 'lucide-react';
 
 interface WindowCreationModalProps {
     isOpen: boolean;
@@ -55,6 +56,20 @@ export function WindowCreationModal({
                     }
                 }}
             >
+                {/* Loading Overlay */}
+                {loading && (
+                    <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 rounded-lg">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="p-4 bg-white rounded-full shadow-lg border border-slate-100">
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                            </div>
+                            <p className="text-sm font-medium text-slate-600 animate-pulse">
+                                {editingWindow ? 'Updating Window...' : 'Creating Window...'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <DialogHeader>
                     <DialogTitle>
                         {editingWindow ? 'Edit Window' : 'Create New Window'}

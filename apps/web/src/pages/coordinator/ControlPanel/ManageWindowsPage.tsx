@@ -25,6 +25,7 @@ export function ManageWindowsPage() {
     const [editingWindow, setEditingWindow] = useState<Window | null>(null);
     const [showInactiveWindows, setShowInactiveWindows] = useState(false);
     const [formLoading, setFormLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Hooks
     const {
@@ -78,7 +79,10 @@ export function ManageWindowsPage() {
     const confirmDeleteWindow = async () => {
         if (!windowToDelete) return;
 
+        setDeleteLoading(true);
         const success = await deleteWindow(windowToDelete._id);
+        setDeleteLoading(false);
+
         if (success) {
             setShowDeleteModal(false);
             setWindowToDelete(null);
@@ -171,6 +175,7 @@ export function ManageWindowsPage() {
                     setShowDeleteModal(false);
                     setWindowToDelete(null);
                 }}
+                loading={deleteLoading}
             />
         </div>
     );

@@ -60,8 +60,8 @@ export const useWindowManagement = () => {
         const response = await api.put(`/control/windows/${editingWindow._id}`, payload);
 
         if (response.success) {
-          toast.success('Window updated successfully');
           await fetchWindows();
+          toast.success('Window updated successfully');
           return true;
         } else {
           toast.error(response.error?.message || 'Failed to update window');

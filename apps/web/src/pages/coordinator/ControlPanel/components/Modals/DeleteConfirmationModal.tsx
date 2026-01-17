@@ -11,20 +11,22 @@ import {
 import { Button } from '../../../../../components/ui/Button';
 import { Window } from '../../types';
 import { formatDateForDisplay } from '../../utils/dateTimeUtils';
-import { Trash2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Trash2, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
   window: Window | null;
   onConfirm: () => void;
   onCancel: () => void;
+  loading: boolean;
 }
 
 export function DeleteConfirmationModal({
   isOpen,
   window,
   onConfirm,
-  onCancel
+  onCancel,
+  loading
 }: DeleteConfirmationModalProps) {
   // Even if window is null, we render Dialog to handle open state smoothly if needed, 
   // but logically if it's null we shouldn't show content. 
@@ -32,8 +34,22 @@ export function DeleteConfirmationModal({
   // We'll rely on the parent controlling `isOpen` and `window`.
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onCancel()}>
       <DialogContent className="max-w-md">
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 rounded-lg">
+            <div className="flex flex-col items-center gap-3">
+              <div className="p-4 bg-white rounded-full shadow-lg border border-slate-100">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 animate-pulse">
+                Deleting Window...
+              </p>
+            </div>
+          </div>
+        )}
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="w-5 h-5" />
@@ -85,10 +101,10 @@ export function DeleteConfirmationModal({
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
             Delete Window
           </Button>
         </DialogFooter>
