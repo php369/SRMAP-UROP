@@ -2,6 +2,7 @@ import { Application, IApplication } from '../models/Application';
 import { Group } from '../models/Group';
 import { Project } from '../models/Project';
 import { User } from '../models/User';
+import { GroupMemberDetails } from '../models/GroupMemberDetails';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
 
@@ -301,12 +302,11 @@ export async function getFacultyApplications(
     // Get faculty's projects
     const query: any = { facultyId };
     if (projectType) query.projectType = projectType;
-
     const projects = await Project.find(query).select('_id');
     const projectIds = projects.map(p => p._id);
 
     // Get applications for these projects only
-    return await Application.find({
+    const applications = await Application.find({
       projectId: { $in: projectIds }
     })
       .populate('studentId', 'name email studentId department')
@@ -318,7 +318,21 @@ export async function getFacultyApplications(
         ]
       })
       .populate('projectId', 'title brief facultyName')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // For group applications, attach member details (CGPA, department etc)
+    const processedApplications = await Promise.all(applications.map(async (app: any) => {
+      if (app.groupId) {
+        const memberDetails = await GroupMemberDetails.find({
+          groupId: app.groupId._id
+        }).lean();
+        app.groupId.memberData = memberDetails;
+      }
+      return app;
+    }));
+
+    return processedApplications as any;
   } catch (error) {
     logger.error('Error getting faculty applications:', error);
     return [];

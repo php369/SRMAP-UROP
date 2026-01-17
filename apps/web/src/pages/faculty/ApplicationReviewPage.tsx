@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, User, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp, Edit2, Search } from 'lucide-react';
+import { Users, User, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp, Edit2, Search, Filter, SlidersHorizontal, ArrowUpDown, GraduationCap, Building2, Briefcase, Mail, Info } from 'lucide-react';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '../../components/ui/C
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { ApplicationEmptyState } from './components/ApplicationEmptyState';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 
@@ -35,12 +36,19 @@ interface Application {
             email: string;
             studentId: string;
         }>;
+        memberData?: Array<{
+            userId: string;
+            cgpa: number;
+            department: string;
+            specialization?: string;
+        }>;
     };
     projectId: {
         _id: string;
         title: string;
         brief: string;
         facultyName: string;
+        department: string;
     };
     department: string;
     stream?: string;
@@ -62,6 +70,12 @@ export function ApplicationReviewPage() {
     const [editingProject, setEditingProject] = useState<string | null>(null);
     const [newProjectTitle, setNewProjectTitle] = useState('');
 
+    // Filter and Search States
+    const [searchQuery, setSearchQuery] = useState('');
+    const [deptFilter, setDeptFilter] = useState('all');
+    const [projectFilter, setProjectFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState('newest'); // newest, oldest, cgpa-high, cgpa-low
+
     useEffect(() => {
         fetchApplications();
     }, []);
@@ -80,6 +94,31 @@ export function ApplicationReviewPage() {
             setLoading(false);
         }
     };
+
+    // Derived Filtered Applications
+    const filteredApplications = applications.filter(app => {
+        const matchesSearch =
+            app.projectId.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (app.studentId?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (app.groupId?.leaderId.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesDept = deptFilter === 'all' || app.department === deptFilter;
+        const matchesProject = projectFilter === 'all' || app.projectId._id === projectFilter;
+
+        return matchesSearch && matchesDept && matchesProject;
+    }).sort((a, b) => {
+        if (sortOrder === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (sortOrder === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        if (sortOrder === 'cgpa-high') return (b.cgpa || 0) - (a.cgpa || 0);
+        if (sortOrder === 'cgpa-low') return (a.cgpa || 0) - (b.cgpa || 0);
+        return 0;
+    });
+
+    const uniqueDepts = Array.from(new Set(applications.map(app => app.department)));
+    const uniqueProjects = Array.from(new Set(applications.map(app => JSON.stringify({ id: app.projectId._id, title: app.projectId.title })))).map(s => JSON.parse(s));
+
+    const pendingApplications = filteredApplications.filter(app => app.status === 'pending');
+    const reviewedApplications = filteredApplications.filter(app => app.status !== 'pending');
 
     const handleAcceptApplication = async (applicationId: string, projectId: string) => {
         if (!confirm('Are you sure you want to accept this application? This will assign the project to this student/group and reject other applicants.')) {
@@ -160,9 +199,6 @@ export function ApplicationReviewPage() {
         setNewProjectTitle(currentTitle);
     };
 
-    const pendingApplications = applications.filter(app => app.status === 'pending');
-    const reviewedApplications = applications.filter(app => app.status !== 'pending');
-
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center min-h-[60vh]">
@@ -204,6 +240,84 @@ export function ApplicationReviewPage() {
                     </p>
                 </div>
 
+                {/* Filter & Search Bar */}
+                <div className="mb-8 p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Input
+                                placeholder="Search by project title or student name..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                            />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                                <Select value={sortOrder} onValueChange={setSortOrder}>
+                                    <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 h-8 text-xs font-medium">
+                                        <ArrowUpDown className="w-3 h-3 mr-2" />
+                                        <SelectValue placeholder="Sort By" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="newest">Newest First</SelectItem>
+                                        <SelectItem value="oldest">Oldest First</SelectItem>
+                                        <SelectItem value="cgpa-high">Highest CGPA</SelectItem>
+                                        <SelectItem value="cgpa-low">Lowest CGPA</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <Filter className="w-3 h-3" /> Filters:
+                        </div>
+
+                        <Select value={deptFilter} onValueChange={setDeptFilter}>
+                            <SelectTrigger className="w-[180px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
+                                <Building2 className="w-3.5 h-3.5 mr-2 text-teal-500" />
+                                <SelectValue placeholder="All Departments" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                {uniqueDepts.map(dept => (
+                                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={projectFilter} onValueChange={setProjectFilter}>
+                            <SelectTrigger className="w-[240px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
+                                <Briefcase className="w-3.5 h-3.5 mr-2 text-teal-500" />
+                                <SelectValue placeholder="Filter by Project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Projects</SelectItem>
+                                {uniqueProjects.map(proj => (
+                                    <SelectItem key={proj.id} value={proj.id}>{proj.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {(searchQuery || deptFilter !== 'all' || projectFilter !== 'all') && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setDeptFilter('all');
+                                    setProjectFilter('all');
+                                }}
+                                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 text-xs h-9"
+                            >
+                                Clear all Filters
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Pending Applications */}
                 <div className="mb-10 space-y-6">
                     <div className="flex items-center gap-2">
@@ -214,54 +328,81 @@ export function ApplicationReviewPage() {
 
                     {pendingApplications.length === 0 ? (
                         <div className="border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-slate-50/50 dark:bg-slate-900/50">
-                            <p className="text-slate-500 text-sm">No pending applications to review</p>
+                            <p className="text-slate-500 text-sm">No pending applications match your filters</p>
                         </div>
                     ) : (
                         <div className="grid gap-4">
                             {pendingApplications.map((application) => (
-                                <Card key={application._id} className="overflow-hidden border-l-4 border-l-teal-500 hover:shadow-md transition-shadow">
+                                <Card key={application._id} className="overflow-hidden border-l-4 border-l-teal-500 hover:shadow-md transition-shadow bg-white dark:bg-slate-950">
                                     <div className="p-6">
                                         <div className="flex flex-col md:flex-row gap-6">
                                             <div className="flex-1 space-y-3">
-                                                <div className="flex items-center gap-3">
-                                                    {application.groupId ? (
-                                                        <div className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                                                            <Users className="w-5 h-5" />
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        {application.groupId ? (
+                                                            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                                                <Users className="w-5 h-5" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-2.5 rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400">
+                                                                <User className="w-5 h-5" />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight">
+                                                                {application.projectId.title}
+                                                            </h3>
+                                                            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                                                <span className="flex items-center gap-1">
+                                                                    {application.groupId ? 'Group' : 'Individual'}
+                                                                </span>
+                                                                <span>•</span>
+                                                                <span className="flex items-center gap-1 font-medium text-teal-600 dark:text-teal-400">
+                                                                    {application.department}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                    ) : (
-                                                        <div className="p-2 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400">
-                                                            <User className="w-5 h-5" />
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
-                                                            {application.projectId.title}
-                                                        </h3>
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                            {application.groupId ? 'Group Application' : 'Individual Application'} • {application.department}
-                                                        </p>
                                                     </div>
+
+                                                    {!application.groupId && (
+                                                        <Badge variant="outline" className="h-7 bg-teal-50/50 text-teal-700 border-teal-100 font-mono">
+                                                            CGPA: {application.cgpa?.toFixed(2) || 'N/A'}
+                                                        </Badge>
+                                                    )}
+                                                    {application.groupId && (
+                                                        <Badge variant="outline" className="h-7 bg-blue-50/50 text-blue-700 border-blue-100">
+                                                            {application.groupId.members.length} Members
+                                                        </Badge>
+                                                    )}
                                                 </div>
 
-                                                <div className="pl-14">
-                                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
-                                                        {application.projectId.brief}
+                                                <div className="pl-[52px]">
+                                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 italic">
+                                                        "{application.projectId.brief}"
                                                     </p>
-                                                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-4">
-                                                        <span>Submitted: {new Date(application.createdAt).toLocaleDateString()}</span>
-                                                        {application.specialization && <span>• Spec: {application.specialization}</span>}
+                                                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
+                                                        <div className="flex items-center gap-1.5 text-slate-400 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md">
+                                                            <Search className="w-3 h-3" />
+                                                            <span>Applied <b>{new Date(application.createdAt).toLocaleDateString()}</b></span>
+                                                        </div>
+                                                        {application.specialization && (
+                                                            <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50/50 dark:bg-teal-900/20 px-2 py-1 rounded-md font-medium">
+                                                                <Info className="w-3 h-3" />
+                                                                <span>Spec: {application.specialization}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-col gap-2 min-w-[140px] justify-center">
+                                            <div className="flex flex-col gap-2 min-w-[160px] justify-center pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800 md:pl-6">
                                                 <Button
                                                     onClick={() => handleAcceptApplication(application._id, application.projectId._id)}
                                                     disabled={processingApp === application._id}
-                                                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                                                    className="w-full bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all"
                                                     size="sm"
                                                 >
-                                                    {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept'}
+                                                    {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-2" /> Accept</>}
                                                 </Button>
                                                 <Button
                                                     onClick={() => handleRejectApplication(application._id)}
@@ -270,7 +411,7 @@ export function ApplicationReviewPage() {
                                                     className="w-full text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
                                                     size="sm"
                                                 >
-                                                    Reject
+                                                    <XCircle className="w-4 h-4 mr-2" /> Reject
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -279,9 +420,9 @@ export function ApplicationReviewPage() {
                                                     className="w-full text-slate-400 hover:text-teal-600"
                                                 >
                                                     {expandedApp === application._id ? (
-                                                        <span className="flex items-center gap-1">Hide Details <ChevronUp className="w-3 h-3" /></span>
+                                                        <span className="flex items-center gap-1 font-medium">Hide Details <ChevronUp className="w-3.5 h-3.5 ml-1" /></span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1">View Details <ChevronDown className="w-3 h-3" /></span>
+                                                        <span className="flex items-center gap-1 font-medium">View Details <ChevronDown className="w-3.5 h-3.5 ml-1" /></span>
                                                     )}
                                                 </Button>
                                             </div>
@@ -295,50 +436,88 @@ export function ApplicationReviewPage() {
                                                     exit={{ height: 0, opacity: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 ml-14">
-                                                        <div className="grid md:grid-cols-2 gap-8 text-sm">
-                                                            {application.groupId ? (
-                                                                <div className="space-y-3">
-                                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">Group Information</p>
-                                                                    <div className="grid grid-cols-[100px_1fr] gap-2">
-                                                                        <span className="text-slate-500">Code:</span>
-                                                                        <span className="font-mono text-slate-700 dark:text-slate-300">{application.groupId.groupCode}</span>
-                                                                        <span className="text-slate-500">Leader:</span>
-                                                                        <span className="text-slate-700 dark:text-slate-300">{application.groupId.leaderId.name}</span>
+                                                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                                        {application.groupId ? (
+                                                            <div className="space-y-6">
+                                                                <div className="flex items-center justify-between px-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Users className="w-4 h-4 text-teal-600" />
+                                                                        <h4 className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-xs">Team Composition</h4>
                                                                     </div>
-                                                                    <div className="mt-2">
-                                                                        <p className="text-xs font-medium text-slate-500 mb-2">MEMBERS</p>
-                                                                        <ul className="space-y-1">
-                                                                            {application.groupId.members.map(m => (
-                                                                                <li key={m._id} className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                                                                                    • {m.name}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
+                                                                    <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900 text-[10px] font-mono border-slate-200">
+                                                                        LEADER: {application.groupId.leaderId.name}
+                                                                    </Badge>
                                                                 </div>
-                                                            ) : (
-                                                                <div className="space-y-3">
-                                                                    <p className="font-semibold text-slate-900 dark:text-slate-100">Student Information</p>
-                                                                    <div className="grid grid-cols-[100px_1fr] gap-2">
-                                                                        <span className="text-slate-500">Name:</span>
-                                                                        <span className="text-slate-700 dark:text-slate-300">{application.studentId?.name}</span>
-                                                                        <span className="text-slate-500">Email:</span>
-                                                                        <span className="text-slate-700 dark:text-slate-300">{application.studentId?.email}</span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
 
-                                                            <div className="space-y-3">
-                                                                <p className="font-semibold text-slate-900 dark:text-slate-100">Academic Details</p>
-                                                                <div className="grid grid-cols-[100px_1fr] gap-2">
-                                                                    <span className="text-slate-500">CGPA:</span>
-                                                                    <span className="text-slate-700 dark:text-slate-300 font-mono">{application.cgpa?.toFixed(2) || 'N/A'}</span>
-                                                                    <span className="text-slate-500">Semester:</span>
-                                                                    <span className="text-slate-700 dark:text-slate-300">{application.semester}</span>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    {application.groupId.members.map(member => {
+                                                                        const details = application.groupId?.memberData?.find(d => d.userId === member._id);
+                                                                        const isLeader = member._id === application.groupId?.leaderId._id;
+
+                                                                        return (
+                                                                            <div key={member._id} className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between hover:border-teal-100 dark:hover:border-teal-900/50 transition-colors">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isLeader ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-50' : 'bg-teal-100 text-teal-700'}`}>
+                                                                                        {member.name.charAt(0)}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                                                                                            {member.name}
+                                                                                            {isLeader && <Badge className="bg-amber-100 text-amber-700 text-[9px] h-4 py-0">LEADER</Badge>}
+                                                                                        </p>
+                                                                                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                                                                                            <Mail className="w-3 h-3" /> {member.email}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">CGPA</p>
+                                                                                    <p className="text-sm font-mono font-bold text-teal-600 dark:text-teal-400">
+                                                                                        {details?.cgpa?.toFixed(2) || 'N/A'}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
-                                                        </div>
+                                                        ) : (
+                                                            <div className="space-y-6">
+                                                                <div className="flex items-center gap-2 px-2">
+                                                                    <User className="w-4 h-4 text-teal-600" />
+                                                                    <h4 className="font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-xs">Student Information</h4>
+                                                                </div>
+                                                                <div className="p-4 rounded-xl border border-teal-100/50 dark:border-teal-900/30 bg-teal-50/20 dark:bg-teal-900/10 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                    <div className="space-y-4">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="w-12 h-12 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-bold shadow-teal-100 shadow-lg">
+                                                                                {application.studentId?.name.charAt(0)}
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-lg font-bold text-teal-900 dark:text-teal-100">{application.studentId?.name}</p>
+                                                                                <p className="text-sm text-teal-600/80 flex items-center gap-1.5 font-medium">
+                                                                                    <Mail className="w-3.5 h-3.5" /> {application.studentId?.email}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div className="bg-white/80 dark:bg-slate-950 p-3 rounded-lg border border-teal-50 dark:border-teal-900/20 shadow-sm">
+                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                                                                                <GraduationCap className="w-3 h-3" /> Academic Score
+                                                                            </p>
+                                                                            <p className="text-xl font-mono font-bold text-teal-600">{application.cgpa?.toFixed(2) || 'N/A'}</p>
+                                                                        </div>
+                                                                        <div className="bg-white/80 dark:bg-slate-950 p-3 rounded-lg border border-teal-50 dark:border-teal-900/20 shadow-sm">
+                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                                                                                <Building2 className="w-3 h-3" /> Department
+                                                                            </p>
+                                                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{application.department}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -361,7 +540,7 @@ export function ApplicationReviewPage() {
 
                         <div className="grid md:grid-cols-2 gap-4">
                             {reviewedApplications.map((application) => (
-                                <Card key={application._id} className="opacity-75 hover:opacity-100 transition-opacity">
+                                <Card key={application._id} className="opacity-75 hover:opacity-100 transition-opacity bg-white dark:bg-slate-950">
                                     <div className="p-5">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-2">
@@ -398,15 +577,21 @@ export function ApplicationReviewPage() {
                                                     <Button size="sm" variant="ghost" onClick={() => setEditingProject(null)} className="h-8">Cancel</Button>
                                                 </div>
                                             ) : (
-                                                <h4 className="font-medium text-slate-900 dark:text-slate-100 line-clamp-1">
+                                                <h4 className="font-bold text-slate-900 dark:text-slate-100 line-clamp-1 text-sm">
                                                     {application.projectId.title}
                                                 </h4>
                                             )}
 
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                                {application.groupId ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                                                {application.groupId ? application.groupId.members.length + ' Students' : application.studentId?.name}
-                                            </p>
+                                            <div className="flex items-center justify-between text-xs mt-2">
+                                                <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                    {application.groupId ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                                                    {application.groupId ? application.groupId.members.length + ' Students' : application.studentId?.name}
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-slate-400">CGPA:</span>
+                                                    <span className="font-mono font-bold text-teal-600">{application.cgpa?.toFixed(2) || 'N/A'}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </Card>
