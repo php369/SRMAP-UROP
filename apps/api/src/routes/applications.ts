@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { requireApplicationWindow } from '../middleware/windowEnforcement';
 import {
@@ -17,7 +17,7 @@ import { getUserGroup } from '../services/groupService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/applications
