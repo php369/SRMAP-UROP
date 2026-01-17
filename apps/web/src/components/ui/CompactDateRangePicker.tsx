@@ -16,6 +16,7 @@ interface DateRangePickerFieldProps {
     minValue?: ZonedDateTime;
     maxValue?: ZonedDateTime;
     color?: string;
+    isStartDisabled?: boolean; // New prop
 }
 
 /**
@@ -58,7 +59,8 @@ export function DateRangePickerField({
     isRequired,
     minValue,
     maxValue,
-    color
+    color,
+    isStartDisabled
 }: DateRangePickerFieldProps) {
 
     // Convert ISO strings to ZonedDateTime for the picker
@@ -82,7 +84,17 @@ export function DateRangePickerField({
     // Convert ZonedDateTime back to ISO string format
     const handleChange = (val: { start: ZonedDateTime; end: ZonedDateTime } | null) => {
         if (!val) return;
-        const { start, end } = val;
+        let { start, end } = val;
+
+        // If start date is disabled, revert start to the current value
+        if (isStartDisabled && value?.start) {
+            try {
+                const startStr = value.start.replace('Z', '').replace(/\+.*$/, '');
+                start = parseZonedDateTime(`${startStr}[Asia/Kolkata]`);
+            } catch (e) {
+                console.warn("DateRangePickerField: error reverting start date", e);
+            }
+        }
 
         const format = (date: ZonedDateTime) => {
             const year = date.year;

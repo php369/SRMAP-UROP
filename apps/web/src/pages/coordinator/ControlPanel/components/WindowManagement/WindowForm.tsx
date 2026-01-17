@@ -77,6 +77,7 @@ export function WindowForm({
               isRequired
               value={dateRangeValue}
               onChange={handleDateChange}
+              isStartDisabled={!!editingWindow}
             />
           </div>
         </div>
