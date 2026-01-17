@@ -17,10 +17,6 @@ export function CoordinatorDashboard() {
 
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <div>
-                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">System Overview</h3>
-                        <p className="text-sm font-medium text-slate-500">Real-time control panel metrics</p>
-                    </div>
                     {statsLoading && (
                         <div className="text-xs font-bold text-slate-400 animate-pulse uppercase tracking-wider">
                             Refreshing...
@@ -28,14 +24,8 @@ export function CoordinatorDashboard() {
                     )}
                 </div>
 
-                {stats ? (
-                    <StatsCards stats={stats} />
-                ) : statsLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="h-32 bg-slate-100 rounded-xl animate-pulse" />
-                        ))}
-                    </div>
+                {stats || statsLoading ? (
+                    <StatsCards stats={stats} loading={statsLoading} />
                 ) : (
                     <div className="p-12 rounded-2xl border border-slate-200 bg-white/50 shadow-sm text-center">
                         <div className="inline-flex p-4 rounded-full bg-rose-50 mb-4">

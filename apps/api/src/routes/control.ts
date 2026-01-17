@@ -461,12 +461,12 @@ router.get('/stats', authenticate, isCoordinatorOrAdmin, async (req: Request, re
       // Upcoming deadlines (next 14 days)
       Window.find({
         ...query,
-        isActive: true,
-        endDate: {
-          $gte: new Date(),
-          $lte: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-        }
-      }).sort({ endDate: 1 }).select('windowType projectType endDate')
+        $or: [
+          { isActive: true },
+          { startDate: { $lte: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) } }
+        ],
+        endDate: { $gte: new Date() }
+      }).sort({ endDate: 1 }).select('windowType projectType endDate startDate')
     ]);
 
     // Calculate Average Group Size
