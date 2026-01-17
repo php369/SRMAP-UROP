@@ -1,27 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Eye, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, CalendarClock, BookOpen, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassCard, Button, Input, Label, Textarea } from '../../components/ui';
-import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { toast } from 'sonner';
+import { Skeleton } from '../../components/ui/skeleton';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { api } from '../../utils/api';
-
-interface Project {
-  _id: string;
-  projectId: string;
-  title: string;
-  brief: string;
-  prerequisites?: string;
-  department: string;
-  type: 'IDP' | 'UROP' | 'CAPSTONE';
-  status: 'draft' | 'published' | 'frozen' | 'assigned';
-  facultyId: string;
-  facultyName: string;
-  facultyIdNumber: string;
-  createdAt: string;
-}
+import { Project } from './types';
+import { ProjectCard } from './components/ProjectCard';
+import { ProjectForm } from './components/ProjectForm';
+import { PhaseEmptyState } from './components/PhaseEmptyState';
+import { ProjectDetailsModal } from './components/ProjectDetailsModal';
+import { ActiveProposalEmptyState } from './components/ActiveProposalEmptyState';
 
 export function FacultyProjectsPage() {
   const { user } = useAuth();
@@ -29,29 +21,40 @@ export function FacultyProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [viewingProject, setViewingProject] = useState<Project | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    brief: '',
-    prerequisites: '',
-    department: user?.profile?.department || '',
-    projectType: 'IDP' as 'IDP' | 'UROP' | 'CAPSTONE'
-  });
-
-  // Check if proposal window is open for current project type
-  const canCreateProject = isProposalOpen(formData.projectType);
-
-  // Get all active proposal windows to determine which project types are available
-  const activeProposalWindows = windows.filter(
+  // Get active proposal windows
+  // Memoize to prevent re-renders if the underlying windows object changes reference but not content
+  const activeProposalWindows = useMemo(() => windows.filter(
     w => w.windowType === 'proposal' && isProposalOpen(w.projectType)
-  );
+  ), [windows, isProposalOpen]);
 
-  // Helper to check if a project type has an active proposal window
-  const isProjectTypeAvailable = (type: 'IDP' | 'UROP' | 'CAPSTONE') => {
-    return activeProposalWindows.some(w => w.projectType === type);
-  };
+  const availableTypes = useMemo(() => activeProposalWindows.map(w => w.projectType), [activeProposalWindows]);
+  const hasActiveWindow = activeProposalWindows.length > 0;
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/projects/faculty');
+      if (response.success && response.data) {
+        const projectsData = Array.isArray(response.data) ? response.data : [];
+        setProjects(projectsData);
+      } else {
+        setProjects([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch projects:', error);
+      if (!error.message?.includes('Too many requests')) {
+        toast.error('Failed to fetch projects');
+      }
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -66,62 +69,21 @@ export function FacultyProjectsPage() {
     };
 
     initializeData();
-  }, []);
+  }, [fetchProjects]);
 
-  // Auto-select first available project type when windows load
-  useEffect(() => {
-    if (!windowLoading && activeProposalWindows.length > 0) {
-      const currentTypeAvailable = isProjectTypeAvailable(formData.projectType);
-      if (!currentTypeAvailable) {
-        // Set to first available type
-        const firstAvailable = activeProposalWindows[0]?.projectType;
-        if (firstAvailable) {
-          setFormData(prev => ({ ...prev, projectType: firstAvailable }));
-        }
-      }
-    }
-  }, [windowLoading, activeProposalWindows.length]);
-
-  const fetchProjects = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/projects/faculty');
-      if (response.success && response.data) {
-        const projectsData = Array.isArray(response.data) ? response.data : [];
-        setProjects(projectsData);
-        console.log('Projects fetched:', projectsData.length);
-      } else {
-        setProjects([]);
-        console.log('No projects found');
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch projects:', error);
-      // Don't show error toast for rate limiting
-      if (!error.message?.includes('Too many requests')) {
-        toast.error('Failed to fetch projects');
-      }
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleCreateProject = async (data: any) => {
     if (projects.length >= 5 && !editingProject) {
       toast.error('You can only create up to 5 projects');
       return;
     }
 
-    setLoading(true);
     try {
       const payload = {
-        title: formData.title,
-        brief: formData.brief,
-        prerequisites: formData.prerequisites,
-        type: formData.projectType,
-        department: formData.department
+        title: data.title,
+        brief: data.brief,
+        prerequisites: data.prerequisites, // Fix: Changed typo in previous implementation plan if any
+        type: data.projectType,
+        department: data.department
       };
 
       const response = editingProject
@@ -131,7 +93,7 @@ export function FacultyProjectsPage() {
       if (response.success) {
         toast.success(editingProject ? 'Project updated successfully' : 'Project created successfully');
         setShowModal(false);
-        resetForm();
+        setEditingProject(null);
         fetchProjects();
       } else {
         toast.error(response.error?.message || 'Failed to save project');
@@ -139,21 +101,7 @@ export function FacultyProjectsPage() {
     } catch (error: any) {
       console.error('Failed to save project:', error);
       toast.error(error.message || 'Failed to save project');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const handleEdit = (project: Project) => {
-    setEditingProject(project);
-    setFormData({
-      title: project.title,
-      brief: project.brief,
-      prerequisites: project.prerequisites || '',
-      department: project.department,
-      projectType: project.type
-    });
-    setShowModal(true);
   };
 
   const handleDelete = async (projectId: string) => {
@@ -176,337 +124,157 @@ export function FacultyProjectsPage() {
     }
   };
 
-  const resetForm = () => {
-    // Default to first available open project type, fallback to IDP
-    const firstAvailableType = activeProposalWindows[0]?.projectType || 'IDP';
-
-    setFormData({
-      title: '',
-      brief: '',
-      prerequisites: '',
-      department: user?.profile?.department || '',
-      projectType: firstAvailableType
-    });
+  const handleOpenCreateModal = () => {
+    if (!hasActiveWindow) {
+      // Just a safeguard, button should be disabled
+      toast.error('Proposal window is closed');
+      return;
+    }
     setEditingProject(null);
+    setShowModal(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      draft: 'bg-gray-500/20 dark:bg-gray-500/30 text-gray-700 dark:text-gray-300 border-gray-500/40 dark:border-gray-500/30',
-      published: 'bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 border-blue-500/40 dark:border-blue-500/30',
-      frozen: 'bg-yellow-500/20 dark:bg-yellow-500/30 text-yellow-700 dark:text-yellow-300 border-yellow-500/40 dark:border-yellow-500/30',
-      assigned: 'bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-300 border-green-500/40 dark:border-green-500/30'
-    };
+  const handleEdit = (project: Project) => {
+    setEditingProject(project);
+    setShowModal(true);
+  };
 
-    const icons = {
-      draft: Clock,
-      published: Eye,
-      frozen: Clock,
-      assigned: CheckCircle
-    };
-
-    const Icon = icons[status as keyof typeof icons] || Clock;
-
+  // Loading Skeleton
+  if (initializing || windowLoading) {
     return (
-      <Badge variant={
-        status === 'published' ? 'success' :
-          status === 'assigned' ? 'info' :
-            status === 'frozen' ? 'warning' :
-              'default'
-      }>
-        <Icon className="w-3 h-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
+      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-64 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
     );
-  };
+  }
+
+  if (!hasActiveWindow && projects.length === 0 && !initializing && !windowLoading && !loading) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center -m-8 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-transparent">
+        <PhaseEmptyState />
+        <ProjectForm
+          open={showModal}
+          onOpenChange={setShowModal}
+          project={editingProject}
+          onSubmit={handleCreateProject}
+          loading={loading}
+          userDepartment={user?.profile?.department}
+          availableTypes={availableTypes}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto space-y-6"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-text">My Projects</h1>
-            <p className="text-textSecondary mt-1">
-              Manage your project proposals ({projects.length}/5)
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-            disabled={projects.length >= 5 || !canCreateProject || windowLoading}
-            variant="default"
-            title={!canCreateProject ? 'Proposal window is not open' : projects.length >= 5 ? 'Maximum projects reached' : 'Create new project'}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
-          </Button>
-        </div>
-
-        {/* Window Status Alert */}
-        {!windowLoading && !canCreateProject && (
-          <GlassCard className="p-4 border-l-4 border-warning">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-text mb-1">
-                  Project Proposal Window Not Open
-                </h3>
-                <p className="text-sm text-textSecondary">
-                  The proposal window is not currently open. You cannot create new projects at this time. Please contact the coordinator for more information.
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-        )}
-
-        {/* Projects List */}
-        {(initializing || windowLoading) ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : projects.length === 0 ? (
-          <GlassCard className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold text-text mb-2">No Projects Yet</h3>
-              <p className="text-textSecondary mb-6">
-                Create your first project proposal to get started
+    <div className="flex-1 flex flex-col w-full min-h-full relative">
+      <div className="flex-1 w-full flex flex-col p-6 space-y-8 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full flex flex-col"
+        >
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300">
+                Project Proposals
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">
+                Manage your research projects for student applications
               </p>
-              <Button
-                onClick={() => {
-                  resetForm();
-                  setShowModal(true);
-                }}
-                disabled={!canCreateProject || windowLoading}
-                variant="default"
-              >
-                Create Project
-              </Button>
-              {!canCreateProject && (
-                <p className="text-sm text-warning mt-2">
-                  Proposal window is not open
-                </p>
-              )}
             </div>
-          </GlassCard>
-        ) : (
-          <div className="grid gap-4">
-            {projects.map((project) => (
-              <motion.div
-                key={project._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <GlassCard className="p-6 hover:bg-white/10 transition-all">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold text-slate-900">{project.title}</h3>
-                        {getStatusBadge(project.status)}
-                        <Badge variant="secondary">
-                          {project.type}
-                        </Badge>
-                      </div>
-                      <p className="text-textSecondary text-sm mb-3">{project.brief}</p>
-                      {project.prerequisites && (
-                        <div className="mb-3">
-                          <span className="text-xs font-medium text-text">Prerequisites: </span>
-                          <span className="text-xs text-textSecondary">{project.prerequisites}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-textSecondary">
-                        <span>ID: {project.projectId}</span>
-                        <span>•</span>
-                        <span>{project.department}</span>
-                        <span>•</span>
-                        <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(project)}
-                        disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
-                        className="h-8 w-8 hover:bg-white/10"
-                        title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot edit assigned project' : 'Edit project'}
-                      >
-                        <Edit2 className="w-4 h-4 text-text" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(project._id)}
-                        disabled={project.status === 'assigned' || !isProposalOpen(project.type)}
-                        className="h-8 w-8 hover:bg-error/10 text-error hover:text-error"
-                        title={!isProposalOpen(project.type) ? 'Proposal window has closed' : project.status === 'assigned' ? 'Cannot delete assigned project' : 'Delete project'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
 
-      {/* Create/Edit Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => {
-              setShowModal(false);
-              resetForm();
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl"
+            <Button
+              onClick={handleOpenCreateModal}
+              disabled={projects.length >= 5 || !hasActiveWindow}
+              className={`
+                shadow-lg transition-transform hover:scale-105 active:scale-95
+                ${hasActiveWindow
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-200 dark:shadow-none'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800'
+                }
+              `}
             >
-              <div className="bg-white rounded-xl shadow-2xl p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  {editingProject ? 'Edit Project' : 'Create New Project'}
-                </h2>
+              {hasActiveWindow ? (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Project
+                </>
+              ) : (
+                <>
+                  <CalendarClock className="w-4 h-4 mr-2" />
+                  Window Closed
+                </>
+              )}
+            </Button>
+          </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Window Status Warning in Modal */}
-                  {!editingProject && !canCreateProject && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-yellow-800">
-                        <p className="font-medium">Proposal window is currently closed</p>
-                        <p className="text-xs mt-1">You can still draft the project, but it cannot be published until the window opens.</p>
-                      </div>
-                    </div>
-                  )}
+          {/* Status Banners */}
+          <AnimatePresence>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Project Type
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(['IDP', 'UROP', 'CAPSTONE'] as const).map((type) => {
-                        const isAvailable = isProjectTypeAvailable(type);
-                        const isDisabled = editingProject !== null || !isAvailable;
 
-                        return (
-                          <Button
-                            key={type}
-                            type="button"
-                            variant="outline"
-                            onClick={() => isAvailable && setFormData({ ...formData, projectType: type })}
-                            disabled={isDisabled}
-                            title={!isAvailable ? `${type} proposal window is not open` : ''}
-                            className={`h-auto py-2 ${formData.projectType === type
-                              ? 'bg-blue-100 border-blue-500 text-blue-700 hover:bg-blue-200'
-                              : isAvailable
-                                ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                                : 'bg-gray-50 border-gray-200 text-gray-400'
-                              }`}
-                          >
-                            {type}
-                            {!isAvailable && <span className="ml-1 text-xs">🔒</span>}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                      Project Title *
-                    </Label>
-                    <Input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                      maxLength={200}
-                    />
-                  </div>
+          </AnimatePresence>
 
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                      Brief Description *
-                    </Label>
-                    <Textarea
-                      value={formData.brief}
-                      onChange={(e) => setFormData({ ...formData, brief: e.target.value })}
-                      rows={4}
-                      required
-                      maxLength={1000}
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                      Prerequisites (Optional)
-                    </Label>
-                    <Input
-                      type="text"
-                      value={formData.prerequisites}
-                      onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                      placeholder="e.g., Python, Machine Learning basics"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                      Department
-                    </Label>
-                    <Input
-                      type="text"
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowModal(false);
-                        resetForm();
-                      }}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      variant="default"
-                      className="flex-1"
-                    >
-                      {editingProject ? 'Update Project' : 'Create Project'}
-                    </Button>
-                  </div>
-                </form>
+          {/* Content */}
+          <div className={cn(
+            "w-full flex flex-col",
+            (hasActiveWindow || projects.length > 0) ? "mt-8 flex-1" : "items-center justify-center flex-1"
+          )}>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ) : projects.length === 0 ? (
+              !hasActiveWindow ? (
+                <PhaseEmptyState />
+              ) : (
+                <ActiveProposalEmptyState onCreate={handleOpenCreateModal} />
+              )
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map((project) => (
+                  <ProjectCard
+                    key={project._id}
+                    project={project}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onView={(project) => {
+                      setViewingProject(project);
+                      setShowDetailsModal(true);
+                    }}
+                    isProposalOpen={hasActiveWindow}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      <ProjectForm
+        open={showModal}
+        onOpenChange={setShowModal}
+        project={editingProject}
+        onSubmit={handleCreateProject}
+        loading={loading}
+        userDepartment={user?.profile?.department}
+        availableTypes={availableTypes}
+      />
+
+      <ProjectDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        project={viewingProject}
+      />
     </div>
   );
 }
