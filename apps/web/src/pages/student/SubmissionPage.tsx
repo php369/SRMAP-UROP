@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle, Users, User } from 'lucide-react';
+import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle, Users, User, ArrowRight, Shield, Calendar, Info, FileUp, Sparkles, LogOut, ExternalLink, Trash2, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
@@ -8,12 +8,15 @@ import { toast } from 'sonner';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { getCurrentSubmissionAssessmentType, isSubmissionOpenForAssessmentType } from '../../utils/assessmentHelper';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
-
-
-
-import { WindowClosedMessage } from '../../components/common/WindowClosedMessage';
+import { SubmissionEmptyState } from './components/SubmissionEmptyState';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/label';
+import { Skeleton } from '../../components/ui/skeleton';
+import { cn } from '../../utils/cn';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Badge } from '../../components/ui/Badge';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 
 export function SubmissionPage() {
   const { user } = useAuth();
@@ -75,34 +78,60 @@ export function SubmissionPage() {
   }, [user?.role]);
 
   useEffect(() => {
-    if (eligibleProjectType && windows.length > 0) {
-      const initializeData = async () => {
+    // We stay in initializing state if windows is still loading or if we have an eligible project type but no windows data yet
+    if (eligibleProjectType) {
+      if (loading) {
         setInitializing(true);
-        try {
-          // Get current assessment type from active SUBMISSION windows (not assessment windows)
-          const assessmentType = getCurrentSubmissionAssessmentType(windows, eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE');
-          setCurrentAssessmentType(assessmentType);
+        return;
+      }
 
-          // Only proceed if there's an active submission window for this project type
-          if (assessmentType) {
-            await Promise.all([
-              checkSubmissionWindow(),
-              checkUserRole()
-            ]);
-          } else {
-            // No active submission window for this project type
-            setSubmissionWindow(null);
+      if (windows.length > 0) {
+        const initializeData = async () => {
+          setInitializing(true);
+          try {
+            const now = new Date();
+            console.log(`🔍 Initializing submission data for ${eligibleProjectType}...`);
+
+            // DIRECT WINDOW SEARCH
+            const activeSubmissionWindow = windows.find(window =>
+              window.windowType === 'submission' &&
+              window.projectType === (eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE') &&
+              window.assessmentType &&
+              new Date(window.startDate) <= now &&
+              new Date(window.endDate) >= now
+            );
+
+            if (activeSubmissionWindow) {
+              const assessmentType = activeSubmissionWindow.assessmentType as 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
+
+              // Set states
+              setCurrentAssessmentType(assessmentType);
+              setSubmissionWindow({
+                isActive: true,
+                assessmentType,
+                windowId: activeSubmissionWindow._id
+              });
+
+              await checkUserRole();
+            } else {
+              setSubmissionWindow(null);
+              setCurrentAssessmentType(null);
+            }
+          } catch (error) {
+            console.error('Error initializing submission data:', error);
+          } finally {
+            // Add a slight delay for smoother transition
+            setTimeout(() => setInitializing(false), 500);
           }
-        } catch (error) {
-          console.error('Error initializing submission data:', error);
-        } finally {
-          setInitializing(false);
-        }
-      };
+        };
 
-      initializeData();
+        initializeData();
+      } else if (!loading && windows.length === 0) {
+        // Only stop initializing if we are sure there are NO windows
+        setInitializing(false);
+      }
     }
-  }, [eligibleProjectType, windows]);
+  }, [eligibleProjectType, windows, loading]);
 
   // Check for existing submission when user role and assessment type are determined
   useEffect(() => {
@@ -117,27 +146,12 @@ export function SubmissionPage() {
     }
   }, [userGroup, user?.id, initializing, currentAssessmentType]);
 
+  // No longer needed: logic moved directly into initializeData to avoid race conditions
+  /*
   const checkSubmissionWindow = async () => {
-    if (!eligibleProjectType || !currentAssessmentType) return;
-
-    try {
-      // Check if submission is open for the current assessment type
-      const isOpen = isSubmissionOpenForAssessmentType(
-        windows,
-        eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE',
-        currentAssessmentType
-      );
-
-      if (isOpen) {
-        setSubmissionWindow({ isActive: true, assessmentType: currentAssessmentType });
-      } else {
-        setSubmissionWindow(null);
-      }
-    } catch (error) {
-      console.error('Error checking submission window:', error);
-      setSubmissionWindow(null);
-    }
+    ...
   };
+  */
 
   const checkUserRole = async () => {
     try {
@@ -493,32 +507,50 @@ export function SubmissionPage() {
     }
   };
 
-  // Show loading while initializing
   if (initializing || !eligibleProjectType) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex-1 flex flex-col p-6 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto w-full">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-4 w-24 bg-violet-200/50 dark:bg-violet-900/20" />
+            </div>
+            <Skeleton className="h-12 w-80 md:w-[450px] rounded-2xl" />
+            <Skeleton className="h-4 w-64 md:w-[500px]" />
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <Skeleton className="h-16 w-32 rounded-3xl" />
+            <Skeleton className="h-16 w-32 rounded-3xl" />
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Skeleton className="h-[400px] rounded-[2.5rem] border border-slate-100 dark:border-slate-800" />
+          <Skeleton className="h-[400px] rounded-[2.5rem] border border-slate-100 dark:border-slate-800" />
+        </div>
+
+        {/* Global Shimmer Overlay */}
+        <motion.div
+          className="fixed inset-0 pointer-events-none z-50 overflow-hidden"
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        >
+          <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-white/10 dark:via-white/5 to-transparent skew-x-12" />
+        </motion.div>
       </div>
     );
   }
 
   if (!submissionWindow || !currentAssessmentType) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Submission Window Not Open</h2>
-          <p className="text-gray-600">
-            {!currentAssessmentType
-              ? `No active submission window for ${eligibleProjectType} students. Please check back later.`
-              : 'The submission window is not currently active. Please check back later.'
-            }
-          </p>
-        </motion.div>
+      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+        <SubmissionEmptyState
+          description={`No active submission window for ${eligibleProjectType} students.`}
+          subDescription="The submission portal will unlock once the coordinator schedules the assessment window for your project type."
+        />
       </div>
     );
   }
@@ -527,406 +559,467 @@ export function SubmissionPage() {
 
   // Show message if user doesn't have permission to submit
   if (!isLeader && userGroup && !hasSubmitted) {
-    // Group member (not leader) - show waiting message only if no submission exists
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-6"
-        >
-          <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2 text-slate-900">Group Leader Submission</h2>
-          <p className="text-slate-600 mb-4">
-            Only the group leader can submit work. Please wait for your leader to submit.
-          </p>
-
-          <div className="p-4 bg-indigo-50 rounded-lg mb-4 border border-primary/10">
-            <p className="text-sm text-indigo-700">
-              <strong>Group:</strong> {(userGroup as any)?.groupName || (userGroup as any)?.groupCode}
-            </p>
-            <p className="text-sm text-indigo-700">
-              <strong>Status:</strong> {(userGroup as any)?.status}
-            </p>
-          </div>
-
-          <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
-            <p className="text-yellow-700 text-sm">
-              Waiting for group leader to submit...
-            </p>
-          </div>
-        </motion.div>
+      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+        <SubmissionEmptyState
+          title="Group Leader Submission"
+          description="Only the group leader is authorized to submit the work for your group."
+          subDescription={`Please coordinate with your group leader to ensure the ${currentAssessmentType || 'assessment'} work is uploaded within the deadline.`}
+        />
       </div>
     );
   }
 
   if (!isLeader && !userGroup) {
-    // No approved application or not eligible
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-6"
-        >
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Application Required</h2>
-          <p className="text-gray-600 mb-4">
-            You need an approved application before you can submit work.
-          </p>
-
-          <div className="p-4 bg-yellow-50 rounded-lg">
-            <p className="text-yellow-700 text-sm">
-              Please apply for a project first, and wait for approval before submitting work.
-            </p>
-          </div>
-        </motion.div>
+      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+        <SubmissionEmptyState
+          title="Application Required"
+          description="You need an approved application before you can access the submission portal."
+          subDescription="Please apply for a project first through the Application page and wait for coordinator approval."
+        />
       </div>
     );
   }
 
   if (hasSubmitted && currentSubmission) {
     return (
-      <div className="min-h-screen p-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl font-bold mb-2">Submission Complete</h1>
-            <p className="text-gray-600">
-              Your {userGroup ? 'group' : 'individual'} submission for {submissionWindow.assessmentType} has been recorded.
+      <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-col md:flex-row md:items-center justify-between gap-6"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-bold tracking-tight uppercase text-sm">
+              <Shield className="w-4 h-4" />
+              <span>Assessment Portal</span>
+            </div>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+              Submission <span className="text-violet-600">Complete</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
+              Your materials for {currentAssessmentType} have been successfully uploaded.
             </p>
-          </motion.div>
+          </div>
 
-          <GlassCard className="overflow-hidden">
-            {/* Header Section */}
-            <div className="bg-slate-50 p-6 border-b border-slate-200">
-              <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Status</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white leading-none">Accepted</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8 text-slate-800">
+            <GlassCard className="p-8 border-violet-100 dark:border-violet-500/20">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400">
+                  <FileText className="w-6 h-6" />
+                </div>
                 <div>
-                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900">
-                    {userGroup ? (
-                      <Users className="w-6 h-6 text-primary" />
-                    ) : (
-                      <User className="w-6 h-6 text-emerald-500" />
-                    )}
-                    {submissionWindow.assessmentType} Submission
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                    <span>
-                      Submitted on {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleDateString()}
-                    </span>
-                    {userGroup && (
-                      <Badge variant="secondary">
-                        Group: {userGroup.groupName || userGroup.groupCode}
-                      </Badge>
-                    )}
-                    {!userGroup && (
-                      <Badge variant="success">
-                        Solo Submission
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="font-medium">Submitted</span>
-                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Submission Dossier</h3>
+                  <p className="text-sm text-slate-500">Review your uploaded assessment materials</p>
                 </div>
               </div>
-            </div>
 
-            {/* Content Section */}
-            <div className="p-6">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800">Submitted Work</h4>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* GitHub Repository */}
-                <div className="bg-slate-50 rounded-xl p-4 hover:bg-slate-100 transition-colors border border-slate-100">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-slate-800 rounded-lg">
-                      <Github className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-slate-900">GitHub Repository</h5>
-                      <p className="text-xs text-slate-500">Source code</p>
-                    </div>
-                  </div>
-                  <a
-                    href={currentSubmission.githubUrl || currentSubmission.githubLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-primary hover:text-indigo-800 text-sm font-medium"
-                  >
-                    View Repository
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-
-                {/* Report PDF */}
-                {(currentSubmission.reportUrl || currentSubmission.reportFile?.url) && (
-                  <div className="bg-red-50 rounded-lg p-4 hover:bg-red-100 transition-colors">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-red-600 rounded-lg">
-                        <FileText className="w-5 h-5 text-white" />
+              <div className="space-y-4">
+                {/* GitHub Card */}
+                <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all group">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800 group-hover:scale-110 transition-transform">
+                        <Github className="w-6 h-6 text-slate-900 dark:text-white" />
                       </div>
                       <div>
-                        <h5 className="font-medium text-gray-800">Project Report</h5>
-                        <p className="text-xs text-gray-500">PDF document</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Source Code</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white truncate max-w-[200px] md:max-w-md">
+                          {currentSubmission.githubUrl || currentSubmission.githubLink}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => openPDFModal(
-                          currentSubmission.reportUrl || currentSubmission.reportFile?.url,
-                          'Project Report'
-                        )}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        👁️ View
-                      </button>
-                      <button
-                        onClick={() => downloadFile(
-                          currentSubmission.reportUrl || currentSubmission.reportFile?.url,
-                          currentSubmission.reportFile?.name || 'project-report.pdf'
-                        )}
-                        className="text-green-600 hover:text-green-800 text-sm font-medium"
-                      >
-                        ⬇️ Download
-                      </button>
-                    </div>
+                    <a
+                      href={currentSubmission.githubUrl || currentSubmission.githubLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:text-violet-600 transition-colors"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                    </a>
                   </div>
-                )}
+                </div>
 
-                {/* Presentation */}
+                {/* Report Card */}
+                <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all group">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800 group-hover:scale-110 transition-transform">
+                        <FileText className="w-6 h-6 text-violet-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Project Report</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white">Research_Report.pdf</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openPDFModal(currentSubmission.reportUrl || currentSubmission.reportFile?.url)}
+                      className="px-4 py-2 bg-violet-600 text-white rounded-xl shadow-lg shadow-violet-600/20 hover:bg-violet-700 transition-colors font-bold text-sm"
+                    >
+                      View Report
+                    </button>
+                  </div>
+                </div>
+
+                {/* PPT Card (if exists) */}
                 {(currentSubmission.pptUrl || currentSubmission.presentationFile?.url) && (
-                  <div className="bg-orange-50 rounded-lg p-4 hover:bg-orange-100 transition-colors">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-orange-600 rounded-lg">
-                        <Presentation className="w-5 h-5 text-white" />
+                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all group">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800 group-hover:scale-110 transition-transform">
+                          <Presentation className="w-6 h-6 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Presentation</p>
+                          <p className="text-base font-bold text-slate-900 dark:text-white">Presentation_Deck.pptx</p>
+                        </div>
                       </div>
-                      <div>
-                        <h5 className="font-medium text-gray-800">Presentation</h5>
-                        <p className="text-xs text-gray-500">Slides</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
                       <button
-                        onClick={() => openPDFModal(
-                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url,
-                          'Presentation'
-                        )}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        onClick={() => downloadFile(currentSubmission.pptUrl || currentSubmission.presentationFile?.url, `Presentation_${currentAssessmentType}.pptx`)}
+                        className="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl shadow-sm hover:bg-slate-50 transition-colors font-bold text-sm"
                       >
-                        👁️ View
-                      </button>
-                      <button
-                        onClick={() => downloadFile(
-                          currentSubmission.pptUrl || currentSubmission.presentationFile?.url,
-                          currentSubmission.presentationFile?.name || 'presentation.pdf'
-                        )}
-                        className="text-green-600 hover:text-green-800 text-sm font-medium"
-                      >
-                        ⬇️ Download
+                        Download
                       </button>
                     </div>
                   </div>
                 )}
               </div>
+            </GlassCard>
+          </div>
 
-            </div>
-
-            {/* Additional Info */}
-            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <h5 className="font-medium text-slate-900 mb-2">Submission Details</h5>
-              <div className="text-sm text-slate-600 space-y-1">
-                <p><strong>Submitted by:</strong> {currentSubmission.submittedBy?.name || user?.name}</p>
-                <p><strong>Submission time:</strong> {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleString()}</p>
-                {userGroup && !isLeader && (
-                  <p className="text-primary font-medium">
-                    ℹ️ This submission was made by your group leader and is visible to all group members.
-                  </p>
-                )}
+          <div className="space-y-8">
+            <GlassCard className="p-6 border-violet-100 dark:border-violet-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                <Shield className="w-32 h-32" />
               </div>
-            </div>
+              <h4 className="text-lg font-black text-slate-900 dark:text-white mb-6">Submission Details</h4>
+              <div className="space-y-6 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitted On</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      {new Date(currentSubmission.submittedAt || currentSubmission.createdAt).toLocaleDateString('en-US', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
 
-          </GlassCard>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitter</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      {isLeader ? 'You (Team Leader)' : 'Team Leader'}
+                    </p>
+                  </div>
+                </div>
 
+                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="p-4 bg-violet-50 dark:bg-violet-500/10 rounded-2xl border border-violet-100 dark:border-violet-500/20">
+                    <p className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase mb-2">Notice</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                      Submissions are final for this phase. Contact your coordinator for any correction requests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold mb-2">
-            Submit Work - {submissionWindow.assessmentType}
+    <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-6"
+      >
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+            {currentAssessmentType} <span className="text-violet-600">Material</span>
           </h1>
-          <p className="text-gray-600">
-            Upload your project work for evaluation
+          <p className="text-slate-500 dark:text-slate-400 font-medium">
+            Upload your project deliverables for the upcoming {currentAssessmentType} assessment window.
           </p>
+        </div>
 
-          {/* Submission Type Indicator */}
-          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-primary/10">
-            {userGroup ? (
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-indigo-800 font-medium">
-                    Submitting as Group Leader
-                  </p>
-                  <p className="text-primary text-sm">
-                    Group: {(userGroup as any)?.groupName || (userGroup as any)?.groupCode} ({(userGroup as any)?.members?.length || 0} members)
-                  </p>
-                </div>
+        <div className="flex items-center gap-3">
+          <div className="p-4 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-600/20">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">Window Type</p>
+              <p className="text-lg font-black text-slate-900 dark:text-white leading-none capitalize">{submissionWindow.assessmentType}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <GlassCard className="p-8 h-full border-slate-200/60 transition-all hover:bg-white/50">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center text-violet-600">
+                <Users className="w-6 h-6" />
               </div>
-            ) : (
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collaboration Info</h3>
+                <p className="text-sm text-slate-500">How your work will be submitted</p>
+              </div>
+            </div>
+
+            {userGroup ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                    <Shield className="w-5 h-5 text-violet-600" />
+                  </div>
                   <div>
-                    <p className="text-indigo-800 font-medium">
-                      Submitting as Individual Student
-                    </p>
-                    <p className="text-primary text-sm">
-                      Solo submission for {eligibleProjectType}
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Group Identity</p>
+                    <p className="text-base font-bold text-indigo-800 dark:text-indigo-300">
+                      {userGroup.groupName || userGroup.groupCode}
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-yellow-800 text-sm">
-                    💡 <strong>Note:</strong> If you want to work in a group, please form or join a group in the Application page before submitting.
-                  </p>
+
+                <div className="relative group p-6 rounded-[2rem] bg-violet-50/50 dark:bg-violet-900/10 border border-violet-100/50 dark:border-violet-500/10 overflow-hidden transition-all hover:bg-violet-50 dark:hover:bg-violet-900/20">
+                  <div className="absolute top-0 right-0 -mr-4 -mt-4 text-violet-500/5 transition-transform group-hover:scale-110">
+                    <Shield className="w-24 h-24" />
+                  </div>
+                  <div className="relative z-10 flex gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-violet-600 border border-violet-100/50 dark:border-violet-800">
+                      <Info className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-black text-violet-900 dark:text-violet-200 tracking-tight">Collaborative Submission</p>
+                      <p className="text-xs text-violet-700/70 dark:text-violet-400/70 font-medium leading-relaxed max-w-[200px]">
+                        As the group leader, your submission will represent the collective work of all team members.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                    <User className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Student Identity</p>
+                    <p className="text-base font-bold text-indigo-800 dark:text-indigo-300">
+                      Individual Student
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative group p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/10 border border-slate-100/50 dark:border-slate-800/10 overflow-hidden transition-all hover:bg-slate-50 dark:hover:bg-slate-900/20">
+                  <div className="absolute top-0 right-0 -mr-4 -mt-4 text-slate-500/5 transition-transform group-hover:scale-110">
+                    <User className="w-24 h-24" />
+                  </div>
+                  <div className="relative z-10 flex gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-slate-600 border border-slate-100/50 dark:border-slate-800">
+                      <Info className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-black text-slate-900 dark:text-slate-200 tracking-tight">Solo Submission</p>
+                      <p className="text-xs text-slate-500/70 dark:text-slate-400/70 font-medium leading-relaxed max-w-[200px]">
+                        You are submitting this work as an individual. Group formation is locked once submissions begin.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-          </div>
+          </GlassCard>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-white rounded-xl shadow-lg p-8"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
         >
-          <div className="space-y-6">
-            {/* GitHub Link */}
-            <div>
-              <label className="mb-2 font-medium flex items-center gap-2">
-                <Github className="w-5 h-5" />
-                GitHub Repository Link *
-              </label>
-              <input
-                type="url"
-                value={formData.githubLink}
-                onChange={(e) => {
-                  setFormData({ ...formData, githubLink: e.target.value });
-                  const validation = validateGitHubURL(e.target.value);
-                  setErrors({ ...errors, githubLink: validation.error || '' });
-                }}
-                placeholder="https://github.com/username/repository"
-                className={`w-full px-4 py-3 border rounded-lg ${errors.githubLink ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-              {errors.githubLink && (
-                <p className="text-red-500 text-sm mt-1">{errors.githubLink}</p>
-              )}
-            </div>
-
-            {/* Report PDF */}
-            <div>
-              <label className="mb-2 font-medium flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Report PDF * (Max 10MB)
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => handleFileChange('report', e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="report-upload"
-                />
-                <label htmlFor="report-upload" className="cursor-pointer">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  {formData.reportFile ? (
-                    <div>
-                      <p className="font-medium">{formData.reportFile.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {formatFileSize(formData.reportFile.size)}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">Click to upload PDF</p>
-                  )}
-                </label>
+          <GlassCard className="p-8 h-full border-slate-200/60 transition-all hover:bg-white/50">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center text-violet-600">
+                <FileUp className="w-6 h-6" />
               </div>
-              {errors.reportFile && (
-                <p className="text-red-500 text-sm mt-1">{errors.reportFile}</p>
-              )}
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Submission Form</h3>
+                <p className="text-sm text-slate-500">Provide required project artifacts</p>
+              </div>
             </div>
 
-            {/* PPT (External only) */}
-            {submissionWindow.assessmentType === 'External' && (
-              <div>
-                <label className="mb-2 font-medium flex items-center gap-2">
-                  <Presentation className="w-5 h-5" />
-                  Presentation (PPT/PPTX) * (Max 50MB)
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    accept=".ppt,.pptx"
-                    onChange={(e) => handleFileChange('ppt', e.target.files?.[0] || null)}
-                    className="hidden"
-                    id="ppt-upload"
+            <div className="space-y-6">
+              {/* GitHub Link */}
+              <div className="space-y-2">
+                <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">GitHub Repository Link *</Label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-2.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 group-focus-within:text-violet-600 transition-colors">
+                    <Github className="w-4 h-4" />
+                  </div>
+                  <Input
+                    type="url"
+                    value={formData.githubLink}
+                    onChange={(e) => {
+                      setFormData({ ...formData, githubLink: e.target.value });
+                      const validation = validateGitHubURL(e.target.value);
+                      setErrors({ ...errors, githubLink: validation.error || '' });
+                    }}
+                    placeholder="https://github.com/username/repository"
+                    className={cn(
+                      "pl-12 h-12 border-slate-200 dark:border-slate-800 focus-visible:ring-violet-500 focus-visible:border-violet-500 rounded-xl",
+                      errors.githubLink && "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500"
+                    )}
                   />
-                  <label htmlFor="ppt-upload" className="cursor-pointer">
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    {formData.pptFile ? (
-                      <div>
-                        <p className="font-medium">{formData.pptFile.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {formatFileSize(formData.pptFile.size)}
+                </div>
+                {errors.githubLink && (
+                  <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.githubLink}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Report PDF */}
+                <div className="space-y-2">
+                  <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">Report PDF *</Label>
+                  <div
+                    className={cn(
+                      "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer",
+                      formData.reportFile
+                        ? "border-violet-500 bg-violet-50/50 dark:bg-violet-500/10"
+                        : "border-slate-200 dark:border-slate-800 hover:border-violet-400 hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                      errors.reportFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
+                    )}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => handleFileChange('report', e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110",
+                      formData.reportFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                    )}>
+                      {formData.reportFile ? <CheckCircle className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                    </div>
+                    {formData.reportFile ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
+                          {formData.reportFile.name}
+                        </p>
+                        <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                          {formatFileSize(formData.reportFile.size)}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-gray-600">Click to upload PPT/PPTX</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Report</p>
                     )}
-                  </label>
+                  </div>
+                  {errors.reportFile && (
+                    <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.reportFile}</p>
+                  )}
                 </div>
-                {errors.pptFile && (
-                  <p className="text-red-500 text-sm mt-1">{errors.pptFile}</p>
+
+                {/* PPT (External only) */}
+                {submissionWindow.assessmentType === 'External' ? (
+                  <div className="space-y-2">
+                    <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">Presentation PPT *</Label>
+                    <div
+                      className={cn(
+                        "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer",
+                        formData.pptFile
+                          ? "border-violet-500 bg-violet-50/50 dark:bg-violet-500/10"
+                          : "border-slate-200 dark:border-slate-800 hover:border-violet-400 hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                        errors.pptFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
+                      )}
+                    >
+                      <input
+                        type="file"
+                        accept=".ppt,.pptx"
+                        onChange={(e) => handleFileChange('ppt', e.target.files?.[0] || null)}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110",
+                        formData.pptFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                      )}>
+                        {formData.pptFile ? <CheckCircle className="w-6 h-6" /> : <Presentation className="w-6 h-6" />}
+                      </div>
+                      {formData.pptFile ? (
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
+                            {formData.pptFile.name}
+                          </p>
+                          <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                            {formatFileSize(formData.pptFile.size)}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload PPT</p>
+                      )}
+                    </div>
+                    {errors.pptFile && (
+                      <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.pptFile}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center opacity-50">
+                    <Clock className="w-6 h-6 text-slate-400 mb-2" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Not Required</p>
+                    <p className="text-[9px] text-slate-400/80 font-medium px-2 italic">PPT is only required for External Review phase</p>
+                  </div>
                 )}
               </div>
-            )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader className="animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Upload />
-                  Submit Work
-                </>
-              )}
-            </button>
-          </div>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl shadow-xl shadow-violet-600/20 text-lg font-black tracking-tight transition-all hover:scale-[1.02] active:scale-[0.98] mt-4"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-3">
+                    <Loader className="w-5 h-5 animate-spin" />
+                    <span>Processing Submission...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Upload className="w-5 h-5" />
+                    <span>Upload & Submit Work</span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </GlassCard>
         </motion.div>
       </div>
     </div>
