@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, Plus, AlertCircle, ChevronRight, Link } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
@@ -570,7 +571,7 @@ export function MeetingsPage() {
               <Label>Date & Time</Label>
               <MeetingDateTimePicker
                 value={scheduleForm.meetingDate ? new Date(scheduleForm.meetingDate) : undefined}
-                onChange={(date) => setScheduleForm({ ...scheduleForm, meetingDate: date.toISOString() })}
+                onChange={(date) => setScheduleForm({ ...scheduleForm, meetingDate: format(date, "yyyy-MM-dd'T'HH:mm:ss") })}
                 placeholder="Pick date & time"
               />
             </div>

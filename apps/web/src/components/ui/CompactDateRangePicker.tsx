@@ -178,14 +178,13 @@ export function DateRangePickerField({
             }
         }
 
-        // Format back to ISO string compatible with backend
-        // Use the simplified format function from previous code, or standard ISO
-        // Previous: `${year}-${month}-${day}T${hour}:${minute}:${second}` (Local time representation)
-        // We will output ISO string.
+        // Format back to ISO string compatible with backend (Local Time)
+        // Previous implementation sent "YYYY-MM-DDTHH:mm:ss" without Z/Offset
+        // We replicate that to ensure "What you pick is what is saved" (in local time)
 
         onChange({
-            start: finalStart.toISOString(),
-            end: finalEnd.toISOString()
+            start: format(finalStart, "yyyy-MM-dd'T'HH:mm:ss"),
+            end: format(finalEnd, "yyyy-MM-dd'T'HH:mm:ss")
         });
     };
 
