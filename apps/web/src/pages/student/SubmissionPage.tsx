@@ -21,7 +21,7 @@ import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 
 export function SubmissionPage() {
   const { user } = useAuth();
-  const { windows } = useWindowStatus();
+  const { windows, loading: loadingWindows } = useWindowStatus();
   const [submissionWindow, setSubmissionWindow] = useState<any>(null);
   const [currentAssessmentType, setCurrentAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,108 +44,161 @@ export function SubmissionPage() {
     pptFile: ''
   });
 
+  // Consolidated Initialization Effect
   useEffect(() => {
-    const checkEligibility = async () => {
-      try {
-        // Wait for user data to be available
-        if (!user?.role) {
-          console.log('Waiting for user data...');
-          return;
-        }
+    let mounted = true;
 
-        // Map role to project type
+    const initializePage = async () => {
+      // 1. Wait for critical dependencies
+      if (!user?.role || loadingWindows) {
+        console.log('⏳ Waiting for user role or windows...');
+        return;
+      }
+
+      try {
+        setInitializing(true);
+
+        // 2. Check Eligibility
         const roleToProjectType: Record<string, string> = {
           'idp-student': 'IDP',
           'urop-student': 'UROP',
           'capstone-student': 'CAPSTONE'
         };
-
         const projectType = roleToProjectType[user.role];
 
-        if (projectType) {
-          setEligibleProjectType(projectType);
-          console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
-        } else {
-          toast.error('You are not eligible for any project type. Please contact admin.');
+        if (!projectType) {
           console.error(`❌ Unknown role: ${user.role}`);
-          setInitializing(false); // Stop loading if user is not eligible
+          toast.error('You are not eligible for any project type.');
+          setInitializing(false);
+          return;
         }
+
+        setEligibleProjectType(projectType);
+        console.log(`✅ User eligible for ${projectType}`);
+
+        // 3. Check Active Window
+        // Use a direct windows check instead of waiting for another effect
+        const now = new Date();
+        const activeSubmissionWindow = windows.find(window =>
+          window.windowType === 'submission' &&
+          window.projectType === (projectType as 'IDP' | 'UROP' | 'CAPSTONE') &&
+          window.assessmentType &&
+          new Date(window.startDate) <= now &&
+          new Date(window.endDate) >= now
+        );
+
+        if (!activeSubmissionWindow) {
+          console.log('❌ No active submission window found');
+          setSubmissionWindow(null);
+          setCurrentAssessmentType(null);
+          setInitializing(false);
+          return;
+        }
+
+        const assessmentType = activeSubmissionWindow.assessmentType as 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
+        console.log(`✅ Found active window: ${assessmentType}`);
+
+        // Update window state
+        setSubmissionWindow({
+          isActive: true,
+          assessmentType,
+          windowId: activeSubmissionWindow._id
+        });
+        setCurrentAssessmentType(assessmentType);
+
+        // 4. Check User Role & Group Status
+        // Inline the logic from checkUserRole to ensure sequential execution
+        let currentUserGroup = null;
+        let isGroupLeader = false;
+
+        try {
+          const approvedResponse = await api.get('/applications/approved');
+          if (approvedResponse.success && approvedResponse.data) {
+            const approvedApp = approvedResponse.data as any;
+            if (approvedApp.groupId) {
+              currentUserGroup = approvedApp.groupId;
+              const groupLeaderId = currentUserGroup?.leaderId?._id || currentUserGroup?.leaderId;
+              isGroupLeader = groupLeaderId === user.id || String(groupLeaderId) === String(user.id);
+            } else {
+              // Solo
+              currentUserGroup = null;
+              isGroupLeader = true;
+            }
+          } else {
+            // Check for applications to set state correctly even if not approved
+            try {
+              const applicationsResponse = await api.get('/applications/my-application');
+              // Logic handles "Application Required" vs "Pending" mostly via the !isLeader && !userGroup check in render
+            } catch (e) { /* ignore */ }
+            currentUserGroup = null;
+            isGroupLeader = false;
+          }
+        } catch (error: any) {
+          console.log('Error fetching role:', error);
+          currentUserGroup = null;
+          isGroupLeader = false;
+        }
+
+        setUserGroup(currentUserGroup);
+        setIsLeader(isGroupLeader);
+        console.log('✅ User Role Determined:', { isGroupLeader, hasGroup: !!currentUserGroup });
+
+        // 5. Check Existing Submission
+        // Now that we have window + user role, check specifically for this phase
+        if (assessmentType) {
+          try {
+            let submissionData = null;
+
+            if (currentUserGroup) {
+              // Check group submission
+              try {
+                const subResponse = await api.get('/group-submissions/my/submissions', { assessmentType });
+                if (subResponse.success && subResponse.data) submissionData = subResponse.data;
+              } catch (e: any) {
+                if (e?.response?.status !== 404) {
+                  // Fallback to direct lookup
+                  try {
+                    const directResponse = await api.get(`/group-submissions/${currentUserGroup._id}`, { assessmentType });
+                    if (directResponse.success && directResponse.data) submissionData = directResponse.data;
+                  } catch (e2) { }
+                }
+              }
+            }
+
+            if (submissionData) {
+              console.log('✅ Found existing submission during init');
+              setHasSubmitted(true);
+              setCurrentSubmission(submissionData);
+              // Pre-fill form data just in case we need it or for read-only views
+              // (though submitted view handles this differently)
+            } else {
+              console.log('ℹ️ No existing submission found');
+              setHasSubmitted(false);
+              setCurrentSubmission(null);
+            }
+
+          } catch (error) {
+            console.error('Error checking submission:', error);
+          }
+        }
+
       } catch (error) {
-        console.error('Error checking eligibility:', error);
-        setInitializing(false);
+        console.error('❌ Critical initialization error:', error);
+      } finally {
+        if (mounted) {
+          // Add a small artificial delay to prevent flicker if everything was instan-cached
+          // Only unblock UI once EVERYTHING is ready
+          setTimeout(() => {
+            if (mounted) setInitializing(false);
+          }, 300);
+        }
       }
     };
-    checkEligibility();
-  }, [user?.role]);
 
-  useEffect(() => {
-    // We stay in initializing state if windows is still loading or if we have an eligible project type but no windows data yet
-    if (eligibleProjectType) {
-      if (loading) {
-        setInitializing(true);
-        return;
-      }
+    initializePage();
 
-      if (windows.length > 0) {
-        const initializeData = async () => {
-          setInitializing(true);
-          try {
-            const now = new Date();
-            console.log(`🔍 Initializing submission data for ${eligibleProjectType}...`);
-
-            // DIRECT WINDOW SEARCH
-            const activeSubmissionWindow = windows.find(window =>
-              window.windowType === 'submission' &&
-              window.projectType === (eligibleProjectType as 'IDP' | 'UROP' | 'CAPSTONE') &&
-              window.assessmentType &&
-              new Date(window.startDate) <= now &&
-              new Date(window.endDate) >= now
-            );
-
-            if (activeSubmissionWindow) {
-              const assessmentType = activeSubmissionWindow.assessmentType as 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
-
-              // Set states
-              setCurrentAssessmentType(assessmentType);
-              setSubmissionWindow({
-                isActive: true,
-                assessmentType,
-                windowId: activeSubmissionWindow._id
-              });
-
-              await checkUserRole();
-            } else {
-              setSubmissionWindow(null);
-              setCurrentAssessmentType(null);
-            }
-          } catch (error) {
-            console.error('Error initializing submission data:', error);
-          } finally {
-            // Add a slight delay for smoother transition
-            setTimeout(() => setInitializing(false), 500);
-          }
-        };
-
-        initializeData();
-      } else if (!loading && windows.length === 0) {
-        // Only stop initializing if we are sure there are NO windows
-        setInitializing(false);
-      }
-    }
-  }, [eligibleProjectType, windows, loading]);
-
-  // Check for existing submission when user role and assessment type are determined
-  useEffect(() => {
-    console.log('User role and assessment type determined:', { userGroup, user: user?.id, currentAssessmentType });
-    // Only check submissions after user role and assessment type are fully determined
-    if (user?.id && !initializing && currentAssessmentType) {
-      const timer = setTimeout(() => {
-        checkExistingSubmission();
-      }, 100); // Small delay to ensure state is settled
-
-      return () => clearTimeout(timer);
-    }
-  }, [userGroup, user?.id, initializing, currentAssessmentType]);
+    return () => { mounted = false; };
+  }, [user?.role, windows, loadingWindows]);
 
   // No longer needed: logic moved directly into initializeData to avoid race conditions
   /*
@@ -154,189 +207,9 @@ export function SubmissionPage() {
   };
   */
 
-  const checkUserRole = async () => {
-    try {
-      console.log('🔍 Checking user role for user:', user?.id);
 
-      // Check if user has an approved application using the new endpoint
-      const approvedResponse = await api.get('/applications/approved');
-      console.log('✅ Approved Application Response:', approvedResponse);
 
-      if (approvedResponse.success && approvedResponse.data) {
-        const approvedApp = approvedResponse.data as any;
-        console.log('✅ Found approved application:', approvedApp);
 
-        if (approvedApp.groupId) {
-          // User is in a group - use the group data from the populated response
-          const groupData = approvedApp.groupId as any;
-          console.log('👥 User is in group:', groupData);
-          setUserGroup(groupData);
-
-          // Determine group leadership from the group data
-          // Check if user is the group leader
-          const groupLeaderId = groupData?.leaderId?._id || groupData?.leaderId;
-          const isGroupLeader = groupLeaderId === user?.id || String(groupLeaderId) === String(user?.id);
-
-          console.log('👑 Group Leadership Check:', {
-            groupLeaderId: groupLeaderId,
-            userId: user?.id,
-            isLeader: isGroupLeader
-          });
-
-          setIsLeader(isGroupLeader);
-        } else {
-          // Solo application
-          console.log('🚶 User has solo approved application');
-          setUserGroup(null);
-          setIsLeader(true);
-        }
-      } else {
-        // No approved application found - check if user has any applications at all
-        console.log('❌ No approved application found, checking all applications...');
-
-        try {
-          const applicationsResponse = await api.get('/applications/my-application');
-          if (applicationsResponse.success && applicationsResponse.data && (applicationsResponse.data as any[]).length > 0) {
-            console.log('📋 Found applications but none approved:', applicationsResponse.data);
-            // User has applications but none are approved yet
-            setUserGroup(null);
-            setIsLeader(false); // Don't allow submission until approved
-          } else {
-            console.log('📋 No applications found at all');
-            setUserGroup(null);
-            setIsLeader(false); // Don't allow submission without application
-          }
-        } catch (appError) {
-          console.error('❌ Error checking applications:', appError);
-          setUserGroup(null);
-          setIsLeader(false);
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ Error checking user role:', error);
-      console.log('📊 Error details:', {
-        status: error?.response?.status,
-        data: error?.response?.data,
-        message: error?.message
-      });
-
-      // If 404, it means no approved application exists
-      if (error?.response?.status === 404) {
-        console.log('🚶 No approved application found (404)');
-        setUserGroup(null);
-        setIsLeader(false);
-      } else {
-        // Other errors - fallback to solo but don't allow submission
-        console.log('🚶 Fallback: Error occurred, not allowing submission');
-        setUserGroup(null);
-        setIsLeader(false);
-      }
-    }
-  };
-
-  const checkExistingSubmission = async () => {
-    if (!currentAssessmentType) return;
-
-    try {
-      let response;
-
-      if (userGroup) {
-        // Group student - check for submission with specific assessment type
-        console.log('Checking group submission for group:', userGroup._id, 'assessment type:', currentAssessmentType);
-        console.log('User is group leader:', isLeader);
-
-        try {
-          // Use the my/submissions endpoint with assessment type filter
-          // Note: For CLA-1, there might not be any existing submissions, which is expected
-          response = await api.get('/group-submissions/my/submissions', {
-            assessmentType: currentAssessmentType
-          });
-
-          if (response.success && response.data) {
-            console.log('✅ Found group submission for', currentAssessmentType, ':', response.data);
-            setHasSubmitted(true);
-            setCurrentSubmission(response.data);
-            return;
-          }
-        } catch (error: any) {
-          console.log('my/submissions failed:', error?.response?.status, error?.response?.data?.error);
-
-          // For 404 errors, this is expected for new assessment types - no submission exists yet
-          if (error?.response?.status === 404) {
-            console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
-            setHasSubmitted(false);
-            setCurrentSubmission(null);
-            return;
-          }
-
-          // Second try: Direct group ID lookup with assessment type filter
-          try {
-            console.log('Trying direct group ID lookup with assessment type...');
-            response = await api.get(`/group-submissions/${userGroup._id}`, {
-              assessmentType: currentAssessmentType
-            });
-
-            if (response.success && response.data) {
-              console.log('✅ Found group submission via direct lookup:', response.data);
-              setHasSubmitted(true);
-              setCurrentSubmission(response.data);
-              return;
-            }
-          } catch (directError: any) {
-            console.log('Direct lookup also failed:', directError?.response?.status, directError?.response?.data?.error);
-
-            // 404 is expected for new assessment types
-            if (directError?.response?.status === 404) {
-              console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
-              setHasSubmitted(false);
-              setCurrentSubmission(null);
-              return;
-            }
-          }
-        }
-
-        // If both approaches fail with non-404 errors, log but don't block
-        console.log('No group submission found for', currentAssessmentType);
-        setHasSubmitted(false);
-        setCurrentSubmission(null);
-
-      } else {
-        // Solo student - check regular submissions by student ID and assessment type
-        console.log('Checking solo submission for user:', user?.id, 'assessment type:', currentAssessmentType);
-
-        try {
-          response = await api.get(`/submissions/student/${user?.id}`, {
-            assessmentType: currentAssessmentType
-          });
-
-          if (response.success && response.data) {
-            console.log('✅ Found solo submission for', currentAssessmentType, ':', response.data);
-            setHasSubmitted(true);
-            // Handle both single submission and array of submissions
-            const submissionData = Array.isArray(response.data) ? response.data[0] : response.data;
-            setCurrentSubmission(submissionData);
-          }
-        } catch (error: any) {
-          // 404 means no submission exists for this assessment type, which is expected for new assessment types
-          if (error?.response?.status === 404) {
-            console.log('No existing submission found for', currentAssessmentType, '(expected for new assessment type)');
-            setHasSubmitted(false);
-            setCurrentSubmission(null);
-          } else {
-            console.error('Unexpected error checking solo submission:', error);
-            // Don't block the UI for unexpected errors
-            setHasSubmitted(false);
-            setCurrentSubmission(null);
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error('Unexpected error in checkExistingSubmission:', error);
-      // Don't block the UI - assume no submission exists
-      setHasSubmitted(false);
-      setCurrentSubmission(null);
-    }
-  };
 
   const validateForm = (): boolean => {
     const newErrors = {
@@ -559,7 +432,7 @@ export function SubmissionPage() {
 
   if (!submissionWindow || !currentAssessmentType) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+      <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-10rem)] p-6">
         <SubmissionEmptyState
           description={`No active submission window for ${eligibleProjectType} students.`}
           subDescription="The submission portal will unlock once the coordinator schedules the assessment window for your project type."
@@ -573,7 +446,7 @@ export function SubmissionPage() {
   // Show message if user doesn't have permission to submit
   if (!isLeader && userGroup && !hasSubmitted) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+      <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-10rem)] p-6">
         <SubmissionEmptyState
           title="Group Leader Submission"
           description="Only the group leader is authorized to submit the work for your group."
@@ -585,7 +458,7 @@ export function SubmissionPage() {
 
   if (!isLeader && !userGroup) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[70vh] p-6">
+      <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-10rem)] p-6">
         <SubmissionEmptyState
           title="Application Required"
           description="You need an approved application before you can access the submission portal."

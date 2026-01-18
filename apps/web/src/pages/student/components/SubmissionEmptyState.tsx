@@ -102,10 +102,6 @@ export function SubmissionEmptyState({
                                 <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-sm mx-auto font-medium">
                                     {description}
                                 </p>
-                                <div className="flex items-center justify-center gap-2 text-violet-600 bg-violet-50 px-3 py-1.5 rounded-full w-fit mx-auto">
-                                    <Clock className="w-4 h-4" />
-                                    <span className="text-xs font-semibold uppercase tracking-wider">Scheduled for later</span>
-                                </div>
                             </div>
                             <div className="flex items-start gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
                                 <div className="p-1.5 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
