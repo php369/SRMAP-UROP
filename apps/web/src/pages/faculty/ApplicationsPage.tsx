@@ -11,7 +11,17 @@ import { Input } from '../../components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { ApplicationEmptyState } from './components/ApplicationEmptyState';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Textarea } from '../../components/ui/Textarea';
+import { Switch } from '../../components/ui/switch';
+import { Label } from '../../components/ui/label';
 interface Application {
   _id: string;
   studentId?: {
@@ -70,11 +80,18 @@ export function FacultyApplicationsPage() {
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [newProjectTitle, setNewProjectTitle] = useState('');
 
+  // Modal States
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   // Filter and Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('all');
   const [projectFilter, setProjectFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest'); // newest, oldest, cgpa-high, cgpa-low
+  const [hideRejected, setHideRejected] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -118,22 +135,56 @@ export function FacultyApplicationsPage() {
   const uniqueProjects = Array.from(new Set(applications.map(app => JSON.stringify({ id: app.projectId._id, title: app.projectId.title })))).map(s => JSON.parse(s));
 
   const pendingApplications = filteredApplications.filter(app => app.status === 'pending');
-  const reviewedApplications = filteredApplications.filter(app => app.status !== 'pending');
 
-  const handleAcceptApplication = async (applicationId: string, projectId: string) => {
-    if (!confirm('Are you sure you want to accept this application? This will assign the project to this student/group and reject other applicants.')) {
-      return;
+  // Include Accepted (approved) and Rejected (unless hidden). 
+  // If showInactiveView is true (computed via new inline check), ONLY show Accepted.
+  const reviewedApplications = filteredApplications.filter(app => {
+    // Check window status (inline)
+    const isWindowOpen = ['IDP', 'UROP', 'CAPSTONE'].some(type => isApplicationOpen(type));
+
+    if (!isWindowOpen) {
+      // Inactive View: Show ONLY approved
+      return app.status === 'approved';
     }
 
-    setProcessingApp(applicationId);
+    // Active View: Standard Logic
+    if (app.status === 'pending') return false;
+    if (hideRejected && app.status === 'rejected') return false;
+    return true;
+  });
+
+  const initiateAccept = (applicationId: string, projectId: string) => {
+    setSelectedAppId(applicationId);
+    setSelectedProjectId(projectId);
+    setShowAcceptModal(true);
+  };
+
+  const initiateReject = (applicationId: string) => {
+    setSelectedAppId(applicationId);
+    setShowRejectModal(true);
+  };
+
+  const closeModals = () => {
+    setShowAcceptModal(false);
+    setShowRejectModal(false);
+    setSelectedAppId(null);
+    setSelectedProjectId(null);
+    setRejectionReason('');
+  };
+
+  const handleConfirmAccept = async () => {
+    if (!selectedAppId || !selectedProjectId) return;
+
+    setProcessingApp(selectedAppId);
     try {
-      const response = await api.post(`/applications/${applicationId}/accept`, {
-        projectId
+      const response = await api.post(`/applications/${selectedAppId}/accept`, {
+        projectId: selectedProjectId
       });
 
       if (response.success) {
         toast.success('Application accepted successfully!');
         await fetchApplications();
+        closeModals();
       } else {
         toast.error(response.error?.message || 'Failed to accept application');
       }
@@ -144,18 +195,19 @@ export function FacultyApplicationsPage() {
     }
   };
 
-  const handleRejectApplication = async (applicationId: string) => {
-    const reason = prompt('Optional: Provide a reason for rejection');
+  const handleConfirmReject = async () => {
+    if (!selectedAppId) return;
 
-    setProcessingApp(applicationId);
+    setProcessingApp(selectedAppId);
     try {
-      const response = await api.post(`/applications/${applicationId}/reject`, {
-        reason: reason || undefined
+      const response = await api.post(`/applications/${selectedAppId}/reject`, {
+        reason: rejectionReason
       });
 
       if (response.success) {
         toast.success('Application rejected');
         await fetchApplications();
+        closeModals();
       } else {
         toast.error(response.error?.message || 'Failed to reject application');
       }
@@ -212,15 +264,38 @@ export function FacultyApplicationsPage() {
 
   // Check if any application window is open
   const isAnyWindowOpen = ['IDP', 'UROP', 'CAPSTONE'].some(type => isApplicationOpen(type));
+  const showInactiveView = !isAnyWindowOpen;
 
-  if (applications.length === 0) {
+
+
+  // Filter for accepted apps in inactive view
+  const acceptedApplications = applications.filter(app => app.status === 'approved');
+
+  // If window is closed AND no accepted applications, show empty state
+  if (showInactiveView && acceptedApplications.length === 0) {
     return (
       <div className="w-full flex flex-col items-center justify-center -m-8 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-transparent">
         <ApplicationEmptyState
-          title={isAnyWindowOpen ? "Application Review" : "Applications Closed"}
+          title="Applications Closed"
+          subtitle="Application Portal"
+          description="The application window is currently closed."
+          subDescription="You have no accepted projects to display from the previous cycle."
+          theme="teal"
+          icon={FileText}
+        />
+      </div>
+    );
+  }
+
+  // If window is open but no applications at all
+  if (applications.length === 0 && !showInactiveView) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center -m-8 h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)] overflow-hidden bg-transparent">
+        <ApplicationEmptyState
+          title="Application Review"
           subtitle="Student Applications"
-          description={isAnyWindowOpen ? "No applications received yet." : "Application window is currently closed."}
-          subDescription={isAnyWindowOpen ? "When students apply to your projects, they will appear here for your review." : "No applications can be received while the window is closed."}
+          description="No applications received yet."
+          subDescription="When students apply to your projects, they will appear here for your review."
           theme="teal"
           icon={FileText}
         />
@@ -237,106 +312,114 @@ export function FacultyApplicationsPage() {
       >
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
-            Application Review
+            {showInactiveView ? 'Accepted Applications' : 'Application Review'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Review and manage student applications for your projects
+            {showInactiveView
+              ? 'View details of your accepted students for the upcoming semester'
+              : 'Review and manage student applications for your projects'}
           </p>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="mb-8 p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Search by project title or student name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 h-8 text-xs font-medium">
-                    <ArrowUpDown className="w-3 h-3 mr-2" />
-                    <SelectValue placeholder="Sort By" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="cgpa-high">Highest CGPA</SelectItem>
-                    <SelectItem value="cgpa-low">Lowest CGPA</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Filter & Search Bar - Only show if Active Window OR if we have Approved apps to search through */}
+        {!showInactiveView && (
+          <div className="mb-8 p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search by project title or student name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                  <Select value={sortOrder} onValueChange={setSortOrder}>
+                    <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 h-8 text-xs font-medium">
+                      <ArrowUpDown className="w-3 h-3 mr-2" />
+                      <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="oldest">Oldest First</SelectItem>
+                      <SelectItem value="cgpa-high">Highest CGPA</SelectItem>
+                      <SelectItem value="cgpa-low">Lowest CGPA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              <Filter className="w-3 h-3" /> Filters:
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <Filter className="w-3 h-3" /> Filters:
+              </div>
+
+              <Select value={deptFilter} onValueChange={setDeptFilter}>
+                <SelectTrigger className="w-[180px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
+                  <Building2 className="w-3.5 h-3.5 mr-2 text-teal-500" />
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {uniqueDepts.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={projectFilter} onValueChange={setProjectFilter}>
+                <SelectTrigger className="w-[240px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
+                  <Briefcase className="w-3.5 h-3.5 mr-2 text-teal-500" />
+                  <SelectValue placeholder="Filter by Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {uniqueProjects.map(proj => (
+                    <SelectItem key={proj.id} value={proj.id}>{proj.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(searchQuery || deptFilter !== 'all' || projectFilter !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDeptFilter('all');
+                    setProjectFilter('all');
+                  }}
+                  className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 text-xs h-9"
+                >
+                  Clear all Filters
+                </Button>
+              )}
             </div>
-
-            <Select value={deptFilter} onValueChange={setDeptFilter}>
-              <SelectTrigger className="w-[180px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
-                <Building2 className="w-3.5 h-3.5 mr-2 text-teal-500" />
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {uniqueDepts.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger className="w-[240px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-sm">
-                <Briefcase className="w-3.5 h-3.5 mr-2 text-teal-500" />
-                <SelectValue placeholder="Filter by Project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                {uniqueProjects.map(proj => (
-                  <SelectItem key={proj.id} value={proj.id}>{proj.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {(searchQuery || deptFilter !== 'all' || projectFilter !== 'all') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery('');
-                  setDeptFilter('all');
-                  setProjectFilter('all');
-                }}
-                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 text-xs h-9"
-              >
-                Clear all Filters
-              </Button>
-            )}
           </div>
-        </div>
+        )}
 
-        {/* Pending Applications */}
+        {/* Pending / Inactive List */}
         <div className="mb-10 space-y-6">
-          <div className="flex items-center gap-2">
-            <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 text-sm px-3 py-1">
-              Pending ({pendingApplications.length})
-            </Badge>
-          </div>
+          {!showInactiveView && (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-200 border-teal-200 text-sm px-3 py-1">
+                Pending ({pendingApplications.length})
+              </Badge>
+            </div>
+          )}
 
-          {pendingApplications.length === 0 ? (
+          {/* Show List based on View */}
+          {!showInactiveView && pendingApplications.length === 0 ? (
             <div className="border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-slate-50/50 dark:bg-slate-900/50">
               <p className="text-slate-500 text-sm">No pending applications match your filters</p>
             </div>
           ) : (
             <div className="grid gap-4">
-              {pendingApplications.map((application) => (
+              {/* If Inactive -> Show Reviewed (Accepted). If Active -> Show Pending. */}
+              {(showInactiveView ? reviewedApplications : pendingApplications).map((application) => (
                 <Card key={application._id} className="overflow-hidden border-l-4 border-l-teal-500 hover:shadow-md transition-shadow bg-white dark:bg-slate-950">
                   <div className="p-6">
                     <div className="flex flex-col md:flex-row gap-6">
@@ -369,10 +452,31 @@ export function FacultyApplicationsPage() {
                           </div>
 
                           {/* Badges Removed for Consistency */}
-                          {application.groupId && (
-                            <Badge variant="outline" className="h-7 bg-blue-50/50 text-blue-700 border-blue-100">
-                              {application.groupId.members.length} Members
-                            </Badge>
+                          {application.groupId ? (
+                            <div className="flex items-center gap-2">
+                              {/* Stacked Member Icons */}
+                              <div className="flex -space-x-2 overflow-hidden py-1 pl-1">
+                                {application.groupId.members && Array.isArray(application.groupId.members) ? (
+                                  application.groupId.members.slice(0, 4).map((member: any, i: number) => (
+                                    <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-teal-700 shadow-sm
+                                      ${member._id === application.groupId?.leaderId?._id ? 'bg-purple-100 text-purple-700' : 'bg-teal-100'}
+                                    `}>
+                                      {member.name?.charAt(0).toUpperCase() || 'M'}
+                                    </div>
+                                  ))
+                                ) : null}
+                                {application.groupId.members && application.groupId.members.length > 4 && (
+                                  <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-600 shadow-sm">
+                                    +{application.groupId.members.length - 4}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            // Solo Applicant Avatar
+                            <div className="w-6 h-6 rounded-full bg-teal-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-teal-700 shadow-sm">
+                              {application.studentId?.name?.charAt(0).toUpperCase() || 'S'}
+                            </div>
                           )}
                         </div>
 
@@ -396,23 +500,27 @@ export function FacultyApplicationsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 min-w-[160px] justify-center pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800 md:pl-6">
-                        <Button
-                          onClick={() => handleAcceptApplication(application._id, application.projectId._id)}
-                          disabled={processingApp === application._id}
-                          className="w-full bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all"
-                          size="sm"
-                        >
-                          {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-2" /> Accept</>}
-                        </Button>
-                        <Button
-                          onClick={() => handleRejectApplication(application._id)}
-                          disabled={processingApp === application._id}
-                          variant="outline"
-                          className="w-full text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                          size="sm"
-                        >
-                          <XCircle className="w-4 h-4 mr-2" /> Reject
-                        </Button>
+                        {!showInactiveView && (
+                          <>
+                            <Button
+                              onClick={() => initiateAccept(application._id, application.projectId._id)}
+                              disabled={processingApp === application._id}
+                              className="w-full bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-all"
+                              size="sm"
+                            >
+                              {processingApp === application._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-2" /> Accept</>}
+                            </Button>
+                            <Button
+                              onClick={() => initiateReject(application._id)}
+                              disabled={processingApp === application._id}
+                              variant="outline"
+                              className="w-full text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                              size="sm"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" /> Reject
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -535,13 +643,30 @@ export function FacultyApplicationsPage() {
           )}
         </div>
 
-        {/* Reviewed Applications */}
-        {reviewedApplications.length > 0 && (
+
+
+        {/* Reviewed Applications - SHOW ONLY IF ACTIVE VIEW */}
+        {/* If Inactive -> We already showed accepted above in detailed view. */}
+        {!showInactiveView && reviewedApplications.length > 0 && (
           <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-slate-600 border-slate-200">
-                History ({reviewedApplications.length})
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-slate-600 border-slate-200">
+                  {showInactiveView ? 'Accepted Students' : `History (${reviewedApplications.length})`}
+                </Badge>
+              </div>
+              {!showInactiveView && (
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="hide-rejected"
+                    checked={hideRejected}
+                    onCheckedChange={setHideRejected}
+                  />
+                  <Label htmlFor="hide-rejected" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                    Hide Rejected
+                  </Label>
+                </div>
+              )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -588,15 +713,39 @@ export function FacultyApplicationsPage() {
                         </h4>
                       )}
 
-                      <div className="flex items-center justify-between text-xs mt-2">
-                        <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                          {application.groupId ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                          {application.groupId ? application.groupId.members.length + ' Students' : application.studentId?.name}
-                        </p>
+                      <div className="flex items-center justify-between text-xs mt-2 relative">
+                        <div className="flex items-center gap-2">
+                          {application.groupId ? (
+                            <div className="flex -space-x-2 overflow-hidden py-1 pl-1">
+                              {application.groupId.members && Array.isArray(application.groupId.members) ? (
+                                application.groupId.members.slice(0, 4).map((member: any, i: number) => (
+                                  <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-teal-700 shadow-sm
+                                    ${member._id === application.groupId?.leaderId?._id ? 'bg-purple-100 text-purple-700' : 'bg-teal-100'}
+                                  `}>
+                                    {member.name?.charAt(0).toUpperCase() || 'M'}
+                                  </div>
+                                ))
+                              ) : null}
+                              {application.groupId.members && application.groupId.members.length > 4 && (
+                                <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-600 shadow-sm">
+                                  +{application.groupId.members.length - 4}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-teal-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-teal-700 shadow-sm ml-1">
+                              {application.studentId?.name?.charAt(0).toUpperCase() || 'S'}
+                            </div>
+                          )}
+                          <span className="text-slate-500 font-medium ml-1">
+                            {application.groupId ? `${application.groupId.members?.length || 0} Members` : application.studentId?.name}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-slate-400">CGPA:</span>
                           <span className="font-mono font-bold text-teal-600">{application.cgpa?.toFixed(2) || 'N/A'}</span>
                         </div>
+
                       </div>
                     </div>
                   </div>
@@ -606,6 +755,71 @@ export function FacultyApplicationsPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Accept Confirmation Modal */}
+      <Dialog open={showAcceptModal} onOpenChange={setShowAcceptModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Acceptance</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to accept this application? This will automatically assign the project to this applicant and reject all other pending applications for this project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-3 p-4 bg-teal-50 dark:bg-teal-900/10 text-teal-700 dark:text-teal-400 rounded-lg border border-teal-100 dark:border-teal-900/20">
+            <CheckCircle className="w-5 h-5 shrink-0" />
+            <p className="text-sm font-medium">This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={closeModals} disabled={!!processingApp}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmAccept} className="bg-teal-600 hover:bg-teal-700 text-white" disabled={!!processingApp}>
+              {processingApp ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Confirm & Accept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Confirmation Modal */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Application</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this application?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-900/20">
+              <Info className="w-5 h-5 shrink-0" />
+              <p className="text-sm font-medium">The student will be notified of this rejection.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="rejection-reason" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Reason (Optional)
+              </label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Please provide a reason for rejection..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="resize-none focus-visible:ring-red-500"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={closeModals} disabled={!!processingApp}>
+              Cancel
+            </Button>
+            <Button onClick={() => handleConfirmReject()} variant="destructive" disabled={!!processingApp}>
+              {processingApp ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Reject Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
