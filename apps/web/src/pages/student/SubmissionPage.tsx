@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle, Users, User, ArrowRight, Shield, Calendar, Info, FileUp, Sparkles, LogOut, ExternalLink, Trash2, Clock } from 'lucide-react';
+import { Upload, FileText, Github, Presentation, CheckCircle, Loader, AlertCircle, Users, User, ArrowRight, Shield, Calendar, Info, FileUp, Sparkles, LogOut, ExternalLink, Trash2, Clock, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateGitHubURL, validatePDF, validatePPT, formatFileSize } from '../../utils/fileValidator';
 import { api } from '../../utils/api';
@@ -9,6 +9,7 @@ import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { getCurrentSubmissionAssessmentType, isSubmissionOpenForAssessmentType } from '../../utils/assessmentHelper';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { SubmissionEmptyState } from './components/SubmissionEmptyState';
+import { ContextInfoRow, Confetti, RepoChip, SubmissionProgress } from './components/SubmissionComponents';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/label';
@@ -507,6 +508,18 @@ export function SubmissionPage() {
     }
   };
 
+  const getProgressStep = () => {
+    if (hasSubmitted) return 3;
+    const hasGithub = validateGitHubURL(formData.githubLink).valid;
+    const hasReport = !!formData.reportFile;
+    // For External, PPT is required. For others, it's optional/not required, so we consider it "done"
+    const hasPPT = submissionWindow?.assessmentType === 'External' ? !!formData.pptFile : true;
+
+    if (hasGithub && hasReport && hasPPT) return 2; // Ready to submit
+    if (hasGithub) return 1; // Upload phase
+    return 0; // Connect phase
+  };
+
   if (initializing || !eligibleProjectType) {
     return (
       <div className="flex-1 flex flex-col p-6 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto w-full">
@@ -584,7 +597,10 @@ export function SubmissionPage() {
 
   if (hasSubmitted && currentSubmission) {
     return (
-      <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="w-full max-w-6xl mx-auto pt-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-screen">
+        <Confetti isActive={true} />
+        <ContextInfoRow userGroup={userGroup} isLeader={isLeader} />
+
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -601,6 +617,9 @@ export function SubmissionPage() {
             <p className="text-slate-500 dark:text-slate-400 font-medium">
               Your materials for {currentAssessmentType} have been successfully uploaded.
             </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium border-l-2 border-violet-200 dark:border-violet-800 pl-3 mt-2 italic">
+              Your submission has been locked for this phase and forwarded for evaluation.
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -610,7 +629,7 @@ export function SubmissionPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Status</p>
-                <p className="text-lg font-black text-slate-900 dark:text-white leading-none">Accepted</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white leading-none">Received</p>
               </div>
             </div>
           </div>
@@ -669,7 +688,7 @@ export function SubmissionPage() {
                     </div>
                     <button
                       onClick={() => openPDFModal(currentSubmission.reportUrl || currentSubmission.reportFile?.url)}
-                      className="px-4 py-2 bg-violet-600 text-white rounded-xl shadow-lg shadow-violet-600/20 hover:bg-violet-700 transition-colors font-bold text-sm"
+                      className="h-12 px-6 bg-violet-600 text-white rounded-xl shadow-lg shadow-violet-600/20 hover:bg-violet-700 transition-colors font-bold text-sm flex items-center justify-center"
                     >
                       View Report
                     </button>
@@ -703,12 +722,12 @@ export function SubmissionPage() {
           </div>
 
           <div className="space-y-8">
-            <GlassCard className="p-6 border-violet-100 dark:border-violet-500/20 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+            <GlassCard className="p-6 md:p-8 border-violet-100 dark:border-violet-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:scale-110 transition-transform">
                 <Shield className="w-32 h-32" />
               </div>
-              <h4 className="text-lg font-black text-slate-900 dark:text-white mb-6">Submission Details</h4>
-              <div className="space-y-6 relative z-10">
+              <h4 className="text-lg font-black text-slate-900 dark:text-white mb-4">Submission Details</h4>
+              <div className="space-y-4 relative z-10">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-slate-500" />
@@ -752,276 +771,199 @@ export function SubmissionPage() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-6"
-      >
-        <div className="space-y-2">
-          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            {currentAssessmentType} <span className="text-violet-600">Material</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            Upload your project deliverables for the upcoming {currentAssessmentType} assessment window.
-          </p>
-        </div>
+    <div className="w-full relative px-6 md:px-8 pt-12 pb-6 mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <Confetti isActive={hasSubmitted} />
 
-        <div className="flex items-center gap-3">
-          <div className="p-4 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-600/20">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">Window Type</p>
-              <p className="text-lg font-black text-slate-900 dark:text-white leading-none capitalize">{submissionWindow.assessmentType}</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      {/* Header */}
+      <div className="text-center space-y-4 mb-8">
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+          {currentAssessmentType} <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">Submission</span>
+        </h1>
+        <ContextInfoRow userGroup={userGroup} isLeader={isLeader} />
+        <p className="text-slate-500 dark:text-slate-400 font-medium max-w-2xl mx-auto">
+          Upload your project deliverables for the upcoming {currentAssessmentType} assessment.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <GlassCard className="p-8 h-full border-slate-200/60 transition-all hover:bg-white/50">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center text-violet-600">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Collaboration Info</h3>
-                <p className="text-sm text-slate-500">How your work will be submitted</p>
-              </div>
-            </div>
+      <SubmissionProgress currentStep={getProgressStep()} />
 
-            {userGroup ? (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
-                    <Shield className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Group Identity</p>
-                    <p className="text-base font-bold text-indigo-800 dark:text-indigo-300">
-                      {userGroup.groupName || userGroup.groupCode}
-                    </p>
-                  </div>
+      <div className="max-w-3xl mx-auto relative z-10">
+        <GlassCard className="p-8 md:p-10 border-violet-100/50 dark:border-violet-500/20 shadow-2xl shadow-violet-500/5 hover:border-violet-200/50 transition-all duration-500">
+
+          <div className="space-y-8">
+            {/* GitHub Link */}
+            <div className="space-y-2">
+              <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest pl-1">GitHub Repository Link *</Label>
+              <div className="relative group">
+                <div className="absolute left-3 top-2.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 group-focus-within:text-violet-600 transition-colors">
+                  <Github className="w-4 h-4" />
                 </div>
-
-                <div className="relative group p-6 rounded-[2rem] bg-violet-50/50 dark:bg-violet-900/10 border border-violet-100/50 dark:border-violet-500/10 overflow-hidden transition-all hover:bg-violet-50 dark:hover:bg-violet-900/20">
-                  <div className="absolute top-0 right-0 -mr-4 -mt-4 text-violet-500/5 transition-transform group-hover:scale-110">
-                    <Shield className="w-24 h-24" />
-                  </div>
-                  <div className="relative z-10 flex gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-violet-600 border border-violet-100/50 dark:border-violet-800">
-                      <Info className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-black text-violet-900 dark:text-violet-200 tracking-tight">Collaborative Submission</p>
-                      <p className="text-xs text-violet-700/70 dark:text-violet-400/70 font-medium leading-relaxed max-w-[200px]">
-                        As the group leader, your submission will represent the collective work of all team members.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Input
+                  type="url"
+                  value={formData.githubLink}
+                  onChange={(e) => {
+                    setFormData({ ...formData, githubLink: e.target.value });
+                    const validation = validateGitHubURL(e.target.value);
+                    setErrors({ ...errors, githubLink: validation.error || '' });
+                  }}
+                  placeholder="https://github.com/username/repository"
+                  className={cn(
+                    "pl-12 h-12 border-slate-200 dark:border-slate-800 focus-visible:ring-violet-500 focus-visible:border-violet-500 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 transition-all",
+                    errors.githubLink && "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500",
+                    !errors.githubLink && formData.githubLink && "border-emerald-500/50 focus-visible:border-emerald-500"
+                  )}
+                />
+                <RepoChip url={formData.githubLink} />
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
-                    <User className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Student Identity</p>
-                    <p className="text-base font-bold text-indigo-800 dark:text-indigo-300">
-                      Individual Student
-                    </p>
-                  </div>
-                </div>
-
-                <div className="relative group p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-900/10 border border-slate-100/50 dark:border-slate-800/10 overflow-hidden transition-all hover:bg-slate-50 dark:hover:bg-slate-900/20">
-                  <div className="absolute top-0 right-0 -mr-4 -mt-4 text-slate-500/5 transition-transform group-hover:scale-110">
-                    <User className="w-24 h-24" />
-                  </div>
-                  <div className="relative z-10 flex gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-slate-600 border border-slate-100/50 dark:border-slate-800">
-                      <Info className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-black text-slate-900 dark:text-slate-200 tracking-tight">Solo Submission</p>
-                      <p className="text-xs text-slate-500/70 dark:text-slate-400/70 font-medium leading-relaxed max-w-[200px]">
-                        You are submitting this work as an individual. Group formation is locked once submissions begin.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </GlassCard>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <GlassCard className="p-8 h-full border-slate-200/60 transition-all hover:bg-white/50">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-violet-100 dark:bg-violet-500/20 rounded-xl flex items-center justify-center text-violet-600">
-                <FileUp className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Submission Form</h3>
-                <p className="text-sm text-slate-500">Provide required project artifacts</p>
-              </div>
+              {errors.githubLink && (
+                <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.githubLink}</p>
+              )}
             </div>
 
-            <div className="space-y-6">
-              {/* GitHub Link */}
+            <div className={cn(
+              "grid gap-6",
+              submissionWindow.assessmentType === 'External' ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+            )}>
+              {/* Report PDF */}
               <div className="space-y-2">
-                <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">GitHub Repository Link *</Label>
-                <div className="relative group">
-                  <div className="absolute left-3 top-2.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 group-focus-within:text-violet-600 transition-colors">
-                    <Github className="w-4 h-4" />
-                  </div>
-                  <Input
-                    type="url"
-                    value={formData.githubLink}
-                    onChange={(e) => {
-                      setFormData({ ...formData, githubLink: e.target.value });
-                      const validation = validateGitHubURL(e.target.value);
-                      setErrors({ ...errors, githubLink: validation.error || '' });
-                    }}
-                    placeholder="https://github.com/username/repository"
-                    className={cn(
-                      "pl-12 h-12 border-slate-200 dark:border-slate-800 focus-visible:ring-violet-500 focus-visible:border-violet-500 rounded-xl",
-                      errors.githubLink && "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500"
-                    )}
+                <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest pl-1">Report PDF *</Label>
+                <div
+                  className={cn(
+                    "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer overflow-hidden",
+                    formData.reportFile
+                      ? "border-violet-500 bg-violet-50/50 dark:bg-violet-500/10"
+                      : "border-slate-200 dark:border-slate-800 hover:border-violet-400 hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                    errors.reportFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
+                  )}
+                >
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange('report', e.target.files?.[0] || null)}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-30"
                   />
+
+                  {/* Hover Replace Action */}
+                  {formData.reportFile && (
+                    <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm">
+                      <div className="flex items-center gap-2 text-violet-600 font-bold text-xs uppercase tracking-wider">
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Replace File</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110 relative z-10",
+                    formData.reportFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                  )}>
+                    {formData.reportFile ? <CheckCircle className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                  </div>
+                  {formData.reportFile ? (
+                    <div className="space-y-1 relative z-10">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
+                        {formData.reportFile.name}
+                      </p>
+                      <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                        {formatFileSize(formData.reportFile.size)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">Upload Report</p>
+                  )}
                 </div>
-                {errors.githubLink && (
-                  <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.githubLink}</p>
+                {errors.reportFile && (
+                  <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.reportFile}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Report PDF */}
+              {/* PPT (External only) */}
+              {submissionWindow.assessmentType === 'External' && (
                 <div className="space-y-2">
-                  <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">Report PDF *</Label>
+                  <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest pl-1">Presentation PPT *</Label>
                   <div
                     className={cn(
-                      "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer",
-                      formData.reportFile
+                      "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer overflow-hidden",
+                      formData.pptFile
                         ? "border-violet-500 bg-violet-50/50 dark:bg-violet-500/10"
                         : "border-slate-200 dark:border-slate-800 hover:border-violet-400 hover:bg-slate-50 dark:hover:bg-slate-900/50",
-                      errors.reportFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
+                      errors.pptFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
                     )}
                   >
                     <input
                       type="file"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange('report', e.target.files?.[0] || null)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      accept=".ppt,.pptx"
+                      onChange={(e) => handleFileChange('ppt', e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-30"
                     />
+
+                    {/* Hover Replace Action */}
+                    {formData.pptFile && (
+                      <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm">
+                        <div className="flex items-center gap-2 text-violet-600 font-bold text-xs uppercase tracking-wider">
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Replace File</span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110",
-                      formData.reportFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                      "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110 relative z-10",
+                      formData.pptFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                     )}>
-                      {formData.reportFile ? <CheckCircle className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                      {formData.pptFile ? <CheckCircle className="w-6 h-6" /> : <Presentation className="w-6 h-6" />}
                     </div>
-                    {formData.reportFile ? (
-                      <div className="space-y-1">
+                    {formData.pptFile ? (
+                      <div className="space-y-1 relative z-10">
                         <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
-                          {formData.reportFile.name}
+                          {formData.pptFile.name}
                         </p>
                         <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
-                          {formatFileSize(formData.reportFile.size)}
+                          {formatFileSize(formData.pptFile.size)}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Report</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">Upload PPT</p>
                     )}
                   </div>
-                  {errors.reportFile && (
-                    <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.reportFile}</p>
+                  {errors.pptFile && (
+                    <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.pptFile}</p>
                   )}
                 </div>
-
-                {/* PPT (External only) */}
-                {submissionWindow.assessmentType === 'External' ? (
-                  <div className="space-y-2">
-                    <Label className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest">Presentation PPT *</Label>
-                    <div
-                      className={cn(
-                        "relative border-2 border-dashed rounded-2xl p-6 transition-all group flex flex-col items-center justify-center text-center cursor-pointer",
-                        formData.pptFile
-                          ? "border-violet-500 bg-violet-50/50 dark:bg-violet-500/10"
-                          : "border-slate-200 dark:border-slate-800 hover:border-violet-400 hover:bg-slate-50 dark:hover:bg-slate-900/50",
-                        errors.pptFile && "border-red-500 bg-red-50 dark:bg-red-500/10"
-                      )}
-                    >
-                      <input
-                        type="file"
-                        accept=".ppt,.pptx"
-                        onChange={(e) => handleFileChange('ppt', e.target.files?.[0] || null)}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm transition-transform group-hover:scale-110",
-                        formData.pptFile ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                      )}>
-                        {formData.pptFile ? <CheckCircle className="w-6 h-6" /> : <Presentation className="w-6 h-6" />}
-                      </div>
-                      {formData.pptFile ? (
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
-                            {formData.pptFile.name}
-                          </p>
-                          <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
-                            {formatFileSize(formData.pptFile.size)}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload PPT</p>
-                      )}
-                    </div>
-                    {errors.pptFile && (
-                      <p className="text-red-500 text-[10px] font-bold uppercase mt-1 ml-1">{errors.pptFile}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center opacity-50">
-                    <Clock className="w-6 h-6 text-slate-400 mb-2" />
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Not Required</p>
-                    <p className="text-[9px] text-slate-400/80 font-medium px-2 italic">PPT is only required for External Review phase</p>
-                  </div>
-                )}
-              </div>
-
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl shadow-xl shadow-violet-600/20 text-lg font-black tracking-tight transition-all hover:scale-[1.02] active:scale-[0.98] mt-4"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-3">
-                    <Loader className="w-5 h-5 animate-spin" />
-                    <span>Processing Submission...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <Upload className="w-5 h-5" />
-                    <span>Upload & Submit Work</span>
-                  </div>
-                )}
-              </Button>
+              )}
             </div>
-          </GlassCard>
-        </motion.div>
-      </div>
-    </div>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || getProgressStep() < 2}
+              className={cn(
+                "w-full h-14 rounded-2xl shadow-xl text-lg font-black tracking-tight transition-all mt-8 relative overflow-hidden group",
+                loading || getProgressStep() < 2
+                  ? "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 shadow-none border border-slate-200 dark:border-slate-800"
+                  : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:scale-[1.02] active:scale-[0.98] shadow-violet-600/30 ring-offset-2 focus:ring-2 ring-violet-500"
+              )}
+            >
+              {loading ? (
+                <div className="flex items-center gap-3">
+                  <Loader className="w-5 h-5 animate-spin" />
+                  <span>Processing Submission...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {getProgressStep() < 2 ? (
+                    <span>Complete required fields</span>
+                  ) : (
+                    <>
+                      <span>Submit for Evaluation</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </div>
+              )}
+            </Button>
+          </div>
+        </GlassCard>
+      </div >
+    </div >
   );
 }
