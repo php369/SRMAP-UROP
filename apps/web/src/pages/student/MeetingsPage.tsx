@@ -1,25 +1,33 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, Plus } from 'lucide-react';
+import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, Plus, AlertCircle, ChevronRight, Link } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
 import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 
-import { CompactDatePicker } from '../../components/ui/CompactDatePicker';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/Textarea';
+import { Skeleton } from '../../components/ui/skeleton';
+import { MeetingEmptyState } from '../faculty/components/MeetingEmptyState';
+import { MeetingDateTimePicker } from '../../components/ui/MeetingDateTimePicker';
+import { cn } from '../../utils/cn';
 export function MeetingsPage() {
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [isLeader, setIsLeader] = useState(false);
-  const [canSubmitLogs, setCanSubmitLogs] = useState(false); // New state for log submission permission
-  const [canScheduleNewMeeting, setCanScheduleNewMeeting] = useState(true); // New state for scheduling permission
+  const [canSubmitLogs, setCanSubmitLogs] = useState(false);
+  const [canScheduleNewMeeting, setCanScheduleNewMeeting] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [groupMembers, setGroupMembers] = useState<any[]>([]); // { _id, name }
   const [hasProject, setHasProject] = useState<boolean | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -30,7 +38,13 @@ export function MeetingsPage() {
   });
 
   const [scheduleForm, setScheduleForm] = useState({
-    meetingDate: '',
+    meetingDate: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      d.setHours(21, 0, 0, 0);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    })(),
     meetUrl: '',
     mode: 'online' as 'online' | 'in-person',
     location: ''
@@ -59,21 +73,13 @@ export function MeetingsPage() {
     try {
       const response = await api.get('/applications/my-application');
       if (response.success && response.data) {
-        // response.data is an array of applications
         const applications = response.data as any[];
-        // Check if there's at least one approved application
         const hasApprovedApplication = applications.some(app => app.status === 'approved');
         setHasProject(hasApprovedApplication);
-        console.log('Project assignment check:', {
-          applicationsCount: applications.length,
-          hasApprovedApplication,
-          applicationStatuses: applications.map(app => app.status)
-        });
       } else {
         setHasProject(false);
       }
     } catch (error) {
-      console.error('Error checking project assignment:', error);
       setHasProject(false);
     }
   };
@@ -86,45 +92,29 @@ export function MeetingsPage() {
         const userId = (user as any)?._id || (user as any)?.id;
         const userIsLeader = groupData.leaderId === userId || groupData.leaderId?._id === userId;
 
-        // All group members can schedule meetings
-        setIsLeader(true);
-        // Only group leaders can submit meeting logs
-        setCanSubmitLogs(userIsLeader);
+        setIsLeader(true); // All members can schedule
+        setCanSubmitLogs(userIsLeader); // Only leader logs
         setGroupMembers(groupData.members || []);
-
-        console.log('Group data:', {
-          groupData,
-          userIsLeader,
-          userId,
-          canSchedule: true,
-          canSubmitLogs: userIsLeader
-        });
       } else {
-        // No group found - check if user has approved solo application
-        console.log('No group found - checking for solo application');
+        // Solo student check
         try {
           const appResponse = await api.get('/applications/my-application');
           if (appResponse.success && appResponse.data) {
             const applications = appResponse.data as any[];
             const hasApprovedApp = applications.some(app => app.status === 'approved');
-            // Solo students with approved applications can both schedule and submit logs
             setIsLeader(hasApprovedApp);
             setCanSubmitLogs(hasApprovedApp);
-            console.log('Solo student status:', { hasApprovedApp });
           } else {
             setIsLeader(false);
             setCanSubmitLogs(false);
           }
         } catch (appError) {
-          console.error('Error checking applications:', appError);
           setIsLeader(false);
           setCanSubmitLogs(false);
         }
         setGroupMembers([]);
       }
     } catch (error) {
-      console.error('Error checking user role:', error);
-      // Default to not having any permissions (safer default)
       setIsLeader(false);
       setCanSubmitLogs(false);
       setGroupMembers([]);
@@ -138,8 +128,6 @@ export function MeetingsPage() {
         const meetingsData = response.data as any[];
         setMeetings(meetingsData);
 
-        // Check if user can schedule new meetings
-        // User can schedule if there are no pending meetings or all meetings have approved logs
         const hasPendingMeetings = meetingsData.some(meeting =>
           meeting.status === 'scheduled' ||
           meeting.status === 'completed' ||
@@ -149,12 +137,10 @@ export function MeetingsPage() {
         setCanScheduleNewMeeting(!hasPendingMeetings);
       }
     } catch (error) {
-      console.error('Error fetching meetings:', error);
       toast.error('Failed to load meetings');
     }
   };
 
-  // Helper functions to filter meetings
   const getUpcomingMeetings = () => {
     return meetings.filter(meeting =>
       meeting.status === 'scheduled' ||
@@ -167,13 +153,6 @@ export function MeetingsPage() {
     return meetings.filter(meeting => meeting.status === 'approved');
   };
 
-  const getStatusIndicator = (meeting: any) => {
-    if (meeting.status === 'approved') return 'Approved';
-    if (meeting.status === 'pending') return 'Resubmission Required';
-    if (meeting.status === 'completed') return 'Awaiting Log Submission';
-    return '';
-  };
-
   const hasMeetingPassed = (meetingDate: string) => {
     return new Date(meetingDate) < new Date();
   };
@@ -184,7 +163,6 @@ export function MeetingsPage() {
       return;
     }
 
-    // Allow resubmission if rejected or pending, otherwise check if already logged and approved/completed
     if ((meeting.minutesOfMeeting || meeting.mom) && meeting.status !== 'rejected' && meeting.status !== 'pending') {
       toast('This meeting has already been logged', { icon: 'ℹ️' });
       return;
@@ -192,18 +170,14 @@ export function MeetingsPage() {
 
     setSelectedMeeting(meeting);
 
-    // Initialize attendees - for new logs, use current user or group members
     let initialAttendees: string[] = [];
     if (meeting.attendees && meeting.attendees.length > 0) {
-      // Resubmission - use existing attendees
       initialAttendees = meeting.attendees
         .map((a: any) => a.studentId?._id || a.studentId)
         .filter((id: string) => id && id.trim() !== '');
     } else if (groupMembers.length > 0) {
-      // Group - pre-select all members
       initialAttendees = groupMembers.map((m: any) => m._id);
     } else {
-      // Solo student - use current user ID
       const userId = (user as any)?._id || (user as any)?.id;
       if (userId) {
         initialAttendees = [userId];
@@ -245,16 +219,6 @@ export function MeetingsPage() {
 
     setLoading(true);
     try {
-      console.log('Submitting meeting log:', {
-        meetingId: selectedMeeting._id,
-        participants: logForm.attendees.map(id => ({
-          studentId: id,
-          present: true
-        })),
-        mom: logForm.minutesOfMeeting
-      });
-
-      // Filter out empty strings from attendees
       const validAttendees = logForm.attendees.filter(id => id && id.trim() !== '');
 
       if (validAttendees.length === 0) {
@@ -271,8 +235,6 @@ export function MeetingsPage() {
         mom: logForm.minutesOfMeeting
       });
 
-      console.log('Response:', response);
-
       if (response.success) {
         toast.success('Meeting log submitted for approval');
         setSelectedMeeting(null);
@@ -282,37 +244,13 @@ export function MeetingsPage() {
           attendees: []
         });
       } else {
-        const errorMsg = response.error?.message || 'Failed to submit meeting log';
-        console.error('Error response:', response.error);
-        toast.error(errorMsg);
+        toast.error(response.error?.message || 'Failed to submit meeting log');
       }
     } catch (error: any) {
-      console.error('Exception:', error);
       toast.error(error.message || 'Failed to submit meeting log');
     } finally {
       setLoading(false);
     }
-  };
-
-  const getParticipantNames = (meeting: any) => {
-    const names: string[] = [];
-
-    // Add team members or solo student
-    if (meeting.attendees && meeting.attendees.length > 0) {
-      meeting.attendees.forEach((attendee: any) => {
-        const name = attendee.studentId?.name || 'Team Member';
-        names.push(name);
-      });
-    } else if (meeting.studentId) {
-      names.push(meeting.studentId.name || 'Student');
-    }
-
-    // Add faculty
-    if (meeting.facultyId) {
-      names.push(`${meeting.facultyId.name} (Faculty)`);
-    }
-
-    return names;
   };
 
   const handleScheduleMeeting = async (e: React.FormEvent) => {
@@ -335,15 +273,8 @@ export function MeetingsPage() {
 
     setLoading(true);
     try {
-      // Convert datetime-local to proper UTC timestamp
-      // datetime-local format: "2025-12-08T13:00" (no timezone info)
-      // JavaScript interprets this as LOCAL time, then toISOString converts to UTC
       const meetingDateObj = new Date(scheduleForm.meetingDate);
       const meetingDateUTC = meetingDateObj.toISOString();
-
-      console.log('Meeting scheduling - Local time:', scheduleForm.meetingDate);
-      console.log('Meeting scheduling - Parsed as Date:', meetingDateObj.toString());
-      console.log('Meeting scheduling - Converted to UTC:', meetingDateUTC);
 
       const response = await api.post('/meetings', {
         meetingDate: meetingDateUTC,
@@ -366,481 +297,433 @@ export function MeetingsPage() {
         toast.error(response.error?.message || 'Failed to schedule meeting');
       }
     } catch (error: any) {
-      console.error('Error scheduling meeting:', error);
       toast.error(error.message || 'Failed to schedule meeting');
     } finally {
       setLoading(false);
     }
   };
 
-  // Show loading while initializing
   if (initializing || hasProject === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48 bg-slate-200 dark:bg-slate-800" />
+            <Skeleton className="h-4 w-64 bg-slate-200 dark:bg-slate-800" />
+          </div>
+          <Skeleton className="h-10 w-32 bg-slate-200 dark:bg-slate-800" />
+        </div>
+        <Skeleton className="h-12 w-full bg-slate-200 dark:bg-slate-800 rounded-lg" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-64 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Show message if no project assigned
   if (hasProject === false) {
-    return <NoAssignmentMessage userType="student" />;
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <MeetingEmptyState
+          title="No Project Assigned"
+          description="You haven't been assigned to a project yet. Meetings will be available once you're assigned to a faculty mentor."
+          icon="presentation"
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex justify-between items-start"
-        >
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Meetings</h1>
-            <p className="text-gray-600">
-              View scheduled meetings and log meeting minutes
-            </p>
-          </div>
-
-          {/* Schedule Meeting Button - Show for all students with assigned projects */}
-          {isLeader && (
-            <div className="relative">
-              <button
-                onClick={() => canScheduleNewMeeting ? setShowScheduleModal(true) : null}
-                disabled={!canScheduleNewMeeting}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors nav-item ${canScheduleNewMeeting
-                  ? 'bg-primary hover:bg-indigo-700 text-white shadow-sm'
-                  : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                  }`}
-                title={!canScheduleNewMeeting ? "Please get your last meeting's logs approved to schedule another meeting" : ""}
-              >
-                <Plus className="w-4 h-4" />
-                Schedule Meeting
-              </button>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveTab('upcoming')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'upcoming'
-                ? 'bg-white text-primary shadow-sm'
-                : 'text-slate-600 hover:text-slate-800'
-                }`}
-            >
-              Upcoming Meetings ({getUpcomingMeetings().length})
-            </button>
-            <button
-              onClick={() => setActiveTab('past')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'past'
-                ? 'bg-white text-primary shadow-sm'
-                : 'text-slate-600 hover:text-slate-800'
-                }`}
-            >
-              Past Meetings ({getPastMeetings().length})
-            </button>
-          </div>
+    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
+            Meetings
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
+            Schedule meetings with your faculty mentor and log minutes.
+          </p>
         </div>
-
-        {/* Meeting List */}
-        <div className="space-y-4">
-          {(() => {
-            const displayMeetings = activeTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
-
-            return displayMeetings.map((meeting) => {
-              const hasLog = meeting.minutesOfMeeting || meeting.mom;
-              const canResubmit = meeting.status === 'rejected' || meeting.status === 'pending';
-              const participantNames = getParticipantNames(meeting);
-              const statusIndicator = getStatusIndicator(meeting);
-
-              return (
-                <GlassCard
-                  key={meeting._id}
-                  className="p-6"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className={`p-3 rounded-xl ${meeting.mode === 'online' ? 'bg-srm-50' : 'bg-emerald-50'}`}>
-                        {meeting.mode === 'online' ? (
-                          <Video className="w-6 h-6 text-primary" />
-                        ) : (
-                          <Users className="w-6 h-6 text-emerald-600" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-slate-900">
-                            {meeting.mode === 'online' ? 'Online Meeting' : 'In-Person Meeting'}
-                          </h3>
-                          {activeTab === 'past' && statusIndicator && (
-                            <Badge variant={
-                              meeting.status === 'approved'
-                                ? 'success'
-                                : meeting.status === 'pending'
-                                  ? 'warning'
-                                  : 'default'
-                            }>
-                              {statusIndicator}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(meeting.meetingDate).toLocaleString()}
-                        </div>
-                        {meeting.projectId && (
-                          <p className="text-sm text-slate-600 mb-2">
-                            Project: {meeting.projectId.title} ({meeting.projectId.projectId})
-                          </p>
-                        )}
-                        {meeting.location && (
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <MapPin className="w-4 h-4" />
-                            {meeting.location}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      {meeting.status === 'approved' && (
-                        <span className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
-                          <CheckCircle className="w-4 h-4" />
-                          Approved
-                        </span>
-                      )}
-                      {meeting.status === 'scheduled' && (
-                        <span className="flex items-center gap-1 text-primary text-sm font-medium">
-                          <Clock className="w-4 h-4" />
-                          Scheduled
-                        </span>
-                      )}
-                      {meeting.status === 'completed' && (
-                        <span className="flex items-center gap-1 text-amber-600 text-sm font-medium">
-                          <Clock className="w-4 h-4" />
-                          Awaiting Log
-                        </span>
-                      )}
-                      {meeting.status === 'rejected' && (
-                        <span className="flex items-center gap-1 text-red-600 text-sm font-medium">
-                          <XCircle className="w-4 h-4" />
-                          Rejected
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Participants */}
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm text-gray-600 mb-2">Participants</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {participantNames.map((name, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
-                        >
-                          {name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Meeting Link - Only show for upcoming scheduled meetings */}
-                  {activeTab === 'upcoming' && meeting.meetUrl && meeting.status === 'scheduled' && (
-                    <a
-                      href={meeting.meetUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
-                    >
-                      <Video className="w-4 h-4" />
-                      Join Meeting
-                    </a>
-                  )}
-
-                  {/* Rejection Reason */}
-                  {(meeting.status === 'rejected' || meeting.status === 'pending') && meeting.rejectionReason && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-                      <h4 className="font-medium mb-2 flex items-center gap-2 text-red-700">
-                        <XCircle className="w-4 h-4" />
-                        Faculty Feedback - Requires Resubmission
-                      </h4>
-                      <p className="text-sm text-red-700 whitespace-pre-wrap">
-                        {meeting.rejectionReason}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Meeting Minutes */}
-                  {hasLog && meeting.status !== 'rejected' && (
-                    <div className="p-4 bg-gray-50 rounded-lg mb-4">
-                      <h4 className="font-medium mb-2 flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        Minutes of Meeting
-                      </h4>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {meeting.minutesOfMeeting || meeting.mom}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Log Meeting Button - Only show for upcoming meetings */}
-                  {activeTab === 'upcoming' && (canSubmitLogs && (meeting.status === 'completed' || meeting.status === 'pending') && (!hasLog || canResubmit)) && (
-                    <button
-                      onClick={() => handleLogMeeting(meeting)}
-                      className={`px-4 py-2 ${canResubmit ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg flex items-center gap-2`}
-                    >
-                      <FileText className="w-4 h-4" />
-                      {canResubmit ? 'Resubmit Meeting Minutes' : 'Log Meeting Minutes'}
-                    </button>
-                  )}
-
-                  {activeTab === 'upcoming' && meeting.status !== 'completed' && (
-                    <p className="text-sm text-gray-500 italic">
-                      Meeting minutes can be logged after the faculty ends the meeting
-                    </p>
-                  )}
-
-                  {activeTab === 'upcoming' && (meeting.status === 'completed' && hasLog && !canResubmit) && (
-                    <p className="text-sm text-green-600 italic flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Meeting minutes submitted, awaiting faculty review
-                    </p>
-                  )}
-
-                  {meeting.status === 'approved' && (
-                    <p className="text-sm text-green-600 italic flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Meeting minutes approved by faculty
-                    </p>
-                  )}
-                </GlassCard>
-              );
-            });
-          })()}
-
-          {(() => {
-            const displayMeetings = activeTab === 'upcoming' ? getUpcomingMeetings() : getPastMeetings();
-
-            if (displayMeetings.length === 0) {
-              return (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">
-                    No {activeTab === 'upcoming' ? 'Upcoming' : 'Past'} Meetings
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {activeTab === 'upcoming'
-                      ? (isLeader
-                        ? "Schedule your first meeting with your faculty mentor"
-                        : "No upcoming meetings scheduled yet"
-                      )
-                      : "Past meetings will appear here after logs are approved"
-                    }
-                  </p>
-                  {activeTab === 'upcoming' && isLeader && canScheduleNewMeeting && (
-                    <button
-                      onClick={() => setShowScheduleModal(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Schedule Meeting
-                    </button>
-                  )}
-                </motion.div>
-              );
-            }
-            return null;
-          })()}
-        </div>
-      </div>
-
-      {/* Log Meeting Modal */}
-      <AnimatePresence>
-        {selectedMeeting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedMeeting(null)}
+        {isLeader && (
+          <Button
+            onClick={() => canScheduleNewMeeting ? setShowScheduleModal(true) : null}
+            disabled={!canScheduleNewMeeting}
+            className={cn(
+              "bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-600/20",
+              !canScheduleNewMeeting && "opacity-75 cursor-not-allowed bg-slate-400 hover:bg-slate-400 shadow-none text-slate-100"
+            )}
+            title={!canScheduleNewMeeting ? "Previous meeting log must be approved first" : ""}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-slate-200"
-            >
-              <h2 className="text-2xl font-bold mb-4">Log Meeting Minutes</h2>
+            <Plus className="w-4 h-4 mr-2" />
+            Schedule Meeting
+          </Button>
+        )}
+      </motion.div>
 
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Meeting Date</p>
-                <p className="font-medium">{new Date(selectedMeeting.meetingDate).toLocaleString()}</p>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'upcoming' | 'past')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
+          <TabsTrigger value="upcoming" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">Upcoming</TabsTrigger>
+          <TabsTrigger value="past" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">History</TabsTrigger>
+        </TabsList>
+
+        <AnimatePresence mode="wait">
+          <TabsContent value="upcoming" className="focus-visible:outline-none">
+            {getUpcomingMeetings().length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                  <Calendar className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No Upcoming Meetings</h3>
+                <p className="text-slate-500 max-w-sm mt-2 mb-6">
+                  You don't have any upcoming meetings scheduled with your faculty mentor.
+                </p>
+                {isLeader && canScheduleNewMeeting && (
+                  <Button onClick={() => setShowScheduleModal(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Schedule Meeting
+                  </Button>
+                )}
               </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getUpcomingMeetings().map((meeting) => {
+                  const hasLog = meeting.minutesOfMeeting || meeting.mom;
+                  const canResubmit = meeting.status === 'rejected' || meeting.status === 'pending';
 
-              <div className="mb-4">
-                <label className="block mb-2 font-medium">Attendees *</label>
-                <div className="space-y-2">
+                  return (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      key={meeting._id}
+                    >
+                      <Card className={cn(
+                        "h-full border-l-4 transition-all hover:shadow-lg",
+                        meeting.status === 'rejected' ? "border-l-red-500" :
+                          meeting.status === 'pending' ? "border-l-orange-500" :
+                            "border-l-cyan-500"
+                      )}>
+                        <CardContent className="p-6 flex flex-col h-full">
+                          {/* Header Badges */}
+                          <div className="flex justify-between items-start mb-4">
+                            <Badge variant="outline" className={cn(
+                              "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                              meeting.mode === 'online' ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-purple-50 text-purple-600 border-purple-200"
+                            )}>
+                              {meeting.mode === 'online' ? 'Online' : 'In-Person'}
+                            </Badge>
+
+                            {meeting.status === 'rejected' && <Badge variant="error" className="bg-red-50 text-red-600 border-red-200">Feedback Received</Badge>}
+                            {meeting.status === 'pending' && <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100">Updates Required</Badge>}
+                          </div>
+
+                          {/* Info */}
+                          <div className="space-y-3 mb-6 flex-1">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                              {meeting.projectId?.title || 'Project Meeting'}
+                            </h3>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3 text-sm">
+                                <Calendar className="w-4 h-4 text-cyan-600" />
+                                <span className="font-medium text-slate-700 dark:text-slate-300">
+                                  {new Date(meeting.meetingDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-sm">
+                                <Clock className="w-4 h-4 text-cyan-600" />
+                                <span className="font-medium text-slate-700 dark:text-slate-300">
+                                  {new Date(meeting.meetingDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              {meeting.location && (
+                                <div className="flex items-center gap-3 text-sm">
+                                  <MapPin className="w-4 h-4 text-cyan-600" />
+                                  <span className="text-slate-600 dark:text-slate-400">{meeting.location}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Feedback Box */}
+                            {(meeting.status === 'rejected' || meeting.status === 'pending') && meeting.rejectionReason && (
+                              <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
+                                <div className="font-semibold flex items-center gap-1 mb-1">
+                                  <AlertCircle className="w-3 h-3" /> Faculty Feedback
+                                </div>
+                                {meeting.rejectionReason}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                            {meeting.meetUrl && meeting.status === 'scheduled' && (
+                              <Button variant="outline" className="w-full border-cyan-200 text-cyan-700 hover:bg-cyan-50 group" asChild>
+                                <a href={meeting.meetUrl} target="_blank" rel="noopener noreferrer">
+                                  <Video className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                                  Join Meeting
+                                </a>
+                              </Button>
+                            )}
+
+                            {canSubmitLogs && (meeting.status === 'completed' || meeting.status === 'pending') && (!hasLog || canResubmit) && (
+                              <Button
+                                onClick={() => handleLogMeeting(meeting)}
+                                className={cn(
+                                  "w-full text-white",
+                                  canResubmit ? "bg-orange-500 hover:bg-orange-600" : "bg-emerald-600 hover:bg-emerald-700"
+                                )}
+                              >
+                                <FileText className="w-4 h-4 mr-2" />
+                                {canResubmit ? 'Resubmit Minutes' : 'Log Minutes'}
+                              </Button>
+                            )}
+
+                            {hasLog && !canResubmit && meeting.status !== 'approved' && (
+                              <div className="text-center w-full py-2 text-sm text-emerald-600 bg-emerald-50 rounded-lg font-medium">
+                                Minutes Submitted
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past" className="focus-visible:outline-none">
+            {getPastMeetings().length === 0 ? (
+              <MeetingEmptyState
+                title="No Past Meetings"
+                description="Your history of approved meetings will appear here."
+                icon="clock"
+              />
+            ) : (
+              <div className="space-y-4">
+                {getPastMeetings().map((meeting) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={meeting._id}
+                  >
+                    <Card className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                      <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-full bg-cyan-100/50 text-cyan-600 flex items-center justify-center border border-cyan-100 shrink-0">
+                            <CheckCircle className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                              {meeting.projectId?.title || 'Project Meeting'}
+                            </h4>
+                            <div className="flex items-center gap-3 text-sm text-slate-500 mt-0.5">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {new Date(meeting.meetingDate).toLocaleDateString()}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5" />
+                                {getPastMeetings().length} Participants
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Button variant="ghost" size="sm" onClick={() => handleLogMeeting(meeting)}>
+                            View Minutes
+                          </Button>
+                          <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">Approved</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </AnimatePresence>
+      </Tabs>
+
+
+      {/* SCHEDULE MODAL */}
+      <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Schedule Meeting</DialogTitle>
+            <DialogDescription>Request a meeting with your faculty mentor.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleScheduleMeeting} className="space-y-6 py-2">
+            <div className="space-y-2">
+              <Label>Date & Time</Label>
+              <MeetingDateTimePicker
+                value={scheduleForm.meetingDate ? new Date(scheduleForm.meetingDate) : undefined}
+                onChange={(date) => setScheduleForm({ ...scheduleForm, meetingDate: date.toISOString() })}
+                placeholder="Pick date & time"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Meeting Mode</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className={cn(
+                    "cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                    scheduleForm.mode === 'online'
+                      ? "border-cyan-500 bg-cyan-50/50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                  )}
+                  onClick={() => setScheduleForm({ ...scheduleForm, mode: 'online' })}
+                >
+                  <Video className="w-6 h-6" />
+                  <span className="font-medium text-sm">Online Meeting</span>
+                </div>
+                <div
+                  className={cn(
+                    "cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50",
+                    scheduleForm.mode === 'in-person'
+                      ? "border-cyan-500 bg-cyan-50/50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                  )}
+                  onClick={() => setScheduleForm({ ...scheduleForm, mode: 'in-person' })}
+                >
+                  <MapPin className="w-6 h-6" />
+                  <span className="font-medium text-sm">In-Person</span>
+                </div>
+              </div>
+            </div>
+
+            {scheduleForm.mode === 'online' ? (
+              <div className="space-y-2">
+                <Label>Meeting Link</Label>
+                <div className="relative">
+                  <Link className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <Input
+                    placeholder="https://meet.google.com/..."
+                    value={scheduleForm.meetUrl}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, meetUrl: e.target.value })}
+                    className="pl-9 focus-visible:ring-0 focus-visible:border-cyan-500 transition-colors"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <Input
+                    placeholder="e.g. Faculty Cabin, Lab..."
+                    value={scheduleForm.location}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, location: e.target.value })}
+                    required
+                    className="pl-9 focus-visible:ring-0 focus-visible:border-cyan-500 transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="ghost" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
+              <Button
+                type="submit"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white min-w-[150px]"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                    Sending Request...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Send Request
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* LOG MINUTES MODAL */}
+      <Dialog open={!!selectedMeeting} onOpenChange={(open) => !open && setSelectedMeeting(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Log Meeting Minutes</DialogTitle>
+            <DialogDescription>
+              Record the details of your meeting on {selectedMeeting && new Date(selectedMeeting.meetingDate).toLocaleDateString()}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMeeting && (
+            <div className="space-y-6 py-4">
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Attendees</Label>
+                <div className="grid grid-cols-2 gap-2 p-4 bg-slate-50 rounded-xl border border-slate-100">
                   {groupMembers.length > 0 ? (
-                    // Group members
                     groupMembers.map((member: any) => (
-                      <label key={member._id} className="flex items-center gap-2">
+                      <label key={member._id} className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                           checked={logForm.attendees.includes(member._id)}
                           onChange={() => handleAttendeeToggle(member._id)}
-                          className="w-4 h-4"
                         />
-                        <span>{member.name}</span>
+                        <span className="text-sm font-medium text-slate-700">{member.name}</span>
                       </label>
                     ))
                   ) : (
-                    // Solo student
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
+                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                         checked={logForm.attendees.includes((user as any)?._id || (user as any)?.id || '')}
                         onChange={() => handleAttendeeToggle((user as any)?._id || (user as any)?.id || '')}
-                        className="w-4 h-4"
                       />
-                      <span>{user?.name} (You)</span>
+                      <span className="text-sm font-medium text-slate-700">{user?.name} (You)</span>
                     </label>
                   )}
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block mb-2 font-medium">Minutes of Meeting (MOM) *</label>
-                <textarea
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Minutes (MOM)</Label>
+                <Textarea
+                  placeholder="Summary of discussion, action items, and next steps..."
+                  className="min-h-[200px] resize-none focus-visible:ring-cyan-500"
                   value={logForm.minutesOfMeeting}
                   onChange={(e) => setLogForm({ ...logForm, minutesOfMeeting: e.target.value })}
-                  rows={8}
-                  placeholder="Enter meeting notes, discussions, decisions, and action items..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
-              <div className="flex gap-4">
-                <button
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setSelectedMeeting(null)}>Cancel</Button>
+                <Button
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
                   onClick={handleSubmitLog}
                   disabled={loading}
-                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
                 >
-                  {loading ? 'Submitting...' : 'Submit for Approval'}
-                </button>
-                <button
-                  onClick={() => setSelectedMeeting(null)}
-                  className="flex-1 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Schedule Meeting Modal */}
-      <AnimatePresence>
-        {showScheduleModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setShowScheduleModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Meeting</h2>
-
-              <form onSubmit={handleScheduleMeeting} className="space-y-4">
-                <CompactDatePicker
-                  label="Meeting Date & Time"
-                  value={scheduleForm.meetingDate}
-                  onChange={(value) => setScheduleForm({ ...scheduleForm, meetingDate: value })}
-                  isRequired
-                  color="#2563EB" // Blue for meetings
-                />
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meeting Mode
-                  </label>
-                  <select
-                    value={scheduleForm.mode}
-                    onChange={(e) => setScheduleForm({ ...scheduleForm, mode: e.target.value as 'online' | 'in-person' })}
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="online">Online (Google Meet)</option>
-                    <option value="in-person">In-Person</option>
-                  </select>
-                </div>
-
-                {scheduleForm.mode === 'online' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Google Meet URL
-                    </label>
-                    <input
-                      type="url"
-                      value={scheduleForm.meetUrl}
-                      onChange={(e) => setScheduleForm({ ...scheduleForm, meetUrl: e.target.value })}
-                      placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      value={scheduleForm.location}
-                      onChange={(e) => setScheduleForm({ ...scheduleForm, location: e.target.value })}
-                      placeholder="Room number, building, etc."
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {loading ? 'Scheduling...' : 'Schedule Meeting'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowScheduleModal(false)}
-                    className="flex-1 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {loading ? 'Submitting...' : 'Submit Minutes'}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
