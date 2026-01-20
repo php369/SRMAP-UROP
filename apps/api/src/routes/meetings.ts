@@ -1,11 +1,11 @@
-import express from 'express';
+import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { MeetingLog } from '../models/MeetingLog';
 import { Group } from '../models/Group';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-const router = express.Router();
+const router: Router = Router();
 
 /**
  * POST /api/meetings
@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), async (req, res) => {
     try {
         const { projectId, meetingDate, meetingLink, mode, location } = req.body;
-        
+
         // Validate user ID
         if (!req.user?.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
             return res.status(400).json({
@@ -27,7 +27,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
                 },
             });
         }
-        
+
         const userId = new mongoose.Types.ObjectId(req.user.id);
         const userRole = req.user.role;
 
@@ -59,22 +59,22 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
         if (userRole.endsWith('-student')) {
             // For students, we need to find their project and faculty
             const { Application } = await import('../models/Application');
-            
+
             logger.info('Student scheduling meeting:', {
                 userId: userId.toString(),
                 userRole
             });
-            
+
             // Check if student is in a group
             const group = await Group.findOne({ members: userId });
-            
+
             if (group) {
                 // User is in a group - all group members can schedule meetings
                 logger.info('Found group for student:', {
                     groupId: group._id.toString(),
                     assignedProjectId: group.assignedProjectId?.toString()
                 });
-                
+
                 // Check if group has assigned project
                 if (!group.assignedProjectId) {
                     return res.status(404).json({
@@ -86,12 +86,12 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
                         },
                     });
                 }
-                
+
                 projectIdToUse = group.assignedProjectId;
             } else {
                 // Solo student
                 logger.info('No group found, checking solo application for student');
-                
+
                 const application = await Application.findOne({
                     studentId: userId,
                     status: 'approved'
@@ -118,7 +118,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             // Get project to find faculty
             const { Project } = await import('../models/Project');
             const project = await Project.findById(projectIdToUse);
-            
+
             if (!project) {
                 return res.status(404).json({
                     success: false,
@@ -138,7 +138,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
                 userRole,
                 projectId
             });
-            
+
             if (!projectId) {
                 return res.status(400).json({
                     success: false,
@@ -163,7 +163,7 @@ router.post('/', authenticate, authorize('student', 'faculty', 'coordinator'), a
             }
 
             projectIdToUse = new mongoose.Types.ObjectId(projectId);
-            
+
             // Verify project exists and belongs to faculty
             const { Project } = await import('../models/Project');
             const project = await Project.findOne({
@@ -436,10 +436,10 @@ router.put('/logs/:id/approve', authenticate, authorize('faculty', 'coordinator'
         } else {
             log.status = 'pending'; // Rejected logs go back to pending for resubmission
         }
-        
+
         log.reviewedBy = new mongoose.Types.ObjectId(req.user!.id);
         log.reviewedAt = new Date();
-        
+
         // Store feedback (required for rejection, optional for approval)
         if (facultyNotes && facultyNotes.trim()) {
             log.rejectionReason = facultyNotes.trim();
@@ -604,7 +604,7 @@ router.post('/:id/log', authenticate, authorize('student'), async (req, res) => 
         }
 
         meeting.minutesOfMeeting = mom;
-        
+
         // Set status based on current state
         if (meeting.status === 'pending') {
             // Resubmission after rejection - set to completed for review
@@ -617,7 +617,7 @@ router.post('/:id/log', authenticate, authorize('student'), async (req, res) => 
             // First submission
             meeting.status = 'completed';
         }
-        
+
         await meeting.save();
 
         logger.info(`Meeting log ${meeting.status === 'completed' ? 'submitted' : 'resubmitted'} by ${req.user!.email}:`, {
@@ -788,7 +788,7 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
         const currentTime = new Date();
         meeting.status = 'completed';
         meeting.endedAt = currentTime;
-        
+
         // Log timezone information for debugging
         logger.info('Meeting completion timezone info:', {
             meetingId: id,
@@ -798,10 +798,10 @@ router.put('/:id/complete', authenticate, authorize('faculty', 'coordinator'), a
             endedAtLocal: currentTime.toString(),
             timeDifference: meeting.startedAt ? (currentTime.getTime() - meeting.startedAt.getTime()) / (1000 * 60) : null // minutes
         });
-        
+
         // Save the meeting
         const savedMeeting = await meeting.save();
-        
+
         logger.info('Meeting status updated successfully:', {
             meetingId: id,
             newStatus: savedMeeting.status,
@@ -872,17 +872,17 @@ router.get('/logs/project/:projectId', authenticate, authorize('faculty', 'coord
                 { mom: { $exists: true, $ne: '', $nin: [null, ''] } }
             ]
         })
-        .populate('groupId', 'groupCode members')
-        .populate('facultyId', 'name email')
-        .sort({ meetingDate: -1 });
+            .populate('groupId', 'groupCode members')
+            .populate('facultyId', 'name email')
+            .sort({ meetingDate: -1 });
 
         // Format the logs for external evaluators
         const formattedLogs = logs.map(log => {
             // Calculate duration from startedAt and endedAt if available
-            const duration = log.endedAt && log.startedAt 
-                ? Math.round((log.endedAt.getTime() - log.startedAt.getTime()) / (1000 * 60)) 
+            const duration = log.endedAt && log.startedAt
+                ? Math.round((log.endedAt.getTime() - log.startedAt.getTime()) / (1000 * 60))
                 : 60; // Default duration if not specified
-            
+
             return {
                 _id: log._id,
                 date: log.meetingDate,

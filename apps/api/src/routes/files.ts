@@ -1,6 +1,6 @@
-import express from 'express';
+import { Router } from 'express';
 
-const router = express.Router();
+const router: Router = Router();
 
 /**
  * Legacy PDF route - redirect to Supabase Storage

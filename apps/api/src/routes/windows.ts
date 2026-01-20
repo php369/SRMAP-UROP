@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import {
     createWindow,
@@ -11,7 +11,7 @@ import {
 } from '../services/windowService';
 import { logger } from '../utils/logger';
 
-const router = express.Router();
+const router: Router = Router();
 
 /**
  * GET /api/windows

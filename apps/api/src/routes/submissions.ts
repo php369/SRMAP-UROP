@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import { SubmissionService } from '../services/submissionService';
 import { authenticate } from '../middleware/auth';
 import { rbacGuard } from '../middleware/rbac';
@@ -9,7 +9,7 @@ import { Submission } from '../models/Submission';
 import { GroupSubmission } from '../models/GroupSubmission';
 import { StorageService } from '../services/storageService';
 
-const router = express.Router();
+const router: Router = Router();
 
 // Configure multer for file uploads
 const upload = multer({
@@ -25,7 +25,7 @@ const upload = multer({
       'application/vnd.ms-powerpoint',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -79,7 +79,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
         error: 'Invalid assessment type'
       });
     }
-    
+
     // Must have either groupId (group submission) or studentId (solo submission)
     if (!groupId && !studentId) {
       logger.warn(`Submission attempt by user ${req.user!.id} without groupId or studentId`);
@@ -102,7 +102,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       }
       eligibility = { canSubmit: true };
     }
-    
+
     logger.info('Submission eligibility check:', {
       userId: req.user!.id,
       groupId,
@@ -110,7 +110,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
       canSubmit: eligibility.canSubmit,
       reason: eligibility.reason
     });
-    
+
     if (!eligibility.canSubmit) {
       return res.status(403).json({
         error: eligibility.reason
@@ -146,7 +146,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
         'solo',
         reportFile.mimetype
       );
-      
+
       submissionData.reportFile = {
         url: uploadResult.url,
         name: reportFile.originalname,
@@ -164,7 +164,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
         'solo',
         presentationFile.mimetype
       );
-      
+
       submissionData.presentationFile = {
         url: uploadResult.url,
         name: presentationFile.originalname,
@@ -199,7 +199,7 @@ router.post('/', authenticate, rbacGuard('student'), upload.fields([
 router.get('/my', authenticate, rbacGuard('student'), async (req, res) => {
   try {
     const submissions = await SubmissionService.getSubmissionsForUser(req.user!.id);
-    
+
     res.json({
       submissions,
       message: submissions.length === 0 ? 'You have not submitted any projects yet. Join a group and submit your work to get started.' : undefined
@@ -220,7 +220,7 @@ router.get('/group/:groupId', authenticate, rbacGuard('student', 'faculty', 'coo
   try {
     const { groupId } = req.params;
     const submission = await SubmissionService.getSubmissionByGroupId(groupId);
-    
+
     if (!submission) {
       return res.status(404).json({
         success: false,
@@ -249,19 +249,19 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
   try {
     const { studentId } = req.params;
     const { assessmentType } = req.query;
-    
+
     // For students, they can only access their own submissions
     if (req.user!.role.includes('student') && studentId !== req.user!.id) {
       return res.status(403).json({
         error: 'You can only access your own submissions'
       });
     }
-    
+
     // Get both solo and group submissions for the student, optionally filtered by assessment type
     const allSubmissions = await SubmissionService.getAllStudentSubmissions(studentId, assessmentType as string);
-    
+
     if (!allSubmissions || allSubmissions.length === 0) {
-      const errorMessage = assessmentType 
+      const errorMessage = assessmentType
         ? `No submissions found for this student for ${assessmentType}`
         : 'No submissions found for this student';
       return res.status(404).json({
@@ -291,7 +291,7 @@ router.get('/student/:studentId', authenticate, rbacGuard('student', 'faculty', 
 router.get('/faculty', authenticate, rbacGuard('faculty', 'coordinator'), async (req, res) => {
   try {
     const allSubmissions = await SubmissionService.getAllSubmissionsForFaculty(req.user!.id);
-    
+
     res.json({
       success: true,
       data: allSubmissions,
@@ -342,7 +342,7 @@ router.get('/:groupId/eligibility', authenticate, rbacGuard('student'), async (r
   try {
     const { groupId } = req.params;
     const eligibility = await SubmissionService.canUserSubmit(req.user!.id, groupId);
-    
+
     res.json(eligibility);
   } catch (error: any) {
     logger.error('Error checking submission eligibility:', error);
@@ -376,7 +376,7 @@ router.put('/:id/grade', authenticate, rbacGuard('faculty', 'coordinator'), asyn
       const groupSubmission = await GroupSubmission.findById(id)
         .populate('groupId')
         .populate('submittedBy');
-      
+
       if (groupSubmission) {
         // For now, we'll return an error since GroupSubmissions don't have grading implemented yet
         return res.status(400).json({
@@ -405,7 +405,7 @@ router.put('/:id/grade', authenticate, rbacGuard('faculty', 'coordinator'), asyn
     submission.facultyGrade = facultyGrade;
     submission.facultyComments = facultyComments || '';
     submission.isGraded = true;
-    
+
     if (meetUrl) {
       submission.meetUrl = meetUrl;
     }
@@ -439,7 +439,7 @@ router.put('/:id/grade', authenticate, rbacGuard('faculty', 'coordinator'), asyn
 router.delete('/group/:groupId', authenticate, rbacGuard('student'), async (req, res) => {
   try {
     const { groupId } = req.params;
-    
+
     // Find the submission
     const submission = await SubmissionService.getSubmissionByGroupId(groupId);
     if (!submission) {
@@ -447,7 +447,7 @@ router.delete('/group/:groupId', authenticate, rbacGuard('student'), async (req,
         error: 'No submission found for this group'
       });
     }
-    
+
     // Verify user is the group leader
     const group = await Group.findById(groupId);
     if (!group || group.leaderId.toString() !== req.user!.id) {
@@ -455,16 +455,16 @@ router.delete('/group/:groupId', authenticate, rbacGuard('student'), async (req,
         error: 'Only the group leader can delete submissions'
       });
     }
-    
+
     // Delete the submission
     await Submission.findByIdAndDelete(submission._id);
-    
+
     logger.info('Submission deleted:', {
       submissionId: submission._id,
       groupId,
       deletedBy: req.user!.id
     });
-    
+
     res.json({
       message: 'Submission deleted successfully'
     });

@@ -63,8 +63,7 @@ const GroupSubmissionSchema = new Schema({
   groupId: {
     type: Schema.Types.ObjectId,
     ref: 'Group',
-    required: true,
-    index: true
+    required: true
   },
   assessmentType: {
     type: String,
@@ -97,7 +96,7 @@ const GroupSubmissionSchema = new Schema({
     default: null,
     trim: true,
     validate: {
-      validator: function(url: string) {
+      validator: function (url: string) {
         if (!url) return true; // Optional field
         // Allow common presentation platforms
         const urlPattern = /^https:\/\/(docs\.google\.com|www\.canva\.com|prezi\.com|slides\.com|www\.slideshare\.net)/;
@@ -154,10 +153,10 @@ const GroupSubmissionSchema = new Schema({
 });
 
 // Validation: Must have either presentationFile OR presentationUrl (not both)
-GroupSubmissionSchema.pre('save', function(next) {
+GroupSubmissionSchema.pre('save', function (next) {
   const hasPresentationFile = !!this.presentationFile;
   const hasPresentationUrl = !!this.presentationUrl;
-  
+
   if (hasPresentationFile && hasPresentationUrl) {
     return next(new Error('Cannot have both presentation file and presentation URL. Choose one.'));
   }
@@ -191,7 +190,7 @@ GroupSubmissionSchema.pre('save', function(next) {
 });
 
 // Calculate total file size before saving
-GroupSubmissionSchema.pre('save', function(next) {
+GroupSubmissionSchema.pre('save', function (next) {
   let totalSize = 0;
   if (this.reportFile) totalSize += this.reportFile.size;
   if (this.presentationFile) totalSize += this.presentationFile.size;

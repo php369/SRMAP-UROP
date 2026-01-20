@@ -1,10 +1,10 @@
-import express from 'express';
+import { Router } from 'express';
 import mongoose from 'mongoose';
 import { authenticate } from '../middleware/auth';
 import { MeetingLogService, CreateMeetingLogData, UpdateMeetingLogData } from '../services/meetingLogService';
 import { logger } from '../utils/logger';
 
-const router = express.Router();
+const router: Router = Router();
 
 /**
  * GET /api/meeting-logs/group/:groupId
@@ -27,7 +27,7 @@ router.get('/group/:groupId', authenticate, async (req, res) => {
 
     // Filter logs based on user access and approval status
     const accessibleLogs = [];
-    
+
     for (const log of meetingLogs) {
       const { canAccess } = await MeetingLogService.validateMeetingLogAccess(
         log._id,
@@ -55,7 +55,7 @@ router.get('/group/:groupId', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error getting meeting logs for group:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get meeting logs',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -83,8 +83,8 @@ router.post('/', authenticate, async (req, res) => {
 
     // Validate required fields
     if (!meetingLogData.attendees || !meetingLogData.mode || !meetingLogData.startedAt) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: attendees, mode, and startedAt are required' 
+      return res.status(400).json({
+        error: 'Missing required fields: attendees, mode, and startedAt are required'
       });
     }
 
@@ -109,7 +109,7 @@ router.post('/', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error creating meeting log:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       error: 'Failed to create meeting log',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -166,7 +166,7 @@ router.put('/:id', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error updating meeting log:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       error: 'Failed to update meeting log',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -214,7 +214,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error getting meeting log:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get meeting log',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -253,7 +253,7 @@ router.post('/:id/approve', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error approving meeting log:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       error: 'Failed to approve meeting log',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -294,7 +294,7 @@ router.post('/:id/reject', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error rejecting meeting log:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       error: 'Failed to reject meeting log',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -316,7 +316,7 @@ router.get('/faculty/pending', authenticate, async (req, res) => {
     }
 
     let meetingLogs;
-    
+
     if (userRole === 'faculty') {
       // Faculty can only see meeting logs for their projects
       meetingLogs = await MeetingLogService.getFacultyMeetingLogs(
@@ -337,7 +337,7 @@ router.get('/faculty/pending', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error getting pending meeting logs:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get pending meeting logs',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -363,7 +363,7 @@ router.get('/user/my-logs', authenticate, async (req, res) => {
 
   } catch (error) {
     logger.error('Error getting user meeting logs:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get user meeting logs',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
