@@ -195,7 +195,7 @@ export const GroupGradingModal = ({
                                                             onChange={(val) => handleGradeChange(student.studentId, val)}
                                                             min={0}
                                                             max={maxScore}
-                                                            step={0.5}
+                                                            step={1}
                                                             size="sm"
                                                             className="w-full"
                                                         />

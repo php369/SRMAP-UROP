@@ -149,7 +149,7 @@ export const SoloGradingModal = ({
                                                     onChange={(val) => setGrade(val)}
                                                     min={0}
                                                     max={maxScore}
-                                                    step={0.5}
+                                                    step={1}
                                                     className="w-full"
                                                 />
                                                 <div className="absolute -top-6 right-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider opacity-60 group-hover:opacity-100 transition-opacity">
