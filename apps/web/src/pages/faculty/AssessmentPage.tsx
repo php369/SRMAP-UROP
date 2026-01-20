@@ -16,6 +16,8 @@ import { SoloGradingModal } from './components/SoloGradingModal';
 import { GroupGradingModal } from './components/GroupGradingModal';
 import { AssessmentEmptyState } from '../../components/assessment/AssessmentEmptyState';
 import { FacultyAssessmentSkeleton } from '../../components/assessment/AssessmentSkeleton';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { Separator } from '../../components/ui/Separator';
 
 interface Submission {
   _id: string;
@@ -112,6 +114,10 @@ export function FacultyAssessmentPage() {
     students: {},
     comments: ''
   });
+
+  // Modal & Confirmation States
+  const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string } | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<{ isOpen: boolean; grades: Record<string, string>; comments: string } | null>(null);
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Graded'>('All');
@@ -321,7 +327,7 @@ export function FacultyAssessmentPage() {
     }
 
     try {
-      const response = await api.put(`/ meetings / logs / ${logId}/grade`, { grade });
+      const response = await api.put(`/meetings/logs/${logId}/grade`, { grade });
 
       if (response.success) {
         toast.success('Grade saved');
@@ -396,26 +402,18 @@ export function FacultyAssessmentPage() {
     const grade = parseFloat(gradeVal);
     const maxScore = getMaxScore(assessmentType);
 
-    // Freeze Warning
-    const confirmSubmit = window.confirm(
-      '⚠️ IMPORTANT: Grade Submission Warning\n\n' +
-      'Once you submit this grade, it will be FROZEN and cannot be modified without coordinator approval.\n\n' +
-      'Please review the grade carefully before proceeding.\n\n' +
-      'Are you sure you want to submit this grade?'
-    );
-    if (!confirmSubmit) return;
-
     // Published Check
     const existingEvaluation = selectedStudent.evaluation;
     if (existingEvaluation?.isPublished) {
-      const confirmModify = window.confirm(
-        '⚠️ WARNING: This student\'s grades have already been published and are visible to the student.\n\n' +
-        'Modifying published grades may cause confusion and requires coordinator approval.\n\n' +
-        'Are you sure you want to proceed?'
-      );
-      if (!confirmModify) return;
+      setConfirmSolo({ isOpen: true, grade: gradeVal, comments });
+      return;
     }
 
+    setConfirmSolo({ isOpen: true, grade: gradeVal, comments });
+  };
+
+  const executeSaveSolo = async (gradeVal: string, comments: string) => {
+    if (!selectedStudent || !selectedSubmission) return;
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
         assessmentType === 'CLA-2' ? 'cla2' :
@@ -424,6 +422,7 @@ export function FacultyAssessmentPage() {
       let endpoint = '';
       let payload: any = {};
 
+      const grade = parseFloat(gradeVal);
       if (assessmentType === 'External') {
         endpoint = '/student-evaluations/external/score';
         payload = {
@@ -460,30 +459,16 @@ export function FacultyAssessmentPage() {
   const onSaveGroup = async (grades: Record<string, string>, comments: string) => {
     if (!selectedSubmission?.students) return;
 
-    // Show freeze warning before proceeding
-    const confirmSubmit = window.confirm(
-      '⚠️ IMPORTANT: Grade Submission Warning\n\n' +
-      'Once you submit these grades, they will be FROZEN and cannot be modified without coordinator approval.\n\n' +
-      'Please review all grades carefully before proceeding.\n\n' +
-      'Are you sure you want to submit these grades?'
-    );
-    if (!confirmSubmit) return;
-
     const maxScore = getMaxScore(assessmentType);
     const studentsToGrade = selectedSubmission.students;
 
-    // Check if any student has published grades
-    const publishedStudents = studentsToGrade.filter(student => student.evaluation?.isPublished);
-    if (publishedStudents.length > 0) {
-      const studentNames = publishedStudents.map(s => s.studentName).join(', ');
-      const confirmModify = window.confirm(
-        `⚠️ WARNING: The following students have published grades: ${studentNames}\n\n` +
-        'Modifying published grades may cause confusion and requires coordinator approval.\n\n' +
-        'Are you sure you want to proceed?'
-      );
-      if (!confirmModify) return;
-    }
+    setConfirmGroup({ isOpen: true, grades, comments });
+  };
 
+  const executeSaveGroup = async (grades: Record<string, string>, comments: string) => {
+    if (!selectedSubmission?.students) return;
+
+    const studentsToGrade = selectedSubmission.students;
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
         assessmentType === 'CLA-2' ? 'cla2' :
@@ -492,8 +477,6 @@ export function FacultyAssessmentPage() {
       // Submit grades for all students
       const gradePromises = studentsToGrade.map(student => {
         const gradeVal = grades[student.studentId];
-        // Skip if empty? Or treat as 0? The modal logic ensures validity for entered values.
-        // Assuming we send all as entered.
         const grade = parseFloat(gradeVal || '0');
 
         let endpoint = '';
@@ -720,22 +703,45 @@ export function FacultyAssessmentPage() {
                                   <div className="flex-1 space-y-2">
                                     <div className="flex items-start justify-between md:justify-start gap-4">
                                       <div>
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
-                                          {submission.groupId
-                                            ? `Group ${submission.groupId.groupCode}`
-                                            : submission.studentId?.name}
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors leading-tight">
+                                          {projectInfo.title}
                                         </h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                          <Badge variant={submission.groupId ? 'secondary' : 'outline'} className="text-[10px] h-5 px-2">
+                                        <div className="flex items-center gap-2 mt-1.5">
+                                          <Badge variant={submission.groupId ? 'secondary' : 'outline'} className="text-[10px] h-5 px-2 bg-amber-50 text-amber-700 border-amber-100">
                                             {submission.groupId ? 'GROUP' : 'SOLO'}
                                           </Badge>
-                                          <Badge variant="outline" className="text-[10px] h-5 px-2 border-slate-300 text-slate-500">
+
+                                          <div className="flex items-center gap-2">
+                                            {submission.groupId ? (
+                                              <div className="flex -space-x-1.5 overflow-hidden p-0.5">
+                                                {submission.groupId.members?.slice(0, 3).map((member: any, i: number) => (
+                                                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-amber-100 flex items-center justify-center text-[10px] font-bold text-amber-700 shadow-sm" title={member.name}>
+                                                    {member.name?.charAt(0)}
+                                                  </div>
+                                                ))}
+                                                {submission.groupId.members && submission.groupId.members.length > 3 && (
+                                                  <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-500 shadow-sm">
+                                                    +{submission.groupId.members.length - 3}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-400 shadow-sm">
+                                                {submission.studentId?.name?.charAt(0)}
+                                              </div>
+                                            )}
+                                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                              {submission.groupId
+                                                ? `Group ${submission.groupId.groupCode}`
+                                                : submission.studentId?.name}
+                                            </span>
+                                          </div>
+
+                                          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                                          <Badge variant="outline" className="text-[10px] h-5 px-2 border-slate-200 text-slate-500 font-medium">
                                             {projectInfo.type}
                                           </Badge>
-                                          <div className="flex items-center text-xs text-slate-500 ml-1">
-                                            <Users className="w-3 h-3 mr-1" />
-                                            {submission.students?.length || 0} Members
-                                          </div>
                                         </div>
                                       </div>
 
@@ -757,8 +763,8 @@ export function FacultyAssessmentPage() {
                                       </div>
                                     </div>
 
-                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-1">
-                                      {projectInfo.title}
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mt-1">
+                                      {projectInfo.brief}
                                     </p>
 
                                     <div className="flex items-center gap-4 pt-1">
@@ -796,31 +802,28 @@ export function FacultyAssessmentPage() {
 
                                   {/* Right Section: Actions & Status */}
                                   <div className="flex items-center gap-4 pl-4 md:border-l border-slate-100 dark:border-slate-800">
-                                    {/* Status Indicator for Desktop */}
-                                    <div className="hidden md:block text-right mr-2">
-                                      {isGraded ? (
-                                        <div className="flex flex-col items-end">
-                                          <span className="text-xs font-bold text-green-600 flex items-center gap-1">
-                                            <UserCheck className="w-3 h-3" /> Fully Graded
-                                          </span>
-                                          <span className="text-[10px] text-slate-400">All students evaluated</span>
-                                        </div>
-                                      ) : isPartial ? (
-                                        <div className="flex flex-col items-end">
-                                          <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                                            <SlidersHorizontal className="w-3 h-3" /> In Progress
-                                          </span>
-                                          <span className="text-[10px] text-slate-400">Some students graded</span>
-                                        </div>
-                                      ) : (
-                                        <div className="flex flex-col items-end">
-                                          <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
-                                            Not Graded
-                                          </span>
-                                          <span className="text-[10px] text-slate-400">Ready for evaluation</span>
-                                        </div>
-                                      )}
-                                    </div>
+                                    {isGraded ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs font-bold text-green-600 flex items-center gap-1">
+                                          <UserCheck className="w-3 h-3" /> Fully Graded
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">All students evaluated</span>
+                                      </div>
+                                    ) : isPartial ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                                          <SlidersHorizontal className="w-3 h-3" /> In Progress
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">Some students graded</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                                          Not Graded
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">Ready for evaluation</span>
+                                      </div>
+                                    )}
 
                                     <Button
                                       onClick={() => {
@@ -870,156 +873,158 @@ export function FacultyAssessmentPage() {
                 </div>
 
                 {/* Show meeting logs even without submissions */}
-                {Object.keys(meetingLogs).length > 0 && (
-                  <div className="mt-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Meeting Logs by Project</h2>
-                    <div className="grid gap-4">
-                      {Object.entries(meetingLogs)
-                        .filter(([_, logs]) => logs.length > 0) // Only show projects with logs
-                        .map(([projectIdKey, logs]) => {
-                          const isExpanded = selectedProjectLogs === logs;
-                          const firstLog = logs[0];
+                {
+                  Object.keys(meetingLogs).length > 0 && (
+                    <div className="mt-6">
+                      <h2 className="text-2xl font-bold text-slate-900 mb-4">Meeting Logs by Project</h2>
+                      <div className="grid gap-4">
+                        {Object.entries(meetingLogs)
+                          .filter(([_, logs]) => logs.length > 0) // Only show projects with logs
+                          .map(([projectIdKey, logs]) => {
+                            const isExpanded = selectedProjectLogs === logs;
+                            const firstLog = logs[0];
 
-                          // Get project title from the populated projectId
-                          const projectTitle = firstLog?.projectId?.title || 'Unknown Project';
+                            // Get project title from the populated projectId
+                            const projectTitle = firstLog?.projectId?.title || 'Unknown Project';
 
-                          // Calculate total grade
-                          const totalGrade = logs.reduce((sum, log) => sum + (log.grade || 0), 0);
-                          const maxGrade = logs.length * 5;
+                            // Calculate total grade
+                            const totalGrade = logs.reduce((sum, log) => sum + (log.grade || 0), 0);
+                            const maxGrade = logs.length * 5;
 
-                          return (
-                            <GlassCard key={projectIdKey} className="p-6">
-                              <button
-                                onClick={() => setSelectedProjectLogs(isExpanded ? null : logs)}
-                                className="w-full flex items-center justify-between text-left"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-1">
-                                    <h3 className="text-lg font-semibold text-text">
-                                      {projectTitle}
-                                    </h3>
-                                    <span className="px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm font-bold rounded-xl border border-amber-500/20">
-                                      {totalGrade}/{maxGrade} marks
-                                    </span>
+                            return (
+                              <GlassCard key={projectIdKey} className="p-6">
+                                <button
+                                  onClick={() => setSelectedProjectLogs(isExpanded ? null : logs)}
+                                  className="w-full flex items-center justify-between text-left"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                      <h3 className="text-lg font-semibold text-text">
+                                        {projectTitle}
+                                      </h3>
+                                      <span className="px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm font-bold rounded-xl border border-amber-500/20">
+                                        {totalGrade}/{maxGrade} marks
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-textSecondary">
+                                      {logs.length} meeting log{logs.length !== 1 ? 's' : ''}
+                                    </p>
                                   </div>
-                                  <p className="text-sm text-textSecondary">
-                                    {logs.length} meeting log{logs.length !== 1 ? 's' : ''}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-textSecondary">
-                                    {isExpanded ? 'Hide' : 'Show'}
-                                  </span>
-                                  <svg
-                                    className={`w-5 h-5 text-textSecondary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </div>
-                              </button>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-textSecondary">
+                                      {isExpanded ? 'Hide' : 'Show'}
+                                    </span>
+                                    <svg
+                                      className={`w-5 h-5 text-textSecondary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </div>
+                                </button>
 
-                              {/* Expanded logs */}
-                              {isExpanded && (
-                                <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-                                  {logs.map((log, index) => (
-                                    <div key={log._id} className="p-4 bg-white/5 rounded-lg">
-                                      <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                          <span className="text-base font-semibold text-slate-900">Meeting #{index + 1}</span>
-                                          {log.status === 'approved' && (
-                                            <Badge variant="success">
-                                              Approved
-                                            </Badge>
-                                          )}
-                                          {log.status === 'completed' && (
-                                            <Badge variant="info">
-                                              Completed
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-textSecondary">
-                                          {log.mode === 'online' ? (
-                                            <Video className="w-4 h-4" />
-                                          ) : (
-                                            <Users className="w-4 h-4" />
-                                          )}
-                                          <span className="capitalize">{log.mode}</span>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 text-sm text-textSecondary mb-3">
-                                        <Calendar className="w-4 h-4" />
-                                        {new Date(log.meetingDate).toLocaleString()}
-                                      </div>
-
-                                      {log.location && (
-                                        <div className="text-sm text-textSecondary mb-3">
-                                          Location: {log.location}
-                                        </div>
-                                      )}
-
-                                      <div className="mt-3 p-3 bg-white/5 rounded-lg">
-                                        <h4 className="text-sm font-medium text-text mb-2 flex items-center gap-2">
-                                          <FileText className="w-4 h-4" />
-                                          Minutes of Meeting
-                                        </h4>
-                                        <p className="text-sm text-textSecondary whitespace-pre-wrap">
-                                          {log.minutesOfMeeting || log.mom}
-                                        </p>
-                                      </div>
-
-                                      {log.attendees && log.attendees.length > 0 && (
-                                        <div className="mt-3">
-                                          <h4 className="text-sm font-medium text-text mb-2">Attendees</h4>
-                                          <div className="flex flex-wrap gap-2">
-                                            {log.attendees.map((attendee: any, idx: number) => (
-                                              <span
-                                                key={idx}
-                                                className={`px-2 py-1 text-xs rounded-lg ${attendee.present
-                                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                  : 'bg-slate-50 text-slate-500 border border-slate-200'
-                                                  }`}
-                                              >
-                                                {attendee.studentId?.name || 'Student'}
-                                                {attendee.present && ' ✓'}
-                                              </span>
-                                            ))}
+                                {/* Expanded logs */}
+                                {isExpanded && (
+                                  <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+                                    {logs.map((log, index) => (
+                                      <div key={log._id} className="p-4 bg-white/5 rounded-lg">
+                                        <div className="flex items-start justify-between mb-3">
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-base font-semibold text-slate-900">Meeting #{index + 1}</span>
+                                            {log.status === 'approved' && (
+                                              <Badge variant="success">
+                                                Approved
+                                              </Badge>
+                                            )}
+                                            {log.status === 'completed' && (
+                                              <Badge variant="info">
+                                                Completed
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2 text-sm text-textSecondary">
+                                            {log.mode === 'online' ? (
+                                              <Video className="w-4 h-4" />
+                                            ) : (
+                                              <Users className="w-4 h-4" />
+                                            )}
+                                            <span className="capitalize">{log.mode}</span>
                                           </div>
                                         </div>
-                                      )}
 
-                                      {/* Grading Section */}
-                                      <div className="mt-4 pt-4 border-t border-white/10">
-                                        <div className="flex items-center gap-4">
-                                          <Label className="text-sm font-medium text-text">Grade (out of 5):</Label>
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            max="5"
-                                            step="0.5"
-                                            value={log.grade || ''}
-                                            onChange={(e) => handleGradeChange(log._id, parseFloat(e.target.value))}
-                                            className="w-20 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                                            placeholder="0-5"
-                                          />
-                                          {log.grade !== undefined && log.grade !== null && (
-                                            <span className="text-sm text-success">✓ Graded</span>
-                                          )}
+                                        <div className="flex items-center gap-2 text-sm text-textSecondary mb-3">
+                                          <Calendar className="w-4 h-4" />
+                                          {new Date(log.meetingDate).toLocaleString()}
+                                        </div>
+
+                                        {log.location && (
+                                          <div className="text-sm text-textSecondary mb-3">
+                                            Location: {log.location}
+                                          </div>
+                                        )}
+
+                                        <div className="mt-3 p-3 bg-white/5 rounded-lg">
+                                          <h4 className="text-sm font-medium text-text mb-2 flex items-center gap-2">
+                                            <FileText className="w-4 h-4" />
+                                            Minutes of Meeting
+                                          </h4>
+                                          <p className="text-sm text-textSecondary whitespace-pre-wrap">
+                                            {log.minutesOfMeeting || log.mom}
+                                          </p>
+                                        </div>
+
+                                        {log.attendees && log.attendees.length > 0 && (
+                                          <div className="mt-3">
+                                            <h4 className="text-sm font-medium text-text mb-2">Attendees</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                              {log.attendees.map((attendee: any, idx: number) => (
+                                                <span
+                                                  key={idx}
+                                                  className={`px-2 py-1 text-xs rounded-lg ${attendee.present
+                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                    : 'bg-slate-50 text-slate-500 border border-slate-200'
+                                                    }`}
+                                                >
+                                                  {attendee.studentId?.name || 'Student'}
+                                                  {attendee.present && ' ✓'}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Grading Section */}
+                                        <div className="mt-4 pt-4 border-t border-white/10">
+                                          <div className="flex items-center gap-4">
+                                            <Label className="text-sm font-medium text-text">Grade (out of 5):</Label>
+                                            <Input
+                                              type="number"
+                                              min="0"
+                                              max="5"
+                                              step="0.5"
+                                              value={log.grade || ''}
+                                              onChange={(e) => handleGradeChange(log._id, parseFloat(e.target.value))}
+                                              className="w-20 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                                              placeholder="0-5"
+                                            />
+                                            {log.grade !== undefined && log.grade !== null && (
+                                              <span className="text-sm text-success">✓ Graded</span>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </GlassCard>
-                          );
-                        })}
+                                    ))}
+                                  </div>
+                                )}
+                              </GlassCard>
+                            );
+                          })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                }
               </>
             )}
           </div>
@@ -1028,34 +1033,65 @@ export function FacultyAssessmentPage() {
 
         {/* New Grading Modals */}
         <SoloGradingModal
-            isOpen={!!(selectedSubmission && selectedStudent)}
-            onClose={() => {
-              setSelectedSubmission(null);
-              setSelectedStudent(null);
-              setGradeData({ grade: '', comments: '' });
-            }}
-            student={selectedStudent}
-            submission={selectedSubmission}
-            assessmentType={currentAssessmentType || ''}
-            maxScore={getMaxScore(currentAssessmentType || '')}
-            onSave={onSaveSolo}
-            getConvertedScore={getConvertedScore}
+          isOpen={!!(selectedSubmission && selectedStudent)}
+          onClose={() => {
+            setSelectedSubmission(null);
+            setSelectedStudent(null);
+            setGradeData({ grade: '', comments: '' });
+          }}
+          student={selectedStudent}
+          submission={selectedSubmission}
+          assessmentType={currentAssessmentType || 'CLA-1'}
+          maxScore={getMaxScore(currentAssessmentType || 'CLA-1')}
+          onSave={onSaveSolo}
+          getConvertedScore={getConvertedScore}
         />
 
         <GroupGradingModal
-            isOpen={!!(selectedSubmission && showGroupGrading)}
-            onClose={() => {
-              setSelectedSubmission(null);
-              setShowGroupGrading(false);
-              setGroupGradeData({ students: {}, comments: '' });
-            }}
-            submission={selectedSubmission}
-            assessmentType={currentAssessmentType || ''}
-            maxScore={getMaxScore(currentAssessmentType || '')}
-            onSave={onSaveGroup}
-            getConvertedScore={getConvertedScore}
+          isOpen={!!(selectedSubmission && showGroupGrading)}
+          onClose={() => {
+            setSelectedSubmission(null);
+            setShowGroupGrading(false);
+            setGroupGradeData({ students: {}, comments: '' });
+          }}
+          submission={selectedSubmission}
+          assessmentType={currentAssessmentType || 'CLA-1'}
+          maxScore={getMaxScore(currentAssessmentType || 'CLA-1')}
+          onSave={onSaveGroup}
+          getConvertedScore={getConvertedScore}
         />
-      </motion.div>
-    </div>
+
+        {/* Confirmation Modals */}
+        {
+          confirmSolo && (
+            <ConfirmationModal
+              isOpen={confirmSolo.isOpen}
+              onClose={() => setConfirmSolo(null)}
+              onConfirm={() => executeSaveSolo(confirmSolo.grade, confirmSolo.comments)}
+              title="Confirm Grade Submission"
+              message="Once submitted, these grades will be frozen and visible to the coordinator. Modifying frozen grades requires administrative approval."
+              details={selectedStudent?.evaluation?.isPublished ? "WARNING: These grades are already published and visible to the student." : undefined}
+              confirmText="Submit Grade"
+              type={selectedStudent?.evaluation?.isPublished ? 'danger' : 'warning'}
+            />
+          )
+        }
+
+        {
+          confirmGroup && (
+            <ConfirmationModal
+              isOpen={confirmGroup.isOpen}
+              onClose={() => setConfirmGroup(null)}
+              onConfirm={() => executeSaveGroup(confirmGroup.grades, confirmGroup.comments)}
+              title="Submit Group Grades"
+              message={`You are about to submit grades for all ${selectedSubmission?.students?.length || 0} students in this group.`}
+              details="Grades will be frozen upon submission."
+              confirmText="Submit Group Grades"
+              type="warning"
+            />
+          )
+        }
+      </motion.div >
+    </div >
   );
 }

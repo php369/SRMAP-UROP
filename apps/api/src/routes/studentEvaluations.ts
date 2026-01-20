@@ -17,8 +17,8 @@ const updateInternalScoreSchema = Joi.object({
     }
     return value;
   }),
-  groupId: Joi.string().required().custom((value: any, helpers: any) => {
-    if (!mongoose.Types.ObjectId.isValid(value)) {
+  groupId: Joi.string().allow(null, '').optional().custom((value: any, helpers: any) => {
+    if (value && !mongoose.Types.ObjectId.isValid(value)) {
       return helpers.error('any.invalid');
     }
     return value;
@@ -36,8 +36,8 @@ const updateExternalScoreSchema = Joi.object({
     }
     return value;
   }),
-  groupId: Joi.string().required().custom((value: any, helpers: any) => {
-    if (!mongoose.Types.ObjectId.isValid(value)) {
+  groupId: Joi.string().allow(null, '').optional().custom((value: any, helpers: any) => {
+    if (value && !mongoose.Types.ObjectId.isValid(value)) {
       return helpers.error('any.invalid');
     }
     return value;

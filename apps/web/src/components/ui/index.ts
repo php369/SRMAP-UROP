@@ -15,6 +15,7 @@ export { Breadcrumb } from './Breadcrumb';
 export { CommandPalette } from './CommandPalette';
 export { RichTextEditor } from './RichTextEditor';
 export { NumericStepper } from './NumericStepper';
+export { Separator } from './Separator';
 
 // Interactive Components
 export { AnimatedCounter } from './AnimatedCounter';

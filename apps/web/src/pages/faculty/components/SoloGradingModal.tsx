@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Label, Input, Textarea, Badge, NumericStepper } from "../../../components/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Label, Input, Textarea, Badge, NumericStepper, Separator } from "../../../components/ui";
 import { Github, FileText, Presentation, ExternalLink, Calendar, CheckCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -72,22 +72,22 @@ export const SoloGradingModal = ({
                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
                     <div className="flex items-start justify-between">
                         <div>
-                            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3 pr-12">
                                 {student?.studentName}
-                                <Badge variant="outline" className="font-normal text-xs text-slate-500 border-slate-300">
-                                    {student?.studentId}
-                                </Badge>
                             </DialogTitle>
+                            <p className="text-xs text-slate-400 font-mono mt-0.5">
+                                Enrollment ID: {student?.studentId}
+                            </p>
                             <div className="text-sm text-slate-500 mt-1 flex items-center gap-2">
                                 <Calendar className="w-3.5 h-3.5" />
                                 Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
                             </div>
                         </div>
-                        <div className="flex flex-col items-end">
+                        <div className="flex flex-col items-end pr-10">
                             <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 mb-1">
                                 {assessmentType}
                             </Badge>
-                            <span className="text-xs text-slate-400">Max Score: {maxScore}</span>
+                            <span className="text-xs text-slate-400 font-medium tracking-tight">Max Score: {maxScore}</span>
                         </div>
                     </div>
                 </div>
@@ -97,9 +97,10 @@ export const SoloGradingModal = ({
                     <div className="flex-1 p-6 overflow-y-auto border-r border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Project Details</h3>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1">{submission.projectTitle || "Project Title"}</h4>
+                                <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">Project Details</h3>
+                                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-all hover:shadow-md">
+                                    <h4 className="font-bold text-base text-slate-800 dark:text-slate-200 mb-1.5 leading-snug">{submission.projectTitle || "Project Title"}</h4>
+                                    <Separator className="my-4 opacity-50" />
                                     <div className="flex flex-wrap gap-2 mt-3">
                                         {submission.githubLink && (
                                             <a href={submission.githubLink} target="_blank" rel="noopener noreferrer"
@@ -137,10 +138,11 @@ export const SoloGradingModal = ({
                     {/* Right: Grading Form - Fixed */}
                     <div className="w-[400px] flex flex-col bg-white dark:bg-slate-900 h-full">
                         <div className="flex-1 p-6 overflow-y-auto">
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <div>
-                                    <Label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                                        Grade (0-{maxScore}) <span className="text-red-500">*</span>
+                                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-6">Evaluation</h3>
+                                    <Label className="block text-sm font-semibold text-slate-900 dark:text-white mb-3">
+                                        Score (0-{maxScore}) <span className="text-red-500 ml-0.5">*</span>
                                     </Label>
                                     <div className="flex items-center gap-3">
                                         <div className="flex-1">
@@ -201,7 +203,7 @@ export const SoloGradingModal = ({
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4" /> Save Grade
+                                        <CheckCircle className="w-4 h-4" /> Submit Grade
                                     </span>
                                 )}
                             </Button>

@@ -50,7 +50,7 @@ export class StudentEvaluationService {
    */
   static async updateStudentInternalScore(
     studentId: mongoose.Types.ObjectId,
-    groupId: mongoose.Types.ObjectId,
+    groupId: mongoose.Types.ObjectId | null,
     component: 'cla1' | 'cla2' | 'cla3',
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
@@ -59,25 +59,51 @@ export class StudentEvaluationService {
     comments?: string
   ): Promise<IStudentEvaluation> {
     try {
-      // Find the group and validate it exists
-      const group = await Group.findById(groupId).populate('members', 'name email');
-      if (!group) {
-        throw new Error('Group not found');
-      }
+      let projectData: any;
+      let targetFacultyId: mongoose.Types.ObjectId;
 
-      if (!group.assignedProjectId || !group.assignedFacultyId) {
-        throw new Error('Group must be assigned to a project before evaluation');
-      }
+      if (groupId) {
+        // Find the group and validate it exists
+        const group = await Group.findById(groupId).populate('members', 'name email');
+        if (!group) {
+          throw new Error('Group not found');
+        }
 
-      // Check if faculty is authorized to evaluate this group
-      if (userRole === 'faculty' && !group.assignedFacultyId.equals(facultyId)) {
-        throw new Error('You are not authorized to evaluate this group');
-      }
+        if (!group.assignedProjectId || !group.assignedFacultyId) {
+          throw new Error('Group must be assigned to a project before evaluation');
+        }
 
-      // Check if student is a member of the group
-      const isMember = group.members.some((member: any) => member._id.equals(studentId));
-      if (!isMember) {
-        throw new Error('Student is not a member of this group');
+        // Check if faculty is authorized to evaluate this group
+        if (userRole === 'faculty' && !group.assignedFacultyId.equals(facultyId)) {
+          throw new Error('You are not authorized to evaluate this group');
+        }
+
+        // Check if student is a member of the group
+        const isMember = group.members.some((member: any) => member._id.equals(studentId));
+        if (!isMember) {
+          throw new Error('Student is not a member of this group');
+        }
+
+        projectData = group.assignedProjectId;
+        targetFacultyId = group.assignedFacultyId;
+      } else {
+        // Solo student - find user directly
+        const student = await User.findById(studentId).populate('assignedProjectId');
+        if (!student) {
+          throw new Error('Student not found');
+        }
+
+        if (!student.assignedProjectId || !student.assignedFacultyId) {
+          throw new Error('Student must be assigned to a project and faculty before evaluation');
+        }
+
+        // Check if faculty is authorized to evaluate this student
+        if (userRole === 'faculty' && !student.assignedFacultyId.equals(facultyId)) {
+          throw new Error('You are not authorized to evaluate this student');
+        }
+
+        projectData = student.assignedProjectId;
+        targetFacultyId = student.assignedFacultyId;
       }
 
       // Validate score ranges based on component
@@ -91,8 +117,8 @@ export class StudentEvaluationService {
       // Find or create student evaluation record for this specific assessment type
       let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
-        groupId: groupId,
-        projectId: group.assignedProjectId,
+        groupId: groupId || { $exists: false },
+        projectId: projectData,
         assessmentType: assessmentType
       });
 
@@ -100,9 +126,9 @@ export class StudentEvaluationService {
         // Create new evaluation record for this assessment type
         evaluation = new StudentEvaluation({
           studentId: studentId,
-          groupId: groupId,
-          projectId: group.assignedProjectId,
-          facultyId: group.assignedFacultyId,
+          groupId: groupId || undefined,
+          projectId: projectData,
+          facultyId: targetFacultyId,
           assessmentType: assessmentType,
           internal: {
             cla1: { conduct: 0, convert: 0, comments: '' },
@@ -133,7 +159,7 @@ export class StudentEvaluationService {
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
-      logger.info(`${component.toUpperCase()} score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
+      logger.info(`${component.toUpperCase()} score updated for student ${studentId}${groupId ? ` in group ${groupId}` : ' (Solo)'}: ${conductScore}${comments ? ' with comments' : ''}`);
 
       const populatedEvaluation = await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')
@@ -154,21 +180,42 @@ export class StudentEvaluationService {
    */
   static async updateStudentExternalScore(
     studentId: mongoose.Types.ObjectId,
-    groupId: mongoose.Types.ObjectId,
+    groupId: mongoose.Types.ObjectId | null,
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
     userRole: string,
     comments?: string
   ): Promise<IStudentEvaluation> {
     try {
-      // Find the group and validate it exists
-      const group = await Group.findById(groupId);
-      if (!group) {
-        throw new Error('Group not found');
-      }
+      let projectData: any;
+      let targetFacultyId: mongoose.Types.ObjectId;
 
-      if (!group.assignedProjectId || !group.assignedFacultyId) {
-        throw new Error('Group must be assigned to a project before evaluation');
+      if (groupId) {
+        // Find the group and validate it exists
+        const group = await Group.findById(groupId);
+        if (!group) {
+          throw new Error('Group not found');
+        }
+
+        if (!group.assignedProjectId || !group.assignedFacultyId) {
+          throw new Error('Group must be assigned to a project before evaluation');
+        }
+
+        projectData = group.assignedProjectId;
+        targetFacultyId = group.assignedFacultyId;
+      } else {
+        // Solo student
+        const student = await User.findById(studentId);
+        if (!student) {
+          throw new Error('Student not found');
+        }
+
+        if (!student.assignedProjectId || !student.assignedFacultyId) {
+          throw new Error('Student must be assigned to a project and faculty before evaluation');
+        }
+
+        projectData = student.assignedProjectId;
+        targetFacultyId = student.assignedFacultyId;
       }
 
       // Validate score range
@@ -179,8 +226,8 @@ export class StudentEvaluationService {
       // Find evaluation record for External assessment type
       const evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
-        groupId: groupId,
-        projectId: group.assignedProjectId,
+        groupId: groupId || { $exists: false },
+        projectId: projectData,
         assessmentType: 'External'
       });
 
@@ -209,7 +256,7 @@ export class StudentEvaluationService {
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
-      logger.info(`External score updated for student ${studentId} in group ${group.groupCode}: ${conductScore}${comments ? ' with comments' : ''}`);
+      logger.info(`External score updated for student ${studentId}${groupId ? ` in group ${groupId}` : ' (Solo)'}: ${conductScore}${comments ? ' with comments' : ''}`);
 
       const populatedEvaluation = await StudentEvaluation.findById(evaluation._id)
         .populate('studentId', 'name email studentId')
@@ -434,7 +481,11 @@ export class StudentEvaluationService {
           { studentId: { $in: studentIds } } // Students assigned to this faculty
         ]
       })
-        .populate('studentId', 'name email studentId assignedFacultyId')
+        .populate('studentId', 'name email studentId assignedFacultyId assignedProjectId')
+        .populate({
+          path: 'studentId',
+          populate: { path: 'assignedProjectId' }
+        })
         .populate('projectId', 'title projectId type brief')
         .populate('submittedBy', 'name email')
         .sort({ submittedAt: -1 });

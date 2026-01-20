@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Label, Input, Textarea, Badge, NumericStepper } from "../../../components/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Label, Input, Textarea, Badge, NumericStepper, Separator } from "../../../components/ui";
 import { Github, FileText, Presentation, ExternalLink, Calendar, CheckCircle, AlertCircle, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -69,17 +69,15 @@ export const GroupGradingModal = ({
 
     if (!submission) return null;
 
-    // Validation: Check if all entered grades are valid
+    // Validation: Check if all students have a grade entered and if they are valid
+    const allStudentsGraded = submission.students?.every((s: any) => studentGrades[s.studentId] !== '');
     const areAllGradesValid = Object.values(studentGrades).every(g => {
-        if (g === '') return true; // Allow empty (will be treated as 0 or skipped depending on backend, but here we enforce non-empty check separately if needed)
+        if (g === '') return false; // Enforce filled grades
         const num = parseFloat(g);
         return !isNaN(num) && num >= 0 && num <= maxScore;
     });
 
-    // Check if at least one grade is entered? Or require all? 
-    // For group grading, usually we Grade All.
-    // Let's assume we want to grade everyone if we are submitting.
-    const hasAnyGrade = Object.values(studentGrades).some(g => g !== '');
+    const isReadyToSubmit = allStudentsGraded && areAllGradesValid;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -89,9 +87,9 @@ export const GroupGradingModal = ({
                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
                     <div className="flex items-start justify-between">
                         <div>
-                            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3 pr-12">
                                 {submission.groupId ? `Group ${submission.groupId.groupCode}` : 'Group Submission'}
-                                <Badge variant="secondary" className="font-normal text-xs flex items-center gap-1">
+                                <Badge variant="secondary" className="font-normal text-xs flex items-center gap-1 bg-slate-100 text-slate-600 border-slate-200">
                                     <Users className="w-3 h-3" /> {submission.students?.length} Members
                                 </Badge>
                             </DialogTitle>
@@ -100,11 +98,11 @@ export const GroupGradingModal = ({
                                 Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
                             </div>
                         </div>
-                        <div className="flex flex-col items-end">
+                        <div className="flex flex-col items-end pr-10">
                             <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 mb-1">
                                 {assessmentType} - Group Grading
                             </Badge>
-                            <span className="text-xs text-slate-400">Max Score: {maxScore}</span>
+                            <span className="text-xs text-slate-400 font-medium tracking-tight">Max Score: {maxScore}</span>
                         </div>
                     </div>
                 </div>
@@ -114,9 +112,10 @@ export const GroupGradingModal = ({
                     <div className="w-1/3 p-6 overflow-y-auto border-r border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Project Details</h3>
-                                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1">{submission.projectTitle || "Project Title"}</h4>
+                                <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4">Project Details</h3>
+                                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-all hover:shadow-md">
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1.5 leading-snug">{submission.projectTitle || "Project Title"}</h4>
+                                    <Separator className="my-4 opacity-50" />
                                     <div className="flex flex-wrap gap-2 mt-3">
                                         {submission.githubLink && (
                                             <a href={submission.githubLink} target="_blank" rel="noopener noreferrer"
@@ -228,7 +227,7 @@ export const GroupGradingModal = ({
                         <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                             <Button
                                 onClick={handleSave}
-                                disabled={!areAllGradesValid || !hasAnyGrade || isSubmitting}
+                                disabled={!isReadyToSubmit || isSubmitting}
                                 className="w-full h-11 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none"
                             >
                                 {isSubmitting ? (
@@ -238,7 +237,7 @@ export const GroupGradingModal = ({
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4" /> Save Group Grades
+                                        <CheckCircle className="w-4 h-4" /> Submit Grades
                                     </span>
                                 )}
                             </Button>
