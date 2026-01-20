@@ -222,9 +222,9 @@ export function AssessmentPage() {
             submissionType: 'solo',
             // Map solo student fields to match expected format
             assessmentType: submission.assessmentType || submission.assessmentTitle || 'CLA-1',
-            githubLink: submission.githubUrl || submission.githubLink,
-            reportUrl: submission.reportFile?.url || (submission.files?.find((f: any) => f.type?.includes('pdf'))?.url),
-            pptUrl: submission.presentationFile?.url || submission.presentationUrl || (submission.files?.find((f: any) => f.type?.includes('presentation') || f.type?.includes('powerpoint'))?.url),
+            githubLink: submission.githubLink || submission.githubUrl,
+            reportUrl: submission.reportUrl || submission.reportFile?.url || (submission.files?.find((f: any) => f.type?.includes('pdf'))?.url),
+            pptUrl: submission.pptUrl || submission.presentationFile?.url || submission.presentationUrl || (submission.files?.find((f: any) => f.type?.includes('presentation') || f.type?.includes('powerpoint'))?.url),
             submittedAt: submission.submittedAt || submission.createdAt,
             // Check if submission is actually graded
             isGraded: submission.isGraded || !!submission.facultyGrade || !!submission.facultyComments || submission.status === 'graded',

@@ -143,6 +143,51 @@ export function FacultyAssessmentPage() {
     }
   };
 
+  // Helper function to get project info from submission
+  const getProjectInfo = (submission: Submission) => {
+    // Try to get project info from group's assignedProjectId first
+    if (submission.groupId?.assignedProjectId) {
+      return {
+        title: submission.groupId.assignedProjectId.title,
+        type: submission.groupId.assignedProjectId.type,
+        projectId: submission.groupId.assignedProjectId.projectId,
+        brief: submission.groupId.assignedProjectId.brief,
+        facultyName: submission.groupId.assignedProjectId.facultyName
+      };
+    }
+
+    // Try to get project info from student's assignedProjectId
+    if (submission.studentId?.assignedProjectId) {
+      return {
+        title: submission.studentId.assignedProjectId.title,
+        type: submission.studentId.assignedProjectId.type,
+        projectId: submission.studentId.assignedProjectId.projectId,
+        brief: submission.studentId.assignedProjectId.brief,
+        facultyName: submission.studentId.assignedProjectId.facultyName
+      };
+    }
+
+    // Fallback to projectId if available
+    if (submission.projectId) {
+      return {
+        title: submission.projectId.title,
+        type: submission.projectId.projectType,
+        projectId: 'N/A',
+        brief: 'No description available',
+        facultyName: 'Unknown Faculty'
+      };
+    }
+
+    // Default fallback
+    return {
+      title: 'Unknown Project',
+      type: 'Unknown',
+      projectId: 'N/A',
+      brief: 'No project assigned',
+      facultyName: 'Unknown Faculty'
+    };
+  };
+
   // Check if any assessment window is open for the project types the faculty likely has
   const canGrade = currentAssessmentType && submissions.length > 0 && submissions.some(sub => {
     const projectInfo = getProjectInfo(sub);
@@ -206,49 +251,7 @@ export function FacultyAssessmentPage() {
     }
   };
 
-  const getProjectInfo = (submission: Submission) => {
-    // Try to get project info from group's assignedProjectId first
-    if (submission.groupId?.assignedProjectId) {
-      return {
-        title: submission.groupId.assignedProjectId.title,
-        type: submission.groupId.assignedProjectId.type,
-        projectId: submission.groupId.assignedProjectId.projectId,
-        brief: submission.groupId.assignedProjectId.brief,
-        facultyName: submission.groupId.assignedProjectId.facultyName
-      };
-    }
 
-    // Try to get project info from student's assignedProjectId
-    if (submission.studentId?.assignedProjectId) {
-      return {
-        title: submission.studentId.assignedProjectId.title,
-        type: submission.studentId.assignedProjectId.type,
-        projectId: submission.studentId.assignedProjectId.projectId,
-        brief: submission.studentId.assignedProjectId.brief,
-        facultyName: submission.studentId.assignedProjectId.facultyName
-      };
-    }
-
-    // Fallback to projectId if available
-    if (submission.projectId) {
-      return {
-        title: submission.projectId.title,
-        type: submission.projectId.projectType,
-        projectId: 'N/A',
-        brief: 'No description available',
-        facultyName: 'Unknown Faculty'
-      };
-    }
-
-    // Default fallback
-    return {
-      title: 'Unknown Project',
-      type: 'Unknown',
-      projectId: 'N/A',
-      brief: 'No project assigned',
-      facultyName: 'Unknown Faculty'
-    };
-  };
   const handleGradeChange = async (logId: string, grade: number) => {
     if (grade < 0 || grade > 5) {
       toast.error('Grade must be between 0 and 5');
