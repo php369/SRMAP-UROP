@@ -116,8 +116,8 @@ export function FacultyAssessmentPage() {
   });
 
   // Modal & Confirmation States - now include full data for execution
-  const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string; student: any; submission: any } | null>(null);
-  const [confirmGroup, setConfirmGroup] = useState<{ isOpen: boolean; grades: Record<string, string>; comments: string; submission: any; students: any[] } | null>(null);
+  const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string; student: any; submission: any; assessmentType: string } | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<{ isOpen: boolean; grades: Record<string, string>; comments: string; submission: any; students: any[]; assessmentType: string } | null>(null);
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Graded'>('All');
@@ -416,13 +416,14 @@ export function FacultyAssessmentPage() {
       grade: gradeVal,
       comments,
       student: selectedStudent,
-      submission: selectedSubmission
+      submission: selectedSubmission,
+      assessmentType: currentAssessmentType || 'CLA-1'
     });
   };
 
   const executeSaveSolo = async () => {
     if (!confirmSolo) return;
-    const { grade: gradeVal, comments, student, submission } = confirmSolo;
+    const { grade: gradeVal, comments, student, submission, assessmentType } = confirmSolo;
 
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
@@ -481,13 +482,14 @@ export function FacultyAssessmentPage() {
       grades,
       comments,
       submission: selectedSubmission,
-      students: selectedSubmission.students
+      students: selectedSubmission.students,
+      assessmentType: currentAssessmentType || 'CLA-1'
     });
   };
 
   const executeSaveGroup = async () => {
     if (!confirmGroup) return;
-    const { grades, comments, submission, students: studentsToGrade } = confirmGroup;
+    const { grades, comments, submission, students: studentsToGrade, assessmentType } = confirmGroup;
 
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
