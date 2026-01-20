@@ -428,7 +428,7 @@ export class StudentEvaluationService {
           // Get student evaluations for this group
           const studentEvaluations = await StudentEvaluation.find({
             groupId: group._id,
-            projectId: group.assignedProjectId
+            projectId: (group.assignedProjectId as any)._id || group.assignedProjectId
           }).populate('studentId', 'name email studentId');
 
           // Map existing evaluations to students
@@ -512,7 +512,7 @@ export class StudentEvaluationService {
         // Get student evaluation for this solo student
         const studentEvaluation = await StudentEvaluation.findOne({
           studentId: submission.studentId._id,
-          projectId: submission.projectId,
+          projectId: (submission.projectId as any)._id || submission.projectId,
           assessmentType: submission.assessmentType
         }).populate('studentId', 'name email studentId');
 
