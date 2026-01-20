@@ -55,7 +55,7 @@ const StudentEvaluationSchema = new Schema<IStudentEvaluation>({
   groupId: {
     type: Schema.Types.ObjectId,
     ref: 'Group',
-    required: true
+    required: false
   },
   projectId: {
     type: Schema.Types.ObjectId,
