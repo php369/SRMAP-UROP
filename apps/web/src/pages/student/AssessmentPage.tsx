@@ -587,7 +587,7 @@ export function AssessmentPage() {
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-2">
                         <Award className="w-4 h-4 text-emerald-500" /> Assessment Journey
                       </h4>
-                      <div className="bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 p-2 overflow-x-auto">
+                      <div className="bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 p-2 overflow-x-auto overflow-y-hidden">
                         <TimelineStatus evaluation={submission.evaluation} />
                       </div>
                     </div>

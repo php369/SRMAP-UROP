@@ -38,7 +38,7 @@ export const TimelineStatus = ({ evaluation }: TimelineStatusProps) => {
     ];
 
     return (
-        <div className="w-full py-6">
+        <div className="w-full pt-6 pb-14 min-h-[130px]">
             <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
                 {/* Connection Lines Background */}
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 dark:bg-slate-800 -z-10 rounded-full" />
