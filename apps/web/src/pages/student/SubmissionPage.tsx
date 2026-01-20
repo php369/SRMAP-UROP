@@ -32,6 +32,7 @@ export function SubmissionPage() {
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
   const [lastSubmissionWindow, setLastSubmissionWindow] = useState<any>(null);
+  const [activeAssessmentWindow, setActiveAssessmentWindow] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     githubLink: '',
@@ -106,8 +107,19 @@ export function SubmissionPage() {
             console.log('ℹ️ Found recently ended window:', recentlyEndedWindow.assessmentType);
             setLastSubmissionWindow(recentlyEndedWindow);
             setCurrentAssessmentType(recentlyEndedWindow.assessmentType as any);
+
+            // Check if there is an active assessment window for this assessment type
+            const assessmentWindow = windows.find(window =>
+              window.windowType === 'assessment' &&
+              window.projectType === (projectType as 'IDP' | 'UROP' | 'CAPSTONE') &&
+              window.assessmentType === recentlyEndedWindow.assessmentType &&
+              new Date(window.startDate) <= now &&
+              new Date(window.endDate) >= now
+            );
+            setActiveAssessmentWindow(assessmentWindow || null);
           } else {
             setCurrentAssessmentType(null);
+            setActiveAssessmentWindow(null);
           }
 
           setInitializing(false);
@@ -450,7 +462,7 @@ export function SubmissionPage() {
   }
 
   if (!submissionWindow) {
-    const isRecentlyEnded = !!lastSubmissionWindow;
+    const isRecentlyEnded = !!lastSubmissionWindow && !!activeAssessmentWindow;
 
     return (
       <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-10rem)] p-6">

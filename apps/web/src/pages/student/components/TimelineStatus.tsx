@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { CheckCircle, Circle, Clock, ArrowRight } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
@@ -37,64 +38,58 @@ export const TimelineStatus = ({ evaluation }: TimelineStatusProps) => {
         }
     ];
 
+    const completedCount = steps.filter(step => step.data?.conduct > 0).length;
+    // Calculate progress percentage: 0% at first step, 100% at last step
+    const progressWidth = steps.length > 1 && completedCount > 0
+        ? ((completedCount - 1) / (steps.length - 1)) * 100
+        : 0;
+
     return (
-        <div className="w-full pt-6 pb-14 min-h-[130px]">
-            <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
-                {/* Connection Lines Background */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 dark:bg-slate-800 -z-10 rounded-full" />
+        <div className="w-full pt-4 pb-12 min-h-[100px] isolate">
+            <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto px-8">
+                {/* Background Line */}
+                <div className="absolute left-[52px] right-[52px] top-5 -translate-y-1/2 h-1 bg-slate-100 dark:bg-slate-800 z-10 rounded-full" />
+
+                {/* Progress Fill Line (Framer Motion) */}
+                {completedCount > 0 && (
+                    <motion.div
+                        className="absolute left-[52px] top-5 -translate-y-1/2 h-1.5 bg-emerald-500 z-20 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `calc((100% - 104px) * ${progressWidth / 100})` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                    />
+                )}
 
                 {steps.map((step, index) => {
                     const isCompleted = step.data?.conduct > 0;
-                    const isPending = !isCompleted;
-                    // You could add logic for "in progress" or "current" based on dates if available
 
                     return (
-                        <div key={step.id} className="relative flex flex-col items-center group">
+                        <div key={step.id} className="relative flex flex-col items-center">
                             {/* Step Circle */}
                             <div
                                 className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-300 z-10 bg-white dark:bg-slate-900",
+                                    "w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 z-30 bg-white dark:bg-slate-900 shadow-sm",
                                     isCompleted
-                                        ? "border-emerald-500 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                        ? "border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                                         : "border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600"
                                 )}
                             >
                                 {isCompleted ? (
-                                    <CheckCircle className="w-5 h-5" strokeWidth={3} />
+                                    <CheckCircle className="w-5 h-5 animate-in zoom-in-50 duration-500" strokeWidth={3} />
                                 ) : (
                                     <Circle className="w-5 h-5" />
                                 )}
                             </div>
 
-                            {/* Label & Status */}
-                            <div className="absolute top-12 flex flex-col items-center w-32 text-center">
+                            {/* Label */}
+                            <div className="absolute top-12 flex flex-col items-center w-32 text-center pointer-events-none">
                                 <span className={cn(
-                                    "text-sm font-bold transition-colors mb-0.5",
+                                    "text-xs font-bold transition-colors tracking-tight",
                                     isCompleted ? "text-slate-900 dark:text-white" : "text-slate-400"
                                 )}>
                                     {step.label}
                                 </span>
-
-                                {isCompleted ? (
-                                    <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/20">
-                                        Graded
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
-                                        Pending
-                                    </span>
-                                )}
                             </div>
-
-                            {/* Progress Line Color Overlay (for completed steps) */}
-                            {index < steps.length - 1 && steps[index].data?.conduct > 0 && steps[index + 1].data?.conduct > 0 && (
-                                <div className="absolute left-[50%] top-1/2 -translate-y-1/2 h-1 bg-emerald-500 w-[calc(100%_+_2rem)] -z-10 transition-all duration-500 delay-300"
-                                    style={{
-                                        width: `calc((100vw - 4rem) / ${steps.length - 1})`,
-                                        maxWidth: '250px' // Adjust based on container
-                                    }}
-                                />
-                            )}
                         </div>
                     );
                 })}

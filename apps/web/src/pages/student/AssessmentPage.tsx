@@ -20,6 +20,7 @@ export function AssessmentPage() {
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
   const { windows, loading: windowsLoading } = useWindowStatus();
+  const [showHistory, setShowHistory] = useState(false);
 
   const activeAssessmentType = eligibleProjectType
     ? getCurrentAssessmentType(windows, eligibleProjectType as any)
@@ -321,288 +322,312 @@ export function AssessmentPage() {
     );
   }
 
+  const evaluationSubmission = submissions.find(s => s.submissionType === 'evaluation');
+  const mainEvaluation = evaluationSubmission?.evaluation;
+
   return (
-    <div className="p-6 pb-8">
+    <div className="p-6 pb-8 pt-4">
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-4xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
-            Assessment
-          </h1>
-          <p className="text-slate-500 font-medium">
-            View your submissions and grades
-          </p>
-        </motion.div>
-
-        {/* Submissions */}
-        <div className="grid gap-6">
-          {submissions.length === 0 ? (
-            <div className="py-12">
-              <AssessmentEmptyState
-                title="No Submissions Yet"
-                description="Your submitted work and evaluations will appear here once available."
-                icon="file-text"
-                theme="amber"
-                subtitle="DASHBOARD"
-              />
+        {/* Assessment Journey Timeline - Simplified at top (Shown when not in history view) */}
+        {!showHistory && mainEvaluation && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex justify-center"
+          >
+            <div className="w-full max-w-4xl px-4">
+              <TimelineStatus evaluation={mainEvaluation} />
             </div>
-          ) : (
-            submissions.map((submission) => (
+          </motion.div>
+        )}
 
-              <GlassCard
-                key={submission._id}
-                className="overflow-hidden"
-              >
-                {/* Header Section */}
-                <div className="bg-amber-50/50 dark:bg-amber-500/5 p-6 border-b border-amber-100 dark:border-amber-500/10">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                        {submission.submissionType === 'evaluation' ? (
-                          <Award className="w-6 h-6 text-amber-500" />
-                        ) : submission.submissionType === 'group' ? (
-                          <Users className="w-6 h-6 text-amber-500" />
-                        ) : (
-                          <FileText className="w-6 h-6 text-amber-500" />
-                        )}
-                        {submission.assessmentType} Assessment
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
-                          <Clock className="w-3.5 h-3.5" />
-                          {submission.submissionType === 'evaluation' ?
-                            (submission.isGradeReleased ? 'Released: ' : 'Created: ') :
-                            'Submitted: '}
-                          <span className="text-slate-900 dark:text-white font-bold ml-1">
-                            {new Date(submission.submittedAt).toLocaleDateString()}
-                          </span>
-                        </span>
-                        {(submission.groupId?.groupCode || submission.groupCode) && (
-                          <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
-                            Group: {submission.groupId?.groupCode || submission.groupCode}
-                          </span>
-                        )}
-                        {submission.submissionType === 'solo' && (
-                          <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
-                            Solo Submission
-                          </span>
-                        )}
-                        {submission.projectTitle && (
-                          <span className="text-slate-500">
-                            Project: {submission.projectTitle}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {submission.isGradeReleased || submission.gradeReleased ? (
-                        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Graded</span>
-                        </div>
-                      ) : submission.isComplete ? (
-                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Awaiting Release</span>
-                        </div>
-                      ) : submission.submissionType === 'evaluation' && submission.isGraded ? (
-                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
-                          <Clock className="w-5 h-5" />
-                          <span className="font-medium">Partially Graded</span>
-                        </div>
-                      ) : submission.isGraded || submission.facultyComments || submission.facultyGrade || (() => {
-                        // Check if this legacy submission has been graded in the evaluation system
-                        const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
-                        if (evaluation && submission.submissionType !== 'evaluation') {
-                          if (submission.assessmentType === 'CLA-1' && evaluation.internal?.cla1?.conduct > 0) return true;
-                          if (submission.assessmentType === 'CLA-2' && evaluation.internal?.cla2?.conduct > 0) return true;
-                          if (submission.assessmentType === 'CLA-3' && evaluation.internal?.cla3?.conduct > 0) return true;
-                          if (submission.assessmentType === 'External' && evaluation.external?.reportPresentation?.conduct > 0) return true;
-                        }
-                        return false;
-                      })() ? (
-                        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Graded</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-500/5 px-3 py-2 rounded-full border border-amber-100 dark:border-amber-500/10">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">Under Review</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+        {/* Active Window / Empty State (Shown when not in history view) */}
+        {!activeAssessmentType && !showHistory && (
+          <div className="mb-12 flex justify-center">
+            <AssessmentEmptyState
+              title="Assessment Window Closed"
+              description="There are currently no active assessment windows. You can still review your past submissions and feedback below."
+              icon="clock"
+              theme="amber"
+              subtitle="STATUS"
+              action={
+                <div className="flex justify-center w-full">
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="flex items-center gap-2 px-8 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                  >
+                    <ArrowRight className="w-4 h-4 text-amber-500" />
+                    View Past Submissions & Feedback
+                  </button>
                 </div>
+              }
+            />
+          </div>
+        )}
 
-                {/* Content Section */}
-                <div className="p-6">
-                  {/* Submission Files - Enhanced */}
-                  {submission.submissionType !== 'evaluation' && (
-                    <div className="mb-8">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-amber-500" /> Submitted Artifacts
-                      </h4>
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* GitHub Repository */}
-                        <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all relative overflow-hidden">
-                          <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-amber-500 transition-colors" />
-                          <div className="flex items-start justify-between mb-4 pl-3">
-                            <div>
-                              <h5 className="font-bold text-slate-800 dark:text-slate-200">GitHub Repo</h5>
-                              <p className="text-xs text-slate-500 font-medium mt-0.5">Source Code</p>
-                            </div>
-                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg group-hover:scale-110 transition-transform">
-                              <Github className="w-5 h-5 text-slate-900 dark:text-white" />
-                            </div>
-                          </div>
-                          <div className="pl-3">
-                            <a
-                              href={submission.githubLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-all"
-                            >
-                              View Repository <ArrowRight className="w-4 h-4 ml-2" />
-                            </a>
-                          </div>
-                        </div>
+        {/* Submissions Section (Sub-page View) */}
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <button
+                onClick={() => setShowHistory(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm"
+              >
+                <ArrowRight className="w-4 h-4 rotate-180" />
+                Back to Journey
+              </button>
 
-                        {/* Report PDF */}
-                        {submission.reportUrl && (
-                          <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-500/50 hover:shadow-md transition-all relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-red-500 transition-colors" />
-                            <div className="flex items-start justify-between mb-4 pl-3">
-                              <div>
-                                <h5 className="font-bold text-slate-800 dark:text-slate-200">Project Report</h5>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">PDF Document</p>
-                              </div>
-                              <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg group-hover:scale-110 transition-transform">
-                                <FileText className="w-5 h-5 text-red-600 dark:text-red-500" />
-                              </div>
-                            </div>
-                            <div className="pl-3 grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => openPDFModal(submission.reportUrl, 'Project Report')}
-                                className="flex items-center justify-center py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-semibold rounded-lg transition-colors"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => downloadFile(submission.reportUrl, 'project-report.pdf')}
-                                className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
-                              >
-                                Download
-                              </button>
-                            </div>
-                          </div>
-                        )}
+              <div className="flex items-center gap-3 flex-1">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 whitespace-nowrap">
+                  <FileText className="w-5 h-5 text-amber-500" /> Submission History
+                </h2>
+                <div className="h-px w-full bg-slate-100 dark:bg-slate-800" />
+              </div>
+            </div>
 
-                        {/* Presentation */}
-                        {submission.pptUrl && (
-                          <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500/50 hover:shadow-md transition-all relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 transition-colors" />
-                            <div className="flex items-start justify-between mb-4 pl-3">
-                              <div>
-                                <h5 className="font-bold text-slate-800 dark:text-slate-200">Presentation</h5>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">Slides Deck</p>
-                              </div>
-                              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg group-hover:scale-110 transition-transform">
-                                <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-500" />
-                              </div>
-                            </div>
-                            <div className="pl-3 grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => openPDFModal(submission.pptUrl, 'Presentation')}
-                                className="flex items-center justify-center py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg transition-colors"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => downloadFile(submission.pptUrl, 'presentation.pdf')}
-                                className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
-                              >
-                                Download
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Faculty Feedback Section - Show for non-evaluation submissions when faculty provides feedback */}
-                  {submission.submissionType !== 'evaluation' && (
-                    <div className="mb-6">
-                      {/* Check if there's corresponding evaluation feedback for this assessment type */}
-                      {submissions.some(s => s.submissionType === 'evaluation' && s.evaluation) && (() => {
-                        const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
-                        let feedbackComment = '';
-                        let feedbackTitle = '';
-
-                        // Match assessment type to evaluation component
-                        if (submission.assessmentType === 'CLA-1' && evaluation?.internal?.cla1?.comments) {
-                          feedbackComment = evaluation.internal.cla1.comments;
-                          feedbackTitle = 'CLA-1 Assessment Feedback';
-                        } else if (submission.assessmentType === 'CLA-2' && evaluation?.internal?.cla2?.comments) {
-                          feedbackComment = evaluation.internal.cla2.comments;
-                          feedbackTitle = 'CLA-2 Assessment Feedback';
-                        } else if (submission.assessmentType === 'CLA-3' && evaluation?.internal?.cla3?.comments) {
-                          feedbackComment = evaluation.internal.cla3.comments;
-                          feedbackTitle = 'CLA-3 Assessment Feedback';
-                        } else if (submission.assessmentType === 'External' && evaluation?.external?.reportPresentation?.comments) {
-                          feedbackComment = evaluation.external.reportPresentation.comments;
-                          feedbackTitle = 'External Evaluation Feedback';
-                        } else if (submission.facultyComments) {
-                          // Fallback to legacy faculty comments
-                          feedbackComment = submission.facultyComments;
-                          feedbackTitle = `${submission.assessmentType} Assessment Feedback`;
-                        }
-
-                        if (feedbackComment) {
-                          return (
-                            <div>
-                              <h4 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-amber-500" />
-                                Faculty Feedback
-                              </h4>
-                              <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border-l-4 border-amber-400">
-                                <h5 className="font-bold text-amber-700 dark:text-amber-400 mb-2 text-sm uppercase tracking-wider">{feedbackTitle}</h5>
-                                <p className="text-slate-700 dark:text-slate-300 text-sm italic">"{feedbackComment}"</p>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  )}
-
-                  {/* Assessment Journey Timeline */}
-                  {submission.evaluation && (
-                    <div className="mb-6">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <Award className="w-4 h-4 text-emerald-500" /> Assessment Journey
-                      </h4>
-                      <div className="bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 p-2 overflow-x-auto overflow-y-hidden">
-                        <TimelineStatus evaluation={submission.evaluation} />
-                      </div>
-                    </div>
-                  )}
-                  {/* Final Grade - Only show when released */}
-                  <FinalGradeCard
-                    totalScore={submission.finalGrade || submission.total || 0}
-                    isReleased={submission.isGradeReleased}
-                    className="mt-6"
+            <div className="grid gap-6">
+              {submissions.filter(s => s.submissionType !== 'evaluation').length === 0 ? (
+                <div className="py-12 text-center">
+                  <AssessmentEmptyState
+                    title="No History Found"
+                    description="No previous submission records are available for your account."
+                    icon="file-text"
+                    theme="amber"
+                    subtitle="EMPTY"
                   />
                 </div>
-              </GlassCard>
-            ))
-          )}
-        </div>
+              ) : (
+                submissions
+                  .filter(s => s.submissionType !== 'evaluation')
+                  .map((submission) => (
+                    <GlassCard
+                      key={submission._id}
+                      className="overflow-hidden"
+                    >
+                      {/* Header Section */}
+                      <div className="bg-amber-50/50 dark:bg-amber-500/5 p-6 border-b border-amber-100 dark:border-amber-500/10">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                              {submission.submissionType === 'evaluation' ? (
+                                <Award className="w-6 h-6 text-amber-500" />
+                              ) : submission.submissionType === 'group' ? (
+                                <Users className="w-6 h-6 text-amber-500" />
+                              ) : (
+                                <FileText className="w-6 h-6 text-amber-500" />
+                              )}
+                              {submission.assessmentType} Assessment
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
+                                <Clock className="w-3.5 h-3.5" />
+                                {submission.submissionType === 'evaluation' ?
+                                  (submission.isGradeReleased ? 'Released: ' : 'Created: ') :
+                                  'Submitted: '}
+                                <span className="text-slate-900 dark:text-white font-bold ml-1">
+                                  {new Date(submission.submittedAt).toLocaleDateString()}
+                                </span>
+                              </span>
+                              {(submission.groupId?.groupCode || submission.groupCode) && (
+                                <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
+                                  Group: {submission.groupId?.groupCode || submission.groupCode}
+                                </span>
+                              )}
+                              {submission.submissionType === 'solo' && (
+                                <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
+                                  Solo Submission
+                                </span>
+                              )}
+                              {submission.projectTitle && (
+                                <span className="text-slate-500">
+                                  Project: {submission.projectTitle}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {submission.isGradeReleased || submission.gradeReleased ? (
+                              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-full border border-emerald-100">
+                                <CheckCircle className="w-5 h-5" />
+                                <span className="font-medium">Graded</span>
+                              </div>
+                            ) : submission.isComplete ? (
+                              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
+                                <Clock className="w-5 h-5" />
+                                <span className="font-medium">Awaiting Release</span>
+                              </div>
+                            ) : submission.submissionType === 'evaluation' && submission.isGraded ? (
+                              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-full border border-amber-100">
+                                <Clock className="w-5 h-5" />
+                                <span className="font-medium">Partially Graded</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-500/5 px-3 py-2 rounded-full border border-amber-100 dark:border-amber-500/10">
+                                <AlertCircle className="w-5 h-5" />
+                                <span className="font-medium">Under Review</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="p-6">
+                        {/* Submission Files - Enhanced */}
+                        {submission.submissionType !== 'evaluation' && (
+                          <div className="mb-8">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-amber-500" /> Submitted Artifacts
+                            </h4>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {/* GitHub Repository */}
+                              <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-amber-500 transition-colors" />
+                                <div className="flex items-start justify-between mb-4 pl-3">
+                                  <div>
+                                    <h5 className="font-bold text-slate-800 dark:text-slate-200">GitHub Repo</h5>
+                                    <p className="text-xs text-slate-500 font-medium mt-0.5">Source Code</p>
+                                  </div>
+                                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Github className="w-5 h-5 text-slate-900 dark:text-white" />
+                                  </div>
+                                </div>
+                                <div className="pl-3">
+                                  <a
+                                    href={submission.githubLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-all"
+                                  >
+                                    View Repository <ArrowRight className="w-4 h-4 ml-2" />
+                                  </a>
+                                </div>
+                              </div>
+
+                              {/* Report PDF */}
+                              {submission.reportUrl && (
+                                <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-red-500 transition-colors" />
+                                  <div className="flex items-start justify-between mb-4 pl-3">
+                                    <div>
+                                      <h5 className="font-bold text-slate-800 dark:text-slate-200">Project Report</h5>
+                                      <p className="text-xs text-slate-500 font-medium mt-0.5">PDF Document</p>
+                                    </div>
+                                    <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg group-hover:scale-110 transition-transform">
+                                      <FileText className="w-5 h-5 text-red-600 dark:text-red-500" />
+                                    </div>
+                                  </div>
+                                  <div className="pl-3 grid grid-cols-2 gap-2">
+                                    <button
+                                      onClick={() => openPDFModal(submission.reportUrl, 'Project Report')}
+                                      className="flex items-center justify-center py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-semibold rounded-lg transition-colors"
+                                    >
+                                      View
+                                    </button>
+                                    <button
+                                      onClick={() => downloadFile(submission.reportUrl, 'project-report.pdf')}
+                                      className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      Download
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Presentation */}
+                              {submission.pptUrl && (
+                                <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 transition-colors" />
+                                  <div className="flex items-start justify-between mb-4 pl-3">
+                                    <div>
+                                      <h5 className="font-bold text-slate-800 dark:text-slate-200">Presentation</h5>
+                                      <p className="text-xs text-slate-500 font-medium mt-0.5">Slides Deck</p>
+                                    </div>
+                                    <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg group-hover:scale-110 transition-transform">
+                                      <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-500" />
+                                    </div>
+                                  </div>
+                                  <div className="pl-3 grid grid-cols-2 gap-2">
+                                    <button
+                                      onClick={() => openPDFModal(submission.pptUrl, 'Presentation')}
+                                      className="flex items-center justify-center py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg transition-colors"
+                                    >
+                                      View
+                                    </button>
+                                    <button
+                                      onClick={() => downloadFile(submission.pptUrl, 'presentation.pdf')}
+                                      className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                      Download
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Faculty Feedback Section */}
+                        {submission.submissionType !== 'evaluation' && (
+                          <div className="mb-6">
+                            {submissions.some(s => s.submissionType === 'evaluation' && s.evaluation) && (() => {
+                              const evaluation = submissions.find(s => s.submissionType === 'evaluation')?.evaluation;
+                              let feedbackComment = '';
+                              let feedbackTitle = '';
+
+                              if (submission.assessmentType === 'CLA-1' && evaluation?.internal?.cla1?.comments) {
+                                feedbackComment = evaluation.internal.cla1.comments;
+                                feedbackTitle = 'CLA-1 Assessment Feedback';
+                              } else if (submission.assessmentType === 'CLA-2' && evaluation?.internal?.cla2?.comments) {
+                                feedbackComment = evaluation.internal.cla2.comments;
+                                feedbackTitle = 'CLA-2 Assessment Feedback';
+                              } else if (submission.assessmentType === 'CLA-3' && evaluation?.internal?.cla3?.comments) {
+                                feedbackComment = evaluation.internal.cla3.comments;
+                                feedbackTitle = 'CLA-3 Assessment Feedback';
+                              } else if (submission.assessmentType === 'External' && evaluation?.external?.reportPresentation?.comments) {
+                                feedbackComment = evaluation.external.reportPresentation.comments;
+                                feedbackTitle = 'External Evaluation Feedback';
+                              } else if (submission.facultyComments) {
+                                feedbackComment = submission.facultyComments;
+                                feedbackTitle = `${submission.assessmentType} Assessment Feedback`;
+                              }
+
+                              if (feedbackComment) {
+                                return (
+                                  <div>
+                                    <h4 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                      <MessageSquare className="w-5 h-5 text-amber-500" />
+                                      Faculty Feedback
+                                    </h4>
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border-l-4 border-amber-400">
+                                      <h5 className="font-bold text-amber-700 dark:text-amber-400 mb-2 text-sm uppercase tracking-wider">{feedbackTitle}</h5>
+                                      <p className="text-slate-700 dark:text-slate-300 text-sm italic">"{feedbackComment}"</p>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        )}
+
+                        {/* Final Grade */}
+                        <FinalGradeCard
+                          totalScore={submission.finalGrade || submission.total || 0}
+                          isReleased={submission.isGradeReleased}
+                          className="mt-2"
+                        />
+                      </div>
+                    </GlassCard>
+                  ))
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
