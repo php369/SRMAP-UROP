@@ -5,7 +5,6 @@ import { Video, Calendar, Users, CheckCircle, Clock, XCircle, FileText, MapPin, 
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
-import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage';
 
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
