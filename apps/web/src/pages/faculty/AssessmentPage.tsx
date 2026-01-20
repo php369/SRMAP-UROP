@@ -115,9 +115,9 @@ export function FacultyAssessmentPage() {
     comments: ''
   });
 
-  // Modal & Confirmation States
-  const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string } | null>(null);
-  const [confirmGroup, setConfirmGroup] = useState<{ isOpen: boolean; grades: Record<string, string>; comments: string } | null>(null);
+  // Modal & Confirmation States - now include full data for execution
+  const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string; student: any; submission: any } | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<{ isOpen: boolean; grades: Record<string, string>; comments: string; submission: any; students: any[] } | null>(null);
 
   // Filter states
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Graded'>('All');
@@ -159,6 +159,17 @@ export function FacultyAssessmentPage() {
 
   // Helper function to get project info from submission
   const getProjectInfo = (submission: Submission) => {
+    // Use projectTitle from backend if available (set for both solo and group submissions)
+    if ((submission as any).projectTitle && (submission as any).projectTitle !== 'Unknown Project') {
+      return {
+        title: (submission as any).projectTitle,
+        type: submission.groupId?.assignedProjectId?.type || submission.studentId?.assignedProjectId?.type || submission.projectId?.projectType || 'Unknown',
+        projectId: submission.groupId?.assignedProjectId?.projectId || submission.studentId?.assignedProjectId?.projectId || 'N/A',
+        brief: submission.groupId?.assignedProjectId?.brief || submission.studentId?.assignedProjectId?.brief || 'No description available',
+        facultyName: submission.groupId?.assignedProjectId?.facultyName || submission.studentId?.assignedProjectId?.facultyName || 'Unknown Faculty'
+      };
+    }
+
     // Try to get project info from group's assignedProjectId first
     if (submission.groupId?.assignedProjectId) {
       return {
@@ -399,21 +410,20 @@ export function FacultyAssessmentPage() {
   const onSaveSolo = async (gradeVal: string, comments: string) => {
     if (!selectedStudent || !selectedSubmission) return;
 
-    const grade = parseFloat(gradeVal);
-    const maxScore = getMaxScore(assessmentType);
-
-    // Published Check
-    const existingEvaluation = selectedStudent.evaluation;
-    if (existingEvaluation?.isPublished) {
-      setConfirmSolo({ isOpen: true, grade: gradeVal, comments });
-      return;
-    }
-
-    setConfirmSolo({ isOpen: true, grade: gradeVal, comments });
+    // Store all data in confirmation state so it persists after modal closes
+    setConfirmSolo({
+      isOpen: true,
+      grade: gradeVal,
+      comments,
+      student: selectedStudent,
+      submission: selectedSubmission
+    });
   };
 
-  const executeSaveSolo = async (gradeVal: string, comments: string) => {
-    if (!selectedStudent || !selectedSubmission) return;
+  const executeSaveSolo = async () => {
+    if (!confirmSolo) return;
+    const { grade: gradeVal, comments, student, submission } = confirmSolo;
+
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
         assessmentType === 'CLA-2' ? 'cla2' :
@@ -426,53 +436,65 @@ export function FacultyAssessmentPage() {
       if (assessmentType === 'External') {
         endpoint = '/student-evaluations/external/score';
         payload = {
-          studentId: selectedStudent.studentId,
-          groupId: selectedSubmission?.groupId?._id,
+          studentId: student.studentId,
+          groupId: submission?.groupId?._id,
           conductScore: grade,
           comments: comments || ''
         };
       } else {
         endpoint = '/student-evaluations/internal/score';
         payload = {
-          studentId: selectedStudent.studentId,
-          groupId: selectedSubmission?.groupId?._id,
+          studentId: student.studentId,
+          groupId: submission?.groupId?._id,
           component: component,
           conductScore: grade,
+          assessmentType: assessmentType,
           comments: comments || ''
         };
       }
 
+      console.log('📤 Submitting grade:', { endpoint, payload });
       const response = await api.put(endpoint, payload);
+      console.log('📥 Response:', response);
 
       if (response.success) {
         toast.success('Grade submitted successfully');
-        fetchSubmissions();
+        setConfirmSolo(null);
+        setSelectedStudent(null);
+        setSelectedSubmission(null);
+        fetchSubmissions(currentAssessmentType);
       } else {
         throw new Error((response as any).error?.message || 'Failed to submit grade');
       }
     } catch (error: any) {
+      console.error('❌ Grade submission error:', error);
       toast.error(error.message || 'Failed to submit grade');
-      throw error;
     }
   };
 
   const onSaveGroup = async (grades: Record<string, string>, comments: string) => {
     if (!selectedSubmission?.students) return;
 
-    const maxScore = getMaxScore(assessmentType);
-    const studentsToGrade = selectedSubmission.students;
-
-    setConfirmGroup({ isOpen: true, grades, comments });
+    // Store all data in confirmation state so it persists after modal closes
+    setConfirmGroup({
+      isOpen: true,
+      grades,
+      comments,
+      submission: selectedSubmission,
+      students: selectedSubmission.students
+    });
   };
 
-  const executeSaveGroup = async (grades: Record<string, string>, comments: string) => {
-    if (!selectedSubmission?.students) return;
+  const executeSaveGroup = async () => {
+    if (!confirmGroup) return;
+    const { grades, comments, submission, students: studentsToGrade } = confirmGroup;
 
-    const studentsToGrade = selectedSubmission.students;
     try {
       const component = assessmentType === 'CLA-1' ? 'cla1' :
         assessmentType === 'CLA-2' ? 'cla2' :
           assessmentType === 'CLA-3' ? 'cla3' : 'external';
+
+      console.log('📤 Submitting group grades for', studentsToGrade.length, 'students');
 
       // Submit grades for all students
       const gradePromises = studentsToGrade.map(student => {
@@ -486,7 +508,7 @@ export function FacultyAssessmentPage() {
           endpoint = '/student-evaluations/external/score';
           payload = {
             studentId: student.studentId,
-            groupId: selectedSubmission?.groupId?._id,
+            groupId: submission?.groupId?._id,
             conductScore: grade,
             comments: comments || ''
           };
@@ -494,29 +516,35 @@ export function FacultyAssessmentPage() {
           endpoint = '/student-evaluations/internal/score';
           payload = {
             studentId: student.studentId,
-            groupId: selectedSubmission?.groupId?._id,
+            groupId: submission?.groupId?._id,
             component: component,
             conductScore: grade,
+            assessmentType: assessmentType,
             comments: comments || ''
           };
         }
 
+        console.log('📤 Student payload:', payload);
         return api.put(endpoint, payload);
       });
 
       const results = await Promise.all(gradePromises);
+      console.log('📥 Results:', results);
       const failedGrades = results.filter(result => !result.success);
 
       if (failedGrades.length === 0) {
         toast.success(`Successfully graded all ${studentsToGrade.length} students`);
-        fetchSubmissions();
+        setConfirmGroup(null);
+        setSelectedSubmission(null);
+        setShowGroupGrading(false);
+        fetchSubmissions(currentAssessmentType);
       } else {
+        console.error('❌ Failed grades:', failedGrades);
         toast.error(`Failed to grade ${failedGrades.length} students. Please try again.`);
-        throw new Error('Partial failure');
       }
     } catch (error) {
+      console.error('❌ Group grade submission error:', error);
       toast.error('Failed to submit group grades');
-      throw error;
     }
   };
 
@@ -1061,18 +1089,17 @@ export function FacultyAssessmentPage() {
           getConvertedScore={getConvertedScore}
         />
 
-        {/* Confirmation Modals */}
         {
           confirmSolo && (
             <ConfirmationModal
               isOpen={confirmSolo.isOpen}
               onClose={() => setConfirmSolo(null)}
-              onConfirm={() => executeSaveSolo(confirmSolo.grade, confirmSolo.comments)}
+              onConfirm={executeSaveSolo}
               title="Confirm Grade Submission"
               message="Once submitted, these grades will be frozen and visible to the coordinator. Modifying frozen grades requires administrative approval."
-              details={selectedStudent?.evaluation?.isPublished ? "WARNING: These grades are already published and visible to the student." : undefined}
+              details={confirmSolo.student?.evaluation?.isPublished ? "WARNING: These grades are already published and visible to the student." : undefined}
               confirmText="Submit Grade"
-              type={selectedStudent?.evaluation?.isPublished ? 'danger' : 'warning'}
+              type={confirmSolo.student?.evaluation?.isPublished ? 'danger' : 'warning'}
             />
           )
         }
@@ -1082,9 +1109,9 @@ export function FacultyAssessmentPage() {
             <ConfirmationModal
               isOpen={confirmGroup.isOpen}
               onClose={() => setConfirmGroup(null)}
-              onConfirm={() => executeSaveGroup(confirmGroup.grades, confirmGroup.comments)}
+              onConfirm={executeSaveGroup}
               title="Submit Group Grades"
-              message={`You are about to submit grades for all ${selectedSubmission?.students?.length || 0} students in this group.`}
+              message={`You are about to submit grades for all ${confirmGroup.students?.length || 0} students in this group.`}
               details="Grades will be frozen upon submission."
               confirmText="Submit Group Grades"
               type="warning"

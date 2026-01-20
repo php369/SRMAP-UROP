@@ -455,6 +455,7 @@ export class StudentEvaluationService {
               assignedProjectId: group.assignedProjectId
             },
             projectId: group.assignedProjectId,
+            projectTitle: (group.assignedProjectId as any)?.title || 'Unknown Project',
             students: studentsWithEvaluations,
             comments: submission.comments
           });
@@ -527,9 +528,10 @@ export class StudentEvaluationService {
             _id: (submission.studentId as any)._id,
             name: (submission.studentId as any).name,
             email: (submission.studentId as any).email,
-            assignedProjectId: submission.projectId
+            assignedProjectId: (submission.studentId as any).assignedProjectId || submission.projectId
           },
           projectId: submission.projectId,
+          projectTitle: (submission.studentId as any).assignedProjectId?.title || (submission.projectId as any)?.title || 'Unknown Project',
           students: [studentWithEvaluation], // Solo student as single-item array for consistency
           comments: submission.comments,
           facultyGrade: submission.facultyGrade,

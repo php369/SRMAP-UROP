@@ -178,7 +178,6 @@ export const GroupGradingModal = ({
                                             <div key={student.studentId} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-300 transition-colors">
                                                 <div className="flex-1">
                                                     <p className="font-medium text-slate-900 dark:text-white">{student.studentName}</p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">{student.studentId}</p>
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right w-24">

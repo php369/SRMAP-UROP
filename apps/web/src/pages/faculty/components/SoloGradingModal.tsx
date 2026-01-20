@@ -75,9 +75,6 @@ export const SoloGradingModal = ({
                             <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3 pr-12">
                                 {student?.studentName}
                             </DialogTitle>
-                            <p className="text-xs text-slate-400 font-mono mt-0.5">
-                                Enrollment ID: {student?.studentId}
-                            </p>
                             <div className="text-sm text-slate-500 mt-1 flex items-center gap-2">
                                 <Calendar className="w-3.5 h-3.5" />
                                 Submitted on {new Date(submission.submittedAt).toLocaleDateString()}
