@@ -136,20 +136,21 @@ const StudentEvaluationSchema = new Schema<IStudentEvaluation>({
   }
 });
 
-// Automatic score conversion and totals calculation
-StudentEvaluationSchema.pre('save', function(next) {
+// Automatic score conversion and totals calculation (with one decimal place precision)
+StudentEvaluationSchema.pre('save', function (next) {
   try {
-    // Calculate conversions using the same logic as group evaluations
-    this.internal.cla1.convert = Math.min(10, Math.round(this.internal.cla1.conduct * 10 / 20));
-    this.internal.cla2.convert = Math.min(15, Math.round(this.internal.cla2.conduct * 15 / 30));
-    this.internal.cla3.convert = Math.min(25, Math.round(this.internal.cla3.conduct * 25 / 50));
-    this.external.reportPresentation.convert = Math.min(50, Math.round(this.external.reportPresentation.conduct * 50 / 100));
-    
-    // Calculate totals
-    this.totalInternal = this.internal.cla1.convert + this.internal.cla2.convert + this.internal.cla3.convert;
+    // Calculate conversions with one decimal place precision
+    // Formula: Math.round(value * 10) / 10 preserves one decimal place
+    this.internal.cla1.convert = Math.min(10, Math.round(this.internal.cla1.conduct * 10 / 20 * 10) / 10);
+    this.internal.cla2.convert = Math.min(15, Math.round(this.internal.cla2.conduct * 15 / 30 * 10) / 10);
+    this.internal.cla3.convert = Math.min(25, Math.round(this.internal.cla3.conduct * 25 / 50 * 10) / 10);
+    this.external.reportPresentation.convert = Math.min(50, Math.round(this.external.reportPresentation.conduct * 50 / 100 * 10) / 10);
+
+    // Calculate totals (these will also have one decimal place precision)
+    this.totalInternal = Math.round((this.internal.cla1.convert + this.internal.cla2.convert + this.internal.cla3.convert) * 10) / 10;
     this.totalExternal = this.external.reportPresentation.convert;
-    this.total = this.totalInternal + this.totalExternal;
-    
+    this.total = Math.round((this.totalInternal + this.totalExternal) * 10) / 10;
+
     next();
   } catch (error) {
     next(error as Error);
@@ -157,7 +158,7 @@ StudentEvaluationSchema.pre('save', function(next) {
 });
 
 // Set publishedAt when isPublished changes to true
-StudentEvaluationSchema.pre('save', function(next) {
+StudentEvaluationSchema.pre('save', function (next) {
   if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
     this.publishedAt = new Date();
   }
