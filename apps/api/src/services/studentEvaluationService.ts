@@ -106,7 +106,8 @@ export class StudentEvaluationService {
           throw new Error('You are not authorized to evaluate this student');
         }
 
-        projectData = student.assignedProjectId;
+        // Extract ObjectId from populated project (it could be populated object or ObjectId)
+        projectData = (student.assignedProjectId as any)._id || student.assignedProjectId;
         targetFacultyId = student.assignedFacultyId;
       }
 
@@ -119,9 +120,11 @@ export class StudentEvaluationService {
       }
 
       // Find or create student evaluation record for this specific assessment type
+      // For solo students (groupId is null), we need to match documents where groupId is null or doesn't exist
+      const groupIdQuery = groupId ? groupId : { $in: [null, undefined] };
       let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
-        groupId: groupId || { $exists: false },
+        groupId: groupIdQuery,
         projectId: projectData,
         assessmentType: assessmentType
       });
@@ -228,9 +231,11 @@ export class StudentEvaluationService {
       }
 
       // Find evaluation record for External assessment type
+      // For solo students (groupId is null), we need to match documents where groupId is null or doesn't exist
+      const groupIdQuery = groupId ? groupId : { $in: [null, undefined] };
       const evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
-        groupId: groupId || { $exists: false },
+        groupId: groupIdQuery,
         projectId: projectData,
         assessmentType: 'External'
       });
