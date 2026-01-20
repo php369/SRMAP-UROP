@@ -79,7 +79,7 @@ router.put(
 
     } catch (error) {
       logger.error('Error updating student internal score:', error);
-      
+
       if (error instanceof Error) {
         if (error.message.includes('not found')) {
           return res.status(404).json({
@@ -87,10 +87,10 @@ router.put(
             message: error.message
           });
         }
-        
-        if (error.message.includes('not authorized') || 
-            error.message.includes('must be between') ||
-            error.message.includes('not a member')) {
+
+        if (error.message.includes('not authorized') ||
+          error.message.includes('must be between') ||
+          error.message.includes('not a member')) {
           return res.status(400).json({
             success: false,
             message: error.message
@@ -144,7 +144,7 @@ router.put(
 
     } catch (error) {
       logger.error('Error updating student external score:', error);
-      
+
       if (error instanceof Error) {
         if (error.message.includes('not found')) {
           return res.status(404).json({
@@ -152,9 +152,9 @@ router.put(
             message: error.message
           });
         }
-        
-        if (error.message.includes('not assigned') || 
-            error.message.includes('must be between')) {
+
+        if (error.message.includes('not assigned') ||
+          error.message.includes('must be between')) {
           return res.status(400).json({
             success: false,
             message: error.message
@@ -203,7 +203,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting faculty student evaluations:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get student evaluations'
@@ -224,19 +224,23 @@ router.get(
     try {
       const facultyId = req.user!.id;
 
-      const submissions = await StudentEvaluationService.getSubmissionsWithEvaluations(
+      const { submissions, assignedGroupCount, assignedSoloCount } = await StudentEvaluationService.getSubmissionsWithEvaluations(
         new mongoose.Types.ObjectId(facultyId)
       );
 
       res.json({
         success: true,
-        data: submissions,
+        data: {
+          submissions,
+          assignedGroupCount,
+          assignedSoloCount
+        },
         message: submissions.length === 0 ? 'No submissions are available yet.' : undefined
       });
 
     } catch (error) {
       logger.error('Error getting submissions with evaluations:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get submissions'
@@ -268,7 +272,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting student own evaluation:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get evaluations'
@@ -305,7 +309,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting group evaluation:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get group evaluation'
@@ -355,7 +359,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting faculty student evaluations:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get student evaluations'
@@ -399,14 +403,14 @@ router.get(
       res.json({
         success: true,
         data: assignments,
-        message: assignments.length > 0 
+        message: assignments.length > 0
           ? `Found ${assignments.length} external evaluator assignments`
           : 'You have not been assigned as an external evaluator for any projects yet.'
       });
 
     } catch (error) {
       logger.error('Error getting external evaluator assignments:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get external evaluator assignments'
@@ -461,7 +465,7 @@ router.put(
 
     } catch (error) {
       logger.error('Error updating evaluation publication status:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to update evaluation publication status'
@@ -499,9 +503,9 @@ router.get(
 
       const { StudentEvaluation } = await import('../models/StudentEvaluation');
       const { Group } = await import('../models/Group');
-      
+
       // Find all groups of the specified project type
-      const groups = await Group.find({ 
+      const groups = await Group.find({
         type: projectType,
         status: 'approved',
         assignedProjectId: { $exists: true }
@@ -529,7 +533,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting released evaluations count:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get released evaluations count'
@@ -567,7 +571,7 @@ router.get(
 
     } catch (error) {
       logger.error('Error getting coordinator evaluation overview:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to get evaluation overview'

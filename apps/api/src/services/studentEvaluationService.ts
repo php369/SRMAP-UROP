@@ -338,8 +338,13 @@ export class StudentEvaluationService {
   /**
    * Get submissions with student evaluation data for faculty assessment page
    * Includes both group submissions and solo submissions
+   * Returns submissions along with counts of assigned groups and solo students
    */
-  static async getSubmissionsWithEvaluations(facultyId: mongoose.Types.ObjectId): Promise<any[]> {
+  static async getSubmissionsWithEvaluations(facultyId: mongoose.Types.ObjectId): Promise<{
+    submissions: any[];
+    assignedGroupCount: number;
+    assignedSoloCount: number;
+  }> {
     try {
       const submissions: any[] = [];
 
@@ -489,7 +494,11 @@ export class StudentEvaluationService {
       // Sort all submissions by submission date (most recent first)
       submissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
 
-      return submissions;
+      return {
+        submissions,
+        assignedGroupCount: facultyGroups.length,
+        assignedSoloCount: studentsAssignedToFaculty.length
+      };
     } catch (error) {
       logger.error('Error getting submissions with evaluations:', error);
       throw error;
