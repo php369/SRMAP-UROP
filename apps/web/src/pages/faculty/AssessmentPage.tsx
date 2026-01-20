@@ -601,7 +601,7 @@ export function FacultyAssessmentPage() {
             ) : (
               <Users className="w-8 h-8 text-amber-600" />
             )}
-            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
+            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500 py-1">
               {currentAssessmentType === 'External' ? 'External Evaluation' : 'Internal Grading'}
             </h1>
           </div>
