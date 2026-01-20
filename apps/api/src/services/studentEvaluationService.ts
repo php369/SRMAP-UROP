@@ -653,9 +653,9 @@ export class StudentEvaluationService {
 
       return evaluations.map(evaluation => ({
         evaluationId: evaluation._id,
-        groupCode: (evaluation.groupId as any).groupCode,
-        projectTitle: (evaluation.projectId as any).title,
-        projectType: (evaluation.projectId as any).type,
+        groupCode: evaluation.groupId ? (evaluation.groupId as any).groupCode : null,
+        projectTitle: (evaluation.projectId as any)?.title || 'Unknown Project',
+        projectType: (evaluation.projectId as any)?.type || 'Unknown',
         evaluation: evaluation
       }));
     } catch (error) {
