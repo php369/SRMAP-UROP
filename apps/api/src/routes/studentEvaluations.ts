@@ -62,7 +62,7 @@ router.put(
 
       const result = await StudentEvaluationService.updateStudentInternalScore(
         new mongoose.Types.ObjectId(studentId),
-        new mongoose.Types.ObjectId(groupId),
+        groupId ? new mongoose.Types.ObjectId(groupId) : null,
         component as 'cla1' | 'cla2' | 'cla3',
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
@@ -129,7 +129,7 @@ router.put(
 
       const result = await StudentEvaluationService.updateStudentExternalScore(
         new mongoose.Types.ObjectId(studentId),
-        new mongoose.Types.ObjectId(groupId),
+        groupId ? new mongoose.Types.ObjectId(groupId) : null,
         conductScore,
         new mongoose.Types.ObjectId(facultyId),
         req.user!.role,
