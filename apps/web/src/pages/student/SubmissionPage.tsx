@@ -31,6 +31,7 @@ export function SubmissionPage() {
   const [userGroup, setUserGroup] = useState<any>(null);
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
+  const [lastSubmissionWindow, setLastSubmissionWindow] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     githubLink: '',
@@ -90,7 +91,25 @@ export function SubmissionPage() {
         if (!activeSubmissionWindow) {
           console.log('❌ No active submission window found');
           setSubmissionWindow(null);
-          setCurrentAssessmentType(null);
+
+          // Check for recently ended window
+          const recentlyEndedWindow = windows
+            .filter(window =>
+              window.windowType === 'submission' &&
+              window.projectType === (projectType as 'IDP' | 'UROP' | 'CAPSTONE') &&
+              window.assessmentType &&
+              new Date(window.endDate) < now
+            )
+            .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+
+          if (recentlyEndedWindow) {
+            console.log('ℹ️ Found recently ended window:', recentlyEndedWindow.assessmentType);
+            setLastSubmissionWindow(recentlyEndedWindow);
+            setCurrentAssessmentType(recentlyEndedWindow.assessmentType as any);
+          } else {
+            setCurrentAssessmentType(null);
+          }
+
           setInitializing(false);
           return;
         }
@@ -430,12 +449,23 @@ export function SubmissionPage() {
     );
   }
 
-  if (!submissionWindow || !currentAssessmentType) {
+  if (!submissionWindow) {
+    const isRecentlyEnded = !!lastSubmissionWindow;
+
     return (
       <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-10rem)] p-6">
         <SubmissionEmptyState
-          description={`No active submission window for ${eligibleProjectType} students.`}
-          subDescription="The submission portal will unlock once the coordinator schedules the assessment window for your project type."
+          title={isRecentlyEnded ? "Submission Window Concluded" : "Submission Portal"}
+          description={
+            isRecentlyEnded
+              ? `The submission window for ${currentAssessmentType} has ended. Your submitted work has been forwarded for further evaluation.`
+              : `No active submission window for ${eligibleProjectType} students.`
+          }
+          subDescription={
+            isRecentlyEnded
+              ? `Feedback and assessment updates will be available on the Assessment page once the evaluation phase for ${currentAssessmentType} begins.`
+              : "The submission portal will unlock once the coordinator schedules the submission window for your project type."
+          }
         />
       </div>
     );
@@ -622,7 +652,7 @@ export function SubmissionPage() {
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitter</p>
                     <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      {isLeader ? 'You (Team Leader)' : 'Team Leader'}
+                      {userGroup ? (isLeader ? `You (${user?.name})` : (userGroup.leaderId?.name || userGroup.leaderId?.fullName || 'Team Leader')) : 'You'}
                     </p>
                   </div>
                 </div>
@@ -631,7 +661,7 @@ export function SubmissionPage() {
                   <div className="p-4 bg-violet-50 dark:bg-violet-500/10 rounded-2xl border border-violet-100 dark:border-violet-500/20">
                     <p className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase mb-2">Notice</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                      Submissions are final for this phase. Contact your coordinator for any correction requests.
+                      Once submitted, your assessment materials are locked for this phase and cannot be modified.
                     </p>
                   </div>
                 </div>
@@ -804,6 +834,13 @@ export function SubmissionPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/20 rounded-2xl flex gap-3 animate-in fade-in slide-in-from-bottom-2">
+              <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800 dark:text-amber-400 font-medium leading-relaxed">
+                <span className="font-bold">Important:</span> Once you submit, your work will be final for this assessment phase. No modifications or re-submissions can be made. Please verify all links and files before proceeding.
+              </p>
             </div>
 
             <Button

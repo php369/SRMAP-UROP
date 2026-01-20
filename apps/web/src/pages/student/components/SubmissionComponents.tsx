@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, Shield, User, Check, Upload, Sparkles, FileText, X, Info } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { cn } from '../../../utils/cn';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // --- Confetti Component ---
 export const Confetti = ({ isActive }: { isActive: boolean }) => {
@@ -97,6 +98,7 @@ interface CollaborationInfoProps {
 }
 
 export const ContextInfoRow = ({ userGroup, isLeader }: CollaborationInfoProps) => {
+    const { user } = useAuth();
     return (
         <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 mb-6 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-800/50">
@@ -115,7 +117,7 @@ export const ContextInfoRow = ({ userGroup, isLeader }: CollaborationInfoProps) 
                             ? "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
                             : "bg-slate-100/50 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400"
                     )}>
-                        {isLeader ? "Team Leader" : "Member"}
+                        {isLeader ? (user?.name || "Team Leader") : (userGroup.leaderId?.name || userGroup.leaderId?.fullName || "Team Leader")}
                     </span>
                 </>
             )}
@@ -125,7 +127,7 @@ export const ContextInfoRow = ({ userGroup, isLeader }: CollaborationInfoProps) 
             <span className="text-slate-400 dark:text-slate-500">
                 {userGroup ? "Collaborative Submission" : "Solo Project"}
             </span>
-        </div>
+        </div >
     );
 };
 
