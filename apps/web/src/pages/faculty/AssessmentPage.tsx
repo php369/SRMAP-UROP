@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, UserCheck } from 'lucide-react';
+import { FileText, Github, Presentation, Video, Send, Eye, Calendar, Users, UserCheck, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Button, Input, Label, Textarea } from '../../components/ui';
@@ -60,6 +60,7 @@ interface Submission {
   gradeReleased: boolean;
   submittedAt: string;
   students?: StudentEvaluation[];
+  comments?: string;
 }
 
 interface StudentEvaluation {
@@ -100,6 +101,8 @@ export function FacultyAssessmentPage() {
     grade: '',
     comments: ''
   });
+  const [assignedGroupCount, setAssignedGroupCount] = useState<number>(0);
+  const [assignedSoloCount, setAssignedSoloCount] = useState<number>(0);
   const [groupGradeData, setGroupGradeData] = useState<{
     students: Record<string, string>;
     comments: string;
@@ -235,16 +238,28 @@ export function FacultyAssessmentPage() {
       const response = await api.get(`/student-evaluations/submissions${params}`);
       console.log('📡 Faculty submissions response:', response);
 
-      if (response.success && response.data && Array.isArray(response.data)) {
+      if (response.success && response.data) {
+        const data = response.data as { submissions: Submission[]; assignedGroupCount: number; assignedSoloCount: number };
+        const { submissions: fetchedSubmissions, assignedGroupCount: groups, assignedSoloCount: solos } = data;
+
+        // Update counts
+        setAssignedGroupCount(groups || 0);
+        setAssignedSoloCount(solos || 0);
+
         // Filter submissions by assessment type if specified
         const filteredSubmissions = assessmentType
-          ? response.data.filter((sub: Submission) => sub.assessmentType === assessmentType)
-          : response.data;
+          ? fetchedSubmissions.filter((sub: Submission) => sub.assessmentType === assessmentType)
+          : fetchedSubmissions;
+
         console.log('📊 Setting submissions:', filteredSubmissions.length, 'items');
+        console.log(`📊 Assigned: ${groups} groups, ${solos} solo students`);
+
         setSubmissions(filteredSubmissions);
       } else {
-        console.log('📊 No submissions in response, setting empty array');
+        console.log('📊 No submissions or failed response, setting defaults');
         setSubmissions([]);
+        setAssignedGroupCount(0);
+        setAssignedSoloCount(0);
       }
     } catch (error) {
       console.error('📊 Error fetching submissions:', error);
@@ -590,29 +605,219 @@ export function FacultyAssessmentPage() {
               <div className="py-12">
                 <FacultyAssessmentSkeleton />
               </div>
-            ) : !canGrade ? (
+            ) : (assignedGroupCount + assignedSoloCount) === 0 ? (
               <div className="py-8">
                 <AssessmentEmptyState
-                  title="No Submissions Yet"
-                  description={currentAssessmentType ? `There are no submissions for ${currentAssessmentType} assessment yet.` : `No active assessment window found.`}
-                  subDescription="Check back later once students have submitted their work."
-                  icon="file-text"
+                  title="No Active Students Assigned"
+                  description="You currently don't have any students or groups assigned to you for this semester's projects."
+                  subDescription="Only faculty with accepted applications and assigned projects can evaluate students."
+                  icon="users"
                   theme="amber"
-                  subtitle="GRADING"
+                  subtitle="LOCKED"
                 />
               </div>
-            ) : submissions.length === 0 ? (
+            ) : (
               <>
-                <div className="py-8">
-                  <AssessmentEmptyState
-                    title="No Submissions Yet"
-                    description={`There are currently no submissions for ${assessmentType} assessment.`}
-                    subDescription="Check back later once students have submitted their work."
-                    icon="file-text"
-                    theme="amber"
-                    subtitle="GRADING"
-                  />
-                </div>
+                {submissions.length === 0 ? (
+                  <div className="py-8">
+                    <AssessmentEmptyState
+                      title="No Submissions Yet"
+                      description={currentAssessmentType ? `The students assigned to you haven't submitted their work for ${currentAssessmentType} yet.` : `No active assessment window found.`}
+                      subDescription="Check back later once students have uploaded their project reports or links."
+                      icon="file-text"
+                      theme="amber"
+                      subtitle="GRADING"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {submissions.map((submission) => (
+                      <motion.div
+                        key={submission._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <GlassCard className="p-6 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all group overflow-hidden relative">
+                          {/* Selection Highlight */}
+                          <div className="absolute top-0 left-0 w-1 h-full bg-transparent group-hover:bg-amber-500 transition-all" />
+
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                  {submission.groupId
+                                    ? `Group ${submission.groupId.groupCode}`
+                                    : submission.studentId?.name}
+                                </h3>
+                                {getAssessmentBadge(assessmentType)}
+                                <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-lg border border-amber-500/20">
+                                  {getProjectInfo(submission).type}
+                                </span>
+                                <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20">
+                                  {submission.groupId ? 'Group Grading' : 'Solo Grading'}
+                                </span>
+                              </div>
+
+                              <div className="space-y-2 mb-4">
+                                <div>
+                                  <span className="text-sm font-medium text-text">Project: </span>
+                                  <span className="text-sm text-textSecondary">{getProjectInfo(submission).title}</span>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-text">Project ID: </span>
+                                  <span className="text-sm text-textSecondary">{getProjectInfo(submission).projectId}</span>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-text">Faculty: </span>
+                                  <span className="text-sm text-textSecondary">{getProjectInfo(submission).facultyName}</span>
+                                </div>
+                                {submission.groupId && (
+                                  <div>
+                                    <span className="text-sm font-medium text-text">Members: </span>
+                                    <span className="text-sm text-textSecondary">
+                                      {submission.groupId.members.length} students
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Student Grading List */}
+                                {submission.students && submission.students.length > 0 && (
+                                  <div className="mt-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-sm font-medium text-text">Student Grades ({assessmentType}):</span>
+                                      {/* Only show Grade Group button if not all students are graded for this assessment */}
+                                      {submission.groupId && submission.students?.some((s: any) => !s.evaluation || !s.evaluation.internal?.[assessmentType.toLowerCase().replace('-', '') as 'cla1' | 'cla2' | 'cla3']?.conduct) && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 text-xs border-amber-500/50 text-amber-700 hover:bg-amber-50"
+                                          onClick={() => {
+                                            const initialGrades: Record<string, string> = {};
+                                            submission.students?.forEach((s: any) => {
+                                              initialGrades[s.studentId] = s.evaluation?.internal?.[assessmentType.toLowerCase().replace('-', '') as 'cla1' | 'cla2' | 'cla3']?.conduct?.toString() || '';
+                                            });
+                                            setGroupGradeData({
+                                              students: initialGrades,
+                                              comments: ''
+                                            });
+                                            setSelectedSubmission(submission);
+                                            setShowGroupGrading(true);
+                                          }}
+                                        >
+                                          Grade Group
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <div className="space-y-2">
+                                      {submission.students?.map((student: any) => {
+                                        const evalData = student.evaluation?.internal?.[assessmentType.toLowerCase().replace('-', '') as 'cla1' | 'cla2' | 'cla3'];
+                                        const isGraded = evalData && evalData.conduct > 0;
+
+                                        return (
+                                          <div key={student.studentId} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-white/5">
+                                            <div className="flex flex-col">
+                                              <span className="text-sm font-medium text-text">{student.studentName}</span>
+                                              <span className="text-xs text-textSecondary">{student.studentEmail}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                              {isGraded ? (
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="success" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                                                    {evalData.conduct}/{getMaxScore(assessmentType)}
+                                                  </Badge>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-textSecondary hover:text-amber-600"
+                                                    onClick={() => {
+                                                      setSelectedSubmission(submission);
+                                                      setSelectedStudent(student);
+                                                      setGradeData({
+                                                        grade: evalData.conduct.toString(),
+                                                        comments: evalData.comments || ''
+                                                      });
+                                                    }}
+                                                  >
+                                                    <Eye className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="h-8 border-amber-500/50 text-amber-700 hover:bg-amber-50"
+                                                  onClick={() => {
+                                                    setSelectedSubmission(submission);
+                                                    setSelectedStudent(student);
+                                                    setGradeData({ grade: '', comments: '' });
+                                                  }}
+                                                >
+                                                  Grade
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3">
+                              <span className="text-xs text-textSecondary">
+                                Submitted {new Date(submission.submittedAt).toLocaleDateString()}
+                              </span>
+                              <div className="flex flex-col gap-2">
+                                {submission.reportUrl && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start gap-2 bg-white/5 border-white/10 hover:bg-amber-50"
+                                    onClick={() => window.open(submission.reportUrl, '_blank')}
+                                  >
+                                    <FileText className="w-4 h-4 text-amber-600" />
+                                    <span>Report</span>
+                                  </Button>
+                                )}
+                                {submission.presentationUrl && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start gap-2 bg-white/5 border-white/10 hover:bg-amber-50"
+                                    onClick={() => window.open(submission.presentationUrl, '_blank')}
+                                  >
+                                    <Presentation className="w-4 h-4 text-amber-600" />
+                                    <span>PPT</span>
+                                  </Button>
+                                )}
+                                {submission.githubLink && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start gap-2 bg-white/5 border-white/10 hover:bg-amber-50"
+                                    onClick={() => window.open(submission.githubLink, '_blank')}
+                                  >
+                                    <Github className="w-4 h-4 text-slate-900" />
+                                    <span>GitHub</span>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {submission.comments && (
+                            <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-500/5 rounded-lg border border-amber-200/50 dark:border-amber-500/10">
+                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1">Student Comments</p>
+                              <p className="text-sm text-textSecondary italic">"{submission.comments}"</p>
+                            </div>
+                          )}
+                        </GlassCard>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Show meeting logs even without submissions */}
                 {Object.keys(meetingLogs).length > 0 && (
@@ -766,302 +971,10 @@ export function FacultyAssessmentPage() {
                   </div>
                 )}
               </>
-            ) : (
-              <div className="grid gap-4">
-                {submissions.map((submission) => (
-                  <motion.div
-                    key={submission._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <GlassCard className="p-6 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all group overflow-hidden relative">
-                      {/* Selection Highlight */}
-                      <div className="absolute top-0 left-0 w-1 h-full bg-transparent group-hover:bg-amber-500 transition-all" />
-
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-3 mb-3">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                              {submission.groupId
-                                ? `Group ${submission.groupId.groupCode}`
-                                : submission.studentId?.name}
-                            </h3>
-                            {getAssessmentBadge(assessmentType)}
-                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-lg border border-amber-500/20">
-                              {getProjectInfo(submission).type}
-                            </span>
-                            <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20">
-                              Group Grading
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 mb-4">
-                            <div>
-                              <span className="text-sm font-medium text-text">Project: </span>
-                              <span className="text-sm text-textSecondary">{getProjectInfo(submission).title}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-text">Project ID: </span>
-                              <span className="text-sm text-textSecondary">{getProjectInfo(submission).projectId}</span>
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-text">Faculty: </span>
-                              <span className="text-sm text-textSecondary">{getProjectInfo(submission).facultyName}</span>
-                            </div>
-                            {submission.groupId && (
-                              <div>
-                                <span className="text-sm font-medium text-text">Members: </span>
-                                <span className="text-sm text-textSecondary">
-                                  {submission.groupId.members.length} students
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Student Grading List */}
-                            {submission.students && submission.students.length > 0 && (
-                              <div className="mt-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-medium text-text">Student Grades ({assessmentType}):</span>
-                                  {/* Only show Grade Group button if not all students are graded for this assessment */}
-                                  {(() => {
-                                    const allGraded = submission.students?.every(student => {
-                                      // If no evaluation record exists yet, student is not graded
-                                      if (!student.evaluation) return false;
-
-                                      const currentScore = assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
-                                        assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
-                                          assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
-                                            student.evaluation.external.reportPresentation.conduct;
-                                      return currentScore > 0;
-                                    });
-
-                                    return !allGraded ? (
-                                      <Button
-                                        onClick={() => {
-                                          setSelectedSubmission(submission);
-                                          setShowGroupGrading(true);
-                                          // Initialize group grade data with current scores
-                                          const initialGrades: Record<string, string> = {};
-                                          submission.students?.forEach(student => {
-                                            // If no evaluation record exists yet, default to 0
-                                            const currentScore = !student.evaluation ? 0 :
-                                              assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
-                                                assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
-                                                  assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
-                                                    student.evaluation.external.reportPresentation.conduct;
-                                            initialGrades[student.studentId] = currentScore > 0 ? currentScore.toString() : '';
-                                          });
-                                          setGroupGradeData({
-                                            students: initialGrades,
-                                            comments: ''
-                                          });
-                                        }}
-                                        className="h-auto px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded transition-all"
-                                      >
-                                        Grade Group
-                                      </Button>
-                                    ) : (
-                                      <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded">
-                                        ✓ All Graded
-                                      </span>
-                                    );
-                                  })()}
-                                </div>
-                                <div className="space-y-2">
-                                  {submission.students.map((student) => {
-                                    // If no evaluation record exists yet, default to 0
-                                    const currentScore = !student.evaluation ? 0 :
-                                      assessmentType === 'CLA-1' ? student.evaluation.internal.cla1.conduct :
-                                        assessmentType === 'CLA-2' ? student.evaluation.internal.cla2.conduct :
-                                          assessmentType === 'CLA-3' ? student.evaluation.internal.cla3.conduct :
-                                            student.evaluation.external.reportPresentation.conduct;
-
-                                    const convertedScore = getConvertedScore(currentScore, assessmentType);
-                                    const maxScore = getMaxScore(assessmentType);
-
-                                    return (
-                                      <div key={student.studentId} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                                        <div className="flex-1">
-                                          <span className="text-sm font-medium text-text">{student.studentName}</span>
-                                          <span className="text-xs text-textSecondary ml-2">({student.studentEmail})</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          {currentScore > 0 ? (
-                                            <span className="text-sm text-success">
-                                              {currentScore}/{maxScore} → {convertedScore}
-                                            </span>
-                                          ) : (
-                                            <span className="text-sm text-textSecondary">Not graded</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex gap-3 text-sm">
-                              {submission.githubLink && (
-                                <a
-                                  href={submission.githubLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-primary hover:underline"
-                                >
-                                  <Github className="w-4 h-4" />
-                                  GitHub
-                                </a>
-                              )}
-                              {submission.reportUrl && (
-                                <div className="flex flex-col gap-1">
-                                  <Button
-                                    variant="link"
-                                    onClick={() => {
-                                      const fullUrl = submission.reportUrl?.startsWith('/api/')
-                                        ? `${window.location.origin}${submission.reportUrl}`
-                                        : submission.reportUrl;
-
-                                      // Create modal with embedded PDF
-                                      const modal = document.createElement('div');
-                                      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                                      modal.innerHTML = `
-                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                      <div class="flex justify-between items-center p-4 border-b">
-                                        <h3 class="text-lg font-semibold">Report PDF</h3>
-                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                      </div>
-                                      <div class="flex-1 p-4">
-                                        <iframe 
-                                          src="${fullUrl}" 
-                                          class="w-full h-full border-0 rounded"
-                                          title="Report PDF"
-                                        ></iframe>
-                                      </div>
-                                    </div>
-                                  `;
-
-                                      document.body.appendChild(modal);
-
-                                      // Close modal handlers
-                                      const closeModal = () => document.body.removeChild(modal);
-                                      modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                                      modal.addEventListener('click', (e) => {
-                                        if (e.target === modal) closeModal();
-                                      });
-                                    }}
-                                    className="h-auto p-0 flex items-center gap-1 text-primary hover:underline hover:no-underline"
-                                  >
-                                    <FileText className="w-4 h-4" />
-                                    📄 View Report
-                                  </Button>
-                                  <a
-                                    href={submission.reportUrl?.startsWith('/api/')
-                                      ? `${window.location.origin}${submission.reportUrl}`
-                                      : submission.reportUrl}
-                                    download
-                                    className="flex items-center gap-1 text-green-600 hover:underline text-sm"
-                                  >
-                                    ⬇️ Download
-                                  </a>
-                                </div>
-                              )}
-                              {/* Presentation only for External evaluation */}
-                              {assessmentType === 'External' && submission.presentationUrl && (
-                                <div className="flex flex-col gap-1">
-                                  <Button
-                                    variant="link"
-                                    onClick={() => {
-                                      const fullUrl = submission.presentationUrl?.startsWith('/api/')
-                                        ? `${window.location.origin}${submission.presentationUrl}`
-                                        : submission.presentationUrl;
-
-                                      // Create modal with embedded presentation
-                                      const modal = document.createElement('div');
-                                      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-                                      modal.innerHTML = `
-                                    <div class="bg-white rounded-lg w-full max-w-6xl h-full max-h-[90vh] flex flex-col">
-                                      <div class="flex justify-between items-center p-4 border-b">
-                                        <h3 class="text-lg font-semibold">Presentation</h3>
-                                        <button class="close-modal text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-                                      </div>
-                                      <div class="flex-1 p-4">
-                                        <iframe 
-                                          src="${fullUrl}" 
-                                          class="w-full h-full border-0 rounded"
-                                          title="Presentation"
-                                        ></iframe>
-                                      </div>
-                                    </div>
-                                  `;
-
-                                      document.body.appendChild(modal);
-
-                                      // Close modal handlers
-                                      const closeModal = () => document.body.removeChild(modal);
-                                      modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
-                                      modal.addEventListener('click', (e) => {
-                                        if (e.target === modal) closeModal();
-                                      });
-                                    }}
-                                    className="h-auto p-0 flex items-center gap-1 text-primary hover:underline hover:no-underline"
-                                  >
-                                    <Presentation className="w-4 h-4" />
-                                    📊 View Presentation
-                                  </Button>
-                                  <a
-                                    href={submission.presentationUrl?.startsWith('/api/')
-                                      ? `${window.location.origin}${submission.presentationUrl}`
-                                      : submission.presentationUrl}
-                                    download
-                                    className="flex items-center gap-1 text-green-600 hover:underline text-sm"
-                                  >
-                                    ⬇️ Download
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="text-xs text-textSecondary">
-                            Submitted: {new Date(submission.submittedAt).toLocaleString()}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 ml-4">
-                          {/* Meeting logs and presentations only for External evaluation */}
-                          {assessmentType === 'External' && submission.projectId?._id && meetingLogs[submission.projectId._id]?.length > 0 && (
-                            <Button
-                              onClick={() => setSelectedProjectLogs(meetingLogs[submission.projectId!._id])}
-                              className="px-3 py-2 bg-blue-100 dark:bg-blue-500/20 hover:bg-blue-200 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2 text-sm h-auto"
-                              title="View Meeting Logs"
-                            >
-                              <FileText className="w-4 h-4" />
-                              {meetingLogs[submission.projectId._id].length} Logs
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              // For group submissions, show the submission details modal
-                              setSelectedSubmission(submission);
-                              setSelectedStudent(null);
-                              setGradeData({ grade: '', comments: '' });
-                            }}
-                            className="h-8 w-8 hover:bg-white/10"
-                            title="View Submission Details"
-                          >
-                            <Eye className="w-4 h-4 text-text" />
-                          </Button>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  </motion.div>
-                ))}
-              </div>
             )}
           </div>
-        )}
+        )
+        }
 
         {/* Grading Modal */}
         <AnimatePresence>
@@ -1081,43 +994,46 @@ export function FacultyAssessmentPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-2xl"
+                className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-amber-200/50 dark:border-amber-500/20"
               >
                 <div className="p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Award className="w-6 h-6 text-amber-600" />
+                    </div>
                     {selectedStudent ? `Grade Student - ${assessmentType}` :
                       showGroupGrading ? `Grade Group - ${assessmentType}` : 'Submission Details'}
                   </h2>
 
                   <div className="space-y-6">
                     {/* Submission Info */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
+                    <div className="p-4 bg-amber-50/50 dark:bg-amber-500/5 rounded-xl border border-amber-200/50 dark:border-amber-500/10 space-y-3">
                       <div>
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Group:</span>
-                        <p className="text-gray-900 dark:text-white font-semibold">
+                        <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Group:</span>
+                        <p className="text-slate-900 dark:text-white font-semibold">
                           Group {selectedSubmission.groupId?.groupCode}
                         </p>
                       </div>
                       {selectedStudent && (
                         <div>
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Student:</span>
-                          <p className="text-gray-900 dark:text-white font-semibold">
+                          <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Student:</span>
+                          <p className="text-slate-900 dark:text-white font-semibold">
                             {selectedStudent.studentName} ({selectedStudent.studentEmail})
                           </p>
                         </div>
                       )}
                       <div>
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Project:</span>
-                        <p className="text-gray-900 dark:text-white font-semibold">{getProjectInfo(selectedSubmission).title}</p>
+                        <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Project:</span>
+                        <p className="text-slate-900 dark:text-white font-semibold">{getProjectInfo(selectedSubmission).title}</p>
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Assessment:</span>
+                        <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Assessment:</span>
                         <div className="mt-1">{getAssessmentBadge(assessmentType)}</div>
                       </div>
                       {selectedStudent && (
                         <div>
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Max Score:</span>
-                          <p className="text-gray-900 dark:text-white">
+                          <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Max Score:</span>
+                          <p className="text-slate-900 dark:text-white">
                             {getMaxScore(assessmentType)} marks → {getConvertedScore(getMaxScore(assessmentType), assessmentType)} converted
                           </p>
                         </div>
@@ -1126,33 +1042,35 @@ export function FacultyAssessmentPage() {
 
                     {/* Submission Links */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">Submitted Work</label>
+                      <label className="block text-sm font-medium text-slate-900 dark:text-white mb-3">Submitted Work</label>
                       <div className="grid grid-cols-1 gap-3">
                         {selectedSubmission.githubLink && (
                           <a
                             href={selectedSubmission.githubLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-all border border-gray-200 dark:border-gray-600"
+                            className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-xl transition-all border border-slate-200 dark:border-slate-700 hover:border-amber-200 dark:hover:border-amber-500/30 group"
                           >
-                            <Github className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <Github className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400" />
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">GitHub Repository</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{selectedSubmission.githubLink}</p>
+                              <p className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300">GitHub Repository</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{selectedSubmission.githubLink}</p>
                             </div>
                           </a>
                         )}
                         {selectedSubmission.reportUrl && (
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <div className="flex items-center gap-3 mb-2">
-                              <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-3 mb-3">
+                              <FileText className="w-5 h-5 text-amber-600" />
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">Report PDF</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300">View or download</p>
+                                <p className="text-sm font-medium text-slate-900 dark:text-white">Report PDF</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">View or download</p>
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <button
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => {
                                   const fullUrl = selectedSubmission.reportUrl?.startsWith('/api/')
                                     ? `${window.location.origin}${selectedSubmission.reportUrl}`
@@ -1186,34 +1104,42 @@ export function FacultyAssessmentPage() {
                                     if (e.target === modal) closeModal();
                                   });
                                 }}
-                                className="text-blue-600 dark:text-blue-400 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                               >
                                 📄 View
-                              </button>
-                              <a
-                                href={selectedSubmission.reportUrl?.startsWith('/api/')
-                                  ? `${window.location.origin}${selectedSubmission.reportUrl}`
-                                  : selectedSubmission.reportUrl}
-                                download
-                                className="text-green-600 dark:text-green-400 hover:underline text-sm"
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                               >
-                                ⬇️ Download
-                              </a>
+                                <a
+                                  href={selectedSubmission.reportUrl?.startsWith('/api/')
+                                    ? `${window.location.origin}${selectedSubmission.reportUrl}`
+                                    : selectedSubmission.reportUrl}
+                                  download
+                                >
+                                  ⬇️ Download
+                                </a>
+                              </Button>
                             </div>
                           </div>
                         )}
                         {/* Presentation only for External evaluation */}
                         {assessmentType === 'External' && selectedSubmission.presentationUrl && (
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <div className="flex items-center gap-3 mb-2">
+                          <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-3 mb-3">
                               <Presentation className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">Presentation</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300">View or download</p>
+                                <p className="text-sm font-medium text-slate-900 dark:text-white">Presentation</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">View or download</p>
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <button
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => {
                                   const fullUrl = selectedSubmission.presentationUrl?.startsWith('/api/')
                                     ? `${window.location.origin}${selectedSubmission.presentationUrl}`
@@ -1247,19 +1173,25 @@ export function FacultyAssessmentPage() {
                                     if (e.target === modal) closeModal();
                                   });
                                 }}
-                                className="text-blue-600 dark:text-blue-400 hover:underline text-sm cursor-pointer bg-none border-none p-0"
+                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                               >
                                 📊 View
-                              </button>
-                              <a
-                                href={selectedSubmission.presentationUrl?.startsWith('/api/')
-                                  ? `${window.location.origin}${selectedSubmission.presentationUrl}`
-                                  : selectedSubmission.presentationUrl}
-                                download
-                                className="text-green-600 dark:text-green-400 hover:underline text-sm"
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                               >
-                                ⬇️ Download
-                              </a>
+                                <a
+                                  href={selectedSubmission.presentationUrl?.startsWith('/api/')
+                                    ? `${window.location.origin}${selectedSubmission.presentationUrl}`
+                                    : selectedSubmission.presentationUrl}
+                                  download
+                                >
+                                  ⬇️ Download
+                                </a>
+                              </Button>
                             </div>
                           </div>
                         )}
@@ -1268,9 +1200,9 @@ export function FacultyAssessmentPage() {
 
                     {/* Grading Form - Only show when grading a specific student */}
                     {selectedStudent && (
-                      <div className="space-y-4">
+                      <div className="space-y-4 bg-amber-50/50 dark:bg-amber-500/5 p-4 rounded-xl border border-amber-200/50 dark:border-amber-500/10">
                         <div>
-                          <Label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <Label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                             Grade (0-{getMaxScore(assessmentType)}) *
                           </Label>
                           <Input
@@ -1281,16 +1213,17 @@ export function FacultyAssessmentPage() {
                             value={gradeData.grade}
                             onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
                             placeholder={`Enter grade (max ${getMaxScore(assessmentType)})`}
+                            className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                           />
                           {gradeData.grade && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                               Converted score: {getConvertedScore(parseFloat(gradeData.grade) || 0, assessmentType)}
                             </p>
                           )}
                         </div>
 
                         <div>
-                          <Label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <Label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                             Comments / Feedback (Optional)
                           </Label>
                           <Textarea
@@ -1298,6 +1231,7 @@ export function FacultyAssessmentPage() {
                             onChange={(e) => setGradeData({ ...gradeData, comments: e.target.value })}
                             rows={3}
                             placeholder="Provide feedback to the student..."
+                            className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                           />
                         </div>
                       </div>
@@ -1306,11 +1240,11 @@ export function FacultyAssessmentPage() {
                     {/* Group Grading Form - Show when grading entire group */}
                     {showGroupGrading && selectedSubmission.students && (
                       <div className="space-y-4">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                          <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                          <h4 className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
                             Group Grading - {assessmentType}
                           </h4>
-                          <p className="text-sm text-blue-600 dark:text-blue-300">
+                          <p className="text-sm text-amber-600 dark:text-amber-300">
                             Enter grades for all students in this group. The same comment will be applied to all students.
                           </p>
                         </div>
@@ -1328,12 +1262,12 @@ export function FacultyAssessmentPage() {
                                     student.evaluation.external.reportPresentation.conduct;
 
                             return (
-                              <div key={student.studentId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div key={student.studentId} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
                                 <div className="flex-1">
-                                  <p className="font-medium text-gray-900 dark:text-white">{student.studentName}</p>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">{student.studentEmail}</p>
+                                  <p className="font-medium text-slate-900 dark:text-white">{student.studentName}</p>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">{student.studentEmail}</p>
                                   {currentScore > 0 && (
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
                                       Current: {currentScore}/{getMaxScore(assessmentType)}
                                     </p>
                                   )}
@@ -1400,23 +1334,23 @@ export function FacultyAssessmentPage() {
                             const maxScore = getMaxScore(assessmentType);
 
                             return (
-                              <div key={student.studentId} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                              <div key={student.studentId} className="flex items-center justify-between p-3 bg-amber-50/50 dark:bg-amber-500/5 rounded-lg border border-amber-200/50 dark:border-amber-500/10">
                                 <div>
-                                  <p className="font-medium text-gray-900 dark:text-white">{student.studentName}</p>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">{student.studentEmail}</p>
+                                  <p className="font-medium text-slate-900 dark:text-white">{student.studentName}</p>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400">{student.studentEmail}</p>
                                 </div>
                                 <div className="text-right">
                                   {currentScore > 0 ? (
                                     <div>
-                                      <p className="font-medium text-gray-900 dark:text-white">
+                                      <p className="font-medium text-slate-900 dark:text-white">
                                         {currentScore}/{maxScore}
                                       </p>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      <p className="text-sm text-slate-600 dark:text-slate-400">
                                         Converted: {convertedScore}
                                       </p>
                                     </div>
                                   ) : (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Not graded</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Not graded</p>
                                   )}
                                 </div>
                               </div>
@@ -1427,7 +1361,7 @@ export function FacultyAssessmentPage() {
                     )}
                   </div>
 
-                  <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex gap-3 mt-6 pt-6 border-t border-amber-200/50 dark:border-amber-500/20">
                     <Button
                       variant="outline"
                       onClick={() => {

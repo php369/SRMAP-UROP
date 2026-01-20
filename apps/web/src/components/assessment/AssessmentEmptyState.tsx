@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Award, FileText, CheckCircle, Clock, Sparkles, ShieldCheck, LucideIcon } from 'lucide-react';
+import { Award, FileText, CheckCircle, Clock, Sparkles, ShieldCheck, Users, LucideIcon } from 'lucide-react';
 import { GradientBorderBox } from '../ui/GradientBorderBox';
 import { cn } from '../../utils/cn';
 
@@ -7,7 +7,7 @@ interface AssessmentEmptyStateProps {
     title: string;
     description: string;
     subDescription?: string;
-    icon?: 'award' | 'file-text' | 'check' | 'clock' | 'shield';
+    icon?: 'award' | 'file-text' | 'check' | 'clock' | 'shield' | 'users';
     theme?: 'amber' | 'emerald' | 'indigo';
     subtitle?: string;
     action?: React.ReactNode;
@@ -62,7 +62,8 @@ export function AssessmentEmptyState({
         'file-text': FileText,
         check: CheckCircle,
         clock: Clock,
-        shield: ShieldCheck
+        shield: ShieldCheck,
+        users: Users
     };
 
     const Icon = icons[icon];
