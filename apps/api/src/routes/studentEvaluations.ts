@@ -90,6 +90,7 @@ router.put(
 
         if (error.message.includes('not authorized') ||
           error.message.includes('must be between') ||
+          error.message.includes('must be assigned') ||
           error.message.includes('not a member')) {
           return res.status(400).json({
             success: false,
@@ -97,12 +98,18 @@ router.put(
           });
         }
 
-        if (error.message.includes('not authorized')) {
+        if (error.message.includes('published')) {
           return res.status(403).json({
             success: false,
             message: error.message
           });
         }
+
+        // Return actual error message for debugging
+        return res.status(500).json({
+          success: false,
+          message: error.message || 'Failed to update student internal score'
+        });
       }
 
       res.status(500).json({
