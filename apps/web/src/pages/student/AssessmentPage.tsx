@@ -321,7 +321,7 @@ export function AssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="p-6 pb-8">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

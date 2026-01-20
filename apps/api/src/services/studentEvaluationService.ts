@@ -83,7 +83,7 @@ export class StudentEvaluationService {
       // Validate score ranges based on component
       const maxScores = { cla1: 20, cla2: 30, cla3: 50 };
       const maxScore = maxScores[component];
-      
+
       if (conductScore < 0 || conductScore > maxScore) {
         throw new Error(`${component.toUpperCase()} conduct score must be between 0 and ${maxScore}`);
       }
@@ -129,7 +129,7 @@ export class StudentEvaluationService {
       if (comments !== undefined) {
         evaluation.internal[component].comments = comments;
       }
-      
+
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
@@ -140,7 +140,7 @@ export class StudentEvaluationService {
         .populate('groupId', 'groupCode members')
         .populate('projectId', 'title type')
         .populate('facultyId', 'name email');
-      
+
       return populatedEvaluation!;
 
     } catch (error) {
@@ -205,7 +205,7 @@ export class StudentEvaluationService {
       if (comments !== undefined) {
         evaluation.external.reportPresentation.comments = comments;
       }
-      
+
       // Save will trigger automatic conversion and totals calculation
       await evaluation.save();
 
@@ -217,7 +217,7 @@ export class StudentEvaluationService {
         .populate('projectId', 'title type')
         .populate('facultyId', 'name email')
         .populate('externalFacultyId', 'name email');
-      
+
       return populatedEvaluation!;
 
     } catch (error) {
@@ -244,14 +244,14 @@ export class StudentEvaluationService {
       // If project type is specified, filter by group type for group students
       // and by user role for solo students
       if (projectType) {
-        const groups = await Group.find({ 
+        const groups = await Group.find({
           type: projectType,
           status: 'approved',
           assignedProjectId: { $exists: true }
         }).select('_id');
-        
+
         const groupIds = groups.map(g => g._id);
-        
+
         // Update match conditions to include both group and solo students
         matchConditions = {
           $and: [
@@ -282,7 +282,7 @@ export class StudentEvaluationService {
       // Group evaluations by group for group students, and handle solo students separately
       const groupedEvaluations: any = {};
       const soloEvaluations: any[] = [];
-      
+
       evaluations.forEach(evaluation => {
         if (evaluation.groupId) {
           // Group student
@@ -298,7 +298,7 @@ export class StudentEvaluationService {
               students: []
             };
           }
-          
+
           groupedEvaluations[groupId].students.push({
             studentId: evaluation.studentId._id,
             studentName: (evaluation.studentId as any).name,
@@ -327,7 +327,7 @@ export class StudentEvaluationService {
 
       // Combine group and solo evaluations
       const allEvaluations = [...Object.values(groupedEvaluations), ...soloEvaluations];
-      
+
       return allEvaluations;
     } catch (error) {
       logger.error('Error getting faculty student evaluations:', error);
@@ -351,10 +351,10 @@ export class StudentEvaluationService {
       if (facultyGroups.length > 0) {
         const { GroupSubmission } = await import('../models/GroupSubmission');
         const groupIds = facultyGroups.map(group => group._id);
-        
+
         // Get group submissions
-        const groupSubmissions = await GroupSubmission.find({ 
-          groupId: { $in: groupIds } 
+        const groupSubmissions = await GroupSubmission.find({
+          groupId: { $in: groupIds }
         })
           .populate('submittedBy', 'name email')
           .sort({ submittedAt: -1 });
@@ -411,17 +411,37 @@ export class StudentEvaluationService {
 
       // 2. Get SOLO submissions for students assigned to this faculty
       const { Submission } = await import('../models/Submission');
-      
-      // Find solo submissions where faculty is assigned
-      const soloSubmissions = await Submission.find({ facultyId })
-        .populate('studentId', 'name email studentId')
+
+      // Find solo submissions in multiple ways:
+      // a) Directly by facultyId on the submission
+      // b) By finding students whose assignedFacultyId matches this faculty
+
+      // First, get students assigned to this faculty
+      const studentsAssignedToFaculty = await User.find({
+        assignedFacultyId: facultyId
+      }).select('_id');
+      const studentIds = studentsAssignedToFaculty.map(s => s._id);
+
+      // Query for solo submissions
+      const soloSubmissions = await Submission.find({
+        $or: [
+          { facultyId: facultyId }, // Direct faculty assignment
+          { studentId: { $in: studentIds } } // Students assigned to this faculty
+        ]
+      })
+        .populate('studentId', 'name email studentId assignedFacultyId')
         .populate('projectId', 'title projectId type brief')
         .populate('submittedBy', 'name email')
         .sort({ submittedAt: -1 });
 
+      logger.info(`Found ${soloSubmissions.length} solo submissions for faculty ${facultyId}`);
+
       // Process each solo submission
       for (const submission of soloSubmissions) {
         if (!submission.studentId) continue;
+
+        // Skip if already added via group submissions
+        if (submissions.some(s => s._id.toString() === submission._id.toString())) continue;
 
         // Get student evaluation for this solo student
         const studentEvaluation = await StudentEvaluation.findOne({
@@ -627,7 +647,7 @@ export class StudentEvaluationService {
         },
         internalFaculty: group.assignedFacultyId,
         externalEvaluator: group.externalEvaluatorId,
-        hasConflict: group.assignedFacultyId && group.externalEvaluatorId && 
+        hasConflict: group.assignedFacultyId && group.externalEvaluatorId &&
           group.assignedFacultyId._id.toString() === group.externalEvaluatorId._id.toString(),
         isAssigned: !!group.externalEvaluatorId
       }));
@@ -645,7 +665,7 @@ export class StudentEvaluationService {
         },
         internalFaculty: student.assignedFacultyId,
         externalEvaluator: soloEvaluationMap.get(student._id.toString()),
-        hasConflict: student.assignedFacultyId && soloEvaluationMap.get(student._id.toString()) && 
+        hasConflict: student.assignedFacultyId && soloEvaluationMap.get(student._id.toString()) &&
           student.assignedFacultyId._id.toString() === soloEvaluationMap.get(student._id.toString())._id.toString(),
         isAssigned: !!soloEvaluationMap.get(student._id.toString())
       }));
@@ -712,7 +732,7 @@ export class StudentEvaluationService {
 
       // Get all external evaluators
       const evaluators = await this.getAvailableExternalEvaluators();
-      
+
       // Get all assignments
       const assignments = await this.getExternalEvaluatorAssignments();
       const totalAssignments = assignments.length;
@@ -750,7 +770,7 @@ export class StudentEvaluationService {
       // Validation 4: Check minimum assignment rule
       const activeEvaluators = evaluators.filter(e => e.assignmentCount > 0);
       const inactiveEvaluators = evaluators.filter(e => e.assignmentCount === 0);
-      
+
       if (inactiveEvaluators.length > 0 && unassignedCount > 0) {
         recommendations.push(`${inactiveEvaluators.length} evaluators have no assignments while ${unassignedCount} projects remain unassigned`);
       }
@@ -785,7 +805,7 @@ export class StudentEvaluationService {
 
       // Get available external evaluators (sorted by current assignment count)
       const evaluators = await this.getAvailableExternalEvaluators();
-      
+
       if (evaluators.length === 0) {
         throw new Error('No external evaluators available');
       }
@@ -841,19 +861,19 @@ export class StudentEvaluationService {
 
       // Combine all unassigned entities for better distribution
       const allUnassigned: AssignmentEntity[] = [
-        ...unassignedGroups.map(g => ({ 
-          type: 'group' as const, 
+        ...unassignedGroups.map(g => ({
+          type: 'group' as const,
           entity: {
             _id: g._id,
             groupCode: g.groupCode,
             assignedFacultyId: g.assignedFacultyId
           }
         })),
-        ...soloStudentsWithoutExternal.map(s => ({ 
-          type: 'solo' as const, 
+        ...soloStudentsWithoutExternal.map(s => ({
+          type: 'solo' as const,
           entity: {
             _id: s._id,
-            name: s.name,
+            name: s.name || 'Unknown Student',
             assignedFacultyId: s.assignedFacultyId
           }
         }))
@@ -873,7 +893,7 @@ export class StudentEvaluationService {
       for (const item of allUnassigned) {
         const { type, entity } = item;
         const internalFacultyId = entity.assignedFacultyId?._id?.toString();
-        
+
         // Find the evaluator with the least assignments who is not the internal faculty
         const availableEvaluators = evaluators
           .filter(evaluator => evaluator._id.toString() !== internalFacultyId)
@@ -927,7 +947,7 @@ export class StudentEvaluationService {
 
       // Log assignment summary
       logger.info(`Auto-assignment completed: ${groupsAssigned} groups, ${soloStudentsAssigned} solo students assigned`);
-      
+
       if (assignmentFailures.length > 0) {
         logger.warn(`Assignment failures: ${assignmentFailures.join('; ')}`);
       }
@@ -1079,9 +1099,9 @@ export class StudentEvaluationService {
     try {
       const evaluators = await this.getAvailableExternalEvaluators();
       const assignments = await this.getExternalEvaluatorAssignments();
-      
+
       const totalAssignments = assignments.filter(a => a.isAssigned).length;
-      
+
       // Calculate minimum assignments per evaluator
       const minimumPerEvaluator = Math.floor(totalAssignments / evaluators.length);
       const violations = [];
@@ -1129,9 +1149,9 @@ export class StudentEvaluationService {
       // Get current assignments and evaluators
       const evaluators = await this.getAvailableExternalEvaluators();
       const assignments = await this.getExternalEvaluatorAssignments();
-      
+
       const assignedCount = assignments.filter(a => a.isAssigned).length;
-      
+
       // Find over-assigned and under-assigned evaluators
       const avgAssignments = assignedCount / evaluators.length;
       const overAssigned = evaluators.filter(e => e.assignmentCount > Math.ceil(avgAssignments));
@@ -1144,12 +1164,12 @@ export class StudentEvaluationService {
         if (underAssigned.length === 0) break;
 
         const excessAssignments = overEvaluator.assignmentCount - Math.ceil(avgAssignments);
-        
+
         // Find assignments to move
-        const evaluatorAssignments = assignments.filter(a => 
-          a.isAssigned && 
+        const evaluatorAssignments = assignments.filter(a =>
+          a.isAssigned &&
           ((a.submissionType === 'group' && a.groupId?.externalEvaluatorId?._id === overEvaluator._id) ||
-           (a.submissionType === 'solo' && a.externalEvaluator?._id === overEvaluator._id))
+            (a.submissionType === 'solo' && a.externalEvaluator?._id === overEvaluator._id))
         );
 
         for (let i = 0; i < Math.min(excessAssignments, evaluatorAssignments.length) && underAssigned.length > 0; i++) {
@@ -1157,8 +1177,8 @@ export class StudentEvaluationService {
           const targetEvaluator = underAssigned[0];
 
           // Check if target evaluator can take this assignment (no conflict)
-          const internalFacultyId = assignment.submissionType === 'group' 
-            ? assignment.groupId?.assignedFacultyId?._id 
+          const internalFacultyId = assignment.submissionType === 'group'
+            ? assignment.groupId?.assignedFacultyId?._id
             : assignment.studentId?.assignedFacultyId?._id;
 
           if (targetEvaluator._id !== internalFacultyId) {
@@ -1167,7 +1187,7 @@ export class StudentEvaluationService {
               await Group.findByIdAndUpdate(assignment.groupId._id, {
                 externalEvaluatorId: targetEvaluator._id
               });
-              
+
               await this.assignExternalEvaluatorToStudents(
                 assignment.groupId._id,
                 targetEvaluator._id,
@@ -1183,7 +1203,7 @@ export class StudentEvaluationService {
 
             rebalanced++;
             targetEvaluator.assignmentCount++;
-            
+
             // Remove from under-assigned if they now have enough
             if (targetEvaluator.assignmentCount >= Math.floor(avgAssignments)) {
               underAssigned.shift();

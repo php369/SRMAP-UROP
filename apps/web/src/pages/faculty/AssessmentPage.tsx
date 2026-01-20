@@ -96,7 +96,6 @@ export function FacultyAssessmentPage() {
   const [assessmentType, setAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'>('CLA-1');
   const [currentAssessmentType, setCurrentAssessmentType] = useState<'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null>(null);
   const [initializing, setInitializing] = useState(true);
-  const [activeTab, setActiveTab] = useState<'internal' | 'external'>('internal');
   const [gradeData, setGradeData] = useState({
     grade: '',
     comments: ''
@@ -188,28 +187,23 @@ export function FacultyAssessmentPage() {
     };
   };
 
-  // Check if any assessment window is open for the project types the faculty likely has
-  const canGrade = currentAssessmentType && submissions.length > 0 && submissions.some(sub => {
-    const projectInfo = getProjectInfo(sub);
-    return isAssessmentTypeActive(windows, projectInfo.type as any, currentAssessmentType);
-  });
+  // Simplified: Faculty can grade if they have submissions for the current assessment type
+  // Window status is informational only, not blocking
+  const canGrade = submissions.length > 0;
 
-  // Re-evaluate canGrade when submissions or windows change
-  // However, canGrade is currently a derived constant. 
-  // We should probably explicitly check this in the render or use a state.
-
-  // Let's make canGrade more robust by checking if there's ANY active window for ANY project type 
-  // that matches the students we have.
+  // Check if any window is active (for informational badge only)
   const isAnyWindowActive = currentAssessmentType && ['IDP', 'UROP', 'CAPSTONE'].some(type =>
     isAssessmentTypeActive(windows, type as 'IDP' | 'UROP' | 'CAPSTONE', currentAssessmentType)
   );
 
   useEffect(() => {
     const initializeData = async () => {
+      console.log('📊 Faculty Assessment: Initializing data...');
       setInitializing(true);
       try {
         // Set current assessment type based on active windows
         const currentType = determineCurrentAssessmentType();
+        console.log('📊 Determined assessment type:', currentType);
         setCurrentAssessmentType(currentType);
         setAssessmentType(currentType || 'CLA-1');
 
@@ -225,25 +219,35 @@ export function FacultyAssessmentPage() {
     };
 
     if (windows.length > 0) {
+      console.log('📊 Windows loaded, calling initializeData. Windows count:', windows.length);
       initializeData();
+    } else {
+      console.log('📊 Waiting for windows to load...');
     }
   }, [windows]);
 
   const fetchSubmissions = async (assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null) => {
+    console.log('📡 fetchSubmissions called with assessmentType:', assessmentType);
     setLoading(true);
     try {
       const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
+      console.log('📡 Fetching from: /student-evaluations/submissions' + params);
       const response = await api.get(`/student-evaluations/submissions${params}`);
+      console.log('📡 Faculty submissions response:', response);
+
       if (response.success && response.data && Array.isArray(response.data)) {
         // Filter submissions by assessment type if specified
         const filteredSubmissions = assessmentType
           ? response.data.filter((sub: Submission) => sub.assessmentType === assessmentType)
           : response.data;
+        console.log('📊 Setting submissions:', filteredSubmissions.length, 'items');
         setSubmissions(filteredSubmissions);
       } else {
+        console.log('📊 No submissions in response, setting empty array');
         setSubmissions([]);
       }
     } catch (error) {
+      console.error('📊 Error fetching submissions:', error);
       toast.error('Failed to fetch submissions');
       setSubmissions([]);
     } finally {
@@ -538,57 +542,49 @@ export function FacultyAssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="p-6 pb-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto space-y-6"
       >
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
-            Assessment & Grading
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            Review submissions and provide grades
+        {/* Header - Dynamic based on assessment type */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-1">
+            {currentAssessmentType === 'External' ? (
+              <UserCheck className="w-8 h-8 text-amber-600" />
+            ) : (
+              <Users className="w-8 h-8 text-amber-600" />
+            )}
+            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
+              {currentAssessmentType === 'External' ? 'External Evaluation' : 'Internal Grading'}
+            </h1>
+          </div>
+          <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+            {currentAssessmentType ? (
+              <>
+                <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">
+                  {currentAssessmentType}
+                </span>
+                Review submissions and provide grades
+                {isAnyWindowActive && (
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                    Window Active
+                  </span>
+                )}
+              </>
+            ) : (
+              'No active assessment window'
+            )}
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-slate-200">
-          <nav className="-mb-px flex space-x-8">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveTab('internal')}
-              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 font-bold transition-all ${activeTab === 'internal'
-                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-            >
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Internal Grading
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setActiveTab('external')}
-              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 font-bold transition-all ${activeTab === 'external'
-                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-            >
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-4 h-4" />
-                External Evaluator
-              </div>
-            </Button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'internal' ? (
-          /* Internal Grading Tab Content */
+        {/* Content - Render based on assessment type */}
+        {currentAssessmentType === 'External' ? (
+          /* External Evaluation Content */
+          <ExternalEvaluatorTab />
+        ) : (
+          /* Internal Grading Content */
           <div className="space-y-6">
             {loading ? (
               <div className="py-12">
@@ -597,12 +593,12 @@ export function FacultyAssessmentPage() {
             ) : !canGrade ? (
               <div className="py-8">
                 <AssessmentEmptyState
-                  title="Grading Window Closed"
-                  description={`The assessment window for your students' project types is not currently active.`}
-                  subDescription="You can only grade students when their specific project type assessment window is open."
-                  icon="clock"
+                  title="No Submissions Yet"
+                  description={currentAssessmentType ? `There are no submissions for ${currentAssessmentType} assessment yet.` : `No active assessment window found.`}
+                  subDescription="Check back later once students have submitted their work."
+                  icon="file-text"
                   theme="amber"
-                  subtitle="LOCKED"
+                  subtitle="GRADING"
                 />
               </div>
             ) : submissions.length === 0 ? (
@@ -1065,9 +1061,6 @@ export function FacultyAssessmentPage() {
               </div>
             )}
           </div>
-        ) : (
-          /* External Evaluator Tab Content */
-          <ExternalEvaluatorTab />
         )}
 
         {/* Grading Modal */}
