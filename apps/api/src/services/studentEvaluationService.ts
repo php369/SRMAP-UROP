@@ -512,6 +512,7 @@ export class StudentEvaluationService {
         // Get student evaluation for this solo student
         const studentEvaluation = await StudentEvaluation.findOne({
           studentId: submission.studentId._id,
+          groupId: { $in: [null, undefined] },
           projectId: (submission.projectId as any)._id || submission.projectId,
           assessmentType: submission.assessmentType
         }).populate('studentId', 'name email studentId');
