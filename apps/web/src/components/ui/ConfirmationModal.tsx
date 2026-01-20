@@ -1,11 +1,12 @@
-import { AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, Info, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   title: string;
   message: string;
   confirmText?: string;
@@ -25,6 +26,7 @@ export function ConfirmationModal({
   type = 'warning',
   details
 }: ConfirmationModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
   const getIcon = () => {
     switch (type) {
@@ -57,6 +59,18 @@ export function ConfirmationModal({
     }
   };
 
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      console.error('Confirmation action failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-4">
@@ -75,11 +89,18 @@ export function ConfirmationModal({
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-border/10">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={isLoading}>
             {cancelText}
           </Button>
-          <Button variant={getButtonVariant()} onClick={() => { onConfirm(); onClose(); }}>
-            {confirmText}
+          <Button variant={getButtonVariant()} onClick={handleConfirm} disabled={isLoading}>
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </span>
+            ) : (
+              confirmText
+            )}
           </Button>
         </div>
       </div>

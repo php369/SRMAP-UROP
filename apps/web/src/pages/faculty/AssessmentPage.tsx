@@ -146,13 +146,13 @@ export function FacultyAssessmentPage() {
     }
   };
 
-  // Get converted score for display
+  // Get converted score for display (with one decimal place precision)
   const getConvertedScore = (conductScore: number, assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'): number => {
     switch (assessmentType) {
-      case 'CLA-1': return Math.min(10, Math.round(conductScore * 10 / 20));
-      case 'CLA-2': return Math.min(15, Math.round(conductScore * 15 / 30));
-      case 'CLA-3': return Math.min(25, Math.round(conductScore * 25 / 50));
-      case 'External': return Math.min(50, Math.round(conductScore * 50 / 100));
+      case 'CLA-1': return Math.min(10, Math.round(conductScore * 10 / 20 * 10) / 10);
+      case 'CLA-2': return Math.min(15, Math.round(conductScore * 15 / 30 * 10) / 10);
+      case 'CLA-3': return Math.min(25, Math.round(conductScore * 25 / 50 * 10) / 10);
+      case 'External': return Math.min(50, Math.round(conductScore * 50 / 100 * 10) / 10);
       default: return 0;
     }
   };
@@ -1096,10 +1096,10 @@ export function FacultyAssessmentPage() {
               onClose={() => setConfirmSolo(null)}
               onConfirm={executeSaveSolo}
               title="Confirm Grade Submission"
-              message="Once submitted, these grades will be frozen and visible to the coordinator. Modifying frozen grades requires administrative approval."
-              details={confirmSolo.student?.evaluation?.isPublished ? "WARNING: These grades are already published and visible to the student." : undefined}
+              message="You are about to submit this grade. The grade will be visible to the coordinator."
+              details={confirmSolo.student?.evaluation?.isPublished ? "Note: This grade is already published to the student." : undefined}
               confirmText="Submit Grade"
-              type={confirmSolo.student?.evaluation?.isPublished ? 'danger' : 'warning'}
+              type="warning"
             />
           )
         }
@@ -1112,7 +1112,6 @@ export function FacultyAssessmentPage() {
               onConfirm={executeSaveGroup}
               title="Submit Group Grades"
               message={`You are about to submit grades for all ${confirmGroup.students?.length || 0} students in this group.`}
-              details="Grades will be frozen upon submission."
               confirmText="Submit Group Grades"
               type="warning"
             />

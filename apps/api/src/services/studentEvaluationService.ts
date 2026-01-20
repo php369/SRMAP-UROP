@@ -12,7 +12,8 @@ export class StudentEvaluationService {
     if (conductScore < 0 || conductScore > 20) {
       throw new Error('CLA-1 conduct score must be between 0 and 20');
     }
-    return Math.min(10, Math.round(conductScore * 10 / 20));
+    // Use one decimal place precision: 19/20 = 9.5
+    return Math.min(10, Math.round(conductScore * 10 / 20 * 10) / 10);
   }
 
   /**
@@ -22,7 +23,8 @@ export class StudentEvaluationService {
     if (conductScore < 0 || conductScore > 30) {
       throw new Error('CLA-2 conduct score must be between 0 and 30');
     }
-    return Math.min(15, Math.round(conductScore * 15 / 30));
+    // Use one decimal place precision
+    return Math.min(15, Math.round(conductScore * 15 / 30 * 10) / 10);
   }
 
   /**
@@ -32,7 +34,8 @@ export class StudentEvaluationService {
     if (conductScore < 0 || conductScore > 50) {
       throw new Error('CLA-3 conduct score must be between 0 and 50');
     }
-    return Math.min(25, Math.round(conductScore * 25 / 50));
+    // Use one decimal place precision
+    return Math.min(25, Math.round(conductScore * 25 / 50 * 10) / 10);
   }
 
   /**
@@ -42,7 +45,8 @@ export class StudentEvaluationService {
     if (conductScore < 0 || conductScore > 100) {
       throw new Error('External conduct score must be between 0 and 100');
     }
-    return Math.min(50, Math.round(conductScore * 50 / 100));
+    // Use one decimal place precision
+    return Math.min(50, Math.round(conductScore * 50 / 100 * 10) / 10);
   }
 
   /**
