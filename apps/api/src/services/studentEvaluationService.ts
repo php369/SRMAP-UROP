@@ -428,7 +428,7 @@ export class StudentEvaluationService {
           // Get student evaluations for this group
           const studentEvaluations = await StudentEvaluation.find({
             groupId: group._id,
-            projectId: (group.assignedProjectId as any)._id || group.assignedProjectId
+            projectId: group.assignedProjectId
           }).populate('studentId', 'name email studentId');
 
           // Map existing evaluations to students
@@ -510,10 +510,10 @@ export class StudentEvaluationService {
         if (submissions.some(s => s._id.toString() === submission._id.toString())) continue;
 
         // Get student evaluation for this solo student
+        // Solo students have groupId: null or undefined, we need to match that
         const studentEvaluation = await StudentEvaluation.findOne({
           studentId: submission.studentId._id,
           groupId: { $in: [null, undefined] },
-          projectId: (submission.projectId as any)._id || submission.projectId,
           assessmentType: submission.assessmentType
         }).populate('studentId', 'name email studentId');
 
