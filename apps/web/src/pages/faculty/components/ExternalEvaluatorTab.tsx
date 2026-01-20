@@ -362,7 +362,7 @@ export function ExternalEvaluatorTab() {
                       max="100"
                       value={gradeData.grade}
                       onChange={(e) => setGradeData(prev => ({ ...prev, grade: e.target.value }))}
-                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-slate-900 dark:text-slate-100 font-bold"
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-amber-500 focus:ring-0 focus:shadow-none transition-all outline-none text-slate-900 dark:text-slate-100 font-bold"
                       placeholder="Enter grade (0-100)"
                     />
                     <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-2">
@@ -378,7 +378,7 @@ export function ExternalEvaluatorTab() {
                       value={gradeData.comments}
                       onChange={(e) => setGradeData(prev => ({ ...prev, comments: e.target.value }))}
                       rows={4}
-                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-slate-900 dark:text-slate-100"
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-amber-500 focus:ring-0 focus:shadow-none transition-all outline-none text-slate-900 dark:text-slate-100"
                       placeholder="Enter evaluation comments..."
                     />
                   </div>

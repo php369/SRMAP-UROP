@@ -7,7 +7,7 @@ import { validateRequest } from '../middleware/validation';
 import { logger } from '../utils/logger';
 import Joi from 'joi';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 // Validation schemas
 const updateInternalScoreSchema = Joi.object({

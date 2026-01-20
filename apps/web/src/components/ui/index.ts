@@ -14,6 +14,7 @@ export { ConfirmationModal } from './ConfirmationModal';
 export { Breadcrumb } from './Breadcrumb';
 export { CommandPalette } from './CommandPalette';
 export { RichTextEditor } from './RichTextEditor';
+export { NumericStepper } from './NumericStepper';
 
 // Interactive Components
 export { AnimatedCounter } from './AnimatedCounter';

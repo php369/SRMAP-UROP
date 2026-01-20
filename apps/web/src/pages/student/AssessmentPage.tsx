@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare } from 'lucide-react';
+import { FileText, Github, Award, Clock, CheckCircle, AlertCircle, Users, MessageSquare, ArrowRight, Presentation } from 'lucide-react';
+import { TimelineStatus } from './components/TimelineStatus';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
@@ -370,10 +371,14 @@ export function AssessmentPage() {
                         {submission.assessmentType} Assessment
                       </h3>
                       <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                        <span>
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
+                          <Clock className="w-3.5 h-3.5" />
                           {submission.submissionType === 'evaluation' ?
-                            (submission.isGradeReleased ? 'Grade released on' : 'Evaluation created on') :
-                            'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
+                            (submission.isGradeReleased ? 'Released: ' : 'Created: ') :
+                            'Submitted: '}
+                          <span className="text-slate-900 dark:text-white font-bold ml-1">
+                            {new Date(submission.submittedAt).toLocaleDateString()}
+                          </span>
                         </span>
                         {(submission.groupId?.groupCode || submission.groupCode) && (
                           <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
@@ -435,59 +440,62 @@ export function AssessmentPage() {
 
                 {/* Content Section */}
                 <div className="p-6">
-                  {/* Submission Files - Only show for non-evaluation submissions */}
+                  {/* Submission Files - Enhanced */}
                   {submission.submissionType !== 'evaluation' && (
-                    <div className="mb-6">
-                      <h4 className="text-lg font-semibold mb-4 text-gray-800">Submitted Work</h4>
+                    <div className="mb-8">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-amber-500" /> Submitted Artifacts
+                      </h4>
                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* GitHub Repository */}
-                        <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 bg-gray-800 rounded-lg">
-                              <Github className="w-5 h-5 text-white" />
-                            </div>
+                        <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 group-hover:bg-amber-500 transition-colors" />
+                          <div className="flex items-start justify-between mb-4 pl-3">
                             <div>
-                              <h5 className="font-medium text-gray-800">GitHub Repository</h5>
-                              <p className="text-xs text-gray-500">Source code</p>
+                              <h5 className="font-bold text-slate-800 dark:text-slate-200">GitHub Repo</h5>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">Source Code</p>
+                            </div>
+                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg group-hover:scale-110 transition-transform">
+                              <Github className="w-5 h-5 text-slate-900 dark:text-white" />
                             </div>
                           </div>
-                          <a
-                            href={submission.githubLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            View Repository
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
+                          <div className="pl-3">
+                            <a
+                              href={submission.githubLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-all"
+                            >
+                              View Repository <ArrowRight className="w-4 h-4 ml-2" />
+                            </a>
+                          </div>
                         </div>
 
                         {/* Report PDF */}
                         {submission.reportUrl && (
-                          <div className="bg-red-50 rounded-lg p-4 hover:bg-red-100 transition-colors">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="p-2 bg-red-600 rounded-lg">
-                                <FileText className="w-5 h-5 text-white" />
-                              </div>
+                          <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-red-500 transition-colors" />
+                            <div className="flex items-start justify-between mb-4 pl-3">
                               <div>
-                                <h5 className="font-medium text-gray-800">Project Report</h5>
-                                <p className="text-xs text-gray-500">PDF document</p>
+                                <h5 className="font-bold text-slate-800 dark:text-slate-200">Project Report</h5>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">PDF Document</p>
+                              </div>
+                              <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg group-hover:scale-110 transition-transform">
+                                <FileText className="w-5 h-5 text-red-600 dark:text-red-500" />
                               </div>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="pl-3 grid grid-cols-2 gap-2">
                               <button
                                 onClick={() => openPDFModal(submission.reportUrl, 'Project Report')}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                className="flex items-center justify-center py-2 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-semibold rounded-lg transition-colors"
                               >
-                                👁️ View
+                                View
                               </button>
                               <button
                                 onClick={() => downloadFile(submission.reportUrl, 'project-report.pdf')}
-                                className="text-green-600 hover:text-green-800 text-sm font-medium"
+                                className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
                               >
-                                ⬇️ Download
+                                Download
                               </button>
                             </div>
                           </div>
@@ -495,28 +503,29 @@ export function AssessmentPage() {
 
                         {/* Presentation */}
                         {submission.pptUrl && (
-                          <div className="bg-orange-50 rounded-lg p-4 hover:bg-orange-100 transition-colors">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="p-2 bg-orange-600 rounded-lg">
-                                <FileText className="w-5 h-5 text-white" />
-                              </div>
+                          <div className="group bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-orange-400 dark:hover:border-orange-500/50 hover:shadow-md transition-all relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 transition-colors" />
+                            <div className="flex items-start justify-between mb-4 pl-3">
                               <div>
-                                <h5 className="font-medium text-gray-800">Presentation</h5>
-                                <p className="text-xs text-gray-500">Slides</p>
+                                <h5 className="font-bold text-slate-800 dark:text-slate-200">Presentation</h5>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">Slides Deck</p>
+                              </div>
+                              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg group-hover:scale-110 transition-transform">
+                                <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-500" />
                               </div>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="pl-3 grid grid-cols-2 gap-2">
                               <button
                                 onClick={() => openPDFModal(submission.pptUrl, 'Presentation')}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                className="flex items-center justify-center py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg transition-colors"
                               >
-                                👁️ View
+                                View
                               </button>
                               <button
                                 onClick={() => downloadFile(submission.pptUrl, 'presentation.pdf')}
-                                className="text-green-600 hover:text-green-800 text-sm font-medium"
+                                className="flex items-center justify-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-lg transition-colors"
                               >
-                                ⬇️ Download
+                                Download
                               </button>
                             </div>
                           </div>
@@ -572,115 +581,17 @@ export function AssessmentPage() {
                     </div>
                   )}
 
-                  {/* Faculty Comments Section - Show immediately when faculty grades */}
+                  {/* Assessment Journey Timeline */}
                   {submission.evaluation && (
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <Award className="w-5 h-5 text-blue-500" />
-                        Assessment Progress
+                    <div className="mb-6">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <Award className="w-4 h-4 text-emerald-500" /> Assessment Journey
                       </h4>
-
-                      {/* Assessment Components Grid - Hide individual scores */}
-                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* CLA-1 */}
-                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla1?.conduct > 0
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
-                          }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-1</h5>
-                            {submission.evaluation.internal?.cla1?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <Clock className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          {submission.evaluation.internal?.cla1?.conduct > 0 ? (
-                            <div>
-                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
-                                ✅ Graded
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
-                          )}
-                        </div>
-
-                        {/* CLA-2 */}
-                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla2?.conduct > 0
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
-                          }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-2</h5>
-                            {submission.evaluation.internal?.cla2?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <Clock className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          {submission.evaluation.internal?.cla2?.conduct > 0 ? (
-                            <div>
-                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
-                                ✅ Graded
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
-                          )}
-                        </div>
-
-                        {/* CLA-3 */}
-                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla3?.conduct > 0
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
-                          }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-3</h5>
-                            {submission.evaluation.internal?.cla3?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <Clock className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          {submission.evaluation.internal?.cla3?.conduct > 0 ? (
-                            <div>
-                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
-                                ✅ Graded
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
-                          )}
-                        </div>
-
-                        {/* External */}
-                        <div className={`p-4 rounded-lg border-2 ${submission.evaluation.external?.reportPresentation?.conduct > 0
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
-                          }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-bold text-slate-800 dark:text-slate-200">External</h5>
-                            {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <Clock className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
-                            <div>
-                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
-                                ✅ Graded
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
-                          )}
-                        </div>
+                      <div className="bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 p-2 overflow-x-auto">
+                        <TimelineStatus evaluation={submission.evaluation} />
                       </div>
                     </div>
                   )}
-
                   {/* Final Grade - Only show when released */}
                   <FinalGradeCard
                     totalScore={submission.finalGrade || submission.total || 0}
