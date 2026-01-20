@@ -12,6 +12,8 @@ import { WindowClosedMessage } from '../../components/common/WindowClosedMessage
 import { api } from '../../utils/api';
 import { getCurrentAssessmentType, isAssessmentTypeActive } from '../../utils/assessmentHelper';
 import { ExternalEvaluatorTab } from './components/ExternalEvaluatorTab';
+import { AssessmentEmptyState } from '../../components/assessment/AssessmentEmptyState';
+import { FacultyAssessmentSkeleton } from '../../components/assessment/AssessmentSkeleton';
 
 interface Submission {
   _id: string;
@@ -141,8 +143,19 @@ export function FacultyAssessmentPage() {
     }
   };
 
-  // Check if any assessment window is open (for any project type)
-  const canGrade = currentAssessmentType && ['IDP', 'UROP', 'CAPSTONE'].some(type =>
+  // Check if any assessment window is open for the project types the faculty likely has
+  const canGrade = currentAssessmentType && submissions.length > 0 && submissions.some(sub => {
+    const projectInfo = getProjectInfo(sub);
+    return isAssessmentTypeActive(windows, projectInfo.type as any, currentAssessmentType);
+  });
+
+  // Re-evaluate canGrade when submissions or windows change
+  // However, canGrade is currently a derived constant. 
+  // We should probably explicitly check this in the render or use a state.
+
+  // Let's make canGrade more robust by checking if there's ANY active window for ANY project type 
+  // that matches the students we have.
+  const isAnyWindowActive = currentAssessmentType && ['IDP', 'UROP', 'CAPSTONE'].some(type =>
     isAssessmentTypeActive(windows, type as 'IDP' | 'UROP' | 'CAPSTONE', currentAssessmentType)
   );
 
@@ -174,8 +187,8 @@ export function FacultyAssessmentPage() {
   const fetchSubmissions = async (assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External' | null) => {
     setLoading(true);
     try {
-      const params = assessmentType ? `? assessmentType = ${assessmentType} ` : '';
-      const response = await api.get(`/ student - evaluations / submissions${params} `);
+      const params = assessmentType ? `?assessmentType=${assessmentType}` : '';
+      const response = await api.get(`/student-evaluations/submissions${params}`);
       if (response.success && response.data && Array.isArray(response.data)) {
         // Filter submissions by assessment type if specified
         const filteredSubmissions = assessmentType
@@ -500,15 +513,25 @@ export function FacultyAssessmentPage() {
   // Show loading while initializing
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen p-6 max-w-7xl mx-auto py-12">
+        <FacultyAssessmentSkeleton />
       </div>
     );
   }
 
-  // Show window closed message if assessment window is not open
-  if (!canGrade) {
-    return <WindowClosedMessage windowType="assessment" showAllProjectTypes={true} />;
+  // Show window closed message if assessment window is not open at all
+  if (!currentAssessmentType || !isAnyWindowActive) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <AssessmentEmptyState
+          title="No Active Assessment Windows"
+          description="There are currently no scheduled assessment windows open for any project types."
+          icon="clock"
+          theme="amber"
+          subtitle="CLOSED"
+        />
+      </div>
+    );
   }
 
   return (
@@ -520,8 +543,10 @@ export function FacultyAssessmentPage() {
       >
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Assessment & Grading</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
+            Assessment & Grading
+          </h1>
+          <p className="text-slate-500 font-medium mt-1">
             Review submissions and provide grades
           </p>
         </div>
@@ -532,8 +557,8 @@ export function FacultyAssessmentPage() {
             <Button
               variant="ghost"
               onClick={() => setActiveTab('internal')}
-              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 ${activeTab === 'internal'
-                ? 'border-primary text-primary hover:text-primary'
+              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 font-bold transition-all ${activeTab === 'internal'
+                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
@@ -545,8 +570,8 @@ export function FacultyAssessmentPage() {
             <Button
               variant="ghost"
               onClick={() => setActiveTab('external')}
-              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 ${activeTab === 'external'
-                ? 'border-primary text-primary hover:text-primary'
+              className={`rounded-none border-b-2 hover:bg-transparent px-1 pb-4 pt-2 font-bold transition-all ${activeTab === 'external'
+                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
             >
@@ -562,24 +587,33 @@ export function FacultyAssessmentPage() {
         {activeTab === 'internal' ? (
           /* Internal Grading Tab Content */
           <div className="space-y-6">
-            {/* Submissions List */}
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="py-12">
+                <FacultyAssessmentSkeleton />
+              </div>
+            ) : !canGrade ? (
+              <div className="py-8">
+                <AssessmentEmptyState
+                  title="Grading Window Closed"
+                  description={`The assessment window for your students' project types is not currently active.`}
+                  subDescription="You can only grade students when their specific project type assessment window is open."
+                  icon="clock"
+                  theme="amber"
+                  subtitle="LOCKED"
+                />
               </div>
             ) : submissions.length === 0 ? (
               <>
-                <GlassCard className="p-12 text-center">
-                  <div className="max-w-md mx-auto">
-                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-text mb-2">No Submissions</h3>
-                    <p className="text-textSecondary">
-                      No submissions to grade at the moment
-                    </p>
-                  </div>
-                </GlassCard>
+                <div className="py-8">
+                  <AssessmentEmptyState
+                    title="No Submissions Yet"
+                    description={`There are currently no submissions for ${assessmentType} assessment.`}
+                    subDescription="Check back later once students have submitted their work."
+                    icon="file-text"
+                    theme="amber"
+                    subtitle="GRADING"
+                  />
+                </div>
 
                 {/* Show meeting logs even without submissions */}
                 {Object.keys(meetingLogs).length > 0 && (
@@ -610,7 +644,7 @@ export function FacultyAssessmentPage() {
                                     <h3 className="text-lg font-semibold text-text">
                                       {projectTitle}
                                     </h3>
-                                    <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-bold rounded-lg border border-primary/30">
+                                    <span className="px-3 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm font-bold rounded-xl border border-amber-500/20">
                                       {totalGrade}/{maxGrade} marks
                                     </span>
                                   </div>
@@ -741,20 +775,23 @@ export function FacultyAssessmentPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
-                    <GlassCard className="p-6 hover:bg-white/10 transition-all">
+                    <GlassCard className="p-6 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all group overflow-hidden relative">
+                      {/* Selection Highlight */}
+                      <div className="absolute top-0 left-0 w-1 h-full bg-transparent group-hover:bg-amber-500 transition-all" />
+
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-lg font-semibold text-text">
+                          <div className="flex flex-wrap items-center gap-3 mb-3">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                               {submission.groupId
                                 ? `Group ${submission.groupId.groupCode}`
                                 : submission.studentId?.name}
                             </h3>
                             {getAssessmentBadge(assessmentType)}
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600 text-blue-800 dark:text-white text-xs font-medium rounded-lg border border-blue-300 dark:border-blue-600">
+                            <span className="px-2.5 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-lg border border-amber-500/20">
                               {getProjectInfo(submission).type}
                             </span>
-                            <span className="px-2 py-1 bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300 text-xs font-medium rounded-lg border border-green-300 dark:border-green-500/30">
+                            <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20">
                               Group Grading
                             </span>
                           </div>

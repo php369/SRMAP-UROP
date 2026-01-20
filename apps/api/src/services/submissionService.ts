@@ -52,7 +52,7 @@ export class SubmissionService {
       // Check if user is a member of the group
       const memberIds = group.members.map((m: mongoose.Types.ObjectId) => m.toString());
       const isMember = memberIds.includes(userId);
-      
+
       if (!isMember) {
         console.log('Member check failed:', {
           userId,
@@ -66,7 +66,7 @@ export class SubmissionService {
       const leaderIdStr = typeof group.leaderId === 'object' && group.leaderId._id
         ? group.leaderId._id.toString()
         : group.leaderId.toString();
-      
+
       const isLeader = leaderIdStr === userId;
       if (!isLeader) {
         console.log('Leader check failed:', {
@@ -92,18 +92,33 @@ export class SubmissionService {
   }
 
   /**
-   * Get submissions for a user's groups
+   * Get submissions for a user (both solo and group submissions)
    */
   static async getSubmissionsForUser(userId: string): Promise<ISubmission[]> {
-    // Find all groups where user is a member
-    const groups = await Group.find({ 'members.user': userId });
-    const groupIds = groups.map(g => g._id);
-
-    // Find submissions for these groups
-    return await Submission.find({ groupId: { $in: groupIds } })
-      .populate('groupId')
+    // 1. Find solo submissions where studentId matches the user
+    const soloSubmissions = await Submission.find({ studentId: userId })
+      .populate('projectId')
+      .populate('facultyId')
       .populate('submittedBy')
       .sort({ submittedAt: -1 });
+
+    // 2. Find all groups where user is a member
+    const groups = await Group.find({ members: userId });
+    const groupIds = groups.map(g => g._id);
+
+    // 3. Find group submissions for these groups
+    const groupSubmissions = groupIds.length > 0
+      ? await Submission.find({ groupId: { $in: groupIds } })
+        .populate('groupId')
+        .populate('submittedBy')
+        .sort({ submittedAt: -1 })
+      : [];
+
+    // 4. Combine and sort by submission date
+    const allSubmissions = [...soloSubmissions, ...groupSubmissions];
+    allSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+    return allSubmissions;
   }
 
   /**
@@ -148,7 +163,7 @@ export class SubmissionService {
       const projects = await Project.find({ facultyId });
       const projectIds = projects.map(p => p._id);
 
-      const projectSubmissions = await Submission.find({ 
+      const projectSubmissions = await Submission.find({
         projectId: { $in: projectIds },
         facultyId: { $ne: facultyId } // Avoid duplicates
       })
@@ -194,7 +209,7 @@ export class SubmissionService {
     updates: Partial<CreateSubmissionData>
   ): Promise<ISubmission> {
     const submission = await Submission.findById(submissionId);
-    
+
     if (!submission) {
       throw new Error('Submission not found');
     }
@@ -235,7 +250,7 @@ export class SubmissionService {
 
       // Check if submission already exists for this assessment type
       const groupObjectId = new mongoose.Types.ObjectId(data.groupId);
-      const existingSubmission = await Submission.findOne({ 
+      const existingSubmission = await Submission.findOne({
         groupId: groupObjectId,
         assessmentType: data.assessmentType
       });
@@ -247,14 +262,14 @@ export class SubmissionService {
     } else if (data.studentId) {
       // Solo submission
       const studentObjectId = new mongoose.Types.ObjectId(data.studentId);
-      
+
       // Validate submitter is the student
       if (data.studentId !== data.submittedBy) {
         throw new Error('You can only submit for yourself');
       }
 
       // Check if submission already exists for this assessment type
-      const existingSubmission = await Submission.findOne({ 
+      const existingSubmission = await Submission.findOne({
         studentId: studentObjectId,
         assessmentType: data.assessmentType
       });
@@ -287,7 +302,7 @@ export class SubmissionService {
         projectId = project._id;
         facultyId = project.facultyId;
       }
-      
+
       if (group.assignedFacultyId) {
         facultyId = (group.assignedFacultyId as any)._id || group.assignedFacultyId;
       }
@@ -295,22 +310,22 @@ export class SubmissionService {
       // Solo submission - project details will be assigned later by coordinator
       // For now, we'll use placeholder values
     }
-    
+
     // If no project or faculty assigned, create a placeholder
     // This allows submissions before formal project assignment
     if (!projectId) {
       // Create a temporary project ID - in production, you'd want to handle this differently
       projectId = new mongoose.Types.ObjectId();
     }
-    
+
     if (!facultyId) {
       // Use a placeholder faculty ID - in production, coordinator would assign later
       facultyId = new mongoose.Types.ObjectId();
     }
-    
+
     // Generate unique submission ID
     const submissionId = await this.generateSubmissionId(projectType, data.assessmentType);
-    
+
     // Create submission
     const submissionData: any = {
       submissionId,
@@ -341,14 +356,14 @@ export class SubmissionService {
 
     const submission = new Submission(submissionData);
     await submission.save();
-    
+
     // Update group status to frozen after submission (only for group submissions)
     if (data.groupId && group && group.status !== 'frozen') {
       group.status = 'frozen';
       await group.save();
       console.log(`Group ${group._id} status updated to frozen after submission`);
     }
-    
+
     return submission;
   }
 
@@ -403,7 +418,7 @@ export class SubmissionService {
    * Get submissions for external evaluator
    */
   static async getExternalEvaluatorSubmissions(evaluatorId: string): Promise<ISubmission[]> {
-    return await Submission.find({ 
+    return await Submission.find({
       externalEvaluatorId: evaluatorId,
       assessmentType: 'External'
     })
@@ -482,7 +497,7 @@ export class SubmissionService {
     projectType: 'IDP' | 'UROP' | 'CAPSTONE',
     assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
   ): Promise<number> {
-    const query: any = { 
+    const query: any = {
       projectType,
       isGraded: true,
       isGradeReleased: false
@@ -547,7 +562,7 @@ export class SubmissionService {
       const assessmentQuery = assessmentType ? { assessmentType } : {};
 
       // 1. Get solo submissions from Submission model
-      const soloSubmissions = await Submission.find({ 
+      const soloSubmissions = await Submission.find({
         studentId,
         ...assessmentQuery
       })
@@ -582,19 +597,19 @@ export class SubmissionService {
 
       // 2. Get group submissions from GroupSubmission model
       // First find groups where the student is a member
-      const userGroups = await Group.find({ 
+      const userGroups = await Group.find({
         members: { $elemMatch: { user: studentId } }
       });
 
       if (userGroups.length > 0) {
         const groupIds = userGroups.map(group => group._id);
-        
+
         // Build query for group submissions with assessment type filtering
         const groupQuery: any = { groupId: { $in: groupIds } };
         if (assessmentType) {
           groupQuery.assessmentType = assessmentType;
         }
-        
+
         const groupSubmissions = await GroupSubmission.find(groupQuery)
           .populate('submittedBy', 'name email')
           .populate('groupId')
@@ -638,7 +653,7 @@ export class SubmissionService {
 
       // 1. Get solo submissions from Submission model
       const soloSubmissions = await SubmissionService.getSubmissionsForFaculty(facultyId);
-      
+
       // Transform solo submissions
       soloSubmissions.forEach(submission => {
         allSubmissions.push({
@@ -672,9 +687,9 @@ export class SubmissionService {
 
       if (facultyGroups.length > 0) {
         const groupIds = facultyGroups.map(group => group._id);
-        
-        const groupSubmissions = await GroupSubmission.find({ 
-          groupId: { $in: groupIds } 
+
+        const groupSubmissions = await GroupSubmission.find({
+          groupId: { $in: groupIds }
         })
           .populate('submittedBy', 'name email')
           .populate({
@@ -690,7 +705,7 @@ export class SubmissionService {
         // Transform group submissions
         groupSubmissions.forEach(submission => {
           const group = facultyGroups.find(g => g._id.toString() === submission.groupId._id.toString());
-          
+
           allSubmissions.push({
             _id: submission._id,
             submissionType: 'group',

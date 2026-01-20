@@ -7,14 +7,22 @@ import { toast } from 'sonner';
 import { FinalGradeCard } from '../../components/assessment/FinalGradeCard';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { GlassCard } from '../../components/ui/GlassCard';
+import { AssessmentEmptyState } from '../../components/assessment/AssessmentEmptyState';
+import { AssessmentSkeleton } from '../../components/assessment/AssessmentSkeleton';
+import { useWindowStatus } from '../../hooks/useWindowStatus';
+import { getCurrentAssessmentType } from '../../utils/assessmentHelper';
 
 export function AssessmentPage() {
   const { user } = useAuth();
-  const [assessmentWindow, setAssessmentWindow] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
+  const { windows, loading: windowsLoading } = useWindowStatus();
+
+  const activeAssessmentType = eligibleProjectType
+    ? getCurrentAssessmentType(windows, eligibleProjectType as any)
+    : null;
 
   // Helper function to check if evaluation has any scores
   const hasAnyScores = (evaluation: any) => {
@@ -41,28 +49,63 @@ export function AssessmentPage() {
   useEffect(() => {
     const checkEligibility = async () => {
       try {
-        // Wait for user data to be available
-        if (!user?.role) {
-          console.log('Waiting for user data...');
-          return;
-        }
-
-        // Map role to project type
+        setInitializing(true);
+        // Map role to project type as a primary check
         const roleToProjectType: Record<string, string> = {
           'idp-student': 'IDP',
           'urop-student': 'UROP',
-          'capstone-student': 'CAPSTONE'
+          'capstone-student': 'CAPSTONE',
+          'idp': 'IDP',
+          'urop': 'UROP',
+          'capstone': 'CAPSTONE'
         };
 
-        const projectType = roleToProjectType[user.role];
+        let projectType = user?.role ? roleToProjectType[user.role.toLowerCase()] : null;
+
+        // If role doesn't strictly match, fetch student info to be sure (especially for groups)
+        if (!projectType && user?.id) {
+          try {
+            const response = await api.get<any>('/students/me');
+            if (response && response.success !== false && response.data) {
+              const data = response.data;
+              console.log('Student Info fetched:', data);
+
+              // 1. Check assignedProjectId (populated object)
+              if (data.assignedProjectId?.type) {
+                projectType = data.assignedProjectId.type;
+              } else if (data.assignedProjectId?.projectType) {
+                projectType = data.assignedProjectId.projectType;
+              }
+              // 2. Check groupId (group project)
+              else if (data.groupId?.assignedProjectId?.type) {
+                projectType = data.groupId.assignedProjectId.type;
+              } else if (data.groupId?.assignedProjectId?.projectType) {
+                projectType = data.groupId.assignedProjectId.projectType;
+              }
+              // 3. Check directly on student object if not populated
+              else if (data.projectType) {
+                projectType = data.projectType;
+              }
+              // 4. Check projectId field if it's a project object
+              else if (data.projectId?.projectType) {
+                projectType = data.projectId.projectType;
+              } else if (data.projectId?.type) {
+                projectType = data.projectId.type;
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching student info for eligibility:', error);
+          }
+        }
 
         if (projectType) {
           setEligibleProjectType(projectType);
-          console.log(`✅ User eligible for ${projectType} based on role: ${user.role}`);
-        } else {
+          console.log(`✅ User eligible for ${projectType}`);
+        } else if (user?.role) {
+          // If we have a role but couldn't determine project type, show error
           toast.error('You are not eligible for any project type. Please contact admin.');
-          console.error(`❌ Unknown role: ${user.role}`);
-          setInitializing(false); // Stop loading if user is not eligible
+          console.error(`❌ Could not determine project type for role: ${user.role}`);
+          setInitializing(false);
         }
       } catch (error) {
         console.error('Error checking eligibility:', error);
@@ -70,17 +113,14 @@ export function AssessmentPage() {
       }
     };
     checkEligibility();
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
 
   useEffect(() => {
     if (eligibleProjectType) {
       const initializeData = async () => {
         setInitializing(true);
         try {
-          await Promise.all([
-            checkAssessmentWindow(),
-            fetchSubmissions()
-          ]);
+          await fetchSubmissions();
         } catch (error) {
           console.error('Error initializing assessment data:', error);
         } finally {
@@ -92,22 +132,7 @@ export function AssessmentPage() {
     }
   }, [eligibleProjectType]);
 
-  const checkAssessmentWindow = async () => {
-    if (!eligibleProjectType) return;
-
-    try {
-      const response = await api.get('/windows/active', {
-        windowType: 'assessment',
-        projectType: eligibleProjectType
-      });
-      if (response.success && response.data) {
-        setAssessmentWindow(response.data as any);
-      }
-    } catch (error) {
-      console.error('Error checking assessment window:', error);
-      setAssessmentWindow({ isActive: true } as any);
-    }
-  };
+  // Removed checkAssessmentWindow as we use useWindowStatus hook now
 
   const fetchSubmissions = async () => {
     if (!user?.id) {
@@ -122,15 +147,25 @@ export function AssessmentPage() {
       console.log('🔍 Evaluations Response:', evaluationsResponse);
 
       // Fetch both regular submissions and group submissions (legacy)
+      // Note: For solo students, group-submissions/my/submissions will 404. We handle this gracefully.
       const [regularResponse, groupResponse] = await Promise.all([
-        api.get('/submissions/my').catch(() => ({ success: false, data: [] })),
-        api.get('/group-submissions/my/submissions').catch(() => ({ success: false, data: [] }))
+        api.get<any>('/submissions/my').catch(err => {
+          console.log('📡 Regular submissions fetch failed or 404:', err.message);
+          return { success: false, data: [] };
+        }),
+        api.get<any>('/group-submissions/my/submissions').catch(err => {
+          console.log('📡 Group submissions fetch failed or 404 (expected for solo):', err.message);
+          return { success: false, data: [] };
+        })
       ]);
+
+      console.log('🔍 Regular Response:', regularResponse);
+      console.log('🔍 Group Response:', groupResponse);
 
       const allSubmissions: any[] = [];
 
       // Add student evaluations (new system)
-      if (evaluationsResponse.success && (evaluationsResponse as any).evaluations) {
+      if (evaluationsResponse && evaluationsResponse.success !== false && (evaluationsResponse as any).evaluations) {
         const evaluations = Array.isArray((evaluationsResponse as any).evaluations) ? (evaluationsResponse as any).evaluations : [(evaluationsResponse as any).evaluations];
         console.log('📊 Processing evaluations:', evaluations);
 
@@ -164,42 +199,70 @@ export function AssessmentPage() {
       }
 
       // Add regular submissions (legacy)
-      if (regularResponse.success && regularResponse.data) {
-        const regularSubmissions = Array.isArray(regularResponse.data) ? regularResponse.data : [regularResponse.data];
+      if (regularResponse && (regularResponse.success !== false)) {
+        // Extract submissions list from various possible formats
+        const data = regularResponse.data;
+        let regularSubmissions: any[] = [];
+
+        if (Array.isArray(data)) {
+          regularSubmissions = data;
+        } else if (data && Array.isArray((data as any).submissions)) {
+          regularSubmissions = (data as any).submissions;
+        } else if ((regularResponse as any).submissions && Array.isArray((regularResponse as any).submissions)) {
+          regularSubmissions = (regularResponse as any).submissions;
+        } else if (data && (data as any)._id) {
+          regularSubmissions = [data];
+        }
+
+        console.log('📊 Processing regular submissions:', regularSubmissions.length);
+
         regularSubmissions.forEach(submission => {
           allSubmissions.push({
             ...submission,
-            submissionType: 'solo'
-          });
-        });
-      } else if ((regularResponse as any).submissions) {
-        // Handle legacy response format
-        const legacySubmissions = Array.isArray((regularResponse as any).submissions)
-          ? (regularResponse as any).submissions
-          : [(regularResponse as any).submissions];
-        legacySubmissions.forEach((submission: any) => {
-          allSubmissions.push({
-            ...submission,
-            submissionType: 'solo'
+            submissionType: 'solo',
+            // Map solo student fields to match expected format
+            assessmentType: submission.assessmentType || submission.assessmentTitle || 'CLA-1',
+            githubLink: submission.githubUrl || submission.githubLink,
+            reportUrl: submission.reportFile?.url || (submission.files?.find((f: any) => f.type?.includes('pdf'))?.url),
+            pptUrl: submission.presentationFile?.url || submission.presentationUrl || (submission.files?.find((f: any) => f.type?.includes('presentation') || f.type?.includes('powerpoint'))?.url),
+            submittedAt: submission.submittedAt || submission.createdAt,
+            // Check if submission is actually graded
+            isGraded: submission.isGraded || !!submission.facultyGrade || !!submission.facultyComments || submission.status === 'graded',
+            isGradeReleased: submission.isGradeReleased || submission.gradeReleased || submission.status === 'graded'
           });
         });
       }
 
       // Add group submissions (legacy)
-      if (groupResponse.success && groupResponse.data) {
-        const groupSubmissions = Array.isArray(groupResponse.data) ? groupResponse.data : [groupResponse.data];
+      if (groupResponse && (groupResponse.success !== false)) {
+        const data = groupResponse.data;
+        let groupSubmissions: any[] = [];
+
+        if (Array.isArray(data)) {
+          groupSubmissions = data;
+        } else if (data && Array.isArray((data as any).submissions)) {
+          groupSubmissions = (data as any).submissions;
+        } else if ((groupResponse as any).submissions && Array.isArray((groupResponse as any).submissions)) {
+          groupSubmissions = (groupResponse as any).submissions;
+        } else if (data && (data as any)._id) {
+          groupSubmissions = [data];
+        }
+
+        console.log('📊 Processing group submissions:', groupSubmissions.length);
+
         groupSubmissions.forEach(submission => {
           allSubmissions.push({
             ...submission,
             submissionType: 'group',
             // Map group submission fields to match expected format
-            assessmentType: submission.assessmentType || 'CLA-1',
+            assessmentType: submission.assessmentType || submission.assessmentTitle || 'CLA-1',
             githubLink: submission.githubUrl || submission.githubLink,
-            reportUrl: submission.reportFile?.url,
-            pptUrl: submission.presentationFile?.url || submission.presentationUrl,
-            // Fix: Check if submission is actually graded
-            isGraded: submission.isGraded || !!submission.facultyGrade || !!submission.facultyComments,
-            isGradeReleased: submission.isGradeReleased || submission.gradeReleased || false
+            reportUrl: submission.reportFile?.url || (submission.files?.find((f: any) => f.type?.includes('pdf'))?.url),
+            pptUrl: submission.presentationFile?.url || submission.presentationUrl || (submission.files?.find((f: any) => f.type?.includes('presentation') || f.type?.includes('powerpoint'))?.url),
+            submittedAt: submission.submittedAt || submission.createdAt,
+            // Check if submission is actually graded
+            isGraded: submission.isGraded || !!submission.facultyGrade || !!submission.facultyComments || submission.status === 'graded',
+            isGradeReleased: submission.isGradeReleased || submission.gradeReleased || submission.status === 'graded'
           });
         });
       }
@@ -227,36 +290,32 @@ export function AssessmentPage() {
   };
 
   // Show loading while initializing
-  if (initializing || !eligibleProjectType) {
+  if (initializing || windowsLoading || !eligibleProjectType) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen p-6 max-w-6xl mx-auto py-12">
+        <AssessmentSkeleton />
       </div>
     );
   }
 
-  if (!assessmentWindow) {
+  if (!activeAssessmentType && submissions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <Clock className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Assessment Window Not Open</h2>
-          <p className="text-gray-600">
-            The assessment window hasn't started yet. Please check back later.
-          </p>
-        </motion.div>
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <AssessmentEmptyState
+          title="Assessment Window Not Open"
+          description="There are no active assessment windows at the moment, and no previous assessments were found for your account."
+          icon="clock"
+          theme="amber"
+          subtitle="CLOSED"
+        />
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen p-6 max-w-6xl mx-auto py-12">
+        <AssessmentSkeleton />
       </div>
     );
   }
@@ -269,8 +328,10 @@ export function AssessmentPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold mb-2">Assessment</h1>
-          <p className="text-gray-600">
+          <h1 className="text-4xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-amber-500">
+            Assessment
+          </h1>
+          <p className="text-slate-500 font-medium">
             View your submissions and grades
           </p>
         </motion.div>
@@ -278,9 +339,14 @@ export function AssessmentPage() {
         {/* Submissions */}
         <div className="grid gap-6">
           {submissions.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">No submissions yet</p>
+            <div className="py-12">
+              <AssessmentEmptyState
+                title="No Submissions Yet"
+                description="Your submitted work and evaluations will appear here once available."
+                icon="file-text"
+                theme="amber"
+                subtitle="DASHBOARD"
+              />
             </div>
           ) : (
             submissions.map((submission) => (
@@ -290,16 +356,16 @@ export function AssessmentPage() {
                 className="overflow-hidden"
               >
                 {/* Header Section */}
-                <div className="bg-slate-50 p-6 border-b border-slate-200">
+                <div className="bg-amber-50/50 dark:bg-amber-500/5 p-6 border-b border-amber-100 dark:border-amber-500/10">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900">
+                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2 text-slate-900 dark:text-slate-100">
                         {submission.submissionType === 'evaluation' ? (
-                          <Award className="w-6 h-6 text-purple-500" />
+                          <Award className="w-6 h-6 text-amber-500" />
                         ) : submission.submissionType === 'group' ? (
-                          <Users className="w-6 h-6 text-primary" />
+                          <Users className="w-6 h-6 text-amber-500" />
                         ) : (
-                          <FileText className="w-6 h-6 text-emerald-500" />
+                          <FileText className="w-6 h-6 text-amber-500" />
                         )}
                         {submission.assessmentType} Assessment
                       </h3>
@@ -310,12 +376,12 @@ export function AssessmentPage() {
                             'Submitted on'} {new Date(submission.submittedAt).toLocaleDateString()}
                         </span>
                         {(submission.groupId?.groupCode || submission.groupCode) && (
-                          <span className="bg-primary/10 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
                             Group: {submission.groupId?.groupCode || submission.groupCode}
                           </span>
                         )}
                         {submission.submissionType === 'solo' && (
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-500/30">
                             Solo Submission
                           </span>
                         )}
@@ -358,7 +424,7 @@ export function AssessmentPage() {
                           <span className="font-medium">Graded</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-primary bg-indigo-50 px-3 py-2 rounded-full border border-primary/10">
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-500/5 px-3 py-2 rounded-full border border-amber-100 dark:border-amber-500/10">
                           <AlertCircle className="w-5 h-5" />
                           <span className="font-medium">Under Review</span>
                         </div>
@@ -490,13 +556,13 @@ export function AssessmentPage() {
                         if (feedbackComment) {
                           return (
                             <div>
-                              <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-blue-500" />
+                              <h4 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-amber-500" />
                                 Faculty Feedback
                               </h4>
-                              <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                                <h5 className="font-medium text-blue-700 mb-2 text-sm">{feedbackTitle}</h5>
-                                <p className="text-gray-700 text-sm italic">"{feedbackComment}"</p>
+                              <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border-l-4 border-amber-400">
+                                <h5 className="font-bold text-amber-700 dark:text-amber-400 mb-2 text-sm uppercase tracking-wider">{feedbackTitle}</h5>
+                                <p className="text-slate-700 dark:text-slate-300 text-sm italic">"{feedbackComment}"</p>
                               </div>
                             </div>
                           );
@@ -519,96 +585,96 @@ export function AssessmentPage() {
                         {/* CLA-1 */}
                         <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla1?.conduct > 0
                           ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200'
+                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
                           }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-gray-800">CLA-1</h5>
+                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-1</h5>
                             {submission.evaluation.internal?.cla1?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
                             ) : (
-                              <Clock className="w-5 h-5 text-gray-400" />
+                              <Clock className="w-5 h-5 text-slate-400" />
                             )}
                           </div>
                           {submission.evaluation.internal?.cla1?.conduct > 0 ? (
                             <div>
-                              <p className="text-sm text-green-700 font-medium">
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
                                 ✅ Graded
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">Not graded yet</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
                           )}
                         </div>
 
                         {/* CLA-2 */}
                         <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla2?.conduct > 0
                           ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200'
+                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
                           }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-gray-800">CLA-2</h5>
+                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-2</h5>
                             {submission.evaluation.internal?.cla2?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
                             ) : (
-                              <Clock className="w-5 h-5 text-gray-400" />
+                              <Clock className="w-5 h-5 text-slate-400" />
                             )}
                           </div>
                           {submission.evaluation.internal?.cla2?.conduct > 0 ? (
                             <div>
-                              <p className="text-sm text-green-700 font-medium">
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
                                 ✅ Graded
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">Not graded yet</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
                           )}
                         </div>
 
                         {/* CLA-3 */}
                         <div className={`p-4 rounded-lg border-2 ${submission.evaluation.internal?.cla3?.conduct > 0
                           ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200'
+                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
                           }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-gray-800">CLA-3</h5>
+                            <h5 className="font-bold text-slate-800 dark:text-slate-200">CLA-3</h5>
                             {submission.evaluation.internal?.cla3?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
                             ) : (
-                              <Clock className="w-5 h-5 text-gray-400" />
+                              <Clock className="w-5 h-5 text-slate-400" />
                             )}
                           </div>
                           {submission.evaluation.internal?.cla3?.conduct > 0 ? (
                             <div>
-                              <p className="text-sm text-green-700 font-medium">
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
                                 ✅ Graded
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">Not graded yet</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
                           )}
                         </div>
 
                         {/* External */}
                         <div className={`p-4 rounded-lg border-2 ${submission.evaluation.external?.reportPresentation?.conduct > 0
                           ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200'
+                          : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'
                           }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-gray-800">External</h5>
+                            <h5 className="font-bold text-slate-800 dark:text-slate-200">External</h5>
                             {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
-                              <CheckCircle className="w-5 h-5 text-green-500" />
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
                             ) : (
-                              <Clock className="w-5 h-5 text-gray-400" />
+                              <Clock className="w-5 h-5 text-slate-400" />
                             )}
                           </div>
                           {submission.evaluation.external?.reportPresentation?.conduct > 0 ? (
                             <div>
-                              <p className="text-sm text-green-700 font-medium">
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">
                                 ✅ Graded
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">Not graded yet</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider">Pending</p>
                           )}
                         </div>
                       </div>
