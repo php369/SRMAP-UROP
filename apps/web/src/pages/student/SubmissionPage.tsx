@@ -184,13 +184,28 @@ export function SubmissionPage() {
               // Check group submission
               try {
                 const subResponse = await api.get('/group-submissions/my/submissions', { assessmentType });
-                if (subResponse.success && subResponse.data) submissionData = subResponse.data;
+                // Handle both single object and array responses
+                if (subResponse.success && subResponse.data) {
+                  const data = subResponse.data as any;
+                  if (Array.isArray(data) && data.length > 0) {
+                    submissionData = data[0]; // Take first submission
+                  } else if (data && !Array.isArray(data) && data._id) {
+                    submissionData = data; // Single object response
+                  }
+                }
               } catch (e: any) {
                 if (e?.response?.status !== 404) {
                   // Fallback to direct lookup
                   try {
                     const directResponse = await api.get(`/group-submissions/${currentUserGroup._id}`, { assessmentType });
-                    if (directResponse.success && directResponse.data) submissionData = directResponse.data;
+                    if (directResponse.success && directResponse.data) {
+                      const data = directResponse.data as any;
+                      if (Array.isArray(data) && data.length > 0) {
+                        submissionData = data[0];
+                      } else if (data && !Array.isArray(data) && data._id) {
+                        submissionData = data;
+                      }
+                    }
                   } catch (e2) { }
                 }
               }
