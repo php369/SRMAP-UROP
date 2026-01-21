@@ -1,0 +1,218 @@
+
+> @srm-portal/web@1.0.0 type-check P:\Study\Programming Practice\SRM\SRMAP UROP\apps\web
+> tsc --noEmit
+
+src/components/admin/master-control/ProjectRegistryModule.tsx(10,5): error TS6133: 'FileEdit' is declared but its value is never read.
+src/components/admin/master-control/ProjectRegistryModule.tsx(11,5): error TS6133: 'AlertTriangle' is declared but its value is never read.
+src/components/admin/master-control/ProjectRegistryModule.tsx(14,5): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/admin/master-control/ProjectRegistryModule.tsx(22,5): error TS6133: 'DialogFooter' is declared but its value is never read.
+src/components/admin/master-control/ProjectRegistryModule.tsx(154,11): error TS6133: 'handleStatusUpdate' is declared but its value is never read.
+src/components/admin/master-control/SystemAuditLogsModule.tsx(16,5): error TS6133: 'Filter' is declared but its value is never read.
+src/components/admin/master-control/SystemAuditLogsModule.tsx(21,5): error TS6133: 'Layers' is declared but its value is never read.
+src/components/admin/master-control/UserManagementModule.tsx(9,5): error TS6133: 'X' is declared but its value is never read.
+src/components/admin/master-control/UserManagementModule.tsx(14,1): error TS6192: All imports in import declaration are unused.
+src/components/admin/master-control/UserManagementModule.tsx(73,12): error TS6133: 'isDeleting' is declared but its value is never read.
+src/components/admin/master-control/UserManagementModule.tsx(73,24): error TS6133: 'setIsDeleting' is declared but its value is never read.
+src/components/admin/PerformanceMonitor.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/assessment/AssessmentEmptyState.tsx(2,77): error TS6133: 'LucideIcon' is declared but its value is never read.
+src/components/assessments/AssessmentForm.tsx(192,21): error TS2322: Type '{ value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/assessments/AssessmentForm.tsx(226,21): error TS2322: Type '{ value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/assessments/AssessmentForm.tsx(250,21): error TS2322: Type '{ type: "date"; value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/assessments/AssessmentForm.tsx(300,21): error TS2322: Type '{ type: "number"; value: number; onChange: (e: ChangeEvent<HTMLInputElement>) => void; min: string; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/assessments/AssessmentForm.tsx(314,21): error TS2322: Type '{ type: "number"; value: number; onChange: (e: ChangeEvent<HTMLInputElement>) => void; min: string; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/assessments/AssessmentForm.tsx(343,23): error TS2322: Type '{ type: "number"; value: number; onChange: (e: ChangeEvent<HTMLInputElement>) => void; min: string; max: string; error: string; className: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/examples/GlassmorphicExample.tsx(39,55): error TS2322: Type '{ children: Element[]; variant: "elevated"; blur: string; className: string; }' is not assignable to type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+  Property 'blur' does not exist on type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+src/components/examples/GlassmorphicExample.tsx(46,53): error TS2322: Type '{ children: Element[]; variant: "subtle"; blur: string; className: string; }' is not assignable to type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+  Property 'blur' does not exist on type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+src/components/grading/GradingInterface.tsx(339,29): error TS2322: Type '{ type: "number"; value: number; onChange: (e: ChangeEvent<HTMLInputElement>) => void; min: string; max: number; step: string; error: string; className: string; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/layout/index.ts(4,31): error TS2307: Cannot find module './TopNavigation' or its corresponding type declarations.
+src/components/profile/InterestsTagCloud.tsx(192,19): error TS2322: Type '{ hidden: { opacity: number; scale: number; rotate: number; }; visible: { opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }; hover: { ...; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; scale: number; rotate: number; transition: { delay: number; type: string; stiffness: number; damping: number; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ delay: number; type: string; stiffness: number; damping: number; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'type' are incompatible.
+                    Type 'string' is not assignable to type 'AnimationGeneratorType | undefined'.
+src/components/providers/ThemeProvider.tsx(17,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null'.
+src/components/submissions/index.ts(10,15): error TS2724: '"./SubmissionForm"' has no exported member named 'SubmissionFormData'. Did you mean 'SubmissionForm'?
+src/components/submissions/index.ts(11,15): error TS2305: Module '"./SubmissionCard"' has no exported member 'Submission'.
+src/components/submissions/index.ts(11,27): error TS2305: Module '"./SubmissionCard"' has no exported member 'SubmissionFile'.
+src/components/submissions/SubmissionDetail.tsx(4,10): error TS2305: Module '"./SubmissionCard"' has no exported member 'Submission'.
+src/components/submissions/SubmissionDetail.tsx(4,22): error TS2305: Module '"./SubmissionCard"' has no exported member 'SubmissionFile'.
+src/components/submissions/SubmissionDetail.tsx(64,18): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ draft: { color: string; text: string; icon: string; }; submitted: { color: string; text: string; icon: string; }; graded: { color: string; text: string; icon: string; }; late: { color: string; text: string; icon: string; }; missing: { ...; }; }'.
+src/components/submissions/SubmissionDetail.tsx(258,62): error TS7006: Parameter 'total' implicitly has an 'any' type.
+src/components/submissions/SubmissionDetail.tsx(258,69): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/submissions/SubmissionDetail.tsx(297,38): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/submissions/SubmissionForm.tsx(150,13): error TS2322: Type '{ type: "url"; value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; error: string; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/submissions/SubmissionForm.tsx(279,15): error TS2322: Type '{ type: "url"; value: string | undefined; onChange: (e: ChangeEvent<HTMLInputElement>) => void; placeholder: string; error: string; disabled: boolean; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/ui/calendar.tsx(55,28): error TS6133: 'props' is declared but its value is never read.
+src/components/ui/calendar.tsx(56,29): error TS6133: 'props' is declared but its value is never read.
+src/components/ui/CompactDateRangePicker.tsx(1,31): error TS6133: 'useRef' is declared but its value is never read.
+src/components/ui/CompactDateRangePicker.tsx(2,25): error TS6133: 'now' is declared but its value is never read.
+src/components/ui/CompactDateRangePicker.tsx(2,30): error TS6133: 'getLocalTimeZone' is declared but its value is never read.
+src/components/ui/MeetingDateTimePicker.tsx(3,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/RangeTimeScrollerUI.tsx(19,57): error TS6133: 'label' is declared but its value is never read.
+src/components/ui/RangeTimeScrollerUI.tsx(26,23): error TS6133: 'buttonHeight' is declared but its value is never read.
+src/components/ui/RangeTimeScrollerUI.tsx(27,23): error TS6133: 'containerHeight' is declared but its value is never read.
+src/components/ui/RangeTimeScrollerUI.tsx(83,11): error TS6133: 'periods' is declared but its value is never read.
+src/components/ui/TimeScroller.tsx(1,18): error TS6133: 'useState' is declared but its value is never read.
+src/components/ui/TimeScroller.tsx(26,23): error TS6133: 'containerHeight' is declared but its value is never read.
+src/components/ui/TimeScroller.tsx(27,23): error TS6133: 'scrollPos' is declared but its value is never read.
+src/contexts/ThemeContext.tsx(115,21): error TS6133: 'newMode' is declared but its value is never read.
+src/hooks/useOptimisticMutation.ts(1,39): error TS6133: 'UseMutationOptions' is declared but its value is never read.
+src/main.tsx(3,1): error TS6133: 'React' is declared but its value is never read.
+src/main.tsx(37,16): error TS6133: 'registration' is declared but its value is never read.
+src/pages/admin/EligibilityUpload.tsx(3,45): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/admin/EligibilityUpload.tsx(14,18): error TS6133: 'staggerContainer' is declared but its value is never read.
+src/pages/admin/EligibilityUpload.tsx(48,12): error TS6133: 'csvFile' is declared but its value is never read.
+src/pages/admin/MasterControlPage.tsx(9,5): error TS6133: 'Settings' is declared but its value is never read.
+src/pages/admin/MasterControlPage.tsx(21,1): error TS6133: 'Button' is declared but its value is never read.
+src/pages/assessments/AssessmentDetailPage.tsx(160,9): error TS2322: Type '"student" | "faculty" | "coordinator" | "admin"' is not assignable to type '"student" | "faculty" | "admin"'.
+  Type '"coordinator"' is not assignable to type '"student" | "faculty" | "admin"'.
+src/pages/coordinator/ControlPanel/components/Dashboard/ControlPanelLanding.tsx(2,1): error TS6133: 'Link' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/HeroMetrics.tsx(3,5): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/HeroMetrics.tsx(7,5): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/HeroMetrics.tsx(9,5): error TS6133: 'Layers' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/ProgressSection.tsx(4,5): error TS6133: 'Circle' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/ProgressSection.tsx(6,5): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Dashboard/WindowsTimeline.tsx(5,5): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/ExternalEvaluators/AssignmentCard.tsx(7,1): error TS6192: All imports in import declaration are unused.
+src/pages/coordinator/ControlPanel/components/ExternalEvaluators/ExternalEvaluatorsTab.tsx(3,68): error TS6133: 'Check' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/ExternalEvaluators/ExternalEvaluatorsTab.tsx(10,1): error TS6133: 'Input' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/LoadingSkeletons.tsx(3,1): error TS6133: 'motion' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Modals/DeleteConfirmationModal.tsx(2,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/Modals/DeleteConfirmationModal.tsx(14,33): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/WindowManagement/WindowCreationDrawer.tsx(24,5): error TS6133: 'onReset' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/components/WindowManagement/WindowCreationModal.tsx(25,5): error TS6133: 'onReset' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/IndividualWindowWizardPage.tsx(388,15): error TS6133: 'currentColor' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/ManageWindowsPage.tsx(2,1): error TS6133: 'motion' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/ManageWindowsPage.tsx(3,16): error TS6133: 'Wand2' is declared but its value is never read.
+src/pages/coordinator/ControlPanel/ManageWindowsPage.tsx(17,18): error TS6133: 'ProjectType' is declared but its value is never read.
+src/pages/dashboard/CoordinatorDashboard.tsx(5,1): error TS6133: 'Loader' is declared but its value is never read.
+src/pages/design-system/DesignSystemPage.tsx(95,13): error TS2322: Type '{ label: string; placeholder: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'label' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+src/pages/design-system/DesignSystemPage.tsx(100,13): error TS2322: Type '{ label: string; placeholder: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'label' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+src/pages/design-system/DesignSystemPage.tsx(105,13): error TS2322: Type '{ label: string; placeholder: string; error: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'label' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+src/pages/design-system/DesignSystemPage.tsx(111,13): error TS2322: Type '{ label: string; placeholder: string; helperText: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+  Property 'label' does not exist on type 'IntrinsicAttributes & InputProps & RefAttributes<HTMLInputElement>'.
+src/pages/faculty/ApplicationsPage.tsx(3,101): error TS6133: 'SlidersHorizontal' is declared but its value is never read.
+src/pages/faculty/ApplicationsPage.tsx(3,133): error TS6133: 'GraduationCap' is declared but its value is never read.
+src/pages/faculty/ApplicationsPage.tsx(7,16): error TS6133: 'CardHeader' is declared but its value is never read.
+src/pages/faculty/ApplicationsPage.tsx(7,28): error TS6133: 'CardContent' is declared but its value is never read.
+src/pages/faculty/ApplicationsPage.tsx(7,41): error TS6133: 'CardFooter' is declared but its value is never read.
+src/pages/faculty/ApplicationsPage.tsx(74,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(2,31): error TS6133: 'useMemo' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(3,18): error TS6133: 'AnimatePresence' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(4,28): error TS6133: 'Presentation' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(4,49): error TS6133: 'Send' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(4,55): error TS6133: 'Eye' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(4,88): error TS6133: 'Award' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(4,136): error TS6133: 'Download' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(7,32): error TS6133: 'Textarea' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(11,1): error TS6133: 'WindowClosedMessage' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(20,1): error TS6133: 'Separator' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(101,10): error TS6133: 'assessmentType' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(104,10): error TS6133: 'gradeData' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(110,10): error TS6133: 'groupGradeData' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(255,9): error TS6133: 'canGrade' is declared but its value is never read.
+src/pages/faculty/AssessmentPage.tsx(553,9): error TS6133: 'getAssessmentBadge' is declared but its value is never read.
+src/pages/faculty/components/GroupGradingModal.tsx(1,33): error TS6133: 'DialogHeader' is declared but its value is never read.
+src/pages/faculty/components/GroupGradingModal.tsx(1,75): error TS6133: 'Input' is declared but its value is never read.
+src/pages/faculty/components/GroupGradingModal.tsx(2,28): error TS6133: 'Presentation' is declared but its value is never read.
+src/pages/faculty/components/GroupGradingModal.tsx(2,79): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/faculty/components/ProjectDetailsModal.tsx(4,5): error TS6133: 'DialogHeader' is declared but its value is never read.
+src/pages/faculty/components/ProjectDetailsModal.tsx(5,5): error TS6133: 'DialogTitle' is declared but its value is never read.
+src/pages/faculty/components/ProjectDetailsModal.tsx(9,21): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/faculty/components/ProjectDetailsModal.tsx(9,37): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/faculty/components/SoloGradingModal.tsx(1,33): error TS6133: 'DialogHeader' is declared but its value is never read.
+src/pages/faculty/components/SoloGradingModal.tsx(1,75): error TS6133: 'Input' is declared but its value is never read.
+src/pages/faculty/MeetingsPage.tsx(4,62): error TS6133: 'Eye' is declared but its value is never read.
+src/pages/faculty/MeetingsPage.tsx(4,119): error TS6133: 'MoreHorizontal' is declared but its value is never read.
+src/pages/faculty/MeetingsPage.tsx(16,1): error TS6133: 'NoAssignmentMessage' is declared but its value is never read.
+src/pages/faculty/ProjectsPage.tsx(4,16): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/faculty/ProjectsPage.tsx(4,44): error TS6133: 'BookOpen' is declared but its value is never read.
+src/pages/faculty/ProjectsPage.tsx(4,54): error TS6133: 'AlertTriangle' is declared but its value is never read.
+src/pages/faculty/ProjectsPage.tsx(8,1): error TS6133: 'Skeleton' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(3,23): error TS6133: 'Code' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(3,63): error TS6133: 'Loader' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(9,1): error TS6133: 'WindowClosedMessage' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(10,1): error TS6133: 'GlassCard' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(22,3): error TS6133: 'UserCheck' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(30,3): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/pages/student/ApplicationPage.tsx(38,3): error TS6133: 'DialogHeader' is declared but its value is never read.
+src/pages/student/components/SubmissionComponents.tsx(2,23): error TS6133: 'Shield' is declared but its value is never read.
+src/pages/student/components/SubmissionComponents.tsx(2,31): error TS6133: 'User' is declared but its value is never read.
+src/pages/student/components/SubmissionComponents.tsx(2,62): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/student/components/SubmissionComponents.tsx(2,72): error TS6133: 'X' is declared but its value is never read.
+src/pages/student/components/SubmissionEmptyState.tsx(2,28): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/student/components/TimelineStatus.tsx(2,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/student/components/TimelineStatus.tsx(4,31): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/student/components/TimelineStatus.tsx(4,38): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/pages/student/components/TimelineStatus.tsx(63,35): error TS6133: 'index' is declared but its value is never read.
+src/pages/student/MeetingsPage.tsx(4,54): error TS6133: 'XCircle' is declared but its value is never read.
+src/pages/student/MeetingsPage.tsx(4,100): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,10): error TS6133: 'Upload' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,71): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,91): error TS6133: 'User' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,133): error TS6133: 'FileUp' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,141): error TS6133: 'Sparkles' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,151): error TS6133: 'LogOut' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,173): error TS6133: 'Trash2' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(3,181): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(9,1): error TS6192: All imports in import declaration are unused.
+src/pages/student/SubmissionPage.tsx(19,1): error TS6133: 'Badge' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(20,1): error TS6133: 'ConfirmationModal' is declared but its value is never read.
+src/pages/student/SubmissionPage.tsx(161,21): error TS6133: 'applicationsResponse' is declared but its value is never read.
+src/pages/submissions/SubmissionDetailPage.tsx(4,10): error TS2305: Module '"../../components/submissions/SubmissionCard"' has no exported member 'Submission'.
+src/pages/submissions/SubmissionDetailPage.tsx(4,22): error TS2305: Module '"../../components/submissions/SubmissionCard"' has no exported member 'SubmissionFile'.
+src/pages/submissions/SubmitAssignmentPage.tsx(129,9): error TS2322: Type '{ assessment: Assessment; onSubmit: (data: any) => Promise<void>; onSaveDraft: (data: any) => Promise<void>; onCancel: () => void; loading: boolean; }' is not assignable to type 'IntrinsicAttributes & SubmissionFormProps'.
+  Property 'assessment' does not exist on type 'IntrinsicAttributes & SubmissionFormProps'.
+src/stores/themeStore.ts(9,46): error TS2339: Property 'DARK' does not exist on type '{ readonly LIGHT: { readonly mode: "light"; readonly colors: { readonly primary: "#f5bb3e"; readonly primaryGradient: "linear-gradient(135deg, #f5bb3e 0%, #c49b60 100%)"; readonly secondary: "#64748b"; ... 10 more ...; readonly info: "#3b82f6"; }; }; }'.
+src/stores/themeStore.ts(50,72): error TS2339: Property 'DARK' does not exist on type '{ readonly LIGHT: { readonly mode: "light"; readonly colors: { readonly primary: "#f5bb3e"; readonly primaryGradient: "linear-gradient(135deg, #f5bb3e 0%, #c49b60 100%)"; readonly secondary: "#64748b"; ... 10 more ...; readonly info: "#3b82f6"; }; }; }'.
+src/stores/themeStore.ts(54,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null'.
+src/types/externalEvaluator.ts(1,16): error TS6133: 'Group' is declared but its value is never read.
+src/utils/apiValidation.ts(6,19): error TS2307: Cannot find module 'zod' or its corresponding type declarations.
+src/utils/apiValidation.ts(163,17): error TS18046: 'error' is of type 'unknown'.
+src/utils/apiValidation.ts(166,55): error TS18046: 'error' is of type 'unknown'.
+src/utils/apiValidation.ts(166,72): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/utils/monitoring.ts(89,35): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(108,20): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/monitoring.ts(108,27): error TS7006: Parameter 'hint' implicitly has an 'any' type.
+src/utils/monitoring.ts(145,28): error TS2339: Property 'renderTime' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(145,52): error TS2339: Property 'loadTime' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(155,29): error TS2339: Property 'processingStart' does not exist on type 'PerformanceEntry'.
+src/utils/monitoring.ts(229,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(251,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(275,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(329,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(347,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(373,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(384,14): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(395,21): error TS2307: Cannot find module '@sentry/react' or its corresponding type declarations.
+src/utils/monitoring.ts(407,72): error TS2307: Cannot find module 'web-vitals' or its corresponding type declarations.
+src/utils/monitoring.ts(409,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(418,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(427,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(436,15): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/monitoring.ts(445,16): error TS7006: Parameter 'metric' implicitly has an 'any' type.
+src/utils/performance.tsx(22,8): error TS2322: Type 'PropsWithoutRef<ComponentProps<T>> & { ref: ForwardedRef<any>; }' is not assignable to type 'IntrinsicAttributes & (T extends MemoExoticComponent<infer U extends ComponentType<any>> | LazyExoticComponent<infer U extends ComponentType<...>> ? ReactManagedAttributes<...> : ReactManagedAttributes<...>)'.
+  Type 'PropsWithoutRef<ComponentProps<T>> & { ref: ForwardedRef<any>; }' is not assignable to type 'T extends MemoExoticComponent<infer U extends ComponentType<any>> | LazyExoticComponent<infer U extends ComponentType<any>> ? ReactManagedAttributes<...> : ReactManagedAttributes<...>'.
+P:\Study\Programming Practice\SRM\SRMAP UROP\apps\web:
+ΓÇëERR_PNPM_RECURSIVE_RUN_FIRST_FAILΓÇë @srm-portal/web@1.0.0 type-check: `tsc --noEmit`
+Exit status 2

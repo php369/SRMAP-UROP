@@ -295,10 +295,10 @@ router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, re
     logger.info('Found user groups:', userGroups.map(g => ({ id: g._id, code: g.groupCode, leader: g.leaderId })));
 
     if (userGroups.length === 0) {
-      logger.warn('No groups found for user:', req.user!.id);
-      return res.status(404).json({
-        success: false,
-        error: 'No groups found for this user'
+      logger.info('No groups found for user:', req.user!.id);
+      return res.json({
+        success: true,
+        data: []
       });
     }
 
@@ -314,10 +314,10 @@ router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, re
     logger.info('Found application:', application ? { id: application._id, groupId: application.groupId, status: application.status } : 'none');
 
     if (!application || !application.groupId) {
-      logger.warn('No approved group application found for user:', req.user!.id);
-      return res.status(404).json({
-        success: false,
-        error: 'No approved group application found'
+      logger.info('No approved group application found for user:', req.user!.id);
+      return res.json({
+        success: true,
+        data: []
       });
     }
 
@@ -337,13 +337,13 @@ router.get('/my/submissions', authenticate, rbacGuard('student'), async (req, re
     logger.info('Found submission:', submission ? { id: submission._id, assessmentType: submission.assessmentType, submittedBy: submission.submittedBy, githubUrl: submission.githubUrl } : 'none');
 
     if (!submission) {
-      const errorMessage = assessmentType
+      const infoMessage = assessmentType
         ? `No submission found for your group for ${assessmentType}`
         : 'No submission found for your group';
-      logger.warn(errorMessage, 'Group ID:', application.groupId);
-      return res.status(404).json({
-        success: false,
-        error: errorMessage
+      logger.info(infoMessage, 'Group ID:', application.groupId);
+      return res.json({
+        success: true,
+        data: []
       });
     }
 

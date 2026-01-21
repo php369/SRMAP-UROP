@@ -194,6 +194,25 @@ export function SubmissionPage() {
                   } catch (e2) { }
                 }
               }
+            } else {
+              // Check solo submission
+              try {
+                console.log('🔍 Checking solo submission for user:', user?.id, 'assessmentType:', assessmentType);
+                const soloResponse = await api.get<any>(`/submissions/student/${user?.id}`, { assessmentType });
+                if (soloResponse.success && soloResponse.data) {
+                  // API returns an array, take the first/most recent submission
+                  const submissions = Array.isArray(soloResponse.data) ? soloResponse.data : [soloResponse.data];
+                  if (submissions.length > 0) {
+                    submissionData = submissions[0];
+                    console.log('✅ Found solo submission:', submissionData);
+                  }
+                }
+              } catch (e: any) {
+                // 404 is expected if no submission exists yet
+                if (e?.response?.status !== 404) {
+                  console.error('Error fetching solo submission:', e);
+                }
+              }
             }
 
             if (submissionData) {

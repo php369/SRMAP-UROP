@@ -292,7 +292,7 @@ export function AssessmentPage() {
   };
 
   // Show loading while initializing
-  if (initializing || windowsLoading || !eligibleProjectType) {
+  if (initializing || windowsLoading) {
     return (
       <div className="min-h-screen p-6 max-w-6xl mx-auto py-12">
         <AssessmentSkeleton />
@@ -300,12 +300,28 @@ export function AssessmentPage() {
     );
   }
 
+  // Handle case where user is not eligible or project type couldn't be determined
+  if (!eligibleProjectType) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <AssessmentEmptyState
+          title="Profile Incomplete"
+          description="We couldn't determine your project type. This usually happens if you haven't been assigned to a project yet."
+          icon="shield"
+          theme="amber"
+          subtitle="NOT ELIGIBLE"
+        />
+      </div>
+    );
+  }
+
+  // Handle case where no active window and no submissions exist
   if (!activeAssessmentType && submissions.length === 0) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-6">
         <AssessmentEmptyState
-          title="Assessment Window Not Open"
-          description="There are no active assessment windows at the moment, and no previous assessments were found for your account."
+          title="No Active Assessments"
+          description="There are currently no active assessment windows, and no previous assessments were found for your account."
           icon="clock"
           theme="amber"
           subtitle="CLOSED"
