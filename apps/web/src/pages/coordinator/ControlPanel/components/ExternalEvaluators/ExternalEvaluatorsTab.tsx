@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { EvaluatorListSkeleton } from '../LoadingSkeletons';
-import { Search, Users, RefreshCw, Zap, AlertCircle, ChevronDown, UserCheck, AlertTriangle } from 'lucide-react';
+import { Search, Users, RefreshCw, Zap, AlertCircle, ChevronDown, UserCheck, AlertTriangle, Layers } from 'lucide-react';
 import { useExternalEvaluators } from '../../hooks/useExternalEvaluators';
 import { AssignmentCard } from './AssignmentCard';
 import { EvaluatorStats } from './EvaluatorStats';
 import { ExternalEvaluatorsEmptyState } from './ExternalEvaluatorsEmptyState';
+import { WorkloadDistributionModal } from './WorkloadDistributionModal';
 import { useWindowStatus } from '../../../../../hooks/useWindowStatus';
 import { ProjectType } from '../../types';
 import { Button } from '../../../../../components/ui/Button';
@@ -65,22 +66,16 @@ export function ExternalEvaluatorsTab() {
   } = useExternalEvaluators();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'unassigned' | 'conflicts'>('all');
-  const [filterType, setFilterType] = useState<'all' | 'group' | 'solo'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  const [filterSubmissionType, setFilterSubmissionType] = useState<'all' | 'group' | 'solo'>('all');
+  const [filterProjectType, setFilterProjectType] = useState<'all' | 'IDP' | 'UROP' | 'CAPSTONE'>('all');
+  const [isWorkloadModalOpen, setIsWorkloadModalOpen] = useState(false);
 
-  // Load data on component mount - always fetch when windows are loaded
+  // Load data on component mount
   useEffect(() => {
-    if (windowsLoading) {
-      return;
-    }
+    if (windowsLoading) return;
+    if (anyApplicationWindowActive) return;
 
-    // Only skip fetching if ALL application windows are still active
-    if (anyApplicationWindowActive) {
-      console.log('Application windows still active, skipping data fetch');
-      return;
-    }
-
-    console.log('Fetching external evaluator data...');
     const loadData = async () => {
       await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
     };
@@ -106,15 +101,21 @@ export function ExternalEvaluatorsTab() {
       // Status filter
       const matchesStatus = filterStatus === 'all' ||
         (filterStatus === 'assigned' && assignment.isAssigned) ||
-        (filterStatus === 'unassigned' && !assignment.isAssigned) ||
-        (filterStatus === 'conflicts' && assignment.hasConflict);
+        (filterStatus === 'unassigned' && !assignment.isAssigned);
 
-      // Type filter
-      const matchesType = filterType === 'all' || assignment.submissionType === filterType;
+      // Submission Type filter
+      const matchesSubmissionType = filterSubmissionType === 'all' || assignment.submissionType === filterSubmissionType;
 
-      return matchesSearch && matchesStatus && matchesType;
+      // Project Type filter
+      const getPType = () => {
+        if (assignment.submissionType === 'group') return assignment.groupId?.assignedProjectId?.type;
+        return assignment.studentId?.assignedProjectId?.type;
+      };
+      const matchesProjectType = filterProjectType === 'all' || getPType() === filterProjectType;
+
+      return matchesSearch && matchesStatus && matchesSubmissionType && matchesProjectType;
     });
-  }, [assignments, searchTerm, filterStatus, filterType]);
+  }, [assignments, searchTerm, filterStatus, filterSubmissionType, filterProjectType]);
 
   const handleAssignEvaluator = async (assignmentId: string, evaluatorId: string, submissionType: 'group' | 'solo') => {
     if (submissionType === 'group') {
@@ -139,27 +140,20 @@ export function ExternalEvaluatorsTab() {
       new Date() > new Date(window.endDate)
     );
 
-    const hasWindow = windows.some(w => w.windowType === 'application' && w.projectType === type);
-
-    if (!hasWindow) {
-      toast.error(`No application window configuration found for ${type}`);
-      return;
-    }
-
     if (!isAppWindowEnded) {
       toast.error(`Application phase for ${type} is still active. Cannot assign evaluators yet.`);
       return;
     }
 
-    const validation = await validateAssignments();
+    const validation = await validateAssignments(type);
     if (validation && !validation.isValid) {
       const proceed = window.confirm(
-        `Assignment validation found issues:\n${validation.issues.join('\n')}\n\nDo you want to proceed anyway?`
+        `Assignment validation for ${type} found issues:\n${validation.issues.join('\n')}\n\nDo you want to proceed anyway?`
       );
       if (!proceed) return;
     }
 
-    const success = await autoAssignEvaluators();
+    const success = await autoAssignEvaluators(type);
     if (success) {
       await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
       toast.success(`Auto-assignment process completed for ${type}`);
@@ -171,12 +165,10 @@ export function ExternalEvaluatorsTab() {
     toast.success('Data refreshed');
   };
 
-  // Show skeleton while windows are loading
   if (windowsLoading) {
     return <EvaluatorListSkeleton />;
   }
 
-  // Show empty state when ALL application windows are still active
   if (anyApplicationWindowActive) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -184,11 +176,6 @@ export function ExternalEvaluatorsTab() {
       </div>
     );
   }
-
-  // Calculate stats for header
-  const totalAssignments = assignments.length;
-  const assignedCount = assignments.filter(a => a.isAssigned).length;
-  const unassignedCount = totalAssignments - assignedCount;
 
   return (
     <div className="space-y-6">
@@ -201,10 +188,7 @@ export function ExternalEvaluatorsTab() {
           <div>
             <h2 className="text-xl font-semibold text-text">External Evaluator Assignment</h2>
             <p className="text-sm text-textSecondary">
-              {totalAssignments > 0
-                ? `${assignedCount} assigned • ${unassignedCount} pending`
-                : 'Manage external evaluator assignments'
-              }
+              Manage external evaluator assignments across project types
             </p>
           </div>
         </div>
@@ -214,7 +198,7 @@ export function ExternalEvaluatorsTab() {
             size="sm"
             onClick={handleRefresh}
             disabled={assignmentsLoading || evaluatorsLoading}
-            className="gap-2 focus:ring-0 focus:outline-none focus-visible:ring-0"
+            className="gap-2 focus:ring-0 h-9"
           >
             <RefreshCw className={cn("w-4 h-4", (assignmentsLoading || evaluatorsLoading) && 'animate-spin')} />
             Refresh
@@ -225,16 +209,16 @@ export function ExternalEvaluatorsTab() {
               <Button
                 size="sm"
                 disabled={loading || endedApplicationWindowTypes.length === 0 || evaluators.length === 0}
-                className="gap-2 focus:ring-0 focus:outline-none focus-visible:ring-0"
+                className="gap-2 focus:ring-0 h-9"
               >
                 <Zap className="w-4 h-4" />
                 Auto Assign
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel className="text-xs text-textSecondary font-normal">
-                Select Project Type
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs text-textSecondary font-normal px-2 py-1.5">
+                Run auto-assignment logic for:
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => {
@@ -248,13 +232,16 @@ export function ExternalEvaluatorsTab() {
                     key={type}
                     onClick={() => handleAutoAssign(type)}
                     disabled={!isAppWindowEnded}
-                    className="flex justify-between items-center cursor-pointer"
+                    className="flex justify-between items-center cursor-pointer py-2 px-3"
                   >
-                    <span className="font-medium">{type}</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">{type}</span>
+                      <span className="text-[10px] text-textSecondary">Fair distribution for {type} pool</span>
+                    </div>
                     {isAppWindowEnded ? (
                       <UserCheck className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <span className="text-[10px] text-orange-500 font-medium px-1.5 py-0.5 bg-orange-500/10 rounded">Active</span>
+                      <span className="text-[9px] text-orange-500 font-bold px-1.5 py-0.5 bg-orange-500/10 rounded uppercase">Active</span>
                     )}
                   </DropdownMenuItem>
                 );
@@ -270,70 +257,78 @@ export function ExternalEvaluatorsTab() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <h3 className="text-amber-800 dark:text-amber-400 font-medium text-sm mb-2">Assignment Validation Issues</h3>
+              <h3 className="text-amber-800 dark:text-amber-400 font-medium text-sm mb-2">Assignment Distribution Issues</h3>
               <ul className="text-amber-700 dark:text-amber-500 text-sm space-y-1">
                 {validationResult.issues.map((issue: string, index: number) => (
                   <li key={index} className="flex items-start gap-2">
-                    <span className="text-amber-500">•</span>
+                    <span className="text-amber-500 font-bold">•</span>
                     <span>{issue}</span>
                   </li>
                 ))}
               </ul>
-              {validationResult.recommendations.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
-                  <h4 className="text-amber-800 dark:text-amber-400 font-medium text-xs mb-1.5">Recommendations</h4>
-                  <ul className="text-amber-600 dark:text-amber-500 text-xs space-y-1">
-                    {validationResult.recommendations.map((rec: string, index: number) => (
-                      <li key={index}>• {rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Statistics */}
-      <EvaluatorStats evaluators={evaluators} assignments={assignments} />
+      <EvaluatorStats
+        evaluators={evaluators}
+        assignments={assignments}
+        onOpenWorkload={() => setIsWorkloadModalOpen(true)}
+      />
 
       {/* Filters and Search */}
-      <div className="bg-background/50 rounded-xl border border-border/50 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-background/50 rounded-xl border border-border/60 p-4">
+        <div className="flex flex-col xl:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary w-4 h-4 pointer-events-none" />
             <Input
               type="text"
-              placeholder="Search by group code, project title, or student name..."
+              placeholder="Search by project title, code, or faculty..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-background border-border/60 focus:border-primary/40"
+              className="pl-10 h-10 bg-background border-border/60 focus:border-primary/40"
             />
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as any)}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-background border-border/60">
-                <SelectValue placeholder="All Status" />
+              <SelectTrigger className="w-full sm:w-[130px] h-10 bg-background border-border/60">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="assigned">Assigned</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                <SelectItem value="conflicts">Conflicts</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={filterType} onValueChange={(value) => setFilterType(value as any)}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-background border-border/60">
-                <SelectValue placeholder="All Types" />
+            <Select value={filterProjectType} onValueChange={(value) => setFilterProjectType(value as any)}>
+              <SelectTrigger className="w-full sm:w-[130px] h-10 bg-background border-border/60">
+                <div className="flex items-center gap-2 truncate">
+                  <Layers className="w-3.5 h-3.5 text-textSecondary" />
+                  <SelectValue placeholder="Project" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                <SelectItem value="IDP">IDP</SelectItem>
+                <SelectItem value="UROP">UROP</SelectItem>
+                <SelectItem value="CAPSTONE">Capstone</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterSubmissionType} onValueChange={(value) => setFilterSubmissionType(value as any)}>
+              <SelectTrigger className="w-full sm:w-[130px] h-10 bg-background border-border/60">
+                <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="group">Groups</SelectItem>
-                <SelectItem value="solo">Solo Students</SelectItem>
+                <SelectItem value="solo">Solo</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -345,7 +340,7 @@ export function ExternalEvaluatorsTab() {
         {assignmentsLoading || evaluatorsLoading ? (
           <EvaluatorListSkeleton />
         ) : filteredAssignments.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {filteredAssignments.map((assignment) => (
               <AssignmentCard
                 key={`${assignment.submissionType}-${assignment.submissionType === 'group' ? assignment.groupId?._id : assignment.studentId?._id}`}
@@ -363,45 +358,36 @@ export function ExternalEvaluatorsTab() {
             <div className="w-14 h-14 bg-primary/5 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Users className="w-7 h-7 text-primary/60" />
             </div>
-            <h3 className="text-base font-medium text-text mb-2">No Projects to Assign</h3>
-            <p className="text-textSecondary max-w-md mx-auto text-sm px-4">
-              No groups or solo students are currently available for external evaluator assignment.
-              Projects will appear here once they are approved.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              className="mt-4 gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh Data
-            </Button>
+            <h3 className="text-base font-medium text-text mb-2">No Projects Found</h3>
+            <p className="text-textSecondary text-sm">No data available for the current selection.</p>
           </div>
         ) : (
           <div className="text-center py-16 bg-background/50 rounded-xl border border-border/60">
-            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Search className="w-7 h-7 text-textSecondary" />
-            </div>
-            <h3 className="text-base font-medium text-text mb-2">No Matching Results</h3>
-            <p className="text-textSecondary text-sm mb-4">
-              No assignments match your current search or filters.
-            </p>
+            <Search className="w-10 h-10 text-textSecondary mx-auto mb-4 opacity-20" />
+            <h3 className="text-base font-medium text-text mb-2">No Matches</h3>
+            <p className="text-textSecondary text-sm mb-6">Try adjusting your filters.</p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 setSearchTerm('');
                 setFilterStatus('all');
-                setFilterType('all');
+                setFilterSubmissionType('all');
+                setFilterProjectType('all');
               }}
-              className="gap-2"
             >
-              Clear Filters
+              Reset Filters
             </Button>
           </div>
         )}
       </div>
+
+      <WorkloadDistributionModal
+        isOpen={isWorkloadModalOpen}
+        onClose={() => setIsWorkloadModalOpen(false)}
+        evaluators={evaluators}
+        totalProjects={assignments.length}
+      />
     </div>
   );
 }

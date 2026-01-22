@@ -12,37 +12,34 @@ export function useExternalEvaluators() {
   const [validationResult, setValidationResult] = useState<ExternalEvaluatorValidationResult | null>(null);
 
   // Validate assignment constraints
-  const validateAssignments = useCallback(async (): Promise<ExternalEvaluatorValidationResult | null> => {
+  const validateAssignments = useCallback(async (projectType?: string): Promise<ExternalEvaluatorValidationResult | null> => {
     try {
-      const response = await api.get<ExternalEvaluatorValidationResult>('/control/external-evaluators/validate');
+      const url = `/control/external-evaluators/validate${projectType ? `?projectType=${projectType}` : ''}`;
+      const response = await api.get<ExternalEvaluatorValidationResult>(url);
       if (response.success && response.data) {
         setValidationResult(response.data);
         return response.data;
-      } else {
-        // Silent fail - don't show toast for expected empty state
-        return null;
       }
+      return null;
     } catch (error: any) {
       console.error('Error validating assignments:', error);
-      // Silent fail - don't show toast for expected errors during application phase
       return null;
     }
   }, []);
 
   // Fetch all external evaluator assignments
-  const fetchAssignments = useCallback(async () => {
+  const fetchAssignments = useCallback(async (projectType?: string) => {
     setAssignmentsLoading(true);
     try {
-      const response = await api.get<ExternalEvaluatorAssignment[]>('/control/external-evaluators/assignments');
+      const url = `/control/external-evaluators/assignments${projectType ? `?projectType=${projectType}` : ''}`;
+      const response = await api.get<ExternalEvaluatorAssignment[]>(url);
       if (response.success) {
         setAssignments(response.data || []);
       } else {
-        // Silent fail - don't show toast for expected empty state
         setAssignments([]);
       }
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
-      // Silent fail - don't show toast for expected errors during application phase
       setAssignments([]);
     } finally {
       setAssignmentsLoading(false);
@@ -50,19 +47,18 @@ export function useExternalEvaluators() {
   }, []);
 
   // Fetch available external evaluators
-  const fetchEvaluators = useCallback(async () => {
+  const fetchEvaluators = useCallback(async (projectType?: string) => {
     setEvaluatorsLoading(true);
     try {
-      const response = await api.get<ExternalEvaluator[]>('/control/external-evaluators/available');
+      const url = `/control/external-evaluators/available${projectType ? `?projectType=${projectType}` : ''}`;
+      const response = await api.get<ExternalEvaluator[]>(url);
       if (response.success) {
         setEvaluators(response.data || []);
       } else {
-        // Silent fail - don't show toast for expected empty state
         setEvaluators([]);
       }
     } catch (error: any) {
       console.error('Error fetching evaluators:', error);
-      // Silent fail - don't show toast for expected errors during application phase
       setEvaluators([]);
     } finally {
       setEvaluatorsLoading(false);
@@ -70,10 +66,10 @@ export function useExternalEvaluators() {
   }, []);
 
   // Auto-assign external evaluators
-  const autoAssignEvaluators = useCallback(async () => {
+  const autoAssignEvaluators = useCallback(async (projectType: string) => {
     setLoading(true);
     try {
-      const response = await api.post('/control/external-evaluators/auto-assign');
+      const response = await api.post('/control/external-evaluators/auto-assign', { projectType });
       if (response.success) {
         toast.success(response.message || 'External evaluators assigned successfully');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);

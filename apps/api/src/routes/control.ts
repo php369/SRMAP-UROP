@@ -600,7 +600,8 @@ router.get('/users/stats', authenticate, isCoordinatorOrAdmin, async (_req: Requ
  */
 router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
-    const assignments = await StudentEvaluationService.getExternalEvaluatorAssignments();
+    const { projectType } = req.query;
+    const assignments = await StudentEvaluationService.getExternalEvaluatorAssignments(projectType as string);
 
     res.json({
       success: true,
@@ -626,7 +627,8 @@ router.get('/external-evaluators/assignments', authenticate, isCoordinatorOrAdmi
  */
 router.get('/external-evaluators/validate', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
-    const validation = await StudentEvaluationService.validateAssignmentConstraints();
+    const { projectType } = req.query;
+    const validation = await StudentEvaluationService.validateAssignmentConstraints(projectType as string);
 
     res.json({
       success: true,
@@ -652,7 +654,8 @@ router.get('/external-evaluators/validate', authenticate, isCoordinatorOrAdmin, 
  */
 router.get('/external-evaluators/available', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
-    const evaluators = await StudentEvaluationService.getAvailableExternalEvaluators();
+    const { projectType } = req.query;
+    const evaluators = await StudentEvaluationService.getAvailableExternalEvaluators(projectType as string);
 
     res.json({
       success: true,
@@ -678,7 +681,8 @@ router.get('/external-evaluators/available', authenticate, isCoordinatorOrAdmin,
  */
 router.post('/external-evaluators/auto-assign', authenticate, isCoordinatorOrAdmin, async (req: Request, res: Response) => {
   try {
-    const result = await StudentEvaluationService.autoAssignExternalEvaluators();
+    const { projectType } = req.body;
+    const result = await StudentEvaluationService.autoAssignExternalEvaluators(projectType);
 
     res.json({
       success: true,

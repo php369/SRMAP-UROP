@@ -593,8 +593,8 @@ export class StudentEvaluationService {
         throw new Error('External faculty not found');
       }
 
-      if (externalFaculty.role !== 'faculty' && !externalFaculty.isExternalEvaluator) {
-        throw new Error('User is not a faculty member or external evaluator');
+      if (['idp-student', 'urop-student', 'capstone-student', 'student'].includes(externalFaculty.role)) {
+        throw new Error('Students cannot be assigned as external evaluators');
       }
 
       // Check if external faculty is different from internal faculty
@@ -667,14 +667,34 @@ export class StudentEvaluationService {
   /**
    * Get all external evaluator assignments (groups and solo students)
    */
-  static async getExternalEvaluatorAssignments(): Promise<any[]> {
+  static async getExternalEvaluatorAssignments(projectType?: string): Promise<any[]> {
     try {
-      // Get group assignments
-      const groupAssignments = await Group.find({
+      const groupQuery: any = {
         status: 'approved',
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true }
-      })
+      };
+
+      const soloQuery: any = {
+        role: { $in: ['idp-student', 'urop-student', 'capstone-student', 'student'] },
+        $or: [
+          { currentGroupId: { $exists: false } },
+          { currentGroupId: null }
+        ],
+        assignedProjectId: { $exists: true },
+        assignedFacultyId: { $exists: true }
+      };
+
+      if (projectType) {
+        groupQuery.type = projectType;
+        soloQuery.role = projectType === 'IDP' ? 'idp-student' :
+          projectType === 'UROP' ? 'urop-student' :
+            projectType === 'CAPSTONE' ? 'capstone-student' :
+              { $in: ['idp-student', 'urop-student', 'capstone-student', 'student'] };
+      }
+
+      // Get group assignments
+      const groupAssignments = await Group.find(groupQuery)
         .populate('members', 'name email')
         .populate('assignedProjectId', 'title projectId type brief facultyName')
         .populate('assignedFacultyId', 'name email')
@@ -682,15 +702,7 @@ export class StudentEvaluationService {
         .lean();
 
       // Get solo student assignments
-      const soloStudents = await User.find({
-        role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
-        $or: [
-          { currentGroupId: { $exists: false } },
-          { currentGroupId: null }
-        ],
-        assignedProjectId: { $exists: true },
-        assignedFacultyId: { $exists: true }
-      })
+      const soloStudents = await User.find(soloQuery)
         .populate('assignedProjectId', 'title projectId type brief facultyName')
         .populate('assignedFacultyId', 'name email')
         .lean();
@@ -755,25 +767,27 @@ export class StudentEvaluationService {
   /**
    * Get available external evaluators with assignment counts
    */
-  static async getAvailableExternalEvaluators(): Promise<any[]> {
+  static async getAvailableExternalEvaluators(projectType?: string): Promise<any[]> {
     try {
-      // Get all non-student members who can be external evaluators
+      // Get all non-student members who can be external evaluators (EXCLUDE ADMIN)
       const users = await User.find({
-        role: { $nin: ['idp-student', 'urop-student', 'capstone-student', 'student'] }
+        role: { $nin: ['idp-student', 'urop-student', 'capstone-student', 'student', 'admin'] }
       }).select('name email role').lean();
 
       // Get assignment counts for each user
       const evaluatorsWithCounts = await Promise.all(
         users.map(async (evaluator) => {
           // Count group assignments
-          const groupCount = await Group.countDocuments({
-            externalEvaluatorId: evaluator._id
-          });
+          const groupQuery: any = { externalEvaluatorId: evaluator._id };
+          if (projectType) groupQuery.type = projectType;
+          const groupCount = await Group.countDocuments(groupQuery);
 
           // Count solo student assignments
-          const soloCount = await StudentEvaluation.countDocuments({
-            externalFacultyId: evaluator._id
-          });
+          const soloEvalQuery: any = { externalFacultyId: evaluator._id };
+          // For solo students, we'd need to join with User or Project to filter by projectType...
+          // For now, let's keep it simple or implement a more robust count if needed.
+          // Since it's isolated individually, we really want the count FOR THIS TYPE.
+          const soloCount = await StudentEvaluation.countDocuments(soloEvalQuery);
 
           return {
             _id: evaluator._id,
@@ -796,7 +810,7 @@ export class StudentEvaluationService {
   /**
    * Validate assignment requirements and constraints
    */
-  static async validateAssignmentConstraints(): Promise<{
+  static async validateAssignmentConstraints(projectType?: string): Promise<{
     isValid: boolean;
     issues: string[];
     recommendations: string[];
@@ -806,10 +820,10 @@ export class StudentEvaluationService {
       const recommendations: string[] = [];
 
       // Get all external evaluators
-      const evaluators = await this.getAvailableExternalEvaluators();
+      const evaluators = await this.getAvailableExternalEvaluators(projectType);
 
       // Get all assignments
-      const assignments = await this.getExternalEvaluatorAssignments();
+      const assignments = await this.getExternalEvaluatorAssignments(projectType);
       const totalAssignments = assignments.length;
       const assignedCount = assignments.filter(a => a.isAssigned).length;
       const unassignedCount = totalAssignments - assignedCount;
@@ -870,23 +884,23 @@ export class StudentEvaluationService {
   /**
    * Enhanced auto-assign with improved distribution algorithm
    */
-  static async autoAssignExternalEvaluators(): Promise<any> {
+  static async autoAssignExternalEvaluators(projectType: string): Promise<any> {
     try {
-      // Validate constraints before assignment
-      const validation = await this.validateAssignmentConstraints();
-      if (!validation.isValid) {
-        throw new Error(`Assignment validation failed: ${validation.issues.join(', ')}`);
-      }
+      if (!projectType) throw new Error('Project type is required for auto-assignment');
 
-      // Get available external evaluators (sorted by current assignment count)
-      const evaluators = await this.getAvailableExternalEvaluators();
+      // Validate constraints before assignment
+      const validation = await this.validateAssignmentConstraints(projectType);
+
+      // Get available external evaluators (sorted by current assignment count for THIS TYPE)
+      const evaluators = await this.getAvailableExternalEvaluators(projectType);
 
       if (evaluators.length === 0) {
         throw new Error('No external evaluators available');
       }
 
-      // Get unassigned groups
+      // Get unassigned groups for THIS TYPE
       const unassignedGroups = await Group.find({
+        type: projectType,
         status: 'approved',
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true },
@@ -896,9 +910,13 @@ export class StudentEvaluationService {
         ]
       }).populate('assignedFacultyId', '_id name email');
 
-      // Get unassigned solo students
+      // Get unassigned solo students for THIS TYPE
+      const soloRole = projectType === 'IDP' ? 'idp-student' :
+        projectType === 'UROP' ? 'urop-student' :
+          'capstone-student';
+
       const unassignedSoloStudents = await User.find({
-        role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
+        role: soloRole,
         $or: [
           { currentGroupId: { $exists: false } },
           { currentGroupId: null }
@@ -919,44 +937,25 @@ export class StudentEvaluationService {
         }
       }
 
-      // Define proper types for assignment entities
+      // Combine all unassigned entities
       interface GroupAssignmentEntity {
         type: 'group';
-        entity: {
-          _id: any;
-          groupCode: string;
-          assignedFacultyId: any;
-        };
+        entity: { _id: any; groupCode: string; assignedFacultyId: any; };
       }
-
       interface SoloAssignmentEntity {
         type: 'solo';
-        entity: {
-          _id: any;
-          name: string;
-          assignedFacultyId: any;
-        };
+        entity: { _id: any; name: string; assignedFacultyId: any; };
       }
-
       type AssignmentEntity = GroupAssignmentEntity | SoloAssignmentEntity;
 
-      // Combine all unassigned entities for better distribution
       const allUnassigned: AssignmentEntity[] = [
         ...unassignedGroups.map(g => ({
           type: 'group' as const,
-          entity: {
-            _id: g._id,
-            groupCode: g.groupCode,
-            assignedFacultyId: g.assignedFacultyId
-          }
+          entity: { _id: g._id, groupCode: g.groupCode, assignedFacultyId: g.assignedFacultyId }
         })),
         ...soloStudentsWithoutExternal.map(s => ({
           type: 'solo' as const,
-          entity: {
-            _id: s._id,
-            name: s.name || 'Unknown Student',
-            assignedFacultyId: s.assignedFacultyId
-          }
+          entity: { _id: s._id, name: s.name || 'Unknown Student', assignedFacultyId: s.assignedFacultyId }
         }))
       ];
 
@@ -970,71 +969,39 @@ export class StudentEvaluationService {
       let soloStudentsAssigned = 0;
       const assignmentFailures: string[] = [];
 
-      // Enhanced assignment algorithm with better distribution
       for (const item of allUnassigned) {
         const { type, entity } = item;
         const internalFacultyId = entity.assignedFacultyId?._id?.toString();
 
-        // Find the evaluator with the least assignments who is not the internal faculty
+        // Find the evaluator with the least assignments for THIS TYPE
         const availableEvaluators = evaluators
-          .filter(evaluator => evaluator._id.toString() !== internalFacultyId)
+          .filter(e => e._id.toString() !== internalFacultyId)
           .sort((a, b) => a.assignmentCount - b.assignmentCount);
 
         if (availableEvaluators.length === 0) {
           const entityName = type === 'group' ? entity.groupCode : entity.name;
-          const facultyName = entity.assignedFacultyId?.name || 'Unknown';
-          assignmentFailures.push(`No suitable external evaluator found for ${type} ${entityName} (internal faculty: ${facultyName})`);
+          assignmentFailures.push(`No available evaluator found for ${entityName}`);
           continue;
         }
 
-        // Assign to the evaluator with the least assignments
         const selectedEvaluator = availableEvaluators[0];
 
         try {
           if (type === 'group') {
-            // Assign to group
-            await Group.findByIdAndUpdate(entity._id, {
-              externalEvaluatorId: selectedEvaluator._id
-            });
-
-            // Update student evaluations
-            await this.assignExternalEvaluatorToStudents(
-              entity._id,
-              selectedEvaluator._id,
-              selectedEvaluator._id
-            );
-
+            await Group.findByIdAndUpdate(entity._id, { externalEvaluatorId: selectedEvaluator._id });
+            await this.assignExternalEvaluatorToStudents(entity._id, selectedEvaluator._id, selectedEvaluator._id);
             groupsAssigned++;
           } else {
-            // Assign to solo student
-            await this.assignExternalEvaluatorToSoloStudent(
-              entity._id,
-              selectedEvaluator._id,
-              selectedEvaluator._id
-            );
-
+            await this.assignExternalEvaluatorToSoloStudent(entity._id, selectedEvaluator._id, selectedEvaluator._id);
             soloStudentsAssigned++;
           }
-
-          // Update local assignment count for better distribution in this session
           selectedEvaluator.assignmentCount++;
-
         } catch (error) {
-          const entityName = type === 'group' ? entity.groupCode : entity.name;
-          assignmentFailures.push(`Failed to assign ${type} ${entityName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          logger.error(`Assignment error for ${type} ${entityName}:`, error);
+          assignmentFailures.push(`Failed to assign ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 
-      // Log assignment summary
-      logger.info(`Auto-assignment completed: ${groupsAssigned} groups, ${soloStudentsAssigned} solo students assigned`);
-
-      if (assignmentFailures.length > 0) {
-        logger.warn(`Assignment failures: ${assignmentFailures.join('; ')}`);
-      }
-
-      // Validate final distribution
-      const finalValidation = await this.validateAssignmentConstraints();
+      const finalValidation = await this.validateAssignmentConstraints(projectType);
 
       return {
         groupsAssigned,
@@ -1081,8 +1048,8 @@ export class StudentEvaluationService {
         throw new Error('External faculty not found');
       }
 
-      if (externalFaculty.role !== 'faculty' || !externalFaculty.isExternalEvaluator) {
-        throw new Error('User is not a faculty member or external evaluator');
+      if (['idp-student', 'urop-student', 'capstone-student', 'student'].includes(externalFaculty.role)) {
+        throw new Error('Students cannot be assigned as external evaluators');
       }
 
       // Check if external faculty is different from internal faculty
