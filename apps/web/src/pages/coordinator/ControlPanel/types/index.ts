@@ -112,6 +112,12 @@ export interface SequentialValidationResult {
   reason?: string;
 }
 
+export interface ExternalEvaluatorValidationResult {
+  isValid: boolean;
+  issues: string[];
+  recommendations: string[];
+}
+
 // External Evaluator Types
 export interface ExternalEvaluator {
   _id: string;

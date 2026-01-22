@@ -684,7 +684,10 @@ export class StudentEvaluationService {
       // Get solo student assignments
       const soloStudents = await User.find({
         role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
-        currentGroupId: { $exists: false },
+        $or: [
+          { currentGroupId: { $exists: false } },
+          { currentGroupId: null }
+        ],
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true }
       })
@@ -754,15 +757,14 @@ export class StudentEvaluationService {
    */
   static async getAvailableExternalEvaluators(): Promise<any[]> {
     try {
-      // Get all faculty members who can be external evaluators
-      const faculty = await User.find({
-        role: 'faculty',
-        isExternalEvaluator: true
-      }).select('name email').lean();
+      // Get all non-student members who can be external evaluators
+      const users = await User.find({
+        role: { $nin: ['idp-student', 'urop-student', 'capstone-student', 'student'] }
+      }).select('name email role').lean();
 
-      // Get assignment counts for each faculty
+      // Get assignment counts for each user
       const evaluatorsWithCounts = await Promise.all(
-        faculty.map(async (evaluator) => {
+        users.map(async (evaluator) => {
           // Count group assignments
           const groupCount = await Group.countDocuments({
             externalEvaluatorId: evaluator._id
@@ -775,8 +777,9 @@ export class StudentEvaluationService {
 
           return {
             _id: evaluator._id,
-            name: evaluator.name,
+            name: evaluator.name || evaluator.email.split('@')[0], // Use email if name is missing
             email: evaluator.email,
+            role: evaluator.role,
             assignmentCount: groupCount + soloCount,
             isExternalEvaluator: true
           };
@@ -887,13 +890,19 @@ export class StudentEvaluationService {
         status: 'approved',
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true },
-        externalEvaluatorId: { $exists: false }
+        $or: [
+          { externalEvaluatorId: { $exists: false } },
+          { externalEvaluatorId: null }
+        ]
       }).populate('assignedFacultyId', '_id name email');
 
       // Get unassigned solo students
       const unassignedSoloStudents = await User.find({
         role: { $in: ['idp-student', 'urop-student', 'capstone-student'] },
-        currentGroupId: { $exists: false },
+        $or: [
+          { currentGroupId: { $exists: false } },
+          { currentGroupId: null }
+        ],
         assignedProjectId: { $exists: true },
         assignedFacultyId: { $exists: true }
       }).populate('assignedFacultyId', '_id name email');

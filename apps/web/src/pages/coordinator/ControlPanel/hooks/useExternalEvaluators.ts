@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../utils/api';
-import { ExternalEvaluator, ExternalEvaluatorAssignment } from '../types';
+import { ExternalEvaluator, ExternalEvaluatorAssignment, ExternalEvaluatorValidationResult } from '../types';
 
 export function useExternalEvaluators() {
   const [assignments, setAssignments] = useState<ExternalEvaluatorAssignment[]>([]);
@@ -9,22 +9,22 @@ export function useExternalEvaluators() {
   const [loading, setLoading] = useState(false);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [evaluatorsLoading, setEvaluatorsLoading] = useState(false);
-  const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationResult, setValidationResult] = useState<ExternalEvaluatorValidationResult | null>(null);
 
   // Validate assignment constraints
-  const validateAssignments = useCallback(async () => {
+  const validateAssignments = useCallback(async (): Promise<ExternalEvaluatorValidationResult | null> => {
     try {
-      const response = await api.get('/control/external-evaluators/validate');
-      if (response.data && (response.data as any).success) {
-        setValidationResult((response.data as any).data);
-        return (response.data as any).data;
+      const response = await api.get<ExternalEvaluatorValidationResult>('/control/external-evaluators/validate');
+      if (response.success && response.data) {
+        setValidationResult(response.data);
+        return response.data;
       } else {
-        toast.error('Failed to validate assignments');
+        // Silent fail - don't show toast for expected empty state
         return null;
       }
     } catch (error: any) {
       console.error('Error validating assignments:', error);
-      toast.error(error.response?.data?.message || 'Failed to validate assignments');
+      // Silent fail - don't show toast for expected errors during application phase
       return null;
     }
   }, []);
@@ -33,15 +33,16 @@ export function useExternalEvaluators() {
   const fetchAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
     try {
-      const response = await api.get('/control/external-evaluators/assignments');
-      if (response.data && (response.data as any).success) {
-        setAssignments((response.data as any).data || []);
+      const response = await api.get<ExternalEvaluatorAssignment[]>('/control/external-evaluators/assignments');
+      if (response.success) {
+        setAssignments(response.data || []);
       } else {
-        toast.error('Failed to fetch assignments');
+        // Silent fail - don't show toast for expected empty state
+        setAssignments([]);
       }
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch assignments');
+      // Silent fail - don't show toast for expected errors during application phase
       setAssignments([]);
     } finally {
       setAssignmentsLoading(false);
@@ -52,15 +53,16 @@ export function useExternalEvaluators() {
   const fetchEvaluators = useCallback(async () => {
     setEvaluatorsLoading(true);
     try {
-      const response = await api.get('/control/external-evaluators/available');
-      if (response.data && (response.data as any).success) {
-        setEvaluators((response.data as any).data || []);
+      const response = await api.get<ExternalEvaluator[]>('/control/external-evaluators/available');
+      if (response.success) {
+        setEvaluators(response.data || []);
       } else {
-        toast.error('Failed to fetch evaluators');
+        // Silent fail - don't show toast for expected empty state
+        setEvaluators([]);
       }
     } catch (error: any) {
       console.error('Error fetching evaluators:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch evaluators');
+      // Silent fail - don't show toast for expected errors during application phase
       setEvaluators([]);
     } finally {
       setEvaluatorsLoading(false);
@@ -72,12 +74,12 @@ export function useExternalEvaluators() {
     setLoading(true);
     try {
       const response = await api.post('/control/external-evaluators/auto-assign');
-      if (response.data && (response.data as any).success) {
-        toast.success((response.data as any).message || 'External evaluators assigned successfully');
+      if (response.success) {
+        toast.success(response.message || 'External evaluators assigned successfully');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);
         return true;
       } else {
-        toast.error((response.data as any).message || 'Failed to auto-assign evaluators');
+        toast.error(response.message || 'Failed to auto-assign evaluators');
         return false;
       }
     } catch (error: any) {
@@ -97,12 +99,12 @@ export function useExternalEvaluators() {
         groupId,
         evaluatorId
       });
-      if (response.data && (response.data as any).success) {
+      if (response.success) {
         toast.success('External evaluator assigned successfully');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);
         return true;
       } else {
-        toast.error((response.data as any).message || 'Failed to assign evaluator');
+        toast.error(response.message || 'Failed to assign evaluator');
         return false;
       }
     } catch (error: any) {
@@ -122,12 +124,12 @@ export function useExternalEvaluators() {
         studentId,
         evaluatorId
       });
-      if (response.data && (response.data as any).success) {
+      if (response.success) {
         toast.success('External evaluator assigned to solo student successfully');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);
         return true;
       } else {
-        toast.error((response.data as any).message || 'Failed to assign evaluator to solo student');
+        toast.error(response.message || 'Failed to assign evaluator to solo student');
         return false;
       }
     } catch (error: any) {
@@ -144,12 +146,12 @@ export function useExternalEvaluators() {
     setLoading(true);
     try {
       const response = await api.delete(`/control/external-evaluators/assign/${groupId}`);
-      if (response.data && (response.data as any).success) {
+      if (response.success) {
         toast.success('External evaluator assignment removed');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);
         return true;
       } else {
-        toast.error((response.data as any).message || 'Failed to remove assignment');
+        toast.error(response.message || 'Failed to remove assignment');
         return false;
       }
     } catch (error: any) {
@@ -166,12 +168,12 @@ export function useExternalEvaluators() {
     setLoading(true);
     try {
       const response = await api.delete(`/control/external-evaluators/assign-solo/${studentId}`);
-      if (response.data && (response.data as any).success) {
+      if (response.success) {
         toast.success('External evaluator assignment removed from solo student');
         await Promise.all([fetchAssignments(), fetchEvaluators()]);
         return true;
       } else {
-        toast.error((response.data as any).message || 'Failed to remove assignment from solo student');
+        toast.error(response.message || 'Failed to remove assignment from solo student');
         return false;
       }
     } catch (error: any) {
