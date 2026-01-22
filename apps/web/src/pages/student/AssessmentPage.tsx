@@ -21,6 +21,7 @@ export function AssessmentPage() {
   const [eligibleProjectType, setEligibleProjectType] = useState<string | null>(null);
   const { windows, loading: windowsLoading } = useWindowStatus();
   const [showHistory, setShowHistory] = useState(false);
+  const [combinedEvaluation, setCombinedEvaluation] = useState<any>(null);
 
   const activeAssessmentType = eligibleProjectType
     ? getCurrentAssessmentType(windows, eligibleProjectType as any)
@@ -155,8 +156,8 @@ export function AssessmentPage() {
           console.log('📡 Regular submissions fetch failed or 404:', err.message);
           return { success: false, data: [] };
         }),
-        api.get<any>('/group-submissions/my/submissions').catch(err => {
-          console.log('📡 Group submissions fetch failed or 404 (expected for solo):', err.message);
+        api.get<any>('/group-submissions/my/submissions').catch((error: any) => {
+          console.log('📡 Group submissions fetch failed or 404 (expected for solo):', error.message);
           return { success: false, data: [] };
         })
       ]);
@@ -171,33 +172,53 @@ export function AssessmentPage() {
         const evaluations = Array.isArray((evaluationsResponse as any).evaluations) ? (evaluationsResponse as any).evaluations : [(evaluationsResponse as any).evaluations];
         console.log('📊 Processing evaluations:', evaluations);
 
+        // Create a merged evaluation object for the overall journey timeline
+        const merged: any = {
+          internal: {
+            cla1: { conduct: 0, convert: 0 },
+            cla2: { conduct: 0, convert: 0 },
+            cla3: { conduct: 0, convert: 0 }
+          },
+          external: {
+            reportPresentation: { conduct: 0, convert: 0 }
+          }
+        };
+
         evaluations.forEach((evalData: any) => {
           if (evalData.evaluation) {
-            console.log('📝 Evaluation data:', evalData.evaluation);
-            console.log('🔢 Has scores:', hasAnyScores(evalData.evaluation));
-            console.log('✅ Is complete:', isEvaluationComplete(evalData.evaluation));
-            console.log('📢 Is published:', evalData.evaluation.isPublished);
+            const e = evalData.evaluation;
+            console.log('📝 Evaluation record phase:', e.assessmentType);
 
-            // Show all evaluations, not just published ones
+            // Map authoritative record for each phase
+            if (e.assessmentType === 'CLA-1') merged.internal.cla1 = e.internal.cla1;
+            else if (e.assessmentType === 'CLA-2') merged.internal.cla2 = e.internal.cla2;
+            else if (e.assessmentType === 'CLA-3') merged.internal.cla3 = e.internal.cla3;
+            else if (e.assessmentType === 'External') merged.external.reportPresentation = e.external.reportPresentation;
+
+            // Show all evaluations in history list
             allSubmissions.push({
-              _id: evalData.evaluation._id,
+              _id: e._id,
               submissionType: 'evaluation',
-              assessmentType: 'Final Grade',
-              submittedAt: evalData.evaluation.createdAt,
-              groupId: evalData.evaluation.groupId,
-              projectId: evalData.evaluation.projectId,
-              isGradeReleased: evalData.evaluation.isPublished,
-              isGraded: evalData.evaluation.isPublished || hasAnyScores(evalData.evaluation),
-              isComplete: isEvaluationComplete(evalData.evaluation),
-              finalGrade: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
-              total: evalData.evaluation.isPublished ? evalData.evaluation.total : null,
-              evaluation: evalData.evaluation, // Include full evaluation data
-              // Add project info if available
+              assessmentType: e.assessmentType === 'External' ? 'External' : e.assessmentType,
+              submittedAt: e.createdAt,
+              groupId: e.groupId,
+              projectId: e.projectId,
+              isGradeReleased: e.isPublished,
+              isGraded: e.isPublished || hasAnyScores(e),
+              isComplete: isEvaluationComplete(e),
+              finalGrade: e.isPublished ? e.total : null,
+              total: e.isPublished ? e.total : null,
+              evaluation: e,
               projectTitle: evalData.projectTitle || 'Project',
               groupCode: evalData.groupCode
             });
           }
         });
+
+        // Only set combined evaluation if we found at least one valid record
+        if (evaluations.some((e: any) => e.evaluation)) {
+          setCombinedEvaluation(merged);
+        }
       }
 
       // Add regular submissions (legacy)
@@ -339,20 +360,19 @@ export function AssessmentPage() {
   }
 
   const evaluationSubmission = submissions.find(s => s.submissionType === 'evaluation');
-  const mainEvaluation = evaluationSubmission?.evaluation;
 
   return (
     <div className="p-6 pb-8 pt-4">
       <div className="max-w-6xl mx-auto">
         {/* Assessment Journey Timeline - Simplified at top (Shown when not in history view) */}
-        {!showHistory && mainEvaluation && (
+        {!showHistory && combinedEvaluation && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6 flex justify-center"
           >
             <div className="w-full max-w-4xl px-4">
-              <TimelineStatus evaluation={mainEvaluation} />
+              <TimelineStatus evaluation={combinedEvaluation} />
             </div>
           </motion.div>
         )}
