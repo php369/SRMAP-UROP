@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, UserCheck, BarChart3, CheckCircle } from 'lucide-react';
+import { ClipboardList, UserCheck, BarChart3, CheckCircle } from 'lucide-react';
 import { ExternalEvaluator, ExternalEvaluatorAssignment } from '../../types';
 
 interface EvaluatorStatsProps {
@@ -17,30 +17,26 @@ export function EvaluatorStats({ evaluators, assignments, onOpenWorkload }: Eval
     {
       label: 'Total Projects',
       value: totalAssignments,
-      icon: Users,
-      color: 'blue',
-      description: 'Groups and solo students requiring evaluation'
+      icon: ClipboardList,
+      color: 'blue'
     },
     {
       label: 'Assigned',
       value: assignedCount,
       icon: CheckCircle,
-      color: 'green',
-      description: 'Projects with assigned external evaluators'
+      color: 'green'
     },
     {
       label: 'Unassigned',
       value: unassignedCount,
       icon: UserCheck,
-      color: 'yellow',
-      description: 'Projects awaiting assignment'
+      color: 'yellow'
     },
     {
       label: 'Workload Distribution',
       value: evaluators.length,
       icon: BarChart3,
       color: 'indigo',
-      description: 'Click to view evaluator assignment balance',
       isAction: true,
       onClick: onOpenWorkload
     }
@@ -70,7 +66,7 @@ export function EvaluatorStats({ evaluators, assignments, onOpenWorkload }: Eval
             stat.isAction ? "cursor-pointer hover:border-indigo-500/40 hover:bg-indigo-500/[0.02] active:scale-[0.98]" : ""
           )}
         >
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             <div className={cn("p-2 rounded-lg", getColorClasses(stat.color))}>
               <stat.icon className="w-5 h-5" />
             </div>
@@ -79,7 +75,6 @@ export function EvaluatorStats({ evaluators, assignments, onOpenWorkload }: Eval
               <p className="text-xs font-semibold text-textSecondary uppercase tracking-wider">{stat.label}</p>
             </div>
           </div>
-          <p className="text-[10px] text-textSecondary leading-relaxed">{stat.description}</p>
         </motion.div>
       ))}
     </div>

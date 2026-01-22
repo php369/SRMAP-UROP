@@ -28,6 +28,8 @@ export * from './tabs';
 export * from './dropdown-menu';
 export * from './dialog';
 export * from './label';
+export * from './tooltip';
+export * from './popover';
 
 // Design System Utilities
 export { designSystem } from '../../utils/design-system';

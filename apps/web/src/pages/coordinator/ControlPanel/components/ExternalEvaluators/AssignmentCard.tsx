@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Users, AlertTriangle, X, Check, ChevronDown, ChevronUp, UserCheck, Briefcase, Mail, Info, UserCircle } from 'lucide-react';
+import { User, Users, AlertTriangle, AlertCircle, X, Check, ChevronDown, UserCheck, Briefcase, Mail, Info, UserCircle } from 'lucide-react';
 import { ExternalEvaluatorAssignment, ExternalEvaluator } from '../../types';
 import { Window } from '../../../../../utils/windowChecker';
 import { Button } from '../../../../../components/ui/Button';
@@ -11,6 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../../../components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "../../../../../components/ui/tooltip";
 import { cn } from '../../../../../utils/cn';
 
 interface AssignmentCardProps {
@@ -100,7 +105,8 @@ export function AssignmentCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-background rounded-xl border transition-all overflow-hidden",
+        "bg-background rounded-xl border transition-all duration-300 overflow-hidden group/card",
+        "hover:border-primary/30 hover:bg-surface/30",
         hasConflict
           ? 'border-destructive/40 bg-destructive/5'
           : assignment.isAssigned
@@ -116,12 +122,12 @@ export function AssignmentCard({
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div className={cn(
             "p-2 rounded-lg flex-shrink-0",
-            isGroup ? 'bg-primary/10' : 'bg-violet-500/10'
+            isGroup ? 'bg-cyan-500/10' : 'bg-fuchsia-500/10'
           )}>
             {isGroup ? (
-              <Users className={cn("w-4 h-4", isGroup ? 'text-primary' : 'text-violet-600')} />
+              <Users className="w-4 h-4 text-cyan-600" />
             ) : (
-              <User className="w-4 h-4 text-violet-600" />
+              <User className="w-4 h-4 text-fuchsia-600" />
             )}
           </div>
 
@@ -131,7 +137,7 @@ export function AssignmentCard({
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] uppercase tracking-wider font-bold text-textSecondary/60">
-                {isGroup ? assignment.groupId?.groupCode : 'SOLO'}
+                {isGroup ? 'GROUP' : 'SOLO'}
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border/40 text-textSecondary">
                 {projectType}
@@ -140,25 +146,47 @@ export function AssignmentCard({
           </div>
 
           {/* Compact Info Badges */}
-          <div className="hidden md:flex items-center gap-6 px-4 border-l border-border/40 ml-4">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-textSecondary uppercase">Internal</span>
-              <span className="text-xs font-medium text-text truncate max-w-[120px]">
-                {internalFaculty?.name || 'N/A'}
-              </span>
+          <div className="hidden md:flex items-center px-4 border-l border-border/40 ml-4">
+            <div className="flex flex-col w-[150px]">
+              <span className="text-[10px] text-textSecondary uppercase tracking-tighter">Internal</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-xs font-medium text-text truncate cursor-help">
+                    {internalFaculty?.name || 'N/A'}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">{internalFaculty?.name || 'Internal Faculty'}</p>
+                  <p className="text-[10px] opacity-80">{internalFaculty?.email}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-textSecondary uppercase">External</span>
-              <span className={cn(
-                "text-xs font-medium truncate max-w-[120px]",
-                assignment.isAssigned ? 'text-text' : 'text-amber-600/70'
-              )}>
-                {externalEvaluator?.name || 'Unassigned'}
-              </span>
+
+            <div className="flex flex-col w-[150px] ml-6">
+              <span className="text-[10px] text-textSecondary uppercase tracking-tighter">External</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn(
+                    "text-xs font-medium truncate cursor-help",
+                    assignment.isAssigned ? 'text-text' : 'text-amber-600/70 italic'
+                  )}>
+                    {externalEvaluator?.name || 'Not assigned'}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {externalEvaluator ? (
+                    <>
+                      <p className="font-medium">{externalEvaluator.name}</p>
+                      <p className="text-[10px] opacity-80">{externalEvaluator.email}</p>
+                    </>
+                  ) : (
+                    <p>No external evaluator assigned yet</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
-
         <div className="flex items-center gap-3 ml-4">
           <div className={cn(
             "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter",
@@ -170,7 +198,15 @@ export function AssignmentCard({
           )}>
             {hasConflict ? 'Conflict' : assignment.isAssigned ? 'Assigned' : 'Pending'}
           </div>
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-textSecondary" /> : <ChevronDown className="w-4 h-4 text-textSecondary" />}
+          <div className={cn(
+            "p-1.5 rounded-full transition-all group-hover/card:bg-primary/10",
+            isExpanded ? "bg-primary/5" : ""
+          )}>
+            <ChevronDown className={cn(
+              "w-4 h-4 text-textSecondary transition-transform duration-300",
+              isExpanded && "rotate-180 text-primary"
+            )} />
+          </div>
         </div>
       </div>
 
