@@ -4,6 +4,7 @@ import {
     createWindow,
     updateWindow,
     deleteWindow,
+    deleteWindows,
     getWindowsByProjectType,
     getActiveWindow,
     getUpcomingWindows,
@@ -266,6 +267,47 @@ router.delete('/:id', authenticate, authorize('coordinator'), async (req, res) =
             error: {
                 code: 'DELETE_WINDOW_FAILED',
                 message: 'Failed to delete window',
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+});
+
+/**
+ * DELETE /api/windows/bulk
+ * Delete multiple windows
+ * Accessible by: coordinator only
+ */
+router.delete('/bulk', authenticate, authorize('coordinator'), async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_PARAMETERS',
+                    message: 'ids must be a non-empty array',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+            return;
+        }
+
+        const { deletedCount } = await deleteWindows(ids);
+
+        res.json({
+            success: true,
+            data: { deletedCount },
+            message: `Successfully deleted ${deletedCount} windows`,
+        });
+    } catch (error) {
+        logger.error('Error bulk deleting windows:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'BULK_DELETE_FAILED',
+                message: 'Failed to delete windows',
                 timestamp: new Date().toISOString(),
             },
         });

@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import { Plus, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import { Window, ProjectType } from '../../types';
 import { getWorkflowOrder } from '../../utils/windowHelpers';
 import { WindowCard } from './WindowCard';
@@ -13,6 +14,9 @@ interface WindowsListProps {
   onEditWindow: (window: Window) => void;
   onDeleteWindow: (window: Window) => void;
   onCreateWindow: () => void;
+  selectedIds?: string[];
+  onSelectChange?: (id: string, selected: boolean) => void;
+  onSelectAll?: (ids: string[], selected: boolean) => void;
 }
 
 export function WindowsList({
@@ -22,11 +26,23 @@ export function WindowsList({
   onShowInactiveToggle,
   onEditWindow,
   onDeleteWindow,
-  onCreateWindow
+  onCreateWindow,
+  selectedIds = [],
+  onSelectChange,
+  onSelectAll
 }: WindowsListProps) {
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
   if (windowsLoading) {
     return <WindowsListSkeleton />;
   }
+
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [group]: !prev[group]
+    }));
+  };
 
   const filteredWindows = windows.filter(w => {
     const now = new Date();
@@ -90,6 +106,11 @@ export function WindowsList({
 
           if (projectWindows.length === 0) return null;
 
+          const projectWindowIds = projectWindows.map(w => w._id);
+          const allProjectSelected = projectWindowIds.every(id => selectedIds.includes(id));
+          const someProjectSelected = projectWindowIds.some(id => selectedIds.includes(id)) && !allProjectSelected;
+          const isCollapsed = collapsedGroups[projectType] || false;
+
           return (
             <motion.div
               key={projectType}
@@ -98,29 +119,85 @@ export function WindowsList({
               transition={{ delay: 0.1 + projectIndex * 0.1 }}
               className="space-y-3"
             >
-              <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-bold text-text">{projectType}</h2>
-                <span className="px-2 py-1 text-xs bg-surface border border-border text-textSecondary rounded-full">
-                  {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
-                </span>
+              <div
+                className="flex items-center justify-between group/header cursor-pointer select-none py-2 px-1 hover:bg-slate-50/50 rounded-lg transition-colors"
+                onClick={() => toggleGroup(projectType)}
+              >
+                <div className="flex items-center space-x-3">
+                  {onSelectAll && (
+                    <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={allProjectSelected}
+                        ref={el => {
+                          if (el) el.indeterminate = someProjectSelected;
+                        }}
+                        onChange={(e) => onSelectAll(projectWindowIds, e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {isCollapsed ? (
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover/header:text-primary transition-colors" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400 group-hover/header:text-primary transition-colors" />
+                    )}
+                    <h2 className="text-xl font-bold text-text">{projectType}</h2>
+                    <span className="px-2 py-1 text-xs bg-surface border border-border text-textSecondary rounded-full">
+                      {projectWindows.length} window{projectWindows.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {onSelectAll && (someProjectSelected || allProjectSelected) ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectAll?.(projectWindowIds, false);
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Deselect {projectWindows.filter(w => selectedIds.includes(w._id)).length} windows
+                    </button>
+                  ) : null}
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                    {isCollapsed ? 'Expand' : 'Collapse'}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {projectWindows.map((window, windowIndex) => (
+              <AnimatePresence initial={false}>
+                {!isCollapsed && (
                   <motion.div
-                    key={window._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + projectIndex * 0.1 + windowIndex * 0.05 }}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="overflow-hidden"
                   >
-                    <WindowCard
-                      window={window}
-                      onEdit={onEditWindow}
-                      onDelete={onDeleteWindow}
-                    />
+                    <div className="space-y-3 pt-1">
+                      {projectWindows.map((window, windowIndex) => (
+                        <motion.div
+                          key={window._id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 * windowIndex }}
+                        >
+                          <WindowCard
+                            window={window}
+                            onEdit={onEditWindow}
+                            onDelete={onDeleteWindow}
+                            isSelected={selectedIds.includes(window._id)}
+                            onSelect={onSelectChange}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
                   </motion.div>
-                ))}
-              </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })

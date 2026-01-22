@@ -26,6 +26,7 @@ export function ManageWindowsPage() {
     const [showInactiveWindows, setShowInactiveWindows] = useState(false);
     const [formLoading, setFormLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [selectedWindowIds, setSelectedWindowIds] = useState<string[]>([]);
 
     // Hooks
     const {
@@ -34,6 +35,7 @@ export function ManageWindowsPage() {
         fetchWindows,
         createWindow,
         deleteWindow,
+        deleteMultipleWindows,
         prepareEditWindow
     } = useWindowManagement();
 
@@ -77,6 +79,18 @@ export function ManageWindowsPage() {
     };
 
     const confirmDeleteWindow = async () => {
+        if (selectedWindowIds.length > 0) {
+            setDeleteLoading(true);
+            const success = await deleteMultipleWindows(selectedWindowIds);
+            setDeleteLoading(false);
+
+            if (success) {
+                setShowDeleteModal(false);
+                setSelectedWindowIds([]);
+            }
+            return;
+        }
+
         if (!windowToDelete) return;
 
         setDeleteLoading(true);
@@ -89,9 +103,28 @@ export function ManageWindowsPage() {
         }
     };
 
+    const handleSelectWindow = (id: string, selected: boolean) => {
+        setSelectedWindowIds(prev =>
+            selected ? [...prev, id] : prev.filter(windowId => windowId !== id)
+        );
+    };
+
+    const handleSelectAllInProject = (ids: string[], selected: boolean) => {
+        setSelectedWindowIds(prev => {
+            if (selected) {
+                // Add only missing IDs
+                const newIds = ids.filter(id => !prev.includes(id));
+                return [...prev, ...newIds];
+            } else {
+                // Remove all IDs in this set
+                return prev.filter(id => !ids.includes(id));
+            }
+        });
+    };
+
     return (
         <div
-            className="bg-surface shadow-xl p-4 md:p-6 rounded-xl border border-border"
+            className="bg-surface shadow-xl p-4 md:p-6 rounded-xl border border-border relative"
         >
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                 <div>
@@ -105,6 +138,32 @@ export function ManageWindowsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    {/* Selection Actions */}
+                    {selectedWindowIds.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg mr-2"
+                        >
+                            <span className="text-sm font-semibold text-blue-700">
+                                {selectedWindowIds.length} Selected
+                            </span>
+                            <div className="h-4 w-px bg-blue-200 mx-1" />
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="text-sm font-bold text-red-600 hover:text-red-700 transition-colors"
+                            >
+                                Delete All
+                            </button>
+                            <button
+                                onClick={() => setSelectedWindowIds([])}
+                                className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </motion.div>
+                    )}
+
                     {/* Split CTA */}
                     {/* Combined Split Button */}
                     <div className="relative group flex items-stretch rounded-lg shadow-sm">
@@ -148,6 +207,9 @@ export function ManageWindowsPage() {
                 onEditWindow={handleEditWindow}
                 onDeleteWindow={handleDeleteWindow}
                 onCreateWindow={() => navigate('../individual')}
+                selectedIds={selectedWindowIds}
+                onSelectChange={handleSelectWindow}
+                onSelectAll={handleSelectAllInProject}
             />
 
             {/* Modal for Creation/Editing */}
@@ -176,6 +238,7 @@ export function ManageWindowsPage() {
                     setWindowToDelete(null);
                 }}
                 loading={deleteLoading}
+                bulkCount={selectedWindowIds.length}
             />
         </div>
     );

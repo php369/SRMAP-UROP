@@ -7,23 +7,37 @@ interface WindowCardProps {
   window: Window;
   onEdit: (window: Window) => void;
   onDelete: (window: Window) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export function WindowCard({ window, onEdit, onDelete }: WindowCardProps) {
+export function WindowCard({ window, onEdit, onDelete, isSelected, onSelect }: WindowCardProps) {
   const { isActive, hasEnded, isUpcoming } = getWindowStatus(window);
 
   return (
     <div
-      className={`relative p-4 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden transition-all duration-200 hover:shadow-md
+      className={`relative p-4 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden transition-all duration-200 hover:shadow-md flex items-center gap-4
         ${isActive ? 'border-l-[6px] border-l-green-500' : ''}
         ${isUpcoming ? 'border-l-[6px] border-l-blue-500' : ''}
         ${hasEnded ? 'border-l-[6px] border-l-slate-300 opacity-75' : ''}
+        ${isSelected ? 'bg-blue-50/50 ring-1 ring-blue-200' : ''}
       `}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-bold text-slate-900 capitalize text-lg">
+      {onSelect && (
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onSelect(window._id, e.target.checked)}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+          />
+        </div>
+      )}
+
+      <div className="flex-1 flex items-start justify-between min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center flex-wrap gap-2 mb-3">
+            <h3 className="font-bold text-slate-900 capitalize text-lg truncate">
               {window.windowType.replace('_', ' ')}
             </h3>
 
@@ -40,22 +54,24 @@ export function WindowCard({ window, onEdit, onDelete }: WindowCardProps) {
             )}
 
             {/* Status Pills */}
-            {isActive && (
-              <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm border border-green-200">
-                <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
-                Active
-              </span>
-            )}
-            {isUpcoming && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wide border border-blue-200">
-                Upcoming
-              </span>
-            )}
-            {hasEnded && (
-              <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-wide border border-slate-200">
-                Closed
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {isActive && (
+                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm border border-green-200">
+                  <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
+                  Active
+                </span>
+              )}
+              {isUpcoming && (
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wide border border-blue-200">
+                  Upcoming
+                </span>
+              )}
+              {hasEnded && (
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-wide border border-slate-200">
+                  Closed
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-y-1 sm:gap-x-6 text-sm text-slate-600">

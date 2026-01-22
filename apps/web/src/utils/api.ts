@@ -225,10 +225,16 @@ class ApiClient {
     });
   }
 
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, {
+  async delete<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    const requestOptions: RequestInit = {
       method: 'DELETE',
-    });
+    };
+
+    if (data) {
+      requestOptions.body = JSON.stringify(data);
+    }
+
+    return this.makeRequest<T>(endpoint, requestOptions);
   }
 }
 

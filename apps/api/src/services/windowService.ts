@@ -13,7 +13,7 @@ export class WindowService {
   static async updateWindowStatuses(): Promise<{ updated: number }> {
     try {
       const now = new Date();
-      
+
       // Update windows that should be active but aren't marked as active
       const activateResult = await Window.updateMany(
         {
@@ -37,7 +37,7 @@ export class WindowService {
       );
 
       const totalUpdated = activateResult.modifiedCount + deactivateResult.modifiedCount;
-      
+
       if (totalUpdated > 0) {
         logger.info(`Updated ${totalUpdated} window statuses (${activateResult.modifiedCount} activated, ${deactivateResult.modifiedCount} deactivated)`);
       }
@@ -56,17 +56,17 @@ export class WindowService {
   static async deleteEndedWindows(): Promise<{ deleted: number }> {
     try {
       logger.info('Starting deleteEndedWindows process...');
-      
+
       // First update all window statuses to ensure accuracy
       const updateResult = await this.updateWindowStatuses();
       logger.info(`Updated ${updateResult.updated} window statuses before deletion`);
 
       const now = new Date();
-      
+
       // Only delete windows that have ended (past their end date)
       // This excludes upcoming windows which are also inactive but haven't started yet
       const endedWindowsQuery = { endDate: { $lt: now } };
-      
+
       // Get count of ended windows before deletion
       const endedCount = await Window.countDocuments(endedWindowsQuery);
       logger.info(`Found ${endedCount} ended windows to delete`);
@@ -78,9 +78,9 @@ export class WindowService {
 
       // Delete all ended windows
       const result = await Window.deleteMany(endedWindowsQuery);
-      
+
       logger.info(`Successfully deleted ${result.deletedCount} ended windows`);
-      
+
       return { deleted: result.deletedCount };
     } catch (error) {
       logger.error('Error deleting ended windows:', error);
@@ -100,7 +100,7 @@ export class WindowService {
     try {
       // First update statuses
       await this.updateWindowStatuses();
-      
+
       const now = new Date();
       return await Window.countDocuments({ endDate: { $lt: now } });
     } catch (error) {
@@ -119,17 +119,17 @@ export class WindowService {
   ): Promise<boolean> {
     try {
       await this.updateWindowStatuses();
-      
+
       const query: any = {
         windowType,
         projectType,
         isActive: true
       };
-      
+
       if (assessmentType) {
         query.assessmentType = assessmentType;
       }
-      
+
       const window = await Window.findOne(query);
       return !!window;
     } catch (error) {
@@ -188,6 +188,19 @@ export class WindowService {
     }
   }
 
+  /**
+   * Delete multiple windows by IDs
+   */
+  static async deleteWindows(windowIds: string[]) {
+    try {
+      const result = await Window.deleteMany({ _id: { $in: windowIds } });
+      logger.info(`Bulk deleted ${result.deletedCount} windows`);
+      return result;
+    } catch (error) {
+      logger.error('Error bulk deleting windows:', error);
+      throw error;
+    }
+  }
 
 
   /**
@@ -209,17 +222,17 @@ export class WindowService {
   static async getActiveWindow(windowType: string, projectType: string, assessmentType?: string) {
     try {
       await this.updateWindowStatuses();
-      
+
       const query: any = {
         windowType,
         projectType,
         isActive: true
       };
-      
+
       if (assessmentType) {
         query.assessmentType = assessmentType;
       }
-      
+
       return await Window.findOne(query);
     } catch (error) {
       logger.error('Error getting active window:', error);
@@ -236,17 +249,17 @@ export class WindowService {
       const query: any = {
         startDate: { $gt: now }
       };
-      
+
       if (projectType) {
         query.projectType = projectType;
       }
-      
+
       let windowsQuery = Window.find(query).sort({ startDate: 1 });
-      
+
       if (limit) {
         windowsQuery = windowsQuery.limit(limit);
       }
-      
+
       return await windowsQuery;
     } catch (error) {
       logger.error('Error getting upcoming windows:', error);
@@ -263,6 +276,7 @@ export const isWindowActive = WindowService.isWindowActive;
 export const createWindow = WindowService.createWindow;
 export const updateWindow = WindowService.updateWindow;
 export const deleteWindow = WindowService.deleteWindow;
+export const deleteWindows = WindowService.deleteWindows;
 export const getWindowsByProjectType = WindowService.getWindowsByProjectType;
 export const getActiveWindow = WindowService.getActiveWindow;
 export const getUpcomingWindows = WindowService.getUpcomingWindows;

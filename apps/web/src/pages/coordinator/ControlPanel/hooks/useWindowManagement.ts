@@ -245,6 +245,25 @@ export const useWindowManagement = () => {
     }
   }, [fetchWindows]);
 
+  const deleteMultipleWindows = useCallback(async (windowIds: string[]) => {
+    try {
+      const response = await api.delete('/windows/bulk', { ids: windowIds });
+
+      if (response.success) {
+        toast.success(`Successfully deleted ${windowIds.length} windows`);
+        await fetchWindows();
+        return true;
+      } else {
+        toast.error(response.error?.message || 'Failed to delete windows');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Bulk delete windows error:', error);
+      toast.error(error.message || 'Failed to delete windows');
+      return false;
+    }
+  }, [fetchWindows]);
+
 
 
   const prepareEditWindow = useCallback((window: Window): WindowForm => {
@@ -280,6 +299,7 @@ export const useWindowManagement = () => {
     createWindow,
     createBulkWindows,
     deleteWindow,
+    deleteMultipleWindows,
 
     prepareEditWindow
   };
