@@ -2,6 +2,7 @@ import { Edit2, Trash2 } from 'lucide-react';
 import { Window } from '../../types';
 import { getWindowStatus } from '../../utils/windowHelpers';
 import { formatDateForDisplay } from '../../utils/dateTimeUtils';
+import { AnimatedCheckbox } from './AnimatedCheckbox';
 
 interface WindowCardProps {
   window: Window;
@@ -25,11 +26,9 @@ export function WindowCard({ window, onEdit, onDelete, isSelected, onSelect }: W
     >
       {onSelect && (
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onSelect(window._id, e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+          <AnimatedCheckbox
+            checked={!!isSelected}
+            onChange={(checked) => onSelect(window._id, checked)}
           />
         </div>
       )}

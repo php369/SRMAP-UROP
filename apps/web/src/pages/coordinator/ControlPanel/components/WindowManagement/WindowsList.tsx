@@ -5,6 +5,7 @@ import { Window, ProjectType } from '../../types';
 import { getWorkflowOrder } from '../../utils/windowHelpers';
 import { WindowCard } from './WindowCard';
 import { WindowsListSkeleton } from '../LoadingSkeletons';
+import { AnimatedCheckbox } from './AnimatedCheckbox';
 
 interface WindowsListProps {
   windows: Window[];
@@ -69,7 +70,7 @@ export function WindowsList({
             {/* Toggle Switch */}
             <button
               onClick={() => onShowInactiveToggle(!showInactiveWindows)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${showInactiveWindows ? 'bg-blue-600' : 'bg-gray-300'
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${showInactiveWindows ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
             >
               <span
@@ -126,14 +127,10 @@ export function WindowsList({
                 <div className="flex items-center space-x-3">
                   {onSelectAll && (
                     <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                      <input
-                        type="checkbox"
+                      <AnimatedCheckbox
                         checked={allProjectSelected}
-                        ref={el => {
-                          if (el) el.indeterminate = someProjectSelected;
-                        }}
-                        onChange={(e) => onSelectAll(projectWindowIds, e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        indeterminate={someProjectSelected}
+                        onChange={(checked) => onSelectAll(projectWindowIds, checked)}
                       />
                     </div>
                   )}
