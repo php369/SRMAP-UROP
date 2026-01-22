@@ -89,7 +89,7 @@ interface StudentEvaluation {
 }
 
 export function FacultyAssessmentPage() {
-  useAuth(); // Keep for authentication check
+  const { user } = useAuth();
   const { windows } = useWindowStatus();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [meetingLogs, setMeetingLogs] = useState<Record<string, any[]>>({});
@@ -114,6 +114,8 @@ export function FacultyAssessmentPage() {
     students: {},
     comments: ''
   });
+  const [hasExternalAssignments, setHasExternalAssignments] = useState<boolean>(false);
+  const [isExternalFetching, setIsExternalFetching] = useState<boolean>(false);
 
   // Modal & Confirmation States - now include full data for execution
   const [confirmSolo, setConfirmSolo] = useState<{ isOpen: boolean; grade: string; comments: string; student: any; submission: any; assessmentType: string } | null>(null);
@@ -272,7 +274,8 @@ export function FacultyAssessmentPage() {
 
         await Promise.all([
           fetchSubmissions(currentType),
-          fetchMeetingLogs()
+          fetchMeetingLogs(),
+          fetchExternalAssignments()
         ]);
       } catch (error) {
         console.error('Error initializing assessment data:', error);
@@ -404,6 +407,22 @@ export function FacultyAssessmentPage() {
       console.error('Failed to fetch meeting logs:', error);
       toast.error('Failed to fetch meeting logs');
       setMeetingLogs({});
+    }
+  };
+
+  const fetchExternalAssignments = async () => {
+    if (!user?.id) return;
+    setIsExternalFetching(true);
+    try {
+      const response = await api.get(`/student-evaluations/external-assignments/${user.id}`);
+      if (response.success && response.data) {
+        setHasExternalAssignments(Array.isArray(response.data) && response.data.length > 0);
+      }
+    } catch (error) {
+      console.error('Error fetching external assignments:', error);
+      setHasExternalAssignments(false);
+    } finally {
+      setIsExternalFetching(false);
     }
   };
 
@@ -576,13 +595,33 @@ export function FacultyAssessmentPage() {
   // Show window closed message if assessment window is not open at all
   if (!currentAssessmentType || !isAnyWindowActive) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-6">
+      <div className="min-h-[80vh] flex items-center justify-center p-6 text-center">
         <AssessmentEmptyState
           title="No Active Assessment Windows"
           description="There are currently no scheduled assessment windows open for any project types."
           icon="clock"
           theme="amber"
           subtitle="CLOSED"
+        />
+      </div>
+    );
+  }
+
+  // Combined eligibility check: If no internal students AND either not an external window OR no external projects
+  // But wait, the user says: "faculties with no accepted application, should have a standard empty state... only if the faculty is been alloted as an external evaluator, it should see the external evaluation page"
+  const hasInternalSubmissions = (assignedGroupCount + assignedSoloCount) > 0;
+  const showExternalView = currentAssessmentType === 'External' && hasExternalAssignments;
+
+  if (!hasInternalSubmissions && !showExternalView) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6 text-center">
+        <AssessmentEmptyState
+          title="Assessment Access Restricted"
+          description="You do not have any student working under you to grade."
+          subDescription="Only faculty with accepted applications or assigned as external evaluators can access assessment features."
+          icon="shield"
+          theme="amber"
+          subtitle="NOT ELIGIBLE"
         />
       </div>
     );
@@ -627,7 +666,7 @@ export function FacultyAssessmentPage() {
         </div>
 
         {/* Content - Render based on assessment type */}
-        {currentAssessmentType === 'External' ? (
+        {currentAssessmentType === 'External' && hasExternalAssignments ? (
           /* External Evaluation Content */
           <ExternalEvaluatorTab />
         ) : (
@@ -636,17 +675,6 @@ export function FacultyAssessmentPage() {
             {loading ? (
               <div className="py-12">
                 <FacultyAssessmentSkeleton />
-              </div>
-            ) : (assignedGroupCount + assignedSoloCount) === 0 ? (
-              <div className="py-8">
-                <AssessmentEmptyState
-                  title="No Active Students Assigned"
-                  description="You currently don't have any students or groups assigned to you for this semester's projects."
-                  subDescription="Only faculty with accepted applications and assigned projects can evaluate students."
-                  icon="users"
-                  theme="amber"
-                  subtitle="LOCKED"
-                />
               </div>
             ) : (
               <>
