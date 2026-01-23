@@ -468,7 +468,6 @@ export function FacultyAssessmentPage() {
           groupId: submission?.groupId?._id,
           component: component,
           conductScore: grade,
-          assessmentType: assessmentType,
           comments: comments || ''
         };
       }
@@ -540,7 +539,6 @@ export function FacultyAssessmentPage() {
             groupId: submission?.groupId?._id,
             component: component,
             conductScore: grade,
-            assessmentType: assessmentType,
             comments: comments || ''
           };
         }

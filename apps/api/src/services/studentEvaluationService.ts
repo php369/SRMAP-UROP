@@ -51,6 +51,7 @@ export class StudentEvaluationService {
 
   /**
    * Update internal assessment score for a student (CLA-1, CLA-2, CLA-3)
+   * Single document per student-project: finds or creates the record.
    */
   static async updateStudentInternalScore(
     studentId: mongoose.Types.ObjectId,
@@ -59,7 +60,6 @@ export class StudentEvaluationService {
     conductScore: number,
     facultyId: mongoose.Types.ObjectId,
     userRole: string,
-    assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3',
     comments?: string
   ): Promise<IStudentEvaluation> {
     try {
@@ -119,24 +119,21 @@ export class StudentEvaluationService {
         throw new Error(`${component.toUpperCase()} conduct score must be between 0 and ${maxScore}`);
       }
 
-      // Find or create student evaluation record for this specific assessment type
-      // For solo students (groupId is null), we need to match documents where groupId is null or doesn't exist
+      // Find or create student evaluation record (single document per student-project)
       const groupIdQuery = groupId ? groupId : { $in: [null, undefined] };
       let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
         groupId: groupIdQuery,
-        projectId: projectData,
-        assessmentType: assessmentType
+        projectId: projectData
       });
 
       if (!evaluation) {
-        // Create new evaluation record for this assessment type
+        // Create new evaluation record (skeleton)
         evaluation = new StudentEvaluation({
           studentId: studentId,
           groupId: groupId || undefined,
           projectId: projectData,
           facultyId: targetFacultyId,
-          assessmentType: assessmentType,
           internal: {
             cla1: { conduct: 0, convert: 0, comments: '' },
             cla2: { conduct: 0, convert: 0, comments: '' },
@@ -230,18 +227,34 @@ export class StudentEvaluationService {
         throw new Error('External conduct score must be between 0 and 100');
       }
 
-      // Find evaluation record for External assessment type
-      // For solo students (groupId is null), we need to match documents where groupId is null or doesn't exist
+      // Find or create evaluation record (single document per student-project)
       const groupIdQuery = groupId ? groupId : { $in: [null, undefined] };
-      const evaluation = await StudentEvaluation.findOne({
+      let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
         groupId: groupIdQuery,
-        projectId: projectData,
-        assessmentType: 'External'
+        projectId: projectData
       });
 
       if (!evaluation) {
-        throw new Error('Student evaluation record not found');
+        // Create new evaluation record (skeleton) if it doesn't exist
+        evaluation = new StudentEvaluation({
+          studentId: studentId,
+          groupId: groupId || undefined,
+          projectId: projectData,
+          facultyId: targetFacultyId,
+          internal: {
+            cla1: { conduct: 0, convert: 0, comments: '' },
+            cla2: { conduct: 0, convert: 0, comments: '' },
+            cla3: { conduct: 0, convert: 0, comments: '' }
+          },
+          external: {
+            reportPresentation: { conduct: 0, convert: 0, comments: '' }
+          },
+          totalInternal: 0,
+          totalExternal: 0,
+          total: 0,
+          isPublished: false
+        });
       }
 
       // Check if grades are already published (frozen)
@@ -609,18 +622,29 @@ export class StudentEvaluationService {
         let evaluation = await StudentEvaluation.findOne({
           studentId: studentId,
           groupId: groupId,
-          projectId: group.assignedProjectId,
-          assessmentType: 'External'
+          projectId: group.assignedProjectId
         });
 
         if (!evaluation) {
+          // Create skeleton evaluation record
           evaluation = new StudentEvaluation({
             studentId: studentId,
             groupId: groupId,
             projectId: group.assignedProjectId,
             facultyId: group.assignedFacultyId,
             externalFacultyId: externalFacultyId,
-            assessmentType: 'External'
+            internal: {
+              cla1: { conduct: 0, convert: 0, comments: '' },
+              cla2: { conduct: 0, convert: 0, comments: '' },
+              cla3: { conduct: 0, convert: 0, comments: '' }
+            },
+            external: {
+              reportPresentation: { conduct: 0, convert: 0, comments: '' }
+            },
+            totalInternal: 0,
+            totalExternal: 0,
+            total: 0,
+            isPublished: false
           });
         } else {
           evaluation.externalFacultyId = externalFacultyId;
@@ -1064,21 +1088,33 @@ export class StudentEvaluationService {
         throw new Error('External evaluator cannot be the same as internal faculty');
       }
 
-      // Find or create student evaluation record
+      // Find or create student evaluation record (single document)
       let evaluation = await StudentEvaluation.findOne({
         studentId: studentId,
         projectId: student.assignedProjectId,
-        assessmentType: 'External'
+        groupId: { $in: [null, undefined] }
       });
 
       if (!evaluation) {
+        // Create skeleton evaluation record
         evaluation = new StudentEvaluation({
           studentId: studentId,
-          groupId: null, // Solo student has no group
+          groupId: undefined, // Solo student has no group
           projectId: student.assignedProjectId,
           facultyId: student.assignedFacultyId,
           externalFacultyId: externalFacultyId,
-          assessmentType: 'External'
+          internal: {
+            cla1: { conduct: 0, convert: 0, comments: '' },
+            cla2: { conduct: 0, convert: 0, comments: '' },
+            cla3: { conduct: 0, convert: 0, comments: '' }
+          },
+          external: {
+            reportPresentation: { conduct: 0, convert: 0, comments: '' }
+          },
+          totalInternal: 0,
+          totalExternal: 0,
+          total: 0,
+          isPublished: false
         });
       } else {
         evaluation.externalFacultyId = externalFacultyId;
@@ -1116,20 +1152,25 @@ export class StudentEvaluationService {
         $unset: { externalEvaluatorId: 1 }
       });
 
-      // Find all external evaluations for this group
-      const externalEvaluations = await StudentEvaluation.find({
+      // Find all evaluations for this group (single document per student now)
+      const evaluations = await StudentEvaluation.find({
         groupId: groupId,
-        projectId: group.assignedProjectId,
-        assessmentType: 'External'
+        projectId: group.assignedProjectId
       });
 
       let removedCount = 0;
-      for (const evaluation of externalEvaluations) {
-        // If the record is "empty" (has no external grade), delete it entirely
-        if (evaluation.external?.reportPresentation?.conduct === 0) {
+      for (const evaluation of evaluations) {
+        // Check if the record is completely empty (no grades at all)
+        const hasInternalGrades = evaluation.internal.cla1.conduct > 0 ||
+          evaluation.internal.cla2.conduct > 0 ||
+          evaluation.internal.cla3.conduct > 0;
+        const hasExternalGrades = evaluation.external.reportPresentation.conduct > 0;
+
+        if (!hasInternalGrades && !hasExternalGrades) {
+          // Delete the empty record entirely
           await StudentEvaluation.findByIdAndDelete(evaluation._id);
         } else {
-          // If it has grades, only remove the evaluator assignment
+          // If it has any grades, only remove the evaluator assignment
           evaluation.externalFacultyId = undefined;
           await evaluation.save();
         }

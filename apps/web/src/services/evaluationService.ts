@@ -11,7 +11,6 @@ export interface Evaluation {
   projectId: string;
   facultyId: string;
   externalFacultyId?: string;
-  assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External';
   internal: {
     cla1: EvaluationComponent;
     cla2: EvaluationComponent;
@@ -69,14 +68,14 @@ export class EvaluationService {
    * Get all evaluations for faculty review
    */
   static async getFacultyEvaluations(
-    facultyId: string, 
+    facultyId: string,
     type?: 'IDP' | 'UROP' | 'CAPSTONE',
     assessmentType?: 'CLA-1' | 'CLA-2' | 'CLA-3' | 'External'
   ): Promise<Evaluation[]> {
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     if (assessmentType) params.append('assessmentType', assessmentType);
-    
+
     const queryString = params.toString();
     const response = await api.get(`/student-evaluations/faculty/${facultyId}${queryString ? `?${queryString}` : ''}`);
     return (response.data as any)?.data || [];
@@ -84,18 +83,17 @@ export class EvaluationService {
 
   /**
    * Update internal assessment score (CLA-1, CLA-2, or CLA-3)
+   * Note: assessmentType is no longer needed - component determines the field to update.
    */
   static async updateInternalScore(
     groupId: string,
     component: 'cla1' | 'cla2' | 'cla3',
-    conductScore: number,
-    assessmentType: 'CLA-1' | 'CLA-2' | 'CLA-3'
+    conductScore: number
   ): Promise<Evaluation> {
     const response = await api.put('/student-evaluations/internal/score', {
       groupId,
       component,
-      conductScore,
-      assessmentType
+      conductScore
     });
     return (response.data as any)?.data;
   }
@@ -155,7 +153,7 @@ export class EvaluationService {
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     if (published !== undefined) params.append('published', published.toString());
-    
+
     const response = await api.get(`/student-evaluations/coordinator/overview?${params.toString()}`);
     return (response.data as any)?.data || { evaluations: [], stats: { total: 0, published: 0, unpublished: 0, complete: 0, incomplete: 0 } };
   }
@@ -246,12 +244,12 @@ export class EvaluationService {
   static getEvaluationProgress(evaluation: Evaluation): number {
     let completed = 0;
     const total = 4; // cla1, cla2, cla3, external
-    
+
     if (evaluation.internal.cla1.conduct > 0) completed++;
     if (evaluation.internal.cla2.conduct > 0) completed++;
     if (evaluation.internal.cla3.conduct > 0) completed++;
     if (evaluation.external.reportPresentation.conduct > 0) completed++;
-    
+
     return Math.round((completed / total) * 100);
   }
 }

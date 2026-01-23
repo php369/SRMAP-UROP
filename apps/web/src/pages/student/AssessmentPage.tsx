@@ -167,57 +167,41 @@ export function AssessmentPage() {
 
       const allSubmissions: any[] = [];
 
-      // Add student evaluations (new system)
+      // Add student evaluations (new system - single document model)
       if (evaluationsResponse && evaluationsResponse.success !== false && (evaluationsResponse as any).evaluations) {
         const evaluations = Array.isArray((evaluationsResponse as any).evaluations) ? (evaluationsResponse as any).evaluations : [(evaluationsResponse as any).evaluations];
         console.log('📊 Processing evaluations:', evaluations);
 
-        // Create a merged evaluation object for the overall journey timeline
-        const merged: any = {
-          internal: {
-            cla1: { conduct: 0, convert: 0 },
-            cla2: { conduct: 0, convert: 0 },
-            cla3: { conduct: 0, convert: 0 }
-          },
-          external: {
-            reportPresentation: { conduct: 0, convert: 0 }
-          }
-        };
+        // With single-document model, each evalData.evaluation already contains all CLA grades
+        // We take the first (and should be only) evaluation and use it directly
+        const evalData = evaluations.find((e: any) => e.evaluation);
+        if (evalData && evalData.evaluation) {
+          const e = evalData.evaluation;
+          console.log('📝 Single evaluation document found with grades:', e);
 
-        evaluations.forEach((evalData: any) => {
-          if (evalData.evaluation) {
-            const e = evalData.evaluation;
-            console.log('📝 Evaluation record phase:', e.assessmentType);
+          // Use the evaluation object directly as our merged evaluation
+          setCombinedEvaluation({
+            internal: e.internal,
+            external: e.external
+          });
 
-            // Map authoritative record for each phase
-            if (e.assessmentType === 'CLA-1') merged.internal.cla1 = e.internal.cla1;
-            else if (e.assessmentType === 'CLA-2') merged.internal.cla2 = e.internal.cla2;
-            else if (e.assessmentType === 'CLA-3') merged.internal.cla3 = e.internal.cla3;
-            else if (e.assessmentType === 'External') merged.external.reportPresentation = e.external.reportPresentation;
-
-            // Show all evaluations in history list
-            allSubmissions.push({
-              _id: e._id,
-              submissionType: 'evaluation',
-              assessmentType: e.assessmentType === 'External' ? 'External' : e.assessmentType,
-              submittedAt: e.createdAt,
-              groupId: e.groupId,
-              projectId: e.projectId,
-              isGradeReleased: e.isPublished,
-              isGraded: e.isPublished || hasAnyScores(e),
-              isComplete: isEvaluationComplete(e),
-              finalGrade: e.isPublished ? e.total : null,
-              total: e.isPublished ? e.total : null,
-              evaluation: e,
-              projectTitle: evalData.projectTitle || 'Project',
-              groupCode: evalData.groupCode
-            });
-          }
-        });
-
-        // Only set combined evaluation if we found at least one valid record
-        if (evaluations.some((e: any) => e.evaluation)) {
-          setCombinedEvaluation(merged);
+          // Add a single entry to the submissions list for the overall evaluation
+          allSubmissions.push({
+            _id: e._id,
+            submissionType: 'evaluation',
+            assessmentType: 'Overall', // Since it's a single document with all grades
+            submittedAt: e.createdAt,
+            groupId: e.groupId,
+            projectId: e.projectId,
+            isGradeReleased: e.isPublished,
+            isGraded: e.isPublished || hasAnyScores(e),
+            isComplete: isEvaluationComplete(e),
+            finalGrade: e.isPublished ? e.total : null,
+            total: e.isPublished ? e.total : null,
+            evaluation: e,
+            projectTitle: evalData.projectTitle || 'Project',
+            groupCode: evalData.groupCode
+          });
         }
       }
 
