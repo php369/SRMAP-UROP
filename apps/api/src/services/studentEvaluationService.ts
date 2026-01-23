@@ -602,31 +602,38 @@ export class StudentEvaluationService {
         throw new Error('External evaluator cannot be the same as internal faculty');
       }
 
-      // Update all student evaluations for this group
-      const result = await StudentEvaluation.updateMany(
-        {
+      // Update or create external evaluation records for all students in the group
+      const updatedEvaluations: IStudentEvaluation[] = [];
+
+      for (const studentId of group.members) {
+        let evaluation = await StudentEvaluation.findOne({
+          studentId: studentId,
           groupId: groupId,
-          projectId: group.assignedProjectId
-        },
-        {
-          externalFacultyId: externalFacultyId
+          projectId: group.assignedProjectId,
+          assessmentType: 'External'
+        });
+
+        if (!evaluation) {
+          evaluation = new StudentEvaluation({
+            studentId: studentId,
+            groupId: groupId,
+            projectId: group.assignedProjectId,
+            facultyId: group.assignedFacultyId,
+            externalFacultyId: externalFacultyId,
+            assessmentType: 'External'
+          });
+        } else {
+          evaluation.externalFacultyId = externalFacultyId;
         }
-      );
 
-      const updatedEvaluations = await StudentEvaluation.find({
-        groupId: groupId,
-        projectId: group.assignedProjectId
-      })
-        .populate('studentId', 'name email studentId')
-        .populate('groupId', 'groupCode members')
-        .populate('projectId', 'title type')
-        .populate('facultyId', 'name email')
-        .populate('externalFacultyId', 'name email');
+        await evaluation.save();
+        updatedEvaluations.push(evaluation);
+      }
 
-      logger.info(`External evaluator ${externalFaculty.email} assigned to ${result.modifiedCount} students in group ${group.groupCode}`);
+      logger.info(`External evaluator ${externalFaculty.email} assigned/synced for ${group.members.length} students in group ${group.groupCode}`);
 
       return {
-        updated: result.modifiedCount,
+        updated: updatedEvaluations.length,
         evaluations: updatedEvaluations
       };
 
@@ -1109,21 +1116,30 @@ export class StudentEvaluationService {
         $unset: { externalEvaluatorId: 1 }
       });
 
-      // Remove external evaluator from all student evaluations in the group
-      const result = await StudentEvaluation.updateMany(
-        {
-          groupId: groupId,
-          projectId: group.assignedProjectId
-        },
-        {
-          $unset: { externalFacultyId: 1 }
-        }
-      );
+      // Find all external evaluations for this group
+      const externalEvaluations = await StudentEvaluation.find({
+        groupId: groupId,
+        projectId: group.assignedProjectId,
+        assessmentType: 'External'
+      });
 
-      logger.info(`External evaluator assignment removed from group ${group.groupCode} and ${result.modifiedCount} student evaluations`);
+      let removedCount = 0;
+      for (const evaluation of externalEvaluations) {
+        // If the record is "empty" (has no external grade), delete it entirely
+        if (evaluation.external?.reportPresentation?.conduct === 0) {
+          await StudentEvaluation.findByIdAndDelete(evaluation._id);
+        } else {
+          // If it has grades, only remove the evaluator assignment
+          evaluation.externalFacultyId = undefined;
+          await evaluation.save();
+        }
+        removedCount++;
+      }
+
+      logger.info(`External evaluator assignment removed/cleaned for group ${group.groupCode}. Processed ${removedCount} records.`);
 
       return {
-        updated: result.modifiedCount,
+        updated: removedCount,
         groupCode: group.groupCode
       };
     } catch (error) {
@@ -1367,21 +1383,30 @@ export class StudentEvaluationService {
         throw new Error('Student not found');
       }
 
-      // Remove external evaluator from student evaluation
-      const result = await StudentEvaluation.updateMany(
-        {
-          studentId: studentId,
-          externalFacultyId: { $exists: true }
-        },
-        {
-          $unset: { externalFacultyId: 1 }
-        }
-      );
+      // Remove/Clean external evaluator from student evaluations
+      const externalEvaluations = await StudentEvaluation.find({
+        studentId: studentId,
+        assessmentType: 'External',
+        externalFacultyId: { $exists: true }
+      });
 
-      logger.info(`External evaluator assignment removed from solo student ${student.name}`);
+      let removedCount = 0;
+      for (const evaluation of externalEvaluations) {
+        // If the record is "empty" (has no external grade), delete it entirely
+        if (evaluation.external?.reportPresentation?.conduct === 0) {
+          await StudentEvaluation.findByIdAndDelete(evaluation._id);
+        } else {
+          // If it has grades, only remove the evaluator assignment
+          evaluation.externalFacultyId = undefined;
+          await evaluation.save();
+        }
+        removedCount++;
+      }
+
+      logger.info(`External evaluator assignment removed/cleaned from solo student ${student.name}. Processed ${removedCount} records.`);
 
       return {
-        updated: result.modifiedCount,
+        updated: removedCount,
         studentName: student.name
       };
     } catch (error) {

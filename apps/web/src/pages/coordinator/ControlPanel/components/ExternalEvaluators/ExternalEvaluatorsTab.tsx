@@ -76,6 +76,7 @@ export function ExternalEvaluatorsTab() {
   const [filterSubmissionType, setFilterSubmissionType] = useState<'all' | 'group' | 'solo'>('all');
   const [filterProjectType, setFilterProjectType] = useState<'all' | 'IDP' | 'UROP' | 'CAPSTONE'>('all');
   const [isWorkloadModalOpen, setIsWorkloadModalOpen] = useState(false);
+  const [isAutoAssignOpen, setIsAutoAssignOpen] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -241,10 +242,10 @@ export function ExternalEvaluatorsTab() {
               Refresh
             </Button>
 
-            <Tooltip>
+            <Tooltip open={isAutoAssignOpen ? false : undefined}>
               <TooltipTrigger asChild>
                 <div className="inline-block">
-                  <DropdownMenu>
+                  <DropdownMenu open={isAutoAssignOpen} onOpenChange={setIsAutoAssignOpen}>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
@@ -256,11 +257,7 @@ export function ExternalEvaluatorsTab() {
                         <ChevronDown className="w-3 h-3 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel className="text-xs text-textSecondary font-normal px-2 py-1.5">
-                        Run auto-assignment logic for:
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+                    <DropdownMenuContent align="end" className="w-48 p-1">
                       {(['IDP', 'UROP', 'CAPSTONE'] as ProjectType[]).map((type) => {
                         const isAppWindowEnded = windows.some(w =>
                           w.windowType === 'application' &&
@@ -272,16 +269,13 @@ export function ExternalEvaluatorsTab() {
                             key={type}
                             onClick={() => handleAutoAssign(type)}
                             disabled={!isAppWindowEnded}
-                            className="flex justify-between items-center cursor-pointer py-2 px-3"
+                            className="flex justify-between items-center cursor-pointer py-2 px-3 rounded-md"
                           >
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-sm">{type}</span>
-                              <span className="text-[10px] text-textSecondary">Fair distribution for {type} pool</span>
-                            </div>
+                            <span className="font-semibold text-sm">{type}</span>
                             {isAppWindowEnded ? (
-                              <UserCheck className="w-3.5 h-3.5 text-success" />
+                              <UserCheck className="w-4 h-4 text-success opacity-80" />
                             ) : (
-                              <span className="text-[9px] text-orange-500 font-bold px-1.5 py-0.5 bg-orange-500/10 rounded uppercase">Active</span>
+                              <span className="text-[10px] text-orange-500 font-bold px-2 py-0.5 bg-orange-500/10 rounded-full">ACTIVE</span>
                             )}
                           </DropdownMenuItem>
                         );
