@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { ClipboardList, UserCheck, BarChart3, CheckCircle } from 'lucide-react';
+import { ClipboardList, UserCheck, BarChart3, CheckCircle, ArrowRight } from 'lucide-react';
 import { ExternalEvaluator, ExternalEvaluatorAssignment } from '../../types';
+import { AnimatedCounter } from '../../../../../components/ui/AnimatedCounter';
+import { cn } from '../../../../../utils/cn';
 
 interface EvaluatorStatsProps {
   evaluators: ExternalEvaluator[];
@@ -31,14 +33,6 @@ export function EvaluatorStats({ evaluators, assignments, onOpenWorkload }: Eval
       value: unassignedCount,
       icon: UserCheck,
       color: 'yellow'
-    },
-    {
-      label: 'Workload Distribution',
-      value: evaluators.length,
-      icon: BarChart3,
-      color: 'indigo',
-      isAction: true,
-      onClick: onOpenWorkload
     }
   ];
 
@@ -60,25 +54,47 @@ export function EvaluatorStats({ evaluators, assignments, onOpenWorkload }: Eval
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
-          onClick={stat.onClick}
-          className={cn(
-            "bg-surface border border-border/60 rounded-xl p-4 transition-all",
-            stat.isAction ? "cursor-pointer hover:border-indigo-500/40 hover:bg-indigo-500/[0.02] active:scale-[0.98]" : ""
-          )}
+          className="bg-surface border border-border/60 rounded-xl p-4 transition-all"
         >
           <div className="flex items-center gap-3">
             <div className={cn("p-2 rounded-lg", getColorClasses(stat.color))}>
               <stat.icon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text">{stat.value}</p>
+              <p className="text-2xl font-bold text-text">
+                <AnimatedCounter value={stat.value} duration={1500} />
+              </p>
               <p className="text-xs font-semibold text-textSecondary uppercase tracking-wider">{stat.label}</p>
             </div>
           </div>
         </motion.div>
       ))}
+
+      {/* Workload Distribution Action Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        onClick={onOpenWorkload}
+        className="group bg-indigo-500/5 hover:bg-indigo-500/[0.08] border border-indigo-500/20 hover:border-indigo-500/40 rounded-xl p-4 transition-all cursor-pointer active:scale-[0.98] flex flex-col justify-between"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className={cn("p-2 rounded-lg", getColorClasses('indigo'))}>
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">
+            <span className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
+            Review Balance
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Workload Distribution</p>
+            <p className="text-[10px] text-indigo-600/60 dark:text-indigo-400/60 font-medium">Manage Evaluator Balance</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-indigo-500 group-hover:translate-x-1 transition-transform" />
+        </div>
+      </motion.div>
     </div>
   );
 }
-
-import { cn } from '../../../../../utils/cn';

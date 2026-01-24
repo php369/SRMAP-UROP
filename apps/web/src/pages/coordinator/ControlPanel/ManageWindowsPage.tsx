@@ -27,6 +27,7 @@ export function ManageWindowsPage() {
     const [formLoading, setFormLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [selectedWindowIds, setSelectedWindowIds] = useState<string[]>([]);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // Hooks
     const {
@@ -48,7 +49,11 @@ export function ManageWindowsPage() {
 
     // Load initial data
     useEffect(() => {
-        fetchWindows();
+        const load = async () => {
+            await fetchWindows();
+            setIsInitialLoad(false);
+        };
+        load();
     }, [fetchWindows]);
 
     // Handlers
@@ -201,7 +206,7 @@ export function ManageWindowsPage() {
             {/* Windows List */}
             <WindowsList
                 windows={windows}
-                windowsLoading={windowsLoading}
+                windowsLoading={isInitialLoad || windowsLoading}
                 showInactiveWindows={showInactiveWindows}
                 onShowInactiveToggle={setShowInactiveWindows}
                 onEditWindow={handleEditWindow}

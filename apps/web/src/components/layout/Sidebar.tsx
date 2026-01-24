@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthStore } from '../../stores/authStore';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
@@ -314,23 +314,31 @@ export function Sidebar() {
         {/* Profile Section */}
         <div className="p-4 relative" ref={profileMenuRef}>
           {/* Profile Menu Popup */}
-          {isProfileMenuOpen && (
-            <div className="absolute bottom-full left-4 right-4 mb-2 p-1 bg-white rounded-xl shadow-lg border border-slate-200 animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
-              <div className="px-3 py-2 border-b border-slate-100">
-                <p className="text-sm font-semibold text-slate-900 truncate">
-                  {user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Unknown'}
-                </p>
-                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-              </div>
-              <button
-                onClick={() => logout()}
-                className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          <AnimatePresence>
+            {isProfileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-full left-4 right-4 mb-2 p-1 bg-white rounded-xl shadow-lg border border-slate-200 z-50"
               >
-                <XIcon className="w-4 h-4" />
-                Sign Out
-              </button>
-            </div>
-          )}
+                <div className="px-3 py-2 border-b border-slate-100">
+                  <p className="text-sm font-semibold text-slate-900 truncate">
+                    {user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Unknown'}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                </div>
+                <button
+                  onClick={() => logout()}
+                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <XIcon className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { EvaluatorListSkeleton } from '../LoadingSkeletons';
-import { Search, ShieldCheck, RefreshCw, Zap, ChevronDown, UserCheck, AlertTriangle, Users } from 'lucide-react';
+import { EvaluatorListSkeleton, ExternalEvaluatorsSkeleton } from '../LoadingSkeletons';
+import { Search, ShieldCheck, RefreshCw, Zap, ChevronDown, UserCheck, AlertTriangle, Users, Loader2 } from 'lucide-react';
 import { useExternalEvaluators } from '../../hooks/useExternalEvaluators';
 import { AssignmentCard } from './AssignmentCard';
 import { EvaluatorStats } from './EvaluatorStats';
@@ -77,14 +77,21 @@ export function ExternalEvaluatorsTab() {
   const [filterProjectType, setFilterProjectType] = useState<'all' | 'IDP' | 'UROP' | 'CAPSTONE'>('all');
   const [isWorkloadModalOpen, setIsWorkloadModalOpen] = useState(false);
   const [isAutoAssignOpen, setIsAutoAssignOpen] = useState(false);
+  const [autoAssigningTypes, setAutoAssigningTypes] = useState<Record<string, boolean>>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Load data on component mount
   useEffect(() => {
     if (windowsLoading) return;
-    if (anyApplicationWindowActive) return;
 
     const loadData = async () => {
+      if (anyApplicationWindowActive) {
+        setIsInitialLoad(false);
+        return;
+      }
+
       await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
+      setIsInitialLoad(false);
     };
     loadData();
   }, [fetchAssignments, fetchEvaluators, validateAssignments, windowsLoading, anyApplicationWindowActive]);
@@ -161,9 +168,14 @@ export function ExternalEvaluatorsTab() {
     }
 
     const success = await autoAssignEvaluators(type);
-    if (success) {
-      await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
-      toast.success(`Auto-assignment process completed for ${type}`);
+    setAutoAssigningTypes(prev => ({ ...prev, [type]: true }));
+    try {
+      if (success) {
+        await Promise.all([fetchAssignments(), fetchEvaluators(), validateAssignments()]);
+        toast.success(`Auto-assignment process completed for ${type}`);
+      }
+    } finally {
+      setAutoAssigningTypes(prev => ({ ...prev, [type]: false }));
     }
   };
 
@@ -172,8 +184,8 @@ export function ExternalEvaluatorsTab() {
     toast.success('Data refreshed');
   };
 
-  if (windowsLoading) {
-    return <EvaluatorListSkeleton />;
+  if (isInitialLoad || windowsLoading || assignmentsLoading || evaluatorsLoading) {
+    return <ExternalEvaluatorsSkeleton />;
   }
 
   if (anyApplicationWindowActive) {
@@ -264,15 +276,22 @@ export function ExternalEvaluatorsTab() {
                           w.projectType === type &&
                           new Date() > new Date(w.endDate)
                         );
+                        const isAssigning = autoAssigningTypes[type];
                         return (
                           <DropdownMenuItem
                             key={type}
-                            onClick={() => handleAutoAssign(type)}
-                            disabled={!isAppWindowEnded}
-                            className="flex justify-between items-center cursor-pointer py-2 px-3 rounded-md"
+                            onClick={() => !isAssigning && handleAutoAssign(type)}
+                            disabled={!isAppWindowEnded || isAssigning}
+                            className={cn(
+                              "flex justify-between items-center py-2 px-3 rounded-md",
+                              isAssigning ? "cursor-wait opacity-80" : "cursor-pointer"
+                            )}
                           >
-                            <span className="font-semibold text-sm">{type}</span>
-                            {isAppWindowEnded ? (
+                            <div className="flex items-center gap-2">
+                              {isAssigning && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                              <span className={cn("font-semibold text-sm", isAssigning && "text-primary")}>{type}</span>
+                            </div>
+                            {isAssigning ? null : isAppWindowEnded ? (
                               <UserCheck className="w-4 h-4 text-success opacity-80" />
                             ) : (
                               <span className="text-[10px] text-orange-500 font-bold px-2 py-0.5 bg-orange-500/10 rounded-full">ACTIVE</span>
