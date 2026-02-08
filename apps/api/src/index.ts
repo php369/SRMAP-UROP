@@ -48,6 +48,17 @@ async function startServer() {
     const app = express();
     const server = createServer(app);
 
+    // Health check endpoint - BEFORE all middleware for fastest response
+    // This ensures uptime monitors get instant responses even during cold starts
+    app.get('/health', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: config.NODE_ENV,
+      });
+    });
+
     // Parse allowed origins for CORS
     // Explicitly add the new Vercel domains + any from environment
     const allowedOrigins = [
@@ -143,45 +154,7 @@ async function startServer() {
       SimpleSchedulerService.initialize();
     }
 
-    /**
-     * @swagger
-     * /health:
-     *   get:
-     *     summary: Health check endpoint
-     *     description: Returns the current health status of the API server
-     *     tags: [System]
-     *     responses:
-     *       200:
-     *         description: Server is healthy
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 status:
-     *                   type: string
-     *                   example: 'healthy'
-     *                 timestamp:
-     *                   type: string
-     *                   format: date-time
-     *                   example: '2024-01-01T12:00:00.000Z'
-     *                 uptime:
-     *                   type: number
-     *                   description: Server uptime in seconds
-     *                   example: 3600
-     *                 environment:
-     *                   type: string
-     *                   example: 'development'
-     */
-    // Health check endpoint
-    app.get('/health', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: config.NODE_ENV,
-      });
-    });
+
 
     // OAuth debug endpoint (development only)
     if (config.NODE_ENV === 'development') {
