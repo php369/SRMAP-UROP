@@ -11,7 +11,6 @@ import { useAuthStore } from './stores/authStore';
 // Components
 import { AuthGuard } from './components/auth/AuthGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { NotificationProvider } from './components/common/NotificationProvider';
 import { PageLoader } from './components/common/PageLoader';
 import { ScrollProvider } from './components/ui/ScrollProvider';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -81,7 +80,6 @@ function App() {
             <Router>
               <ScrollProvider>
                 <div className="min-h-screen bg-background text-text">
-                  <NotificationProvider />
 
                   <Suspense fallback={<PageLoader />}>
                     <Routes>

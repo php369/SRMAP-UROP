@@ -106,20 +106,6 @@ export class MeetingLogService {
 
       logger.info(`Meeting log created for group ${group.code} by user ${createdBy}`);
 
-      // Send notification to faculty
-      try {
-        const { notifyMeetingLogSubmittedPersistent } = await import('./notificationService');
-        await notifyMeetingLogSubmittedPersistent(
-          meetingLog._id.toString(),
-          group.code || 'Unknown',
-          group.facultyId?.toString() || '',
-          createdBy.toString()
-        );
-      } catch (notificationError) {
-        logger.error('Failed to send meeting log notification:', notificationError);
-        // Don't fail the creation if notifications fail
-      }
-
       // Return populated meeting log
       return await MeetingLog.findById(meetingLog._id)
         .populate('groupId', 'code type memberIds status')
@@ -317,23 +303,6 @@ export class MeetingLogService {
 
       logger.info(`Meeting log ${logId} approved by faculty ${facultyId}`);
 
-      // Send notification to group members
-      try {
-        const { notifyMeetingLogApprovedPersistent } = await import('./notificationService');
-        const group = meetingLog.groupId as unknown as IGroup;
-        const memberIds = group.memberIds ? group.memberIds.map(id => id.toString()) : [];
-        
-        await notifyMeetingLogApprovedPersistent(
-          meetingLog._id.toString(),
-          memberIds,
-          group.code || 'Unknown',
-          facultyId.toString()
-        );
-      } catch (notificationError) {
-        logger.error('Failed to send meeting log approval notification:', notificationError);
-        // Don't fail the approval if notifications fail
-      }
-
       // Return populated meeting log
       return await MeetingLog.findById(meetingLog._id)
         .populate('groupId', 'code type memberIds status')
@@ -383,24 +352,6 @@ export class MeetingLogService {
       await meetingLog.save();
 
       logger.info(`Meeting log ${logId} rejected by faculty ${facultyId}`);
-
-      // Send notification to group members
-      try {
-        const { notifyMeetingLogRejectedPersistent } = await import('./notificationService');
-        const group = meetingLog.groupId as unknown as IGroup;
-        const memberIds = group.memberIds ? group.memberIds.map(id => id.toString()) : [];
-        
-        await notifyMeetingLogRejectedPersistent(
-          meetingLog._id.toString(),
-          memberIds,
-          group.code || 'Unknown',
-          reason,
-          facultyId.toString()
-        );
-      } catch (notificationError) {
-        logger.error('Failed to send meeting log rejection notification:', notificationError);
-        // Don't fail the rejection if notifications fail
-      }
 
       // Return populated meeting log
       return await MeetingLog.findById(meetingLog._id)

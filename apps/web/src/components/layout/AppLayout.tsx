@@ -9,7 +9,6 @@ import Lenis from 'lenis';
 import { useUserRefresh } from '../../hooks/useUserRefresh';
 import { MenuIcon } from '../ui/Icons';
 import { PageLoader } from '../common/PageLoader';
-import { NotificationBell } from '../common/NotificationBell';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -110,7 +109,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationBell />
               <button
                 onClick={() => document.dispatchEvent(new CustomEvent('open-mobile-sidebar'))}
                 className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"

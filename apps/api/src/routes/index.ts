@@ -13,11 +13,9 @@ import submissionRoutes from './submissions';
 import groupSubmissionRoutes from './groupSubmissions';
 import studentEvaluationRoutes from './studentEvaluations';
 import adminRoutes from './admin';
-import presenceRoutes from './presence';
 import performanceRoutes from './performance';
 import healthRoutes from './health';
 import statusRoutes from './status';
-import notificationRoutes from './notifications';
 import meetingLogRoutes from './meetingLogs';
 import meetingRoutes from './meetings';
 import windowRoutes from './windows';
@@ -94,9 +92,6 @@ export function setupRoutes(app: Express): void {
   // Admin routes
   app.use(`${API_PREFIX}/admin`, adminRoutes);
 
-  // Presence routes
-  app.use(`${API_PREFIX}/presence`, presenceRoutes);
-
   // Performance routes
   app.use(`${API_PREFIX}/performance`, performanceRoutes);
 
@@ -105,9 +100,6 @@ export function setupRoutes(app: Express): void {
 
   // Status routes
   app.use(`${API_PREFIX}/status`, statusRoutes);
-
-  // Notification routes
-  app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 
   // Meeting log routes
   app.use(`${API_PREFIX}/meeting-logs`, meetingLogRoutes);
@@ -203,7 +195,6 @@ export function setupRoutes(app: Express): void {
         studentEvaluations: `${API_PREFIX}/student-evaluations`,
         users: `${API_PREFIX}/users`,
         admin: `${API_PREFIX}/admin`,
-        notifications: `${API_PREFIX}/notifications`,
         meetingLogs: `${API_PREFIX}/meeting-logs`,
         performance: `${API_PREFIX}/performance`,
         debug: process.env.NODE_ENV === 'development' ? `${API_PREFIX}/debug` : undefined,

@@ -202,23 +202,6 @@ export async function joinGroup(
       // Don't fail the join operation if application deletion fails
     }
 
-    // Create notification for group leader
-    try {
-      const { createNotification } = await import('./notificationService');
-      const user = await User.findById(userId);
-      await createNotification({
-        userId: group.leaderId.toString(),
-        role: 'idp-student',
-        type: 'SYSTEM',
-        title: 'New Member Joined',
-        message: `${user?.name || 'A student'} has joined your group ${group.groupCode}`,
-        targetGroupId: group._id.toString()
-      });
-    } catch (error) {
-      logger.error('Error creating join notification:', error);
-      // Don't fail the join operation if notification fails
-    }
-
     logger.info(`User ${userId} joined group ${group.groupId}`);
     return group;
   } catch (error) {

@@ -3,9 +3,6 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const API_VERSION = 'v1';
 export const API_URL = `${API_BASE_URL}/api/${API_VERSION}`;
 
-// Socket.IO Configuration
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE_URL;
-
 // Google OAuth Configuration
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/callback`;
@@ -130,5 +127,4 @@ export const STORAGE_KEYS = {
   USER_DATA: 'srm_portal_user',
   THEME: 'srm_portal_theme',
   SIDEBAR_COLLAPSED: 'srm_portal_sidebar_collapsed',
-  NOTIFICATIONS_READ: 'srm_portal_notifications_read',
 } as const;

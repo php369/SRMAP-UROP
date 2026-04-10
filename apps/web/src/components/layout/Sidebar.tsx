@@ -5,7 +5,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAuthStore } from '../../stores/authStore';
 import { ROLE_NAVIGATION, ROUTES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
-
 import {
   HomeIcon,
   FileTextIcon,
@@ -22,7 +21,6 @@ import {
   XIcon,
   ShieldIcon
 } from '../ui/Icons';
-import { NotificationBell } from '../common/NotificationBell';
 
 // Icon components for navigation
 const IconComponents = {
@@ -305,11 +303,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Notifications Section */}
-        <div className="px-4 pb-2">
-          <NotificationBell variant="sidebar" />
-        </div>
 
         {/* Profile Section */}
         <div className="p-4 relative" ref={profileMenuRef}>

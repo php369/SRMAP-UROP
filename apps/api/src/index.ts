@@ -8,8 +8,6 @@ process.on('warning', (warning) => {
 });
 
 import express, { Request, Response } from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import { config, validateOAuthConfig } from './config/environment';
@@ -17,8 +15,6 @@ import { connectDatabase } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { setupRoutes } from './routes';
-import { setupSocketIO } from './services/socketService';
-import { initializeNotificationService } from './services/notificationService';
 import { SchedulerService } from './services/schedulerService';
 import { performanceMonitoring } from './middleware/performanceMonitoring';
 import { developmentLogger } from './middleware/developmentLogger';
@@ -46,7 +42,6 @@ async function startServer() {
 
     // Create Express app
     const app = express();
-    const server = createServer(app);
 
     // Health check endpoint - BEFORE all middleware for fastest response
     // This ensures uptime monitors get instant responses even during cold starts
@@ -68,18 +63,6 @@ async function startServer() {
       "https://projects.srmap.poojanhp.com",
       ...(config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [])
     ].filter(Boolean);
-
-    // Setup Socket.IO
-    const io = new Server(server, {
-      cors: {
-        origin: allowedOrigins,
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
-    });
-
-    setupSocketIO(io);
-    initializeNotificationService(io);
 
     // Security middleware
     app.use(helmet({
@@ -191,28 +174,19 @@ async function startServer() {
     logger.info(`🔧 Binding Configuration: isOnRender=${isOnRender}, shouldBindToAllInterfaces=${shouldBindToAllInterfaces}`);
 
     if (shouldBindToAllInterfaces) {
-      server.listen(PORT, () => {
+      app.listen(PORT, () => {
         logger.info(`🚀 Server running on port ${PORT} (all interfaces - 0.0.0.0)`);
         logger.info(`📊 Health check: /health`);
         logger.info(`📚 API docs: /docs`);
       });
     } else {
-      server.listen(PORT, 'localhost', () => {
+      app.listen(PORT, 'localhost', () => {
         logger.info(`🚀 Server running on localhost:${PORT}`);
         logger.info(`📊 Health check: http://localhost:${PORT}/health`);
         logger.info(`📚 API docs: http://localhost:${PORT}/docs`);
       });
     }
 
-    // Handle server errors
-    server.on('error', (error: any) => {
-      if (error.code === 'EADDRINUSE') {
-        logger.error(`❌ Port ${PORT} is already in use`);
-      } else {
-        logger.error('❌ Server error:', error);
-      }
-      process.exit(1);
-    });
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
@@ -222,10 +196,7 @@ async function startServer() {
       } catch (error) {
         logger.warn('Error shutting down SchedulerService:', error);
       }
-      server.close(() => {
-        logger.info('Process terminated');
-        process.exit(0);
-      });
+      process.exit(0);
     });
 
     process.on('SIGINT', () => {
@@ -235,10 +206,7 @@ async function startServer() {
       } catch (error) {
         logger.warn('Error shutting down SchedulerService:', error);
       }
-      server.close(() => {
-        logger.info('Process terminated');
-        process.exit(0);
-      });
+      process.exit(0);
     });
 
   } catch (error) {
