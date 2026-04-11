@@ -16,7 +16,6 @@ const mockUsers: User[] = [
     email: 'alice@srmap.edu.in',
     role: 'student',
     profile: { department: 'Computer Science', year: 3 },
-    preferences: { theme: 'dark', notifications: true },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -26,7 +25,6 @@ const mockUsers: User[] = [
     email: 'bob@srmap.edu.in',
     role: 'student',
     profile: { department: 'Computer Science', year: 2 },
-    preferences: { theme: 'light', notifications: true },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
@@ -251,7 +249,7 @@ export function ProjectDetailPage() {
   ];
 
   if (loading) {
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   if (!project) {
@@ -302,12 +300,7 @@ export function ProjectDetailPage() {
         {/* Hero Content */}
         <div className="relative z-10 h-full flex items-center">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="text-textPrimary"
-            >
+            <div className="text-textPrimary">
               <div className="flex items-center space-x-3 mb-4">
                 <Badge variant="glass" className={getStatusColor(project.status)}>
                   {project.status}
@@ -344,7 +337,7 @@ export function ProjectDetailPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -363,12 +356,7 @@ export function ProjectDetailPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <GlassCard variant="subtle" className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-text">Project Progress</h3>
@@ -390,15 +378,10 @@ export function ProjectDetailPage() {
               className="h-3"
             />
           </GlassCard>
-        </motion.div>
+        </div>
 
         {/* Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <div className="border-b border-border">
             <nav className="flex space-x-8">
               {tabs.map(tab => (
@@ -423,7 +406,7 @@ export function ProjectDetailPage() {
               ))}
             </nav>
           </div>
-        </motion.div>
+        </div>
 
         {/* Tab Content */}
         <motion.div

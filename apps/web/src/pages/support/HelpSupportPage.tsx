@@ -75,25 +75,20 @@ export function HelpSupportPage() {
 
     return (
         <div className="min-h-screen p-8">
-            <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="max-w-6xl mx-auto space-y-6"
-            >
-                {/* Header */}
-                <motion.div variants={fadeUp}>
-                    <h1 className="text-3xl font-bold text-text mb-2">
-                        Help & Support
-                    </h1>
-                    <p className="text-textSecondary">
-                        Find answers to common questions or contact support
-                    </p>
-                </motion.div>
+        <div className="max-w-6xl mx-auto space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold text-text mb-2">
+                    Help & Support
+                </h1>
+                <p className="text-textSecondary">
+                    Find answers to common questions or contact support
+                </p>
+            </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Quick Links */}
-                    <motion.div variants={staggerItem} className="lg:col-span-1">
+                    <div className="lg:col-span-1">
                         <GlassCard variant="elevated" className="p-6">
                             <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,10 +140,10 @@ export function HelpSupportPage() {
                                 </p>
                             </div>
                         </GlassCard>
-                    </motion.div>
+                    </div>
 
                     {/* FAQs */}
-                    <motion.div variants={staggerItem} className="lg:col-span-2">
+                    <div className="lg:col-span-2">
                         <GlassCard variant="elevated" className="p-6">
                             <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,11 +191,11 @@ export function HelpSupportPage() {
                                 ))}
                             </div>
                         </GlassCard>
-                    </motion.div>
+                    </div>
                 </div>
 
                 {/* Contact Form */}
-                <motion.div variants={staggerItem}>
+                <div>
                     <GlassCard variant="elevated" className="p-6">
                         <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,7 +236,6 @@ export function HelpSupportPage() {
                             <GlowButton
                                 type="submit"
                                 loading={sending}
-                                variant="primary"
                                 glow
                                 className="w-full"
                             >
@@ -249,8 +243,8 @@ export function HelpSupportPage() {
                             </GlowButton>
                         </form>
                     </GlassCard>
-                </motion.div>
-            </motion.div>
+                </div>
+            </div>
         </div>
     );
 }

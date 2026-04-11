@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { lazy } from '../utils/performance';
+import { DashboardPageSkeleton } from './common/DashboardSkeletons';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -10,46 +11,8 @@ const LoadingSpinner = () => (
 );
 
 // Skeleton loading components
-const DashboardSkeleton = () => (
-  <div className="space-y-6 p-6">
-    <div className="h-8 bg-gray-200 rounded-md animate-pulse"></div>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="bg-surface p-6 rounded-lg shadow-sm border">
-          <div className="h-4 bg-gray-200 rounded animate-pulse mb-4"></div>
-          <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
-        </div>
-      ))}
-    </div>
-    <div className="bg-surface p-6 rounded-lg shadow-sm border">
-      <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
-      <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
-    </div>
-  </div>
-);
-
-const AssessmentsSkeleton = () => (
-  <div className="space-y-6 p-6">
-    <div className="flex justify-between items-center">
-      <div className="h-8 bg-gray-200 rounded-md animate-pulse w-48"></div>
-      <div className="h-10 bg-gray-200 rounded-md animate-pulse w-32"></div>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-surface p-6 rounded-lg shadow-sm border">
-          <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded animate-pulse mb-4 w-3/4"></div>
-          <div className="flex justify-between items-center">
-            <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
-            <div className="h-8 bg-gray-200 rounded animate-pulse w-24"></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+const DashboardSkeleton = () => <DashboardPageSkeleton />;
+const AssessmentsSkeleton = () => <DashboardPageSkeleton />;
 
 // Lazy loaded components with proper error boundaries
 

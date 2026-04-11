@@ -114,7 +114,7 @@ export const SubmissionsPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   if (error) {

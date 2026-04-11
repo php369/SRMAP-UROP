@@ -229,7 +229,7 @@ export function EligibilityUpload() {
     }, []);
 
     if (loading) {
-        return <DashboardPageSkeleton />;
+        return null; // Let the parent Suspense/PageLoader handle the initial skeleton
     }
 
     const handleUpload = async () => {
@@ -471,11 +471,11 @@ export function EligibilityUpload() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-10 pb-8 pt-4">
-            <motion.div initial="initial" animate="animate" className="text-center space-y-2">
-                <motion.div variants={fadeUp} className="inline-block px-3 py-1 bg-slate-50 rounded-full border border-slate-100 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Admin Dashboard</motion.div>
-                <motion.h1 variants={fadeUp} className="text-4xl font-heading font-black text-slate-900 tracking-tight">Eligibility Portal</motion.h1>
-                <motion.p variants={fadeUp} className="text-slate-400 text-sm font-medium">Configure academic eligibility with precision</motion.p>
-            </motion.div>
+            <div className="text-center space-y-2">
+                <div className="inline-block px-3 py-1 bg-slate-50 rounded-full border border-slate-100 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Admin Dashboard</div>
+                <h1 className="text-4xl font-heading font-black text-slate-900 tracking-tight">Eligibility Portal</h1>
+                <p className="text-slate-400 text-sm font-medium">Configure academic eligibility with precision</p>
+            </div>
 
             <div className="max-w-xl mx-auto relative px-6">
                 <div className="absolute top-[18px] left-6 right-6 h-0.5 bg-slate-100 rounded-full -z-10" />

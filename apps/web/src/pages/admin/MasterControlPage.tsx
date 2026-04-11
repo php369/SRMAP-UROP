@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
     Users,
     Database,
     ShieldAlert,
     Activity,
     Search,
-    Settings,
     FileText,
     Briefcase,
     Layers,
@@ -18,7 +16,6 @@ import { useEffect } from 'react';
 import { apiClient } from '@/utils/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { DashboardPageSkeleton } from '@/components/common/DashboardSkeletons';
 import UserManagementModule from '@/components/admin/master-control/UserManagementModule';
@@ -53,7 +50,7 @@ const CountUp = ({ value, prefix = "", suffix = "" }: { value: string | number, 
     return <span>{prefix}{count}{suffix}</span>;
 }
 
-const MasterControlPage = () => {
+export function MasterControlPage() {
     const [activeTab, setActiveTab] = useState('users');
     const [globalSearch, setGlobalSearch] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -127,24 +124,8 @@ const MasterControlPage = () => {
     if (loading) {
         return <DashboardPageSkeleton />;
     }
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: { y: 0, opacity: 1 }
-    };
-
     return (
-        <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="min-h-screen p-6 space-y-8 max-w-[1600px] mx-auto pb-20"
-        >
+        <div className="min-h-screen p-6 space-y-8 max-w-[1600px] mx-auto pb-20">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
@@ -182,7 +163,7 @@ const MasterControlPage = () => {
             </header>
 
             {/* Quick Stats Grid */}
-            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Total Users', value: stats.users, icon: Users, color: 'sky' },
                     { label: 'Active Projects', value: stats.projects, icon: Briefcase, color: 'cyan' },
@@ -201,10 +182,10 @@ const MasterControlPage = () => {
                         </div>
                     </GlassCard>
                 ))}
-            </motion.div>
+            </div>
 
             {/* Main Control Interface */}
-            <motion.div variants={itemVariants} className="flex-1">
+            <div className="flex-1">
                 <Tabs defaultValue="users" value={activeTab} onValueChange={setActiveTab} className="h-full space-y-6">
                     {!globalSearch && (
                         <TabsList className="bg-white/50 p-1.5 h-auto gap-2 rounded-[20px] border border-slate-200/60 backdrop-blur-md w-full md:w-fit flex-wrap justify-start">
@@ -232,7 +213,7 @@ const MasterControlPage = () => {
 
                         {/* Global Search Overlay View */}
                         {globalSearch ? (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-8">
                                 <div className="flex items-center gap-2 mb-6">
                                     {isSearching ? (
                                         <Loader2 className="w-6 h-6 text-[#154259] animate-spin" />
@@ -262,8 +243,8 @@ const MasterControlPage = () => {
                                                     {searchResults.users.map((user: any) => (
                                                         <div key={user._id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-between">
                                                             <div>
-                                                                <div className="font-bold text-slate-800">{user.name}</div>
-                                                                <div className="text-xs text-slate-500">{user.email}</div>
+                                                                 <div className="font-bold text-slate-800">{user.name}</div>
+                                                                 <div className="text-xs text-slate-500">{user.email}</div>
                                                             </div>
                                                             <span className="text-xs font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md capitalize">{user.role}</span>
                                                         </div>
@@ -286,8 +267,8 @@ const MasterControlPage = () => {
                                                     {searchResults.projects.map((project: any) => (
                                                         <div key={project._id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-between">
                                                             <div>
-                                                                <div className="font-bold text-slate-800">{project.title}</div>
-                                                                <div className="text-xs text-slate-500 line-clamp-1">{project.description}</div>
+                                                                 <div className="font-bold text-slate-800">{project.title}</div>
+                                                                 <div className="text-xs text-slate-500 line-clamp-1">{project.description}</div>
                                                             </div>
                                                             <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-md">{project.status}</span>
                                                         </div>
@@ -353,9 +334,7 @@ const MasterControlPage = () => {
                         )}
                     </GlassCard>
                 </Tabs>
-            </motion.div>
-        </motion.div >
+            </div>
+        </div>
     );
-};
-
-export default MasterControlPage;
+}

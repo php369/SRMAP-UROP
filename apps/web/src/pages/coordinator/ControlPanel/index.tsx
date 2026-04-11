@@ -59,23 +59,13 @@ export function ControlPanel() {
           <Breadcrumb items={getBreadcrumbs()} className="mb-4" />
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Routes>
-              <Route index element={<ControlPanelHome />} />
-              <Route path="windows" element={<ManageWindowsPage />} />
-              <Route path="wizard" element={<SemesterPlanWizardPage />} />
-              <Route path="individual" element={<IndividualWindowWizardPage />} />
-              <Route path="external-evaluators" element={<ExternalEvaluatorsTab />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+        <Routes>
+          <Route index element={<ControlPanelHome />} />
+          <Route path="windows" element={<ManageWindowsPage />} />
+          <Route path="wizard" element={<SemesterPlanWizardPage />} />
+          <Route path="individual" element={<IndividualWindowWizardPage />} />
+          <Route path="external-evaluators" element={<ExternalEvaluatorsTab />} />
+        </Routes>
       </div>
     </div>
   );

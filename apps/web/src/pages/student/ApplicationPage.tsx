@@ -807,11 +807,7 @@ export function ApplicationPage() {
     console.log('✅ ApplicationPage: Showing existing applications view');
     return (
       <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full flex flex-col"
-        >
+        <div className="w-full flex flex-col">
           <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
@@ -1106,7 +1102,7 @@ export function ApplicationPage() {
               )}
             </DialogContent>
           </Dialog>
-        </motion.div >
+        </div>
       </div >
     );
   }
@@ -1116,7 +1112,7 @@ export function ApplicationPage() {
 
   if (initializing || windowLoading || !eligibleProjectType) {
     console.log('⏳ ApplicationPage: Showing loading state');
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   // Check if window is open - but only show closed message if no existing applications OR no approved applications
@@ -1183,11 +1179,7 @@ export function ApplicationPage() {
   return (
     <div className="w-full">
       <div className="max-w-5xl mx-auto space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-        >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-900 to-teal-600 dark:from-teal-100 dark:to-teal-300">
               Project Application
@@ -1201,7 +1193,7 @@ export function ApplicationPage() {
               Eligible for {eligibleProjectType}
             </Badge>
           )}
-        </motion.div>
+        </div>
 
         {/* Custom Progress Stepper */}
         {!groupId && step === 'choice' ? null : (
@@ -1234,11 +1226,7 @@ export function ApplicationPage() {
 
         {/* Step 1: Choice */}
         {step === 'choice' && !groupId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid md:grid-cols-2 gap-6"
-          >
+          <div className="grid md:grid-cols-2 gap-6">
             <Card
               className="cursor-pointer hover:border-teal-500 hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
               onClick={() => handleChoiceSelection('solo')}
@@ -1284,15 +1272,12 @@ export function ApplicationPage() {
                 </ul>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         )}
 
         {/* Step 1.5: Landing Page for Existing Group Members */}
         {step === 'choice' && groupId && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
+          <div className="w-full">
             <Card className="border-teal-200 dark:border-teal-800 shadow-md">
               <CardHeader className="bg-teal-50/50 dark:bg-teal-900/10 border-b border-teal-100 dark:border-teal-800/50 pb-8">
                 <div className="flex items-center justify-between">
@@ -1400,7 +1385,7 @@ export function ApplicationPage() {
                 </Button>
               </CardFooter>
             </Card>
-          </motion.div>
+          </div>
         )}
 
         {/* Step 2: Group Formation */}

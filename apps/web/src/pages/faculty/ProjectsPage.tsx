@@ -142,7 +142,7 @@ export function FacultyProjectsPage() {
 
   // Loading Skeleton
   if (initializing || windowLoading) {
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   if (!hasActiveWindow && projects.length === 0 && !initializing && !windowLoading && !loading) {
@@ -165,11 +165,7 @@ export function FacultyProjectsPage() {
   return (
     <div className="flex-1 flex flex-col w-full min-h-full relative">
       <div className="flex-1 w-full flex flex-col p-6 space-y-8 max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full flex flex-col"
-        >
+        <div className="w-full flex flex-col">
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -246,7 +242,7 @@ export function FacultyProjectsPage() {
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       </div>
 
       <ProjectForm

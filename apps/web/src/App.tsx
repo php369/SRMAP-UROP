@@ -42,7 +42,7 @@ const FacultyAssessmentPage = lazy(() => import('./pages/faculty/AssessmentPage'
 const FacultyMeetingsPage = lazy(() => import('./pages/faculty/MeetingsPage').then(m => ({ default: m.FacultyMeetingsPage })));
 const EligibilityUpload = lazy(() => import('./pages/admin/EligibilityUpload').then(m => ({ default: m.EligibilityUpload })));
 
-const MasterControlPage = lazy(() => import('./pages/admin/MasterControlPage'));
+const MasterControlPage = lazy(() => import('./pages/admin/MasterControlPage').then(m => ({ default: m.MasterControlPage })));
 
 // Layout
 import { AppLayout } from './components/layout/AppLayout';
@@ -88,7 +88,6 @@ function App() {
               <ScrollProvider>
                 <div className="min-h-screen bg-background text-text">
 
-                  <Suspense fallback={<PageLoader />}>
                     <Routes>
                       {/* Public routes */}
                       <Route path={ROUTES.HOME} element={<LandingPage />} />
@@ -187,7 +186,6 @@ function App() {
                         }
                       />
                     </Routes>
-                  </Suspense>
 
                   {/* Toast notifications */}
                   <Toaster />

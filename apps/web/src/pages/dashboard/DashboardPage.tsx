@@ -112,48 +112,43 @@ export function DashboardPage() {
   }, [user]);
 
   if (loading) {
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   return (
     <div className="space-y-8 p-6">
       {/* Header with greeting */}
-      <Reveal direction="down" fullWidth>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4 border-b border-slate-200/60">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-              Welcome back, {user?.name?.split(' ').slice(0, 4).join(' ')}! 👋
-            </h1>
-
-          </div>
-          <div className="text-right self-end md:self-auto flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl shadow-sm">
-            <p className="text-xl font-mono text-slate-600 font-medium">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-              })}
-            </p>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4 border-b border-slate-200/60">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+            Welcome back, {user?.name?.split(' ').slice(0, 4).join(' ')}! 👋
+          </h1>
         </div>
-      </Reveal>
+        <div className="text-right self-end md:self-auto flex-shrink-0 bg-white/50 backdrop-blur-sm p-3 rounded-xl shadow-sm">
+          <p className="text-xl font-mono text-slate-600 font-medium">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
+            })}
+          </p>
+        </div>
+      </div>
 
       {/* Role Specific Content */}
-      <Reveal delay={0.1} fullWidth>
-        <div className="min-h-[500px]">
-          {isStudentRole(user?.role) && (
-            <StudentDashboard
-              user={user}
-              dashboardData={dashboardData}
-              refreshData={fetchDashboardData}
-            />
-          )}
+      <div className="min-h-[500px]">
+        {isStudentRole(user?.role) && (
+          <StudentDashboard
+            user={user}
+            dashboardData={dashboardData}
+            refreshData={fetchDashboardData}
+          />
+        )}
 
-          {user?.role === 'faculty' && <FacultyDashboard />}
-          {user?.role === 'coordinator' && <CoordinatorDashboard />}
-          {user?.role === 'admin' && <AdminDashboard />}
-        </div>
-      </Reveal>
+        {user?.role === 'faculty' && <FacultyDashboard />}
+        {user?.role === 'coordinator' && <CoordinatorDashboard />}
+        {user?.role === 'admin' && <AdminDashboard />}
+      </div>
     </div>
   );
 }

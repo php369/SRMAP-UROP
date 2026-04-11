@@ -303,30 +303,10 @@ export function MeetingsPage() {
     }
   };
 
-  if (initializing || hasProject === null) {
-    return <DashboardPageSkeleton />;
-  }
-
-  if (hasProject === false) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center p-6">
-        <MeetingEmptyState
-          title="No Project Assigned"
-          description="You haven't been assigned to a project yet. Meetings will be available once you're assigned to a faculty mentor."
-          icon="presentation"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
             Meetings
@@ -349,7 +329,7 @@ export function MeetingsPage() {
             Schedule Meeting
           </Button>
         )}
-      </motion.div>
+      </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'upcoming' | 'past')} className="w-full">
         <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl">

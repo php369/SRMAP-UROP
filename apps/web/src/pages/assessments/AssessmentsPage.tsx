@@ -80,7 +80,7 @@ export const AssessmentsPage: React.FC = () => {
   const stats = getOverallStats();
 
   if (isLoading) {
-    return <DashboardPageSkeleton />;
+    return null; // Parent Suspense / PageLoader handles the initial skeleton
   }
 
   if (error) {
