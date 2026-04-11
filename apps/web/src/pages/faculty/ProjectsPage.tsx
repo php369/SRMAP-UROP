@@ -14,6 +14,7 @@ import { ProjectForm } from './components/ProjectForm';
 import { PhaseEmptyState } from './components/PhaseEmptyState';
 import { ProjectDetailsModal } from './components/ProjectDetailsModal';
 import { ActiveProposalEmptyState } from './components/ActiveProposalEmptyState';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 export function FacultyProjectsPage() {
   const { user } = useAuth();
@@ -141,14 +142,7 @@ export function FacultyProjectsPage() {
 
   // Loading Skeleton
   if (initializing || windowLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
-          <p className="text-slate-500 font-medium animate-pulse">Loading projects...</p>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!hasActiveWindow && projects.length === 0 && !initializing && !windowLoading && !loading) {

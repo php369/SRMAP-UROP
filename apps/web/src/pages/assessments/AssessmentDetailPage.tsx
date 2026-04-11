@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { AssessmentDetail, Submission } from '../../components/assessments/AssessmentDetail';
 import { Assessment } from '../../components/assessments';
-import { LoadingSpinner } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 // Mock data - in real app this would come from API
 const mockAssessment: Assessment = {
@@ -128,11 +128,7 @@ export function AssessmentDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!assessment) {

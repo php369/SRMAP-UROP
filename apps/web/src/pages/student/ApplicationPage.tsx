@@ -32,6 +32,7 @@ import {
   RefreshCw,
   LogOut
 } from 'lucide-react';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import {
   Dialog,
   DialogContent,
@@ -1115,14 +1116,7 @@ export function ApplicationPage() {
 
   if (initializing || windowLoading || !eligibleProjectType) {
     console.log('⏳ ApplicationPage: Showing loading state');
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
-          <p className="text-slate-500 font-medium animate-pulse">Loading application data...</p>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   // Check if window is open - but only show closed message if no existing applications OR no approved applications

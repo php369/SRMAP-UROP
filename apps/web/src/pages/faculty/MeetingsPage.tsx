@@ -17,7 +17,7 @@ import { NoAssignmentMessage } from '../../components/common/NoAssignmentMessage
 import { api } from '../../utils/api';
 import { MeetingEmptyState } from './components/MeetingEmptyState';
 import { MeetingDateTimePicker } from '../../components/ui/MeetingDateTimePicker';
-import { Skeleton } from '../../components/ui/skeleton';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { cn } from '../../utils/cn';
 
 interface Meeting {
@@ -363,25 +363,7 @@ export function FacultyMeetingsPage() {
   };
 
   if (initialLoading) {
-    return (
-      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48 bg-slate-200 dark:bg-slate-800" />
-            <Skeleton className="h-4 w-64 bg-slate-200 dark:bg-slate-800" />
-          </div>
-          <Skeleton className="h-10 w-32 bg-slate-200 dark:bg-slate-800" />
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full bg-slate-200 dark:bg-slate-800 rounded-lg" />
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-64 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (hasAssignments === false) {

@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { ProjectLegacy as Project, ProjectArtifact, ProjectTimelineEvent, User } from '../../types';
 import { ArtifactCarousel } from '../../components/projects/ArtifactCarousel';
 import { ProjectGanttChart } from '../../components/projects/ProjectGanttChart';
-import { GlassCard, Badge, ProgressIndicator, LoadingSpinner, GlowButton } from '../../components/ui';
+import { GlassCard, Badge, ProgressIndicator, GlowButton } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { cn } from '../../utils/cn';
 
 // Mock data
@@ -250,14 +251,7 @@ export function ProjectDetailPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-textSecondary">Loading project...</p>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!project) {
@@ -572,13 +566,13 @@ export function ProjectDetailPage() {
                         {user.role}
                       </Badge>
                     </div>
-                    {user.profile.department && (
+                    {user.profile?.department && (
                       <div className="flex justify-between">
                         <span className="text-textSecondary">Department:</span>
                         <span className="text-text">{user.profile.department}</span>
                       </div>
                     )}
-                    {user.profile.year && (
+                    {user.profile?.year && (
                       <div className="flex justify-between">
                         <span className="text-textSecondary">Year:</span>
                         <span className="text-text">{user.profile.year}</span>

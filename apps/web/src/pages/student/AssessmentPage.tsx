@@ -9,7 +9,7 @@ import { FinalGradeCard } from '../../components/assessment/FinalGradeCard';
 import { openPDFModal, downloadFile } from '../../utils/pdfUtils';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { AssessmentEmptyState } from '../../components/assessment/AssessmentEmptyState';
-import { AssessmentSkeleton } from '../../components/assessment/AssessmentSkeleton';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { useWindowStatus } from '../../hooks/useWindowStatus';
 import { getCurrentAssessmentType } from '../../utils/assessmentHelper';
 
@@ -298,11 +298,7 @@ export function AssessmentPage() {
 
   // Show loading while initializing
   if (initializing || windowsLoading) {
-    return (
-      <div className="min-h-screen p-6 max-w-6xl mx-auto py-12">
-        <AssessmentSkeleton />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   // Handle case where user is not eligible or project type couldn't be determined
@@ -336,11 +332,7 @@ export function AssessmentPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen p-6 max-w-6xl mx-auto py-12">
-        <AssessmentSkeleton />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   const evaluationSubmission = submissions.find(s => s.submissionType === 'evaluation');

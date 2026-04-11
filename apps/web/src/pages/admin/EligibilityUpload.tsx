@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, GraduationCap, UploadCloud, FileText, AlertCircle, Check, Loader2, Download, ArrowLeft, Layout, ClipboardCheck, FileUp, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { GlassCard } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import {
     Table,
     TableBody,
@@ -53,6 +54,7 @@ export function EligibilityUpload() {
     const [error, setError] = useState<string | null>(null);
     const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
     const [showPreview, setShowPreview] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [existingUsers, setExistingUsers] = useState<Map<string, string>>(new Map()); // email -> roleMap
 
 
@@ -72,11 +74,17 @@ export function EligibilityUpload() {
                 }
             } catch (err) {
                 console.warn('Silent: Duplicate check prep failed', err);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchExistingUsers();
     }, []);
+
+    if (loading) {
+        return <DashboardPageSkeleton />;
+    }
 
     // Helpers
     const handleNext = () => {

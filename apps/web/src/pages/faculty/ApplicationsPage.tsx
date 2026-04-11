@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, User, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp, Edit2, Search, Filter, SlidersHorizontal, ArrowUpDown, GraduationCap, Building2, Briefcase, Mail, Info, FileText } from 'lucide-react';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { api } from '../../utils/api';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
@@ -252,14 +253,7 @@ export function FacultyApplicationsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
-          <p className="text-slate-500 font-medium animate-pulse">Loading applications...</p>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   // Check if any application window is open

@@ -18,6 +18,7 @@ import {
   Calendar,
   Video
 } from 'lucide-react';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 export const AssessmentsPage: React.FC = () => {
   const [evaluations, setEvaluations] = useState<StudentEvaluationView[]>([]);
@@ -79,13 +80,7 @@ export const AssessmentsPage: React.FC = () => {
   const stats = getOverallStats();
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (error) {

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/Textarea';
-import { Skeleton } from '../../components/ui/skeleton';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { MeetingEmptyState } from '../faculty/components/MeetingEmptyState';
 import { MeetingDateTimePicker } from '../../components/ui/MeetingDateTimePicker';
 import { cn } from '../../utils/cn';
@@ -304,23 +304,7 @@ export function MeetingsPage() {
   };
 
   if (initializing || hasProject === null) {
-    return (
-      <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48 bg-slate-200 dark:bg-slate-800" />
-            <Skeleton className="h-4 w-64 bg-slate-200 dark:bg-slate-800" />
-          </div>
-          <Skeleton className="h-10 w-32 bg-slate-200 dark:bg-slate-800" />
-        </div>
-        <Skeleton className="h-12 w-full bg-slate-200 dark:bg-slate-800 rounded-lg" />
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-64 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-          ))}
-        </div>
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (hasProject === false) {

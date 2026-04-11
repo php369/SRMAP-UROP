@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SubmissionDetail } from '../../components/submissions/SubmissionDetail';
 import { Submission, SubmissionFile } from '../../components/submissions/SubmissionCard';
-import { LoadingSpinner } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 // Mock data - in real app this would come from API
 const mockSubmission: Submission = {
@@ -92,11 +92,7 @@ export function SubmissionDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!submission) {

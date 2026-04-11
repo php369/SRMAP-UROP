@@ -9,6 +9,7 @@ export interface User {
   studentId?: string;
   facultyId?: string;
   profile?: {
+    department?: string;
     year?: number;
     skills?: UserSkill[];
     interests?: string[];

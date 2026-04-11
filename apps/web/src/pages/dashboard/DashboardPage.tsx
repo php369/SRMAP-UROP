@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
-import { Loader } from '../../components/ui/Loader';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 import { useEffect, useState } from 'react';
 
 import { isStudentRole } from '../../utils/constants';
@@ -112,11 +112,7 @@ export function DashboardPage() {
   }, [user]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader size="lg" text="Loading Dashboard..." />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   return (

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { SubmissionForm } from '../../components/submissions/SubmissionForm';
 type SubmissionFormData = any;
 import { Assessment } from '../../components/assessments';
-import { LoadingSpinner } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 // Mock data - in real app this would come from API
 const mockAssessment: Assessment = {
@@ -98,11 +98,7 @@ export function SubmitAssignmentPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!assessment) {

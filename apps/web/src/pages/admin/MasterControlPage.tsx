@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { DashboardPageSkeleton } from '@/components/common/DashboardSkeletons';
 import UserManagementModule from '@/components/admin/master-control/UserManagementModule';
 import ProjectRegistryModule from '@/components/admin/master-control/ProjectRegistryModule';
 import SystemAuditLogsModule from '@/components/admin/master-control/SystemAuditLogsModule';
@@ -56,6 +57,7 @@ const MasterControlPage = () => {
     const [activeTab, setActiveTab] = useState('users');
     const [globalSearch, setGlobalSearch] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ users: 0, projects: 0, applications: 0, systemHealth: 98 });
     const [searchResults, setSearchResults] = useState<{ users: any[], projects: any[] }>({ users: [], projects: [] });
 
@@ -115,10 +117,16 @@ const MasterControlPage = () => {
                 });
             } catch (error) {
                 console.error("Stats fetch error", error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchStats();
     }, []);
+
+    if (loading) {
+        return <DashboardPageSkeleton />;
+    }
 
     const containerVariants = {
         hidden: { opacity: 0 },
