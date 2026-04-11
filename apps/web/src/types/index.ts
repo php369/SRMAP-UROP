@@ -17,10 +17,7 @@ export interface User {
     location?: string;
     phone?: string;
   };
-  preferences: {
-    theme: 'light' | 'dark';
-    notifications: boolean;
-  };
+
   createdAt: string;
   updatedAt: string;
 }
@@ -221,16 +218,7 @@ export interface LoginCredentials {
   state?: string;
 }
 
-export interface NotificationData {
-  id: string;
-  type: 'submission' | 'grade' | 'assessment' | 'system';
-  title: string;
-  message: string;
-  data?: any;
-  priority: 'low' | 'normal' | 'high';
-  timestamp: string;
-  read?: boolean;
-}
+
 
 // Grading and Submission types
 export interface SubmissionFile {

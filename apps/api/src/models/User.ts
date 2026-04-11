@@ -14,11 +14,7 @@ export interface IUser extends Document {
   currentGroupId?: mongoose.Types.ObjectId; // Direct link to user's current group
   assignedProjectId?: mongoose.Types.ObjectId; // Direct link to assigned project (for both group and solo students)
   assignedFacultyId?: mongoose.Types.ObjectId; // Direct link to assigned faculty mentor
-  preferences: {
-    theme: 'light' | 'dark';
-    notifications: boolean;
-    emailNotifications?: boolean;
-  };
+
   lastSeen: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -88,21 +84,7 @@ const UserSchema = new Schema<IUser>({
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
-  preferences: {
-    theme: {
-      type: String,
-      enum: ['light', 'dark'],
-      default: 'light'
-    },
-    notifications: {
-      type: Boolean,
-      default: true
-    },
-    emailNotifications: {
-      type: Boolean,
-      default: true
-    }
-  },
+
   lastSeen: {
     type: Date,
     default: Date.now

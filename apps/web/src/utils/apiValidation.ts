@@ -22,10 +22,6 @@ export const userSchema = z.object({
     semester: z.number().optional(),
     specialization: z.string().optional(),
   }).optional(),
-  preferences: z.object({
-    theme: z.enum(['light', 'dark']).optional(),
-    notifications: z.boolean().optional(),
-  }).optional(),
   lastSeen: z.string().or(z.date()).optional(),
   createdAt: z.string().or(z.date()).optional(),
   updatedAt: z.string().or(z.date()).optional(),
@@ -159,11 +155,12 @@ export function validateResponse<T>(
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const zodError = error as z.ZodError;
       console.error('API response validation failed:', {
-        errors: error.errors,
+        errors: zodError.errors,
         data,
       });
-      throw new Error(`Invalid API response format: ${error.errors.map(e => e.message).join(', ')}`);
+      throw new Error(`Invalid API response format: ${zodError.errors.map((e: any) => e.message).join(', ')}`);
     }
     throw error;
   }
@@ -211,7 +208,7 @@ export function validatePartialResponse<T>(
   data: unknown,
   schema: z.ZodSchema<T>
 ): Partial<T> {
-  const partialSchema = schema.partial();
+  const partialSchema = (schema as any).partial();
   return validateResponse(data, partialSchema);
 }
 

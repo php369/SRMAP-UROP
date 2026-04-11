@@ -57,11 +57,6 @@ export async function uploadStudentEmails(
           googleId: `pending-${trimmedEmail}`, // Temporary, will be updated on first login
           email: trimmedEmail,
           role: role,
-          preferences: {
-            theme: 'light',
-            notifications: true,
-            emailNotifications: true
-          }
         });
         logger.info(`Created new user ${trimmedEmail} with role ${role}`);
       }
@@ -121,11 +116,6 @@ export async function uploadFacultyEmails(
           role: 'faculty',
           isCoordinator: false,
           isExternalEvaluator: false,
-          preferences: {
-            theme: 'light',
-            notifications: true,
-            emailNotifications: true
-          }
         });
         logger.info(`Created new faculty user ${trimmedEmail}`);
       }

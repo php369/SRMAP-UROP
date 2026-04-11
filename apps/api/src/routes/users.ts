@@ -102,7 +102,6 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
                 facultyId: user.facultyId,
                 isCoordinator: user.isCoordinator,
                 isExternalEvaluator: user.isExternalEvaluator,
-                preferences: user.preferences,
                 lastSeen: user.lastSeen,
                 createdAt: user.createdAt,
             },
@@ -212,7 +211,6 @@ router.patch('/me', authenticate, asyncHandler(async (req: Request, res: Respons
                     facultyId: user.facultyId,
                     isCoordinator: user.isCoordinator,
                     isExternalEvaluator: user.isExternalEvaluator,
-                    preferences: user.preferences,
                 }
             },
         });

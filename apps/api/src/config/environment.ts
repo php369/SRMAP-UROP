@@ -14,7 +14,6 @@ const envSchema = z.object({
 
   // Database
   MONGODB_URI: z.string().min(1, 'MongoDB URI is required'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
 
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
@@ -89,7 +88,6 @@ export const {
   NODE_ENV,
   PORT,
   MONGODB_URI,
-  REDIS_URL,
   JWT_SECRET,
   JWT_REFRESH_SECRET,
   JWT_EXPIRES_IN,

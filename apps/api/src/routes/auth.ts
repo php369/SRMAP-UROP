@@ -232,10 +232,6 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
         isCoordinator: authResult.role === 'coordinator',
         department: authResult.user?.department,
-        preferences: {
-          theme: 'light',
-          notifications: true,
-        },
       });
 
       try {
@@ -294,7 +290,6 @@ router.post('/google', asyncHandler(async (req: Request, res: Response) => {
           department: user.department,
           isCoordinator: user.isCoordinator,
           isExternalEvaluator: user.isExternalEvaluator,
-          preferences: user.preferences,
         },
       },
     });
@@ -468,7 +463,6 @@ router.get('/me', asyncHandler(async (req: Request, res: Response) => {
           department: user.department,
           isCoordinator: user.isCoordinator,
           isExternalEvaluator: user.isExternalEvaluator,
-          preferences: user.preferences,
         },
         permissions: getUserPermissions(authResult.role),
       },
@@ -818,10 +812,6 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
         role: authResult.role === 'coordinator' ? 'faculty' : authResult.role, // Store coordinator as faculty in User model
         isCoordinator: authResult.role === 'coordinator',
         department: authResult.user?.department,
-        preferences: {
-          theme: 'light',
-          notifications: true,
-        },
         lastSeen: new Date(),
       });
 
@@ -867,7 +857,6 @@ router.post('/callback', asyncHandler(async (req: Request, res: Response) => {
           department: user.department,
           isCoordinator: user.isCoordinator,
           isExternalEvaluator: user.isExternalEvaluator,
-          preferences: user.preferences,
           permissions: getUserPermissions(authResult.role),
         },
         tokens: {
