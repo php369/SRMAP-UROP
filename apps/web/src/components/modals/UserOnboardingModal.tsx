@@ -4,6 +4,16 @@ import { useAuthStore } from '../../stores/authStore';
 import { userService } from '../../services/userService';
 import { DEPARTMENTS } from '../../utils/constants';
 import { toast } from 'sonner';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../ui/select";
+import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
+import { Label } from "../ui/label";
 
 interface UserOnboardingModalProps {
     isOpen: boolean;
@@ -77,75 +87,83 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+                    className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
                 >
                     <div className="p-8">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <div className="w-16 h-16 bg-[#154259]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                 <span className="text-2xl">👋</span>
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                            <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
                                 Welcome to Project Portal
                             </h2>
-                            <p className="text-slate-500">
+                            <p className="text-slate-500 font-medium text-sm leading-relaxed">
                                 Please complete your profile to continue. This information is required for your project assignments.
                             </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div>
-                                <label
+                            <div className="space-y-2">
+                                <Label
                                     htmlFor="fullName"
-                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                    className="text-sm font-bold text-slate-700 ml-1"
                                 >
                                     Full Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
+                                </Label>
+                                <Input
                                     id="fullName"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                    className="h-12 px-4 bg-slate-50/50 border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#154259]/20 focus:border-[#154259] transition-all"
                                     placeholder="e.g. John Doe"
                                     autoFocus
                                     disabled={isSubmitting}
                                 />
                             </div>
 
-                            <div>
-                                <label
+                            <div className="space-y-2">
+                                <Label
                                     htmlFor="department"
-                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                    className="text-sm font-bold text-slate-700 ml-1"
                                 >
                                     Department <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="department"
-                                    value={department}
-                                    onChange={(e) => setDepartment(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
+                                </Label>
+                                <Select 
+                                    value={department} 
+                                    onValueChange={setDepartment}
                                     disabled={isSubmitting}
                                 >
-                                    <option value="" disabled>Select your department</option>
-                                    {DEPARTMENTS.map((dept) => (
-                                        <option key={dept} value={dept}>
-                                            {dept}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger 
+                                        id="department"
+                                        className="h-12 px-4 bg-slate-50/50 border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#154259]/20 focus:border-[#154259] transition-all text-left"
+                                    >
+                                        <SelectValue placeholder="Select your department" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
+                                        {DEPARTMENTS.map((dept) => (
+                                            <SelectItem 
+                                                key={dept} 
+                                                value={dept}
+                                                className="py-3 rounded-xl focus:bg-slate-50 cursor-pointer"
+                                            >
+                                                {dept}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={isSubmitting || !name.trim() || !department}
-                                className="w-full py-3 px-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                className="w-full h-12 bg-[#154259] hover:bg-[#154259]/90 text-white font-bold rounded-2xl shadow-lg shadow-[#154259]/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
                             >
                                 {isSubmitting ? (
                                     <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     'Complete Profile'
                                 )}
-                            </button>
+                            </Button>
                         </form>
                     </div>
                 </motion.div>
