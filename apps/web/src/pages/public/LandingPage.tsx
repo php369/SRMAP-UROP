@@ -52,15 +52,6 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            {!isAuthenticated && !isLoading && (
-              <Button asChild variant="ghost" className="text-sm font-semibold text-slate-700 hover:text-srm-700 transition-colors dark:text-slate-300 dark:hover:text-srm-300 hover:bg-transparent">
-                <Link to={ROUTES.LOGIN}>
-                  Sign In
-                </Link>
-              </Button>
-            )}
-          </div>
         </nav>
 
         {/* 2. Hero Content (z-10) */}
