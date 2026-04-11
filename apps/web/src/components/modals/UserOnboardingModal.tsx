@@ -139,7 +139,7 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                                     >
                                         <SelectValue placeholder="Select your department" />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
+                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl z-[110]">
                                         {DEPARTMENTS.map((dept) => (
                                             <SelectItem 
                                                 key={dept} 
