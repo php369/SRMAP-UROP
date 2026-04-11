@@ -65,12 +65,18 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, isLoading } = useAuthStore();
 
   useEffect(() => {
     // Check authentication status in background (don't block public routes)
     checkAuth();
   }, [checkAuth]);
+
+  // Show a full-page loader while the initial auth check is in progress
+  // This prevents premature redirects in the Router/AuthGuard
+  if (isLoading) {
+    return <PageLoader />;
+  }
 
   return (
     <ErrorBoundary>

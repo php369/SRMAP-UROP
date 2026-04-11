@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthStore>()(
         token: null,
         refreshToken: null,
         isAuthenticated: false,
-        isLoading: false,
+        isLoading: true, // Set to true by default to prevent premature login redirects on refresh
 
         // Actions
         login: async (credentials: LoginCredentials) => {
@@ -296,6 +296,12 @@ export const useAuthStore = create<AuthStore>()(
           try {
             // First, try to restore from persistent session
             const persistentSession = persistentAuth.restoreSession();
+
+            if (!persistentSession) {
+              console.log('ℹ️ No persistent session found, resetting auth loading state');
+              set({ isLoading: false });
+              return;
+            }
 
             if (persistentSession) {
               console.log('🔄 Restoring session from persistent storage');
