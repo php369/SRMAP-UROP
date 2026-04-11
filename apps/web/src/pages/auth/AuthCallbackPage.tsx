@@ -206,7 +206,7 @@ export function AuthCallbackPage() {
 
                   <div className="pt-2">
                     <button
-                      onClick={() => navigate(ROUTES.HOME)}
+                      onClick={() => window.location.href = ROUTES.LANDING_PAGE}
                       className="group w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all duration-200 shadow-lg shadow-slate-200 active:scale-[0.98] cursor-pointer"
                     >
                       <span>Go back to Home</span>

@@ -14,6 +14,7 @@ export const ROUTES = {
   LOGIN: '/login',
   AUTH_CALLBACK: '/auth/callback',
   DASHBOARD: '/dashboard',
+  LANDING_PAGE: '/', // Use absolute path to ensure browser reset
   APPLICATION: '/dashboard/application',
   SUBMISSION: '/dashboard/submission',
   ASSESSMENT: '/dashboard/assessment',
