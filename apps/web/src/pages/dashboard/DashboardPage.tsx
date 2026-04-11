@@ -76,7 +76,7 @@ export function DashboardPage() {
                   name: user?.name || '',
                   email: user?.email || '',
                   role: user?.role || '',
-                  department: user?.profile?.department
+                  department: user?.department
                 },
                 group: groupRes.data as any
               });
