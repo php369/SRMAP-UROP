@@ -103,7 +103,7 @@ export function AuthCallbackPage() {
 
   return (
     <LoginLayout>
-      <div className="w-full max-w-md mx-auto min-h-[400px] flex items-center justify-center">
+      <div className="relative z-10 w-full max-w-md mx-auto min-h-[400px] flex items-center justify-center">
         <AnimatePresence mode="wait">
           {authState === 'authenticating' && (
             <motion.div

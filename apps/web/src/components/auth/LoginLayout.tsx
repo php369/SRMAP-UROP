@@ -19,8 +19,8 @@ export function LoginLayout({ children }: LoginLayoutProps) {
 
   return (
     <div className="login-container theme-transition">
-      {/* Background decoration using earth-toned palette */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Background decoration using earth-toned palette - disabled pointer events to prevent blocking clicks */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
           className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-20"
           style={{ backgroundColor: 'var(--tussock)' }}
