@@ -87,7 +87,7 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden"
+                    className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200"
                 >
                     <div className="p-8">
                         <div className="text-center mb-8">
@@ -139,7 +139,7 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                                     >
                                         <SelectValue placeholder="Select your department" />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl z-[110]">
+                                    <SelectContent className="rounded-2xl border-slate-200 shadow-2xl z-[9999] bg-white opacity-100">
                                         {DEPARTMENTS.map((dept) => (
                                             <SelectItem 
                                                 key={dept} 
