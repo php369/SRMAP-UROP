@@ -12,7 +12,7 @@ export const resetToLightTheme = () => {
   document.documentElement.style.setProperty('--surface', '#FFFFFF');
   document.documentElement.style.setProperty('--textPrimary', '#0F172A');
   document.documentElement.style.setProperty('--textSecondary', '#64748B');
-  document.documentElement.style.setProperty('--border', '#E2E8F0');
+  document.documentElement.style.setProperty('--color-border', '#E2E8F0');
   document.documentElement.style.setProperty('--accent', '#6366F1');
   
   // Set body background to white

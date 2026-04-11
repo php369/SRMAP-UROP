@@ -142,23 +142,8 @@
 }
 
 .dashboard-interactive:focus {
-  outline: none;
-}
-
-.dashboard-interactive:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
-}
-
-/* Global focus reset to prioritize focus-visible (accessibility) over simple focus (clicks) */
-*:focus:not(:focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-*:focus-visible {
-  outline: 2px solid var(--color-accent) !important;
-  outline-offset: 2px !important;
 }
 
 /* Dashboard text utilities */
