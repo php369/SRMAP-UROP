@@ -8,7 +8,7 @@ import {
 import { asyncHandler } from '../middleware/errorHandler';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const metricsRangeSchema = z.object({

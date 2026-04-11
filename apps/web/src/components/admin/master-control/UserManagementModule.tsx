@@ -96,7 +96,17 @@ const UserManagementModule = ({ searchQuery }: UserManagementModuleProps) => {
             await apiClient.patch(`/admin/users/${currentUser._id}/role`, { role: newRole });
 
             // update local state
-            setUsers(prev => prev.map(u => u._id === currentUser._id ? { ...u, role: newRole } : u));
+            setUsers(prev => prev.map(u => {
+                if (u._id === currentUser._id) {
+                    const isCoordinator = newRole === 'coordinator';
+                    return {
+                        ...u,
+                        role: isCoordinator ? 'faculty' : newRole,
+                        isCoordinator: isCoordinator
+                    };
+                }
+                return u;
+            }));
             setIsEditModalOpen(false);
         } catch (error) {
             console.error("Failed to update role:", error);

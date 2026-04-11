@@ -6,7 +6,7 @@ import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const createProjectSchema = z.object({

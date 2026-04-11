@@ -14,7 +14,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const userSearchSchema = z.object({
@@ -27,7 +27,7 @@ const userSearchSchema = z.object({
 });
 
 const updateRoleSchema = z.object({
-  role: z.enum(['idp-student', 'urop-student', 'capstone-student', 'faculty', 'admin']),
+  role: z.enum(['idp-student', 'urop-student', 'capstone-student', 'faculty', 'coordinator', 'admin']),
 });
 
 // Cohort schemas removed - functionality disabled

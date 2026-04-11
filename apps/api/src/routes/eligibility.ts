@@ -9,7 +9,7 @@ import {
 import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const studentUploadSchema = z.object({

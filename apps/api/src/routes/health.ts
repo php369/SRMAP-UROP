@@ -4,7 +4,7 @@ import { config } from '../config/environment';
 import { logger } from '../utils/logger';
 import { asyncHandler } from '../middleware/errorHandler';
 
-const router = Router();
+const router: Router = Router();
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';

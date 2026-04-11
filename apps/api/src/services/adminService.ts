@@ -2,7 +2,7 @@ import { User, IUser } from '../models/User';
 import { logger } from '../utils/logger';
 
 export interface UserSearchFilters {
-  role?: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin';
+  role?: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin' | 'coordinator';
   department?: string;
   year?: number;
   search?: string; // Search by name or email
@@ -54,7 +54,7 @@ export async function getUsers(filters: UserSearchFilters = {}): Promise<IUser[]
  */
 export async function updateUserRole(
   userId: string,
-  newRole: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin',
+  newRole: 'idp-student' | 'urop-student' | 'capstone-student' | 'faculty' | 'admin' | 'coordinator',
   adminId: string
 ): Promise<IUser> {
   try {
@@ -64,10 +64,26 @@ export async function updateUserRole(
     }
 
     const oldRole = user.role;
-    user.role = newRole;
+    const oldIsCoordinator = user.isCoordinator;
+
+    // Determine final role and flags
+    const isCoordinator = newRole === 'coordinator';
+    const finalRole: any = isCoordinator ? 'faculty' : newRole;
+
+    // Apply changes
+    user.role = finalRole;
+    user.isCoordinator = isCoordinator;
+
+    // Reset faculty-specific flags if moving to a student role
+    if (['idp-student', 'urop-student', 'capstone-student'].includes(finalRole)) {
+      user.isExternalEvaluator = false;
+      // We keep facultyId if it exists as it might be useful for historical tracking, 
+      // but role-based access will now block faculty features.
+    }
+
     await user.save();
 
-    logger.info(`User role updated: ${userId} from ${oldRole} to ${newRole} by admin ${adminId}`);
+    logger.info(`User role updated: ${userId} from ${oldRole}${oldIsCoordinator ? ' (Coordinator)' : ''} to ${newRole} by admin ${adminId}`);
 
     return user;
 

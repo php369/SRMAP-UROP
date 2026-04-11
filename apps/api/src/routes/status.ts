@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { config } from '../config/environment';
 import { logger } from '../utils/logger';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger

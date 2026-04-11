@@ -14,7 +14,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const createAssessmentSchema = z.object({
