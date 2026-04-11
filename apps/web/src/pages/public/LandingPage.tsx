@@ -60,14 +60,6 @@ export function LandingPage() {
                 </Link>
               </Button>
             )}
-            <Button
-              asChild
-              className="hidden sm:inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg bg-slate-900 text-white hover:bg-slate-800 hover:shadow-lg dark:bg-srm-400 dark:text-slate-900 dark:hover:bg-srm-500 h-auto"
-            >
-              <Link to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.LOGIN}>
-                {isLoading ? '...' : isAuthenticated ? 'Dashboard' : 'Portal Access'}
-              </Link>
-            </Button>
           </div>
         </nav>
 
@@ -103,7 +95,7 @@ export function LandingPage() {
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-70 group-hover:opacity-100" />
 
                 <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-bold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-slate-900">
-                  <span className="mr-2">{isAuthenticated ? 'Dashboard' : 'Enter'}</span>
+                  <span className="mr-2">{isAuthenticated ? 'Go to Dashboard' : 'Sign In'}</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </Link>
