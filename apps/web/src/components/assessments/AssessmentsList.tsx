@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AssessmentCard, Assessment } from './AssessmentCard';
 import { AssessmentFilters, FilterOptions } from './AssessmentFilters';
-import { LoadingSpinner } from '../ui';
+import { Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface AssessmentsListProps {
@@ -122,7 +122,7 @@ export function AssessmentsList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
       </div>
     );
   }

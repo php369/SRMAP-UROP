@@ -1,5 +1,5 @@
 // Base UI Components
-export { LoadingSpinner } from './LoadingSpinner';
+// export { LoadingSpinner } from './LoadingSpinner'; // Removed as per standardization
 export { GlassCard } from './GlassCard';
 export { GlowButton } from './GlowButton';
 export { GradientBorderBox } from './GradientBorderBox';

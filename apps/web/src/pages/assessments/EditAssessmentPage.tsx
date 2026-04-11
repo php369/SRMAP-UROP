@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AssessmentForm, AssessmentFormData } from '../../components/assessments/AssessmentForm';
-import { LoadingSpinner } from '../../components/ui';
+import { DashboardPageSkeleton } from '../../components/common/DashboardSkeletons';
 
 const mockAssessmentData: Partial<AssessmentFormData> = {
   title: 'Machine Learning Fundamentals Quiz',
@@ -75,11 +75,7 @@ export function EditAssessmentPage() {
   };
 
   if (initialLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   if (!assessmentData) {

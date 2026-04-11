@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Submission, SubmissionFile } from '../../types';
-import { LoadingSpinner } from '../ui';
+import { Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface SubmissionsListProps {
@@ -146,7 +146,7 @@ export function SubmissionsList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
       </div>
     );
   }

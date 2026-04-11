@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { SRMPageLoader } from '../common/SRMPageLoader';
 import { GlassCard } from '../ui/GlassCard';
 import { ROUTES } from '../../utils/constants';
 
@@ -25,11 +25,7 @@ export function AuthGuard({
 
   // Show loading spinner while checking authentication
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <SRMPageLoader />;
   }
 
   // Redirect to login if not authenticated

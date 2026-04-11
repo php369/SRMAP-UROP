@@ -82,9 +82,7 @@ export function EligibilityUpload() {
         fetchExistingUsers();
     }, []);
 
-    if (loading) {
-        return <DashboardPageSkeleton />;
-    }
+
 
     // Helpers
     const handleNext = () => {
@@ -229,6 +227,10 @@ export function EligibilityUpload() {
         setDragActive(false);
         if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
     }, []);
+
+    if (loading) {
+        return <DashboardPageSkeleton />;
+    }
 
     const handleUpload = async () => {
         if (!csvData) { setError('Please select a CSV file'); return; }
