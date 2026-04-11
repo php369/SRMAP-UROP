@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { userService } from '../../services/userService';
+import { DEPARTMENTS } from '../../utils/constants';
 import { toast } from 'sonner';
 
 interface UserOnboardingModalProps {
@@ -11,9 +12,10 @@ interface UserOnboardingModalProps {
 export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
     const { updateUser } = useAuthStore();
     const [name, setName] = useState('');
+    const [department, setDepartment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // If not open or user already has a name, don't render
+    // If not open or user already has a name/department, the calling logic (App.tsx) handles visibility
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -24,12 +26,20 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
             return;
         }
 
+        if (!department) {
+            toast.error('Please select your department');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             // 1. Update on server
             const formattedName = name.trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-            const updatedUser = await userService.updateProfile({ name: formattedName });
+            const updatedUser = await userService.updateProfile({ 
+                name: formattedName,
+                department: department 
+            });
 
             // 2. Update local store
             if (updatedUser) {
@@ -37,7 +47,10 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                 toast.success(`Welcome, ${updatedUser.name}!`);
             } else {
                 // Fallback if server doesn't return user, update local with what we sent
-                updateUser({ name: name.trim() });
+                updateUser({ 
+                    name: formattedName, 
+                    department: department 
+                });
                 toast.success('Profile updated successfully');
             }
         } catch (error) {
@@ -75,7 +88,7 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                                 Welcome to Project Portal
                             </h2>
                             <p className="text-slate-500">
-                                Please enter your full name to continue. This helps your team identify you.
+                                Please complete your profile to continue. This information is required for your project assignments.
                             </p>
                         </div>
 
@@ -99,9 +112,32 @@ export function UserOnboardingModal({ isOpen }: UserOnboardingModalProps) {
                                 />
                             </div>
 
+                            <div>
+                                <label
+                                    htmlFor="department"
+                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                >
+                                    Department <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    id="department"
+                                    value={department}
+                                    onChange={(e) => setDepartment(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
+                                    disabled={isSubmitting}
+                                >
+                                    <option value="" disabled>Select your department</option>
+                                    {DEPARTMENTS.map((dept) => (
+                                        <option key={dept} value={dept}>
+                                            {dept}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={isSubmitting || !name.trim()}
+                                disabled={isSubmitting || !name.trim() || !department}
                                 className="w-full py-3 px-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 {isSubmitting ? (

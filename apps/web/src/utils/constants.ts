@@ -114,6 +114,15 @@ export const ROLE_NAVIGATION = {
 
 } as const;
 
+export const DEPARTMENTS = [
+  'Computer Science & Engineering',
+  'Electronics & Communication Engineering',
+  'Electrical & Electronics Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+] as const;
+
+
 // Helper function to check if user is a student
 export const isStudentRole = (role: string | undefined): boolean => {
   if (!role) return false;

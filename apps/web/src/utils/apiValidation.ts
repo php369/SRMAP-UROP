@@ -16,8 +16,10 @@ export const userSchema = z.object({
   role: z.enum(['student', 'faculty', 'coordinator', 'admin']),
   avatar: z.string().optional().nullable(),
   googleId: z.string().optional(),
+  department: z.string().optional(),
+  studentId: z.string().optional(),
+  facultyId: z.string().optional(),
   profile: z.object({
-    department: z.string().optional(),
     year: z.number().optional(),
     semester: z.number().optional(),
     specialization: z.string().optional(),

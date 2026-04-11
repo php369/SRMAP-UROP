@@ -168,6 +168,21 @@ router.patch('/me', authenticate, asyncHandler(async (req: Request, res: Respons
         updates.name = name.trim();
     }
 
+    // Validate and add department to updates if provided
+    if (req.body.department !== undefined) {
+        const { department } = req.body;
+        if (!department || typeof department !== 'string' || department.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'VALIDATION_ERROR',
+                    message: 'Department is required',
+                },
+            });
+        }
+        updates.department = department.trim();
+    }
+
     if (Object.keys(updates).length === 0) {
         return res.status(400).json({
             success: false,

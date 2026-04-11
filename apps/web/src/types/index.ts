@@ -5,8 +5,10 @@ export interface User {
   email: string;
   role: 'student' | 'faculty' | 'coordinator' | 'admin';
   avatarUrl?: string;
-  profile: {
-    department?: string;
+  department?: string;
+  studentId?: string;
+  facultyId?: string;
+  profile?: {
     year?: number;
     skills?: UserSkill[];
     interests?: string[];
