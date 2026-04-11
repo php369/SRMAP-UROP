@@ -53,7 +53,7 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            {!isAuthenticated && (
+            {!isAuthenticated && !isLoading && (
               <Button asChild variant="ghost" className="text-sm font-semibold text-slate-700 hover:text-srm-700 transition-colors dark:text-slate-300 dark:hover:text-srm-300 hover:bg-transparent">
                 <Link to={ROUTES.LOGIN}>
                   Sign In
@@ -94,9 +94,17 @@ export function LandingPage() {
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#f5bb3e_50%,transparent_100%)] opacity-70 group-hover:opacity-100" />
 
-                <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-bold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-slate-900">
-                  <span className="mr-2">{isAuthenticated ? 'Go to Dashboard' : 'Sign In'}</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                 <span className="relative inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-50/90 dark:bg-slate-900/90 px-8 py-4 text-sm font-bold text-slate-900 dark:text-white backdrop-blur-3xl transition-all duration-500 group-hover:bg-[#f5bb3e] dark:group-hover:bg-[#f5bb3e] group-hover:text-slate-900">
+                  <span className="mr-2">
+                    {isLoading ? (
+                      <span className="w-5 h-5 border-2 border-slate-900/20 border-t-slate-900 rounded-full animate-spin" />
+                    ) : isAuthenticated ? (
+                      'Go to Dashboard'
+                    ) : (
+                      'Sign In'
+                    )}
+                  </span>
+                  {!isLoading && <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />}
                 </span>
               </Link>
             </div>

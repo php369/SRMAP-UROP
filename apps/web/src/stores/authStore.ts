@@ -250,9 +250,6 @@ export const useAuthStore = create<AuthStore>()(
           /* ----------------------------------------------------- */
           /*  MOCK AUTH START - DELETE THIS BLOCK BEFORE PRODUCTION */
           /* ----------------------------------------------------- */
-          /* ----------------------------------------------------- */
-          /*  MOCK AUTH START                                    */
-          /* ----------------------------------------------------- */
           if (import.meta.env.DEV) {
             try {
               const urlParams = new URLSearchParams(window.location.search);
@@ -292,9 +289,6 @@ export const useAuthStore = create<AuthStore>()(
               console.error('Mock auth failed', e);
             }
           }
-          /* ----------------------------------------------------- */
-          /*  MOCK AUTH END                                       */
-          /* ----------------------------------------------------- */
           /* ----------------------------------------------------- */
           /*  MOCK AUTH END                                       */
           /* ----------------------------------------------------- */
@@ -384,63 +378,72 @@ export const useAuthStore = create<AuthStore>()(
               sessionManager.setTokens(persistentSession.token, persistentSession.refreshToken);
               sessionManager.setUserData(persistentSession.user);
 
-              set({
-                user: persistentSession.user,
-                token: persistentSession.token,
-                refreshToken: persistentSession.refreshToken,
-                isAuthenticated: true,
-                isLoading: false,
-              });
+              // ⚠️ CRITICAL BUG FIX (PROACTIVE VALIDATION) ⚠️
+              // Instead of doing verification in background, we now WAIT for it.
+              // This prevents "Go to Dashboard" button from showing with stale user data.
+              
+              try {
+                const response = await apiClient.get('/auth/me');
+                if (response.success && response.data) {
+                  const userData = response.data as any;
+                  const user = userData.user || userData; // Handle both response formats
+                  
+                  console.log('✅ Session verified with server:', user);
+                  
+                  // Sync with sessionManager to keep both systems in sync
+                  sessionManager.setTokens(persistentSession.token, persistentSession.refreshToken);
+                  sessionManager.setUserData(user);
+                  
+                  // Save updated session
+                  persistentAuth.saveSession(
+                    persistentSession.token,
+                    persistentSession.refreshToken,
+                    user,
+                    persistentSession.rememberMe
+                  );
 
-              // Start session monitoring
-              sessionManager.startSessionMonitoring();
+                  set({
+                    user,
+                    token: persistentSession.token,
+                    refreshToken: persistentSession.refreshToken,
+                    isAuthenticated: true,
+                    isLoading: false,
+                  });
+                  
+                  // Start session monitoring
+                  sessionManager.startSessionMonitoring();
+                } else {
+                  console.error('❌ Server verification failed - logging out');
+                  get().logout();
+                }
+              } catch (error) {
+                console.warn('⚠️ Background session verification failed:', error);
+                const err = error as any;
+                const errorMessage = (err?.message || err?.toString() || '').toLowerCase();
+                const isAuthError = 
+                  errorMessage.includes('401') || 
+                  errorMessage.includes('404') || 
+                  errorMessage.includes('unauthorized') || 
+                  errorMessage.includes('not found') ||
+                  errorMessage.includes('access revoked') ||
+                  errorMessage.includes('user not found');
 
-              // Verify with server in background (don't block UI) - only if we already have valid data
-              if (hasValidUserData) {
-                apiClient.get('/auth/me').then(response => {
-                  if (response.success && response.data) {
-                    const userData = response.data as any;
-                    const user = userData.user || userData; // Handle both response formats
-                    console.log('🔄 Background verification - received user data:', user);
-                    set({ user });
-                    persistentAuth.updateActivity();
-                    // Update stored session with fresh user data in BOTH systems
-                    persistentAuth.saveSession(
-                      persistentSession.token,
-                      persistentSession.refreshToken,
-                      user,
-                      persistentSession.rememberMe
-                    );
-                    sessionManager.setUserData(user);
-                    console.log('✅ User data updated from background verification');
-                  }
-                }).catch(async (error: any) => {
-                  // Only logout on explicit auth errors, not network/server errors
-                  console.warn('⚠️ Background session verification failed:', error);
-
-                  // Check for specific error status codes or messages indicating invalid auth/user
-                  // 401: Unauthorized (token invalid)
-                  // 404: Not Found (user deleted)
-                  const errorMessage = error?.message?.toLowerCase() || '';
-                  const isAuthError =
-                    errorMessage.includes('401') ||
-                    errorMessage.includes('404') ||
-                    errorMessage.includes('unauthorized') ||
-                    errorMessage.includes('not found') ||
-                    errorMessage.includes('access revoked') ||
-                    errorMessage.includes('user not found');
-
-                  if (isAuthError) {
-                    console.error('❌ Critical auth error during background check - logging out');
-                    get().logout();
-                  } else {
-                    // Don't automatically logout - let the session monitoring handle it
-                    // This prevents unnecessary logouts during temporary network issues or DB operations
-                    console.log('⚠️ Ignoring non-critical error during background check');
-                  }
-                });
+                if (isAuthError) {
+                  console.error('❌ Critical auth error - session is stale. Logging out.');
+                  get().logout();
+                } else {
+                  // For network errors, we can allow the user to see the dashboard 
+                  // but we should still set loading to false.
+                  console.log('⚠️ Network error during verification, proceeding with cached data');
+                  set({
+                    user: persistentSession.user,
+                    token: persistentSession.token,
+                    refreshToken: persistentSession.refreshToken,
+                    isAuthenticated: true,
+                    isLoading: false,
+                  });
+                }
               }
-
               return;
             }
 
@@ -533,7 +536,8 @@ export const useAuthStore = create<AuthStore>()(
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
+        // isAuthenticated is intentionally NOT persisted to prevent stale session bugs.
+        // It is re-validated by checkAuth() on every page load.
       }),
     }
   )
