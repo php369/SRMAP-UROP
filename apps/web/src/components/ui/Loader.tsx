@@ -21,21 +21,21 @@ export function Loader({ size = 'md', className, text, fullscreen = false }: Loa
             <div className={cn("relative flex items-center justify-center", sizeClasses[size])}>
                 {/* Outer Ring */}
                 <motion.span
-                    className="absolute inset-0 rounded-full border-t-2 border-r-2 border-srm-400"
+                    className="absolute inset-0 rounded-full border-t-2 border-r-2 border-slate-300 dark:border-slate-700"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                 />
 
                 {/* Middle Ring (Reverse) */}
                 <motion.span
-                    className="absolute inset-1 rounded-full border-b-2 border-l-2 border-srm-600/60"
+                    className="absolute inset-1 rounded-full border-b-2 border-l-2 border-slate-200/60 dark:border-slate-800/60"
                     animate={{ rotate: -360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
 
                 {/* Inner Pulse */}
                 <motion.div
-                    className="w-1/3 h-1/3 bg-srm-500 rounded-full"
+                    className="w-1/3 h-1/3 bg-slate-400 dark:bg-slate-600 rounded-full"
                     animate={{
                         scale: [0.8, 1.2, 0.8],
                         opacity: [0.5, 1, 0.5]

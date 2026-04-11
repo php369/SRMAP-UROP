@@ -1,14 +1,11 @@
+import { DashboardPageSkeleton } from './DashboardSkeletons';
 import { Loader } from '../ui/Loader';
 
 /**
  * Loading component for lazy-loaded pages
  */
 export function PageLoader() {
-  return (
-    <div className="w-full h-full min-h-[60vh] flex items-center justify-center">
-      <Loader size="lg" text="Loading..." />
-    </div>
-  );
+  return <DashboardPageSkeleton />;
 }
 
 /**
