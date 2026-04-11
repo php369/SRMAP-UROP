@@ -15,6 +15,7 @@ interface AuthStore {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isCheckingAuth: boolean; // Virtual state for initial app-start verification
 
   // Actions
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -52,7 +53,8 @@ export const useAuthStore = create<AuthStore>()(
         token: null,
         refreshToken: null,
         isAuthenticated: false,
-        isLoading: true, // Set to true by default to prevent premature login redirects on refresh
+        isLoading: false, // Reset to false by default
+        isCheckingAuth: true, // Only true on initial app mount
 
         // Actions
         login: async (credentials: LoginCredentials) => {
@@ -299,7 +301,7 @@ export const useAuthStore = create<AuthStore>()(
 
             if (!persistentSession) {
               console.log('ℹ️ No persistent session found, resetting auth loading state');
-              set({ isLoading: false });
+              set({ isCheckingAuth: false, isLoading: false });
               return;
             }
 
@@ -369,13 +371,13 @@ export const useAuthStore = create<AuthStore>()(
                   } else {
                     console.error('❌ Failed to fetch user data');
                     persistentAuth.clearSession();
-                    set({ isLoading: false });
+                    set({ isLoading: false, isCheckingAuth: false });
                     return;
                   }
                 } catch (error) {
                   console.error('❌ Error fetching user data:', error);
                   persistentAuth.clearSession();
-                  set({ isLoading: false });
+                  set({ isLoading: false, isCheckingAuth: false });
                   return;
                 }
               }
@@ -414,6 +416,7 @@ export const useAuthStore = create<AuthStore>()(
                     refreshToken: persistentSession.refreshToken,
                     isAuthenticated: true,
                     isLoading: false,
+                    isCheckingAuth: false,
                   });
                   
                   // Start session monitoring
@@ -447,15 +450,15 @@ export const useAuthStore = create<AuthStore>()(
                     refreshToken: persistentSession.refreshToken,
                     isAuthenticated: true,
                     isLoading: false,
+                    isCheckingAuth: false,
                   });
                 }
               }
               return;
             }
 
-            // Fallback to session manager check
             if (!sessionManager.isValidSession()) {
-              set({ isLoading: false });
+              set({ isLoading: false, isCheckingAuth: false });
               return;
             }
 
@@ -480,6 +483,7 @@ export const useAuthStore = create<AuthStore>()(
                 refreshToken,
                 isAuthenticated: true,
                 isLoading: false,
+                isCheckingAuth: false,
               });
 
               // Save to persistent storage with remember me enabled by default
@@ -515,7 +519,7 @@ export const useAuthStore = create<AuthStore>()(
               console.warn('⚠️ Non-auth error during check, keeping session active');
             }
           } finally {
-            set({ isLoading: false });
+            set({ isLoading: false, isCheckingAuth: false });
           }
         },
 

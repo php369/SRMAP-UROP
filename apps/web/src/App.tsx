@@ -12,6 +12,7 @@ import { useAuthStore } from './stores/authStore';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageLoader } from './components/common/PageLoader';
+import { SRMPageLoader } from './components/common/SRMPageLoader';
 import { ScrollProvider } from './components/ui/ScrollProvider';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -65,17 +66,17 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth, isCheckingAuth } = useAuthStore();
 
   useEffect(() => {
     // Check authentication status in background (don't block public routes)
     checkAuth();
   }, [checkAuth]);
 
-  // Show a full-page loader while the initial auth check is in progress
+  // Show a branded full-page loader while the initial auth check is in progress
   // This prevents premature redirects in the Router/AuthGuard
-  if (isLoading) {
-    return <PageLoader />;
+  if (isCheckingAuth) {
+    return <SRMPageLoader />;
   }
 
   return (
