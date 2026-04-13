@@ -22,15 +22,15 @@ const PHASE_COLORS = {
     NEUTRAL: '#334155'
 };
 
-const WIZARD_STEPS = [
+const WIZARD_STEPS = Object.freeze([
     { id: 'project-type', label: 'Project Type', icon: Layers, description: 'Select the academic project type', color: '#334155' },
     { id: 'window-type', label: 'Window Category', icon: FolderOpen, description: 'Select the type of window', color: '#334155' },
     { id: 'dates', label: 'Duration', icon: Calendar, description: 'Set window start and end dates', color: '#334155' },
     { id: 'preview', label: 'Preview', icon: CheckCircle2, description: 'Review and confirm', color: '#334155' },
-];
+]);
 
 // Define the strict chronological order of phases for validation
-const CHRONOLOGICAL_PHASES = [
+const CHRONOLOGICAL_PHASES = Object.freeze([
     { key: 'proposal', windowType: 'proposal' as WindowType },
     { key: 'application', windowType: 'application' as WindowType },
     { key: 'cla1_sub', windowType: 'submission' as WindowType, assessmentType: 'CLA-1' as AssessmentType },
@@ -42,7 +42,7 @@ const CHRONOLOGICAL_PHASES = [
     { key: 'external_sub', windowType: 'submission' as WindowType, assessmentType: 'External' as AssessmentType },
     { key: 'external_assess', windowType: 'assessment' as WindowType, assessmentType: 'External' as AssessmentType },
     { key: 'grade_release', windowType: 'grade_release' as WindowType },
-];
+]);
 
 export function IndividualWindowWizardPage() {
     const navigate = useNavigate();
@@ -399,7 +399,7 @@ export function IndividualWindowWizardPage() {
 
                             return (
                                 <button
-                                    key={type}
+                                    key={`project-type-${type}`}
                                     onClick={() => {
                                         if (isFullyScheduled) {
                                             toast.error("All windows for this project type are already scheduled.");
@@ -454,7 +454,7 @@ export function IndividualWindowWizardPage() {
                                     const exists = checkWindowExists(phase.windowType, phase.assessmentType);
                                     if (!exists) return null;
                                     return (
-                                        <span key={phase.key} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                        <span key={`summary-${phase.key}`} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                                             <Check className="w-3 h-3 mr-1" />
                                             {phase.windowType === 'submission' || phase.windowType === 'assessment'
                                                 ? `${phase.assessmentType} ${phase.windowType}`
@@ -472,12 +472,12 @@ export function IndividualWindowWizardPage() {
 
         // 2. Window Type (Category)
         if (step.id === 'window-type') {
+            // CRITICAL: Ensure types is a strictly local array and properly defined
             const types: { id: WindowType, label: string, icon: any }[] = [
                 { id: 'proposal', label: 'Proposal', icon: FileText },
                 { id: 'application', label: 'Application', icon: Layers },
                 { id: 'submission', label: 'Submission', icon: ClipboardList },
                 { id: 'assessment', label: 'Assessment', icon: ClipboardList },
-                { id: 'grade_release', label: 'Grade Release', icon: CheckCircle2 },
                 { id: 'grade_release', label: 'Grade Release', icon: CheckCircle2 },
             ];
 
@@ -511,7 +511,7 @@ export function IndividualWindowWizardPage() {
 
                             return (
                                 <button
-                                    key={t.id}
+                                    key={`window-type-${t.id}`}
                                     onClick={() => { if (!disabled) { setSelectedWindowType(t.id); setErrors({}); } }}
                                     disabled={disabled}
                                     className={`
@@ -545,7 +545,7 @@ export function IndividualWindowWizardPage() {
 
                                     return (
                                         <button
-                                            key={cycle}
+                                            key={`cycle-${cycle}`}
                                             disabled={!isNext}
                                             onClick={() => { setSelectedAssessmentType(cycle); setErrors({}); }}
                                             className={`px-4 py-2 rounded-lg border font-medium transition-all ${!isNext ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' :
