@@ -16,10 +16,14 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, 'MongoDB URI is required'),
 
   // JWT
+  // IMPORTANT: Keep these in sync with frontend/src/utils/persistent-auth.ts
+  // ACCESS TOKEN: Short-lived, refreshed silently in the background every ~10 min.
+  // REFRESH TOKEN: Long-lived. This defines the true "stay logged in" duration.
+  //   Frontend SESSION_DURATION and ACTIVITY_TIMEOUT must be <= JWT_REFRESH_EXPIRES_IN.
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT refresh secret must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('15m'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  JWT_EXPIRES_IN: z.string().default('15m'),          // Access token: 15 minutes
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),  // Refresh token: 30 days (frontend SESSION_DURATION=30d)
 
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string().min(1, 'Google Client ID is required'),

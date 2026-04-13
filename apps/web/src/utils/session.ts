@@ -132,12 +132,25 @@ export class SessionManager {
       return false;
     }
 
-    // Check if token is expired
-    if (this.isTokenExpired(token)) {
-      return false;
-    }
-
+    // A session is still valid if we have a refresh token, even if the access token is expired.
+    // The token can be refreshed silently — don't treat this as an invalid session.
     return true;
+  }
+
+  // Check if ONLY the access token is expired (still have refresh token)
+  isAccessTokenExpiredOnly(): boolean {
+    const token = this.getToken();
+    const refreshToken = this.getRefreshToken();
+    const userData = this.getUserData();
+
+    if (!token || !refreshToken || !userData) return false; // fully invalid
+    return this.isTokenExpired(token); // expired access token, but we have refresh token
+  }
+
+  // Get login hint (the user's email) for Google's account picker
+  getLoginHint(): string | null {
+    const userData = this.getUserData();
+    return userData?.email || null;
   }
 
   // Security utilities
@@ -180,10 +193,23 @@ export class SessionManager {
 
   private handleVisibilityChange = (): void => {
     if (!document.hidden) {
-      // Page became visible, check session validity
-      if (!this.isValidSession()) {
+      // Page became visible — check if the session is still valid.
+      // IMPORTANT: If the access token is merely expired (but we still have a refresh token),
+      // do NOT dispatch 'session-expired'. Instead, request a silent token refresh.
+      // Only dispatch 'session-expired' if the session is fully gone (no tokens at all).
+      const token = this.getToken();
+      const refreshToken = this.getRefreshToken();
+      const userData = this.getUserData();
+
+      if (!token || !refreshToken || !userData) {
+        // Fully missing session — user truly logged out
         window.dispatchEvent(new CustomEvent('session-expired'));
+      } else if (this.isTokenExpired(token)) {
+        // Access token expired but refresh token exists — silently refresh
+        console.log('🔄 Access token expired on tab focus, requesting silent refresh...');
+        window.dispatchEvent(new CustomEvent('token-refresh-needed'));
       }
+      // else: session is fully valid, do nothing
     }
   };
 }

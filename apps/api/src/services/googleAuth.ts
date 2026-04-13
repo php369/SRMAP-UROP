@@ -126,7 +126,13 @@ export function generateAuthUrl(state?: string): string {
     scope: scopes,
     include_granted_scopes: true,
     state: state,
-    prompt: 'consent', // Force consent to get refresh token
+    // NOTE: Do NOT use 'consent' here. Using 'consent' forces Google to show the full
+    // consent screen every time, which triggers password/2FA re-authentication even
+    // when the user is already signed into Google.
+    // 'select_account' allows the user to pick an account without re-authenticating.
+    // Google will only send a refresh_token on the very first authorization for an app,
+    // or if access was revoked. This is the expected behavior.
+    prompt: 'select_account',
   });
 
   return authUrl;

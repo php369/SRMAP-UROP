@@ -17,8 +17,19 @@ interface AuthSession {
 class PersistentAuth {
   private static instance: PersistentAuth;
   private sessionCheckInterval: number | null = null;
-  private readonly SESSION_DURATION = 90 * 24 * 60 * 60 * 1000; // 90 days (extended)
-  private readonly ACTIVITY_TIMEOUT = 30 * 24 * 60 * 60 * 1000; // 30 days of inactivity (extended)
+
+  // These MUST be kept in sync with backend JWT expiry settings:
+  // Backend: JWT_EXPIRES_IN = '15m' (access token)
+  // Backend: JWT_REFRESH_EXPIRES_IN = '30d' (refresh token — see environment.ts)
+  //
+  // SESSION_DURATION: How long to keep the app-level session active.
+  // Must be <= backend refresh token lifetime (30 days).
+  private readonly SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days (matches backend refresh token)
+
+  // ACTIVITY_TIMEOUT: How long of inactivity before we proactively clear the session.
+  // Set slightly under SESSION_DURATION to avoid edge cases where the session
+  // appears valid in the frontend but the refresh token is already expired on the backend.
+  private readonly ACTIVITY_TIMEOUT = 28 * 24 * 60 * 60 * 1000; // 28 days of inactivity
 
   private constructor() {
     this.initializeSessionMonitoring();

@@ -9,6 +9,7 @@ import {
 } from '../../utils/constants';
 import { AuthVisual } from '../../components/auth/AuthVisual';
 import { ChevronLeftIcon } from '../../components/ui/Icons';
+import { sessionManager } from '../../utils/session';
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
@@ -53,16 +54,31 @@ export function LoginPage() {
     }
 
     const state = Math.random().toString(36).substring(2, 15);
-    const params = new URLSearchParams({
+
+    // Build OAuth URL params
+    const oauthParams: Record<string, string> = {
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: GOOGLE_REDIRECT_URI,
       response_type: 'code',
       scope: 'openid email profile',
       access_type: 'offline',
-      prompt: 'select_account',
       state: state,
       include_granted_scopes: 'true',
-    });
+      // Use 'select_account' so the user can pick an account,
+      // but do NOT use 'consent' — that forces password/2FA re-authentication every time.
+      prompt: 'select_account',
+    };
+
+    // If we already know the user's email from a previous session,
+    // pass it as login_hint so Google can skip the account picker for them.
+    const knownEmail = sessionManager.getLoginHint();
+    if (knownEmail) {
+      oauthParams.login_hint = knownEmail;
+      // When login_hint is provided, we don't need to force account selection
+      delete oauthParams.prompt;
+    }
+
+    const params = new URLSearchParams(oauthParams);
 
     sessionStorage.setItem('oauth_state', state);
     sessionStorage.setItem('remember_me', rememberMe.toString());
